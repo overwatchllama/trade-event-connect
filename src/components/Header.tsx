@@ -23,7 +23,7 @@ const Header = () => {
                 location.pathname === '/events' ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
-              Browse Events
+              Events
             </Link>
             <Link 
               to="/vendors" 

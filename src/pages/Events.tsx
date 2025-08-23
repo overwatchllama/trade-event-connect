@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, createContext, useContext } from "react";
 import Header from "@/components/Header";
 import EventCard from "@/components/EventCard";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, MapPin, Calendar } from "lucide-react";
+import AdvancedSearch from "@/components/AdvancedSearch";
 
 const Events = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCardType, setSelectedCardType] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [userType, setUserType] = useState<"collector" | "vendor" | "organizer">("collector");
 
   // Mock data for events
   const events = [
@@ -94,7 +97,7 @@ const Events = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Discover Trading Card Events
+            Events
           </h1>
           <p className="text-lg text-muted-foreground mb-6">
             Find Pokemon, MTG, sports cards, and other trading card events near you.
@@ -125,18 +128,20 @@ const Events = () => {
               </SelectContent>
             </Select>
 
-            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Location" />
-              </SelectTrigger>
-              <SelectContent>
-                {locations.map((location) => (
-                  <SelectItem key={location} value={location}>
-                    {location === "all" ? "All Locations" : location}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by location..."
+                  value={selectedLocation === "all" ? "" : selectedLocation}
+                  onChange={(e) => setSelectedLocation(e.target.value || "all")}
+                  className="pl-10"
+                />
+              </div>
+              <Button variant="outline" onClick={() => setShowAdvancedSearch(true)}>
+                Advanced
+              </Button>
+            </div>
 
             <Button variant="outline" size="icon">
               <Filter className="w-4 h-4" />
@@ -160,10 +165,37 @@ const Events = () => {
           </div>
         </div>
 
+        {/* User Type Selector */}
+        <div className="mb-6">
+          <div className="flex gap-2">
+            <Button 
+              variant={userType === "collector" ? "default" : "outline"} 
+              size="sm"
+              onClick={() => setUserType("collector")}
+            >
+              Collector
+            </Button>
+            <Button 
+              variant={userType === "vendor" ? "vendor" : "outline"} 
+              size="sm"
+              onClick={() => setUserType("vendor")}
+            >
+              Vendor
+            </Button>
+            <Button 
+              variant={userType === "organizer" ? "organizer" : "outline"} 
+              size="sm"
+              onClick={() => setUserType("organizer")}
+            >
+              Organizer
+            </Button>
+          </div>
+        </div>
+
         {/* Events Grid */}
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
           {events.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard key={event.id} event={event} userType={userType} />
           ))}
         </div>
 
@@ -174,6 +206,13 @@ const Events = () => {
           </Button>
         </div>
       </div>
+
+      {/* Advanced Search Modal */}
+      <AdvancedSearch 
+        isOpen={showAdvancedSearch} 
+        onClose={() => setShowAdvancedSearch(false)}
+        events={events}
+      />
     </div>
   );
 };

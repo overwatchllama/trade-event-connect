@@ -22,9 +22,10 @@ interface EventCardProps {
     image?: string;
     price: number;
   };
+  userType?: "collector" | "vendor" | "organizer";
 }
 
-const EventCard = ({ event }: EventCardProps) => {
+const EventCard = ({ event, userType = "collector" }: EventCardProps) => {
   return (
     <Card className="overflow-hidden hover:shadow-event transition-all duration-300 group">
       <div className="aspect-video bg-gradient-subtle relative overflow-hidden">
@@ -87,7 +88,20 @@ const EventCard = ({ event }: EventCardProps) => {
 
           <div className="flex justify-between items-center">
             <div className="text-sm text-muted-foreground">
-              <span className="font-medium text-vendor">{event.tablesAvailable}</span> tables available
+              {userType === "vendor" ? (
+                event.tablesAvailable > 0 ? (
+                  <span>
+                    <span className="font-medium text-vendor">{event.tablesAvailable}</span> tables{" "}
+                    <span className="text-vendor underline cursor-pointer">available</span>
+                  </span>
+                ) : (
+                  <span>Tables <span className="text-destructive">not available</span></span>
+                )
+              ) : (
+                <span>
+                  <span className="font-medium text-vendor">{event.tablesAvailable}</span> tables available
+                </span>
+              )}
             </div>
             <div className="text-sm text-muted-foreground">
               by <span className="font-medium text-card-foreground">{event.organizer}</span>
@@ -98,9 +112,15 @@ const EventCard = ({ event }: EventCardProps) => {
             <Button variant="outline" className="flex-1">
               View Details
             </Button>
-            <Button variant="vendor" className="flex-1">
-              Book Table
-            </Button>
+            {userType === "vendor" ? (
+              <Button variant="vendor" className="flex-1">
+                Book Table
+              </Button>
+            ) : (
+              <Button variant="default" className="flex-1">
+                Buy Tickets
+              </Button>
+            )}
           </div>
         </div>
       </div>
