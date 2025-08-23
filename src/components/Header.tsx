@@ -34,9 +34,9 @@ const Header = () => {
               Vendors
             </Link>
             <Link 
-              to="/create-event" 
+              to="/my-collection" 
               className={`text-sm font-medium transition-colors hover:text-primary ${
-                location.pathname === '/create-event' ? 'text-primary' : 'text-muted-foreground'
+                location.pathname === '/my-collection' ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
               My Collection

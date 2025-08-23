@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Events from "./pages/Events";
 import Auth from "./pages/Auth";
 import Vendors from "./pages/Vendors";
+import MyCollection from "./pages/MyCollection";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/events" element={<Events />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/vendors" element={<Vendors />} />
+          <Route path="/my-collection" element={<MyCollection />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

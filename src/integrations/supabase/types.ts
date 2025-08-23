@@ -14,6 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
+      collection_items: {
+        Row: {
+          acquired_date: string | null
+          card_number: string | null
+          collection_id: string
+          condition: Database["public"]["Enums"]["card_condition"]
+          created_at: string
+          current_market_price: number | null
+          estimated_value: number | null
+          id: string
+          image_url: string | null
+          name: string
+          notes: string | null
+          purchase_price: number | null
+          quantity: number
+          rarity: string | null
+          set_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acquired_date?: string | null
+          card_number?: string | null
+          collection_id: string
+          condition?: Database["public"]["Enums"]["card_condition"]
+          created_at?: string
+          current_market_price?: number | null
+          estimated_value?: number | null
+          id?: string
+          image_url?: string | null
+          name: string
+          notes?: string | null
+          purchase_price?: number | null
+          quantity?: number
+          rarity?: string | null
+          set_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acquired_date?: string | null
+          card_number?: string | null
+          collection_id?: string
+          condition?: Database["public"]["Enums"]["card_condition"]
+          created_at?: string
+          current_market_price?: number | null
+          estimated_value?: number | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          notes?: string | null
+          purchase_price?: number | null
+          quantity?: number
+          rarity?: string | null
+          set_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          category: Database["public"]["Enums"]["card_category"]
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["card_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["card_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -86,6 +184,16 @@ export type Database = {
     }
     Enums: {
       approval_status: "pending" | "approved" | "rejected"
+      card_category: "pokemon" | "mtg" | "yugioh" | "sports" | "other"
+      card_condition:
+        | "mint"
+        | "near_mint"
+        | "excellent"
+        | "good"
+        | "light_play"
+        | "moderate_play"
+        | "heavy_play"
+        | "damaged"
       user_role: "user" | "vendor" | "organizer" | "venue" | "admin"
     }
     CompositeTypes: {
@@ -215,6 +323,17 @@ export const Constants = {
   public: {
     Enums: {
       approval_status: ["pending", "approved", "rejected"],
+      card_category: ["pokemon", "mtg", "yugioh", "sports", "other"],
+      card_condition: [
+        "mint",
+        "near_mint",
+        "excellent",
+        "good",
+        "light_play",
+        "moderate_play",
+        "heavy_play",
+        "damaged",
+      ],
       user_role: ["user", "vendor", "organizer", "venue", "admin"],
     },
   },
