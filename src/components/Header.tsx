@@ -39,7 +39,7 @@ const Header = () => {
                 location.pathname === '/create-event' ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
-              Host Event
+              My Collection
             </Link>
           </nav>
 
