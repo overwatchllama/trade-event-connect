@@ -31,7 +31,7 @@ const Header = () => {
                 location.pathname === '/vendors' ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
-              Find Vendors
+              Vendors
             </Link>
             <Link 
               to="/create-event" 
