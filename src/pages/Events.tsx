@@ -12,6 +12,7 @@ const Events = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCardType, setSelectedCardType] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
+  const [selectedEventType, setSelectedEventType] = useState("all");
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [userType, setUserType] = useState<"collector" | "vendor" | "organizer">("collector");
 
@@ -32,6 +33,7 @@ const Events = () => {
       tablesAvailable: 12,
       totalTables: 40,
       cardTypes: ["Pokemon", "TCG"],
+      eventType: "play",
       price: 25
     },
     {
@@ -49,6 +51,7 @@ const Events = () => {
       tablesAvailable: 4,
       totalTables: 12,
       cardTypes: ["MTG", "Draft"],
+      eventType: "play",
       price: 15
     },
     {
@@ -66,6 +69,7 @@ const Events = () => {
       tablesAvailable: 8,
       totalTables: 25,
       cardTypes: ["Sports", "Baseball", "Football"],
+      eventType: "collect",
       price: 20
     },
     {
@@ -83,12 +87,32 @@ const Events = () => {
       tablesAvailable: 6,
       totalTables: 20,
       cardTypes: ["One Piece", "Anime"],
+      eventType: "play",
       price: 30
     }
   ];
 
   const cardTypes = ["all", "Pokemon", "MTG", "Sports", "One Piece", "Yu-Gi-Oh"];
   const locations = ["all", "Los Angeles, CA", "San Francisco, CA", "San Diego, CA", "Anaheim, CA"];
+  const eventTypes = ["all", "play", "collect"];
+
+  // Filter events based on selected filters
+  const filteredEvents = events.filter((event) => {
+    const matchesSearch = searchQuery === "" || 
+      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.organizer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.city.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCardType = selectedCardType === "all" || 
+      event.cardTypes.some(type => type.toLowerCase().includes(selectedCardType.toLowerCase()));
+    
+    const matchesLocation = selectedLocation === "all" || 
+      `${event.city}, ${event.state}`.toLowerCase().includes(selectedLocation.toLowerCase());
+    
+    const matchesEventType = selectedEventType === "all" || event.eventType === selectedEventType;
+    
+    return matchesSearch && matchesCardType && matchesLocation && matchesEventType;
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -115,6 +139,19 @@ const Events = () => {
               />
             </div>
             
+            <Select value={selectedEventType} onValueChange={setSelectedEventType}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Event Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {eventTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type === "all" ? "All Events" : type === "play" ? "Play Events" : "Collect Events"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={selectedCardType} onValueChange={setSelectedCardType}>
               <SelectTrigger className="w-full md:w-48">
                 <SelectValue placeholder="Card Type" />
@@ -150,6 +187,12 @@ const Events = () => {
 
           {/* Active Filters */}
           <div className="flex gap-2 mb-6">
+            {selectedEventType !== "all" && (
+              <Badge variant="secondary" className="gap-2">
+                <Filter className="w-3 h-3" />
+                {selectedEventType === "play" ? "Play Events" : "Collect Events"}
+              </Badge>
+            )}
             {selectedCardType !== "all" && (
               <Badge variant="secondary" className="gap-2">
                 <Calendar className="w-3 h-3" />
@@ -194,7 +237,7 @@ const Events = () => {
 
         {/* Events Grid */}
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {events.map((event) => (
+          {filteredEvents.map((event) => (
             <EventCard key={event.id} event={event} userType={userType} />
           ))}
         </div>
