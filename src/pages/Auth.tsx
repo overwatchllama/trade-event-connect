@@ -43,7 +43,6 @@ const Auth = () => {
   const signUpForm = useForm<SignUpForm>({
     resolver: zodResolver(signUpSchema),
     defaultValues: { email: '', password: '', fullName: '' },
-    mode: 'onChange',
   });
 
   // Redirect if already authenticated
@@ -53,16 +52,6 @@ const Auth = () => {
     }
   }, [user, showRoleSelector, navigate]);
 
-  // Debug form state
-  useEffect(() => {
-    console.log('SignUp form state:', signUpForm.getValues());
-    console.log('SignUp form errors:', signUpForm.formState.errors);
-  }, [signUpForm.formState.errors]);
-
-  useEffect(() => {
-    console.log('Is sign up mode:', isSignUp);
-    console.log('Loading state:', loading);
-  }, [isSignUp, loading]);
 
   const onSignIn = async (data: SignInForm) => {
     setLoading(true);
@@ -223,18 +212,13 @@ const Auth = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Full Name</FormLabel>
-                       <FormControl>
-                         <Input 
-                           placeholder="Enter your full name" 
-                           {...field}
-                           onChange={(e) => {
-                             console.log('Full name input change:', e.target.value);
-                             field.onChange(e);
-                           }}
-                           onFocus={() => console.log('Full name input focused')}
-                           onBlur={() => console.log('Full name input blurred')}
-                         />
-                       </FormControl>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter your full name" 
+                          autoComplete="given-name"
+                          {...field} 
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -245,19 +229,14 @@ const Auth = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Email</FormLabel>
-                       <FormControl>
-                         <Input 
-                           type="email" 
-                           placeholder="Enter your email" 
-                           {...field}
-                           onChange={(e) => {
-                             console.log('Email input change:', e.target.value);
-                             field.onChange(e);
-                           }}
-                           onFocus={() => console.log('Email input focused')}
-                           onBlur={() => console.log('Email input blurred')}
-                         />
-                       </FormControl>
+                      <FormControl>
+                        <Input 
+                          type="email" 
+                          placeholder="Enter your email" 
+                          autoComplete="email"
+                          {...field} 
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -268,19 +247,14 @@ const Auth = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Password</FormLabel>
-                       <FormControl>
-                          <Input 
-                            type="password" 
-                            placeholder="Create a password" 
-                            {...field}
-                            onChange={(e) => {
-                              console.log('Password input change:', e.target.value);
-                              field.onChange(e);
-                            }}
-                            onFocus={() => console.log('Password input focused')}
-                            onBlur={() => console.log('Password input blurred')}
-                          />
-                       </FormControl>
+                      <FormControl>
+                        <Input 
+                          type="password" 
+                          placeholder="Create a password" 
+                          autoComplete="new-password"
+                          {...field} 
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
