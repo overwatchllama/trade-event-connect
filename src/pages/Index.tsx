@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, TrendingUp, Users, Calendar, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
   const featuredEvents = [
     {
       title: "Pokemon Regional Championship",
@@ -85,7 +87,7 @@ const Index = () => {
                     </div>
                   </div>
                   
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" onClick={() => navigate('/events')}>
                     View Event
                   </Button>
                 </div>
@@ -94,7 +96,7 @@ const Index = () => {
           </div>
 
           <div className="text-center">
-            <Button variant="hero" size="lg">
+            <Button variant="hero" size="lg" onClick={() => navigate('/events')}>
               Browse All Events
             </Button>
           </div>
@@ -144,11 +146,11 @@ const Index = () => {
             trading card marketplace.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="secondary" size="lg" className="text-lg px-8">
+            <Button variant="secondary" size="lg" className="text-lg px-8" onClick={() => navigate('/auth')}>
               Sign Up Free
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-              Learn More
+            <Button variant="outline" size="lg" className="text-lg px-8 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary" onClick={() => navigate('/events')}>
+              Browse Events
             </Button>
           </div>
         </div>
