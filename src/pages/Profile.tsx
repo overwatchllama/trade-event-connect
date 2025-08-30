@@ -15,12 +15,13 @@ import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { User, Mail, ArrowLeft, Save, Building, Calendar as CalendarIcon, MapPin, Users, Instagram, Twitter, Facebook, Linkedin } from 'lucide-react';
+import { User, Mail, ArrowLeft, Save, Building, Calendar as CalendarIcon, MapPin, Users, Plus, Trash2 } from 'lucide-react';
 import Header from '@/components/Header';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Full name must be at least 2 characters'),
@@ -34,12 +35,14 @@ const profileSchema = z.object({
   address_city: z.string().optional(),
   address_state: z.string().optional(),
   address_zip_code: z.string().optional(),
-  social_instagram: z.string().optional(),
-  social_twitter: z.string().optional(),
-  social_facebook: z.string().optional(),
-  social_linkedin: z.string().optional(),
   communications_enabled: z.boolean().default(true),
 });
+
+type SocialMediaLink = {
+  id: string;
+  platform: string;
+  url: string;
+};
 
 type ProfileForm = z.infer<typeof profileSchema>;
 
@@ -47,6 +50,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [roleRequests, setRoleRequests] = useState<any[]>([]);
+  const [socialLinks, setSocialLinks] = useState<SocialMediaLink[]>([]);
   const { user, requestRole } = useAuth();
   const navigate = useNavigate();
 
@@ -64,10 +68,6 @@ const Profile = () => {
       address_city: '',
       address_state: '',
       address_zip_code: '',
-      social_instagram: '',
-      social_twitter: '',
-      social_facebook: '',
-      social_linkedin: '',
       communications_enabled: true,
     },
   });
@@ -95,11 +95,15 @@ const Profile = () => {
         form.setValue('address_city', data.address_city || '');
         form.setValue('address_state', data.address_state || '');
         form.setValue('address_zip_code', data.address_zip_code || '');
-        form.setValue('social_instagram', data.social_instagram || '');
-        form.setValue('social_twitter', data.social_twitter || '');
-        form.setValue('social_facebook', data.social_facebook || '');
-        form.setValue('social_linkedin', data.social_linkedin || '');
         form.setValue('communications_enabled', data.communications_enabled ?? true);
+        
+        // Load social media links
+        const links: SocialMediaLink[] = [];
+        if (data.social_instagram) links.push({ id: '1', platform: 'Instagram', url: data.social_instagram });
+        if (data.social_twitter) links.push({ id: '2', platform: 'Twitter/X', url: data.social_twitter });
+        if (data.social_facebook) links.push({ id: '3', platform: 'Facebook', url: data.social_facebook });
+        if (data.social_linkedin) links.push({ id: '4', platform: 'LinkedIn', url: data.social_linkedin });
+        setSocialLinks(links);
       }
     };
 
@@ -121,11 +125,46 @@ const Profile = () => {
     fetchRoleRequests();
   }, [user, form]);
 
+  const addSocialLink = () => {
+    const newLink: SocialMediaLink = {
+      id: Date.now().toString(),
+      platform: '',
+      url: ''
+    };
+    setSocialLinks([...socialLinks, newLink]);
+  };
+
+  const removeSocialLink = (id: string) => {
+    setSocialLinks(socialLinks.filter(link => link.id !== id));
+  };
+
+  const updateSocialLink = (id: string, field: 'platform' | 'url', value: string) => {
+    setSocialLinks(socialLinks.map(link => 
+      link.id === id ? { ...link, [field]: value } : link
+    ));
+  };
+
   const onSubmit = async (data: ProfileForm) => {
     if (!user) return;
     
     setLoading(true);
     try {
+      // Convert social links back to individual fields for backward compatibility
+      const socialData: any = {
+        social_instagram: null,
+        social_twitter: null,
+        social_facebook: null,
+        social_linkedin: null,
+      };
+      
+      socialLinks.forEach(link => {
+        const platform = link.platform.toLowerCase();
+        if (platform.includes('instagram')) socialData.social_instagram = link.url;
+        else if (platform.includes('twitter') || platform.includes('x')) socialData.social_twitter = link.url;
+        else if (platform.includes('facebook')) socialData.social_facebook = link.url;
+        else if (platform.includes('linkedin')) socialData.social_linkedin = link.url;
+      });
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -140,11 +179,8 @@ const Profile = () => {
           address_city: data.address_city || null,
           address_state: data.address_state || null,
           address_zip_code: data.address_zip_code || null,
-          social_instagram: data.social_instagram || null,
-          social_twitter: data.social_twitter || null,
-          social_facebook: data.social_facebook || null,
-          social_linkedin: data.social_linkedin || null,
           communications_enabled: data.communications_enabled,
+          ...socialData,
         })
         .eq('id', user.id);
 
@@ -234,8 +270,8 @@ const Profile = () => {
               </CardHeader>
               <CardContent>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <FormField
                         control={form.control}
                         name="full_name"
@@ -243,7 +279,7 @@ const Profile = () => {
                           <FormItem>
                             <FormLabel>Full Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="Enter your full name" {...field} />
+                              <Input placeholder="Enter your full name" className="border-2" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -257,7 +293,7 @@ const Profile = () => {
                           <FormItem>
                             <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <Input type="email" placeholder="Enter your email" {...field} />
+                              <Input type="email" placeholder="Enter your email" className="border-2" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -308,9 +344,9 @@ const Profile = () => {
                       )}
                     />
 
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Location</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-3">
+                      <h3 className="text-base font-medium">Location</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <FormField
                           control={form.control}
                           name="location_city"
@@ -318,7 +354,7 @@ const Profile = () => {
                             <FormItem>
                               <FormLabel>City</FormLabel>
                               <FormControl>
-                                <Input placeholder="Enter your city" {...field} />
+                                <Input placeholder="Enter your city" className="border-2" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -332,7 +368,7 @@ const Profile = () => {
                             <FormItem>
                               <FormLabel>State</FormLabel>
                               <FormControl>
-                                <Input placeholder="Enter your state" {...field} />
+                                <Input placeholder="Enter your state" className="border-2" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -346,7 +382,7 @@ const Profile = () => {
                             <FormItem>
                               <FormLabel>Zip Code</FormLabel>
                               <FormControl>
-                                <Input placeholder="Enter your zip code" {...field} />
+                                <Input placeholder="Enter your zip code" className="border-2" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -355,9 +391,9 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Address</h3>
-                      <div className="space-y-4">
+                    <div className="space-y-3">
+                      <h3 className="text-base font-medium">Address</h3>
+                      <div className="space-y-3">
                         <FormField
                           control={form.control}
                           name="address_line1"
@@ -365,7 +401,7 @@ const Profile = () => {
                             <FormItem>
                               <FormLabel>Address Line 1</FormLabel>
                               <FormControl>
-                                <Input placeholder="Street address" {...field} />
+                                <Input placeholder="Street address" className="border-2" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -379,14 +415,14 @@ const Profile = () => {
                             <FormItem>
                               <FormLabel>Address Line 2 (Optional)</FormLabel>
                               <FormControl>
-                                <Input placeholder="Apartment, suite, etc." {...field} />
+                                <Input placeholder="Apartment, suite, etc." className="border-2" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           <FormField
                             control={form.control}
                             name="address_city"
@@ -394,7 +430,7 @@ const Profile = () => {
                               <FormItem>
                                 <FormLabel>City</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="City" {...field} />
+                                  <Input placeholder="City" className="border-2" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -408,7 +444,7 @@ const Profile = () => {
                               <FormItem>
                                 <FormLabel>State</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="State" {...field} />
+                                  <Input placeholder="State" className="border-2" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -422,7 +458,7 @@ const Profile = () => {
                               <FormItem>
                                 <FormLabel>Zip Code</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Zip code" {...field} />
+                                  <Input placeholder="Zip code" className="border-2" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -432,86 +468,80 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Social Media</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="social_instagram"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="flex items-center gap-2">
-                                <Instagram className="h-4 w-4" />
-                                Instagram
-                              </FormLabel>
-                              <FormControl>
-                                <Input placeholder="@username or profile URL" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="social_twitter"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="flex items-center gap-2">
-                                <Twitter className="h-4 w-4" />
-                                Twitter/X
-                              </FormLabel>
-                              <FormControl>
-                                <Input placeholder="@username or profile URL" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="social_facebook"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="flex items-center gap-2">
-                                <Facebook className="h-4 w-4" />
-                                Facebook
-                              </FormLabel>
-                              <FormControl>
-                                <Input placeholder="Profile URL" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name="social_linkedin"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="flex items-center gap-2">
-                                <Linkedin className="h-4 w-4" />
-                                LinkedIn
-                              </FormLabel>
-                              <FormControl>
-                                <Input placeholder="Profile URL" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base font-medium">Social Media</h3>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addSocialLink}
+                          className="border-2"
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Link
+                        </Button>
                       </div>
+                      
+                      {socialLinks.length > 0 ? (
+                        <div className="border-2 rounded-md">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-1/3">Platform</TableHead>
+                                <TableHead>URL</TableHead>
+                                <TableHead className="w-16"></TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {socialLinks.map((link) => (
+                                <TableRow key={link.id}>
+                                  <TableCell className="p-2">
+                                    <Input
+                                      placeholder="Platform name"
+                                      value={link.platform}
+                                      onChange={(e) => updateSocialLink(link.id, 'platform', e.target.value)}
+                                      className="h-8 border-2"
+                                    />
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <Input
+                                      placeholder="Profile URL"
+                                      value={link.url}
+                                      onChange={(e) => updateSocialLink(link.id, 'url', e.target.value)}
+                                      className="h-8 border-2"
+                                    />
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeSocialLink(link.id)}
+                                      className="h-8 w-8 p-0 hover:bg-destructive/10"
+                                    >
+                                      <Trash2 className="h-3 w-3 text-destructive" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground border-2 border-dashed p-4 rounded-md text-center">
+                          No social media links added yet. Click "Add Link" to get started.
+                        </p>
+                      )}
                     </div>
 
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Communications</h3>
+                    <div className="space-y-3">
+                      <h3 className="text-base font-medium">Communications</h3>
                       <FormField
                         control={form.control}
                         name="communications_enabled"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border-2 p-3">
                             <div className="space-y-0.5">
                               <FormLabel className="text-base">
                                 Marketing Communications
