@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Header from '@/components/Header';
 import { AddItemDialog } from '@/components/AddItemDialog';
+import { CreateCollectionDialog } from '@/components/CreateCollectionDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -203,7 +204,7 @@ const MyCollection = () => {
   const getCurrentSets = () => {
     switch (selectedGame) {
       case 'pokemon': return pokemonSets;
-      case 'magic': return magicSets;
+      case 'mtg': return magicSets;
       case 'lorcana': return lorcanaSets;
       case 'onepiece': return onePieceSets;
       default: return pokemonSets;
@@ -372,8 +373,12 @@ const MyCollection = () => {
                   />
                 )}
                 <Button variant="secondary" className="bg-white/20 hover:bg-white/30 border-white/30 text-white">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Collection
+                  <CreateCollectionDialog onCollectionCreated={fetchCollections}>
+                    <span className="flex items-center">
+                      <Plus className="h-4 w-4 mr-2" />
+                      New Collection
+                    </span>
+                  </CreateCollectionDialog>
                 </Button>
               </div>
             </div>
@@ -577,7 +582,7 @@ const MyCollection = () => {
               <Star className="h-4 w-4" />
               Pokémon
             </TabsTrigger>
-            <TabsTrigger value="magic" className="flex items-center gap-2">
+            <TabsTrigger value="mtg" className="flex items-center gap-2">
               <Sparkles className="h-4 w-4" />
               Magic: The Gathering
             </TabsTrigger>

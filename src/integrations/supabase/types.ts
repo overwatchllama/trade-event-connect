@@ -226,7 +226,14 @@ export type Database = {
     }
     Enums: {
       approval_status: "pending" | "approved" | "rejected"
-      card_category: "pokemon" | "mtg" | "yugioh" | "sports" | "other"
+      card_category:
+        | "pokemon"
+        | "mtg"
+        | "yugioh"
+        | "sports"
+        | "other"
+        | "lorcana"
+        | "onepiece"
       card_condition:
         | "mint"
         | "near_mint"
@@ -365,7 +372,15 @@ export const Constants = {
   public: {
     Enums: {
       approval_status: ["pending", "approved", "rejected"],
-      card_category: ["pokemon", "mtg", "yugioh", "sports", "other"],
+      card_category: [
+        "pokemon",
+        "mtg",
+        "yugioh",
+        "sports",
+        "other",
+        "lorcana",
+        "onepiece",
+      ],
       card_condition: [
         "mint",
         "near_mint",
