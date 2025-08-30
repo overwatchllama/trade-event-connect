@@ -1,12 +1,15 @@
-import { useState, createContext, useContext } from "react";
+import { useState } from "react";
 import Header from "@/components/Header";
 import EventCard from "@/components/EventCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Filter, MapPin, Calendar } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Filter, MapPin, Calendar, Plus, Edit } from "lucide-react";
 import AdvancedSearch from "@/components/AdvancedSearch";
+import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/hooks/useAuth";
 
 const Events = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -14,7 +17,8 @@ const Events = () => {
   const [selectedLocation, setSelectedLocation] = useState("all");
   const [selectedEventType, setSelectedEventType] = useState("all");
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
-  const [userType, setUserType] = useState<"collector" | "vendor" | "organizer">("collector");
+  const { user } = useAuth();
+  const { profile } = useProfile();
 
   // Mock data for events
   const events = [
@@ -208,39 +212,65 @@ const Events = () => {
           </div>
         </div>
 
-        {/* User Type Selector */}
-        <div className="mb-6">
-          <div className="flex gap-2">
-            <Button 
-              variant={userType === "collector" ? "default" : "outline"} 
-              size="sm"
-              onClick={() => setUserType("collector")}
-            >
-              Collector
-            </Button>
-            <Button 
-              variant={userType === "vendor" ? "vendor" : "outline"} 
-              size="sm"
-              onClick={() => setUserType("vendor")}
-            >
-              Vendor
-            </Button>
-            <Button 
-              variant={userType === "organizer" ? "organizer" : "outline"} 
-              size="sm"
-              onClick={() => setUserType("organizer")}
-            >
-              Organizer
-            </Button>
+        {/* Role-based content */}
+        {profile?.role === 'organizer' && (
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-foreground">My Events</h2>
+              <Button variant="default" className="gap-2">
+                <Plus className="w-4 h-4" />
+                Create Event
+              </Button>
+            </div>
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
+              {/* Organizer's own events - would come from database */}
+              {filteredEvents.slice(0, 2).map((event) => (
+                <div key={`my-${event.id}`} className="relative">
+                  <EventCard event={event} userType="organizer" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute top-2 right-2 gap-1"
+                  >
+                    <Edit className="w-3 h-3" />
+                    Edit
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-4">All Events</h2>
           </div>
-        </div>
+        )}
 
         {/* Events Grid */}
-        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredEvents.map((event) => (
-            <EventCard key={event.id} event={event} userType={userType} />
-          ))}
-        </div>
+        {profile?.role === 'vendor' ? (
+          <Tabs defaultValue="tickets" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="tickets">Buy Tickets</TabsTrigger>
+              <TabsTrigger value="tables">Book Tables</TabsTrigger>
+            </TabsList>
+            <TabsContent value="tickets" className="mt-6">
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredEvents.map((event) => (
+                  <EventCard key={event.id} event={event} userType="collector" />
+                ))}
+              </div>
+            </TabsContent>
+            <TabsContent value="tables" className="mt-6">
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredEvents.map((event) => (
+                  <EventCard key={event.id} event={event} userType="vendor" />
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredEvents.map((event) => (
+              <EventCard key={event.id} event={event} userType={profile?.role || "user"} />
+            ))}
+          </div>
+        )}
 
         {/* Load More */}
         <div className="text-center mt-12">
