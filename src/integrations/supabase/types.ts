@@ -114,30 +114,72 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address_city: string | null
+          address_line1: string | null
+          address_line2: string | null
+          address_state: string | null
+          address_zip_code: string | null
           avatar_url: string | null
+          birthday: string | null
+          communications_enabled: boolean | null
           created_at: string
           email: string
           full_name: string | null
           id: string
+          location_city: string | null
+          location_state: string | null
+          location_zip_code: string | null
           role: Database["public"]["Enums"]["user_role"]
+          social_facebook: string | null
+          social_instagram: string | null
+          social_linkedin: string | null
+          social_twitter: string | null
           updated_at: string
         }
         Insert: {
+          address_city?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          address_state?: string | null
+          address_zip_code?: string | null
           avatar_url?: string | null
+          birthday?: string | null
+          communications_enabled?: boolean | null
           created_at?: string
           email: string
           full_name?: string | null
           id: string
+          location_city?: string | null
+          location_state?: string | null
+          location_zip_code?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin?: string | null
+          social_twitter?: string | null
           updated_at?: string
         }
         Update: {
+          address_city?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          address_state?: string | null
+          address_zip_code?: string | null
           avatar_url?: string | null
+          birthday?: string | null
+          communications_enabled?: boolean | null
           created_at?: string
           email?: string
           full_name?: string | null
           id?: string
+          location_city?: string | null
+          location_state?: string | null
+          location_zip_code?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin?: string | null
+          social_twitter?: string | null
           updated_at?: string
         }
         Relationships: []
