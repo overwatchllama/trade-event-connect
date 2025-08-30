@@ -6,8 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,11 +13,10 @@ import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { User, Mail, ArrowLeft, Save, Building, Calendar as CalendarIcon, MapPin, Users, Plus, Trash2 } from 'lucide-react';
+import { User, Mail, ArrowLeft, Save, Building, MapPin, Users, Plus, Trash2 } from 'lucide-react';
 import Header from '@/components/Header';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -27,7 +24,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Full name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
-  birthday: z.date().optional(),
   location_city: z.string().optional(),
   location_state: z.string().optional(),
   location_zip_code: z.string().optional(),
@@ -60,7 +56,6 @@ const Profile = () => {
     defaultValues: { 
       full_name: '', 
       email: '',
-      birthday: undefined,
       location_city: '',
       location_state: '',
       location_zip_code: '',
@@ -87,7 +82,6 @@ const Profile = () => {
         setProfile(data);
         form.setValue('full_name', data.full_name || '');
         form.setValue('email', data.email || user.email || '');
-        form.setValue('birthday', data.birthday ? new Date(data.birthday) : undefined);
         form.setValue('location_city', data.location_city || '');
         form.setValue('location_state', data.location_state || '');
         form.setValue('location_zip_code', data.location_zip_code || '');
@@ -182,7 +176,6 @@ const Profile = () => {
         .update({
           full_name: data.full_name,
           email: data.email,
-          birthday: data.birthday?.toISOString().split('T')[0] || null,
           location_city: data.location_city || null,
           location_state: data.location_state || null,
           location_zip_code: data.location_zip_code || null,
@@ -239,7 +232,7 @@ const Profile = () => {
 
   const roles = [
     { id: 'vendor', title: 'Vendor', description: 'Sell trading cards and collectibles', icon: Building },
-    { id: 'organizer', title: 'Event Organizer', description: 'Create and manage tournaments', icon: Calendar },
+    { id: 'organizer', title: 'Event Organizer', description: 'Create and manage tournaments', icon: Building },
     { id: 'venue', title: 'Venue Owner', description: 'Host events at your location', icon: MapPin },
   ];
 
@@ -312,49 +305,6 @@ const Profile = () => {
                         )}
                       />
                     </div>
-
-                    <FormField
-                      control={form.control}
-                      name="birthday"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>Birthday</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP")
-                                  ) : (
-                                    <span>Pick your birthday</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) =>
-                                  date > new Date() || date < new Date("1900-01-01")
-                                }
-                                initialFocus
-                                className={cn("p-3 pointer-events-auto")}
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
                     <div className="space-y-3">
                       <h3 className="text-base font-medium">Location</h3>
@@ -627,7 +577,7 @@ const Profile = () => {
                       Request to be a Vendor
                     </Button>
                     <Button onClick={() => handleRoleRequest('organizer')} className="flex-1">
-                      <Calendar className="h-4 w-4 mr-2" />
+                      <Building className="h-4 w-4 mr-2" />
                       Request to be an Event Organizer
                     </Button>
                   </div>
