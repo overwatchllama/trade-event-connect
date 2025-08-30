@@ -28,7 +28,6 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [roleRequests, setRoleRequests] = useState<any[]>([]);
-  const [showRoleSelector, setShowRoleSelector] = useState(false);
   const { user, requestRole } = useAuth();
   const navigate = useNavigate();
 
@@ -105,8 +104,8 @@ const Profile = () => {
     }
   };
 
-  const handleRoleRequest = async (role: 'vendor' | 'organizer' | 'venue', reason: string) => {
-    const { error } = await requestRole(role, reason);
+  const handleRoleRequest = async (role: 'vendor' | 'organizer') => {
+    const { error } = await requestRole(role, '');
     
     if (error) {
       toast({
@@ -119,7 +118,6 @@ const Profile = () => {
         title: 'Role Request Submitted',
         description: `Your request for ${role} role has been submitted for review.`,
       });
-      setShowRoleSelector(false);
       // Refresh role requests
       const { data } = await supabase
         .from('role_requests')
@@ -240,92 +238,57 @@ const Profile = () => {
               </Card>
             )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Role Management
-                </CardTitle>
-                <CardDescription>
-                  Request special roles to unlock additional features.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {!showRoleSelector ? (
-                  <>
-                    {profile?.role === 'user' && (
-                      <div className="text-center py-4">
-                        <p className="text-muted-foreground mb-4">
-                          You currently have a basic user account. Request a special role to access vendor, organizer, or venue features.
-                        </p>
-                        <Button onClick={() => setShowRoleSelector(true)}>
-                          Request Special Role
-                        </Button>
-                      </div>
-                    )}
+            {profile?.role === 'user' && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button onClick={() => handleRoleRequest('vendor')} className="flex-1">
+                      <Building className="h-4 w-4 mr-2" />
+                      Request to be a Vendor
+                    </Button>
+                    <Button onClick={() => handleRoleRequest('organizer')} className="flex-1">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Request to be an Event Organizer
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-                    {roleRequests.length > 0 && (
-                      <div className="space-y-3">
-                        <Label>Role Request History</Label>
-                        {roleRequests.map((request) => {
-                          const role = roles.find(r => r.id === request.requested_role);
-                          const Icon = role?.icon || Users;
-                          return (
-                            <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
-                              <div className="flex items-center gap-3">
-                                <Icon className="h-4 w-4 text-muted-foreground" />
-                                <div>
-                                  <p className="font-medium">{role?.title || request.requested_role}</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    Requested {new Date(request.created_at).toLocaleDateString()}
-                                  </p>
-                                </div>
-                              </div>
-                              <Badge variant={getStatusColor(request.status)}>
-                                {request.status}
-                              </Badge>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium">Choose Your Role</h3>
-                      <Button variant="ghost" size="sm" onClick={() => setShowRoleSelector(false)}>
-                        Cancel
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Select a role to request. Your request will be reviewed by an administrator.
-                    </p>
-                    
-                    <div className="grid gap-3">
-                      {roles.map((role) => {
-                        const Icon = role.icon;
-                        return (
-                          <div
-                            key={role.id}
-                            className="flex items-start space-x-3 p-4 rounded-lg border cursor-pointer hover:bg-secondary/30 transition-colors"
-                            onClick={() => {
-                              handleRoleRequest(role.id as 'vendor' | 'organizer' | 'venue', '');
-                            }}
-                          >
-                            <Icon className="h-5 w-5 text-muted-foreground mt-0.5" />
-                            <div className="flex-1">
-                              <h4 className="font-medium">{role.title}</h4>
-                              <p className="text-sm text-muted-foreground">{role.description}</p>
+            {roleRequests.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Role Requests</CardTitle>
+                  <CardDescription>
+                    Your role request history and status.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {roleRequests.map((request) => {
+                      const role = roles.find(r => r.id === request.requested_role);
+                      const Icon = role?.icon || Users;
+                      return (
+                        <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <Icon className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">{role?.title || request.requested_role}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Requested {new Date(request.created_at).toLocaleDateString()}
+                              </p>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                          <Badge variant={getStatusColor(request.status)}>
+                            {request.status}
+                          </Badge>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
