@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Full name must be at least 2 characters'),
@@ -124,6 +125,17 @@ const Profile = () => {
     fetchProfile();
     fetchRoleRequests();
   }, [user, form]);
+
+  const socialPlatforms = [
+    'Instagram',
+    'X (Twitter)', 
+    'Facebook',
+    'Discord',
+    'Twitch',
+    'LinkedIn',
+    'TikTok',
+    'YouTube'
+  ];
 
   const addSocialLink = () => {
     const newLink: SocialMediaLink = {
@@ -497,12 +509,21 @@ const Profile = () => {
                               {socialLinks.map((link) => (
                                 <TableRow key={link.id}>
                                   <TableCell className="p-2">
-                                    <Input
-                                      placeholder="Platform name"
+                                    <Select
                                       value={link.platform}
-                                      onChange={(e) => updateSocialLink(link.id, 'platform', e.target.value)}
-                                      className="h-8 border-2"
-                                    />
+                                      onValueChange={(value) => updateSocialLink(link.id, 'platform', value)}
+                                    >
+                                      <SelectTrigger className="h-8 border-2 bg-background">
+                                        <SelectValue placeholder="Select platform" />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-background border-2 z-50">
+                                        {socialPlatforms.map((platform) => (
+                                          <SelectItem key={platform} value={platform} className="cursor-pointer">
+                                            {platform}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
                                   </TableCell>
                                   <TableCell className="p-2">
                                     <Input
