@@ -24,8 +24,21 @@ import {
   Trash2,
   SortAsc,
   GridIcon,
-  ListIcon
+  ListIcon,
+  Sparkles,
+  Star
 } from 'lucide-react';
+
+interface TCGSet {
+  id: string;
+  name: string;
+  code: string;
+  releaseDate: string;
+  cardCount: number;
+  estimatedValue: number;
+  description: string;
+  imageUrl?: string;
+}
 
 interface Collection {
   id: string;
@@ -63,6 +76,139 @@ const MyCollection = () => {
   const [sortBy, setSortBy] = useState('name');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showCreateCollection, setShowCreateCollection] = useState(false);
+  const [selectedGame, setSelectedGame] = useState<string>('pokemon');
+  const [selectedTab, setSelectedTab] = useState<'sets' | 'cards'>('sets');
+
+  // Sample sets data for each game
+  const pokemonSets: TCGSet[] = [
+    {
+      id: 'sv09-journey-together',
+      name: 'Journey Together',
+      code: 'JTG',
+      releaseDate: 'Mar 28, 2025',
+      cardCount: 376,
+      estimatedValue: 753,
+      description: 'The latest expansion featuring partnership themes'
+    },
+    {
+      id: 'sv-prismatic-evolutions',
+      name: 'Prismatic Evolutions',
+      code: 'PRE',
+      releaseDate: 'Jan 17, 2025',
+      cardCount: 481,
+      estimatedValue: 4348,
+      description: 'Spectacular evolution-themed set with prismatic artwork'
+    },
+    {
+      id: 'sv-surging-sparks',
+      name: 'Surging Sparks',
+      code: 'SSP',
+      releaseDate: 'Nov 08, 2024',
+      cardCount: 452,
+      estimatedValue: 2180,
+      description: 'Electric-type focused expansion with dynamic artwork'
+    }
+  ];
+
+  const magicSets: TCGSet[] = [
+    {
+      id: 'mkm',
+      name: 'Murders at Karlov Manor',
+      code: 'MKM',
+      releaseDate: 'Feb 09, 2024',
+      cardCount: 286,
+      estimatedValue: 1250,
+      description: 'Mystery-themed set with detective mechanics'
+    },
+    {
+      id: 'lci',
+      name: 'The Lost Caverns of Ixalan',
+      code: 'LCI',
+      releaseDate: 'Nov 17, 2023',
+      cardCount: 291,
+      estimatedValue: 980,
+      description: 'Adventure into the underground world of Ixalan'
+    },
+    {
+      id: 'woe',
+      name: 'Wilds of Eldraine',
+      code: 'WOE',
+      releaseDate: 'Sep 08, 2023',
+      cardCount: 276,
+      estimatedValue: 1100,
+      description: 'Fairy tale world with adventure mechanics'
+    }
+  ];
+
+  const lorcanaSets: TCGSet[] = [
+    {
+      id: 'tfc',
+      name: 'The First Chapter',
+      code: 'TFC',
+      releaseDate: 'Aug 18, 2023',
+      cardCount: 204,
+      estimatedValue: 2800,
+      description: 'The inaugural set of Disney Lorcana'
+    },
+    {
+      id: 'ris',
+      name: 'Rise of the Floodborn',
+      code: 'RIS',
+      releaseDate: 'Nov 17, 2023',
+      cardCount: 204,
+      estimatedValue: 1900,
+      description: 'Second chapter featuring Floodborn characters'
+    },
+    {
+      id: 'itk',
+      name: 'Into the Inklands',
+      code: 'ITK',
+      releaseDate: 'Feb 23, 2024',
+      cardCount: 204,
+      estimatedValue: 1600,
+      description: 'Third set exploring new realms and characters'
+    }
+  ];
+
+  const onePieceSets: TCGSet[] = [
+    {
+      id: 'op01',
+      name: 'Romance Dawn',
+      code: 'OP01',
+      releaseDate: 'Jul 22, 2022',
+      cardCount: 121,
+      estimatedValue: 1800,
+      description: 'The first One Piece TCG set featuring the East Blue saga'
+    },
+    {
+      id: 'op02',
+      name: 'Paramount War',
+      code: 'OP02',
+      releaseDate: 'Sep 30, 2022',
+      cardCount: 121,
+      estimatedValue: 1200,
+      description: 'Epic battles from the Marineford War'
+    },
+    {
+      id: 'op03',
+      name: 'Pillars of Strength',
+      code: 'OP03',
+      releaseDate: 'Dec 02, 2022',
+      cardCount: 121,
+      estimatedValue: 950,
+      description: 'Featuring powerful characters and their abilities'
+    }
+  ];
+
+  const getCurrentSets = () => {
+    switch (selectedGame) {
+      case 'pokemon': return pokemonSets;
+      case 'magic': return magicSets;
+      case 'lorcana': return lorcanaSets;
+      case 'onepiece': return onePieceSets;
+      default: return pokemonSets;
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -424,145 +570,231 @@ const MyCollection = () => {
           </CardContent>
         </Card>
 
-        {/* Enhanced Items Display */}
-        {loading ? (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 'space-y-4'}>
-            {[...Array(8)].map((_, i) => (
-              <Skeleton key={i} className={viewMode === 'grid' ? 'h-80 rounded-xl' : 'h-24 rounded-lg'} />
-            ))}
-          </div>
-        ) : filteredAndSortedItems.length === 0 ? (
-          <Card className="border-0 shadow-lg">
-            <CardContent className="p-12 text-center">
-              <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-                <Package className="h-12 w-12 text-muted-foreground" />
-              </div>
-              <h3 className="text-2xl font-bold mb-3">No cards found</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                {searchTerm || conditionFilter !== 'all' 
-                  ? 'Try adjusting your search filters or browse all collections to find what you\'re looking for.'
-                  : 'Start building your collection by adding your first trading card. Every great collection starts with a single card.'}
-              </p>
-              {collections.length > 0 && (
-                <div className="flex gap-3 justify-center">
-                  <AddItemDialog 
-                    collectionId={collections[0].id} 
-                    onItemAdded={fetchItems}
-                  />
-                  <Button variant="outline">Browse Collection Ideas</Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredAndSortedItems.map((item) => (
-              <Card key={item.id} className="group border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-gradient-to-b from-background to-muted/30">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg font-bold line-clamp-2 group-hover:text-primary transition-colors">
-                        {item.name}
-                      </CardTitle>
-                      {item.set_name && (
-                        <p className="text-sm text-muted-foreground mt-1 font-medium">{item.set_name}</p>
+        {/* Enhanced Items Display with Game Tabs */}
+        <Tabs value={selectedGame} onValueChange={setSelectedGame} className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsTrigger value="pokemon" className="flex items-center gap-2">
+              <Star className="h-4 w-4" />
+              Pokémon
+            </TabsTrigger>
+            <TabsTrigger value="magic" className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Magic: The Gathering
+            </TabsTrigger>
+            <TabsTrigger value="lorcana" className="flex items-center gap-2">
+              <Star className="h-4 w-4" />
+              Disney Lorcana
+            </TabsTrigger>
+            <TabsTrigger value="onepiece" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              One Piece
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Game Content */}
+          <TabsContent value={selectedGame} className="space-y-6">
+            <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as 'sets' | 'cards')} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="sets">Sets</TabsTrigger>
+                <TabsTrigger value="cards">Cards</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="sets" className="space-y-4">
+                <Card className="border-0 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="capitalize">{selectedGame} Sets</CardTitle>
+                    <p className="text-muted-foreground">Explore available sets and their details</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {getCurrentSets().map((set) => (
+                        <Card key={set.id} className="hover:shadow-lg transition-shadow border-2 hover:border-primary/20">
+                          <CardContent className="p-6">
+                            <div className="space-y-4">
+                              <div className="flex items-start justify-between">
+                                <div className="space-y-1">
+                                  <h3 className="font-semibold text-lg">{set.name}</h3>
+                                  <Badge variant="secondary" className="text-xs">{set.code}</Badge>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm font-bold text-success">${set.estimatedValue}</p>
+                                  <p className="text-xs text-muted-foreground">Est. Value</p>
+                                </div>
+                              </div>
+                              
+                              <p className="text-sm text-muted-foreground">{set.description}</p>
+                              
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Cards:</span>
+                                <span className="font-medium">{set.cardCount}</span>
+                              </div>
+                              
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Released:</span>
+                                <span className="font-medium">{set.releaseDate}</span>
+                              </div>
+                              
+                              <div className="flex gap-2 pt-2">
+                                <Button size="sm" className="flex-1">
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  View Cards
+                                </Button>
+                                <Button size="sm" variant="outline" className="flex-1">
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Add to Collection
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="cards" className="space-y-4">
+                {loading ? (
+                  <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 'space-y-4'}>
+                    {[...Array(8)].map((_, i) => (
+                      <Skeleton key={i} className={viewMode === 'grid' ? 'h-80 rounded-xl' : 'h-24 rounded-lg'} />
+                    ))}
+                  </div>
+                ) : filteredAndSortedItems.length === 0 ? (
+                  <Card className="border-0 shadow-lg">
+                    <CardContent className="p-12 text-center">
+                      <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Package className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-2xl font-bold mb-3">No cards found</h3>
+                      <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                        {searchTerm || conditionFilter !== 'all' 
+                          ? 'Try adjusting your search filters or browse all collections to find what you\'re looking for.'
+                          : 'Start building your collection by adding your first trading card. Every great collection starts with a single card.'}
+                      </p>
+                      {collections.length > 0 && (
+                        <div className="flex gap-3 justify-center">
+                          <AddItemDialog 
+                            collectionId={collections[0].id} 
+                            onItemAdded={fetchItems}
+                          />
+                          <Button variant="outline">Browse Collection Ideas</Button>
+                        </div>
                       )}
-                      {item.card_number && (
-                        <p className="text-xs text-muted-foreground">#{item.card_number}</p>
-                      )}
-                    </div>
-                    <div className="ml-3">
-                      <div className={`w-4 h-4 rounded-full ${getConditionColor(item.condition)} shadow-sm`} />
-                    </div>
+                    </CardContent>
+                  </Card>
+                ) : viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredAndSortedItems.map((item) => (
+                      <Card key={item.id} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden">
+                        <div className="relative h-80">
+                          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-primary/20 p-6 flex flex-col">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex-1">
+                                <h3 className="font-bold text-lg leading-tight line-clamp-2 mb-2">{item.name}</h3>
+                                {item.set_name && (
+                                  <Badge variant="outline" className="mb-2 border-primary/30">
+                                    {item.set_name}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="ml-3 text-right">
+                                {item.current_market_price && (
+                                  <p className="font-bold text-lg text-success">${item.current_market_price}</p>
+                                )}
+                                <p className="text-xs text-muted-foreground">each</p>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-3 mb-4 flex-1">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Condition:</span>
+                                <Badge variant="secondary" className={`${getConditionColor(item.condition)} text-white text-xs`}>
+                                  {formatCondition(item.condition)}
+                                </Badge>
+                              </div>
+                              
+                              {item.rarity && (
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-muted-foreground">Rarity:</span>
+                                  <span className="font-medium">{item.rarity}</span>
+                                </div>
+                              )}
+                              
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Quantity:</span>
+                                <span className="font-bold text-primary">{item.quantity}x</span>
+                              </div>
+                              
+                              {item.card_number && (
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-muted-foreground">Card #:</span>
+                                  <span className="font-mono text-xs">{item.card_number}</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="flex gap-2 mt-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button size="sm" variant="outline" className="flex-1 bg-background/80 backdrop-blur-sm">
+                                <Eye className="h-3 w-3 mr-1" />
+                                View
+                              </Button>
+                              <Button size="sm" variant="outline" className="flex-1 bg-background/80 backdrop-blur-sm">
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
                   </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground font-medium">Condition</span>
-                      <Badge variant="secondary" className="text-xs font-semibold">
-                        {formatCondition(item.condition)}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground font-medium">Owned</span>
-                      <span className="font-bold text-lg">{item.quantity}</span>
-                    </div>
-                    
-                    {item.current_market_price && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground font-medium">Total Value</span>
-                        <span className="font-bold text-lg text-emerald-600 dark:text-emerald-400">
-                          ${(item.current_market_price * item.quantity).toFixed(2)}
-                        </span>
-                      </div>
-                    )}
+                ) : (
+                  <div className="space-y-4">
+                    {filteredAndSortedItems.map((item) => (
+                      <Card key={item.id} className="hover:shadow-lg transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h3 className="font-semibold">{item.name}</h3>
+                                {item.set_name && (
+                                  <Badge variant="outline" className="text-xs">{item.set_name}</Badge>
+                                )}
+                                <Badge variant="secondary" className={`${getConditionColor(item.condition)} text-white text-xs`}>
+                                  {formatCondition(item.condition)}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                                <span>Qty: {item.quantity}</span>
+                                {item.rarity && <span>Rarity: {item.rarity}</span>}
+                                {item.card_number && <span>#{item.card_number}</span>}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              {item.current_market_price && (
+                                <p className="font-bold text-lg text-success">${item.current_market_price}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground">Market Value</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline">
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="outline">
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
-                  
-                  <div className="flex gap-2 pt-3 border-t">
-                    <Button variant="outline" size="sm" className="flex-1 hover:bg-primary hover:text-primary-foreground">
-                      <Eye className="h-3 w-3 mr-2" />
-                      View Details
-                    </Button>
-                    <Button variant="outline" size="sm" className="hover:bg-secondary">
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredAndSortedItems.map((item) => (
-              <Card key={item.id} className="border-0 shadow-md hover:shadow-lg transition-all duration-200 hover:bg-muted/30">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-6 flex-1">
-                      <div className={`w-4 h-4 rounded-full ${getConditionColor(item.condition)} shadow-sm flex-shrink-0`} />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-lg mb-1 truncate">{item.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {item.set_name} {item.card_number && `• Card #${item.card_number}`}
-                          {item.rarity && ` • ${item.rarity}`}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-8 text-sm">
-                      <div className="text-center min-w-0">
-                        <p className="text-muted-foreground font-medium mb-1">Condition</p>
-                        <Badge variant="secondary" className="text-xs font-semibold">
-                          {formatCondition(item.condition)}
-                        </Badge>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-muted-foreground font-medium mb-1">Quantity</p>
-                        <p className="font-bold text-lg">{item.quantity}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-muted-foreground font-medium mb-1">Value</p>
-                        <p className="font-bold text-lg text-emerald-600 dark:text-emerald-400">
-                          ${item.current_market_price ? (item.current_market_price * item.quantity).toFixed(2) : 'N/A'}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="hover:bg-primary hover:text-primary-foreground">
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button variant="outline" size="sm" className="hover:bg-secondary">
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                )}
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
