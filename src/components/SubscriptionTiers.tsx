@@ -135,7 +135,7 @@ const SubscriptionTiers = () => {
               Yearly
             </span>
             <Badge variant="secondary" className="ml-2">
-              Save up to 20%
+              Yearly savings
             </Badge>
           </div>
         </div>
