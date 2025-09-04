@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Users, Clock, Star, Crown, Settings, UserCheck } from "lucide-react";
+import { MapPin, Calendar, Clock, Crown, Settings, UserCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
@@ -119,41 +119,9 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
             </div>
           </div>
 
-          <div className="flex justify-between items-center text-sm">
-            <div className="flex items-center text-muted-foreground">
-              <Users className="w-4 h-4 mr-2" />
-              <span>{event.attendees}/{event.maxAttendees} attendees</span>
-            </div>
-            <div className="flex items-center text-muted-foreground">
-              <Star className="w-4 h-4 mr-2 text-warning fill-warning" />
-              <span>{event.rating}/5.0</span>
-            </div>
-          </div>
-
           <div className="flex justify-between items-center">
             <div className="text-sm text-muted-foreground">
-              {userType === "vendor" ? (
-                event.tablesAvailable > 0 ? (
-                  <div className="flex items-center gap-2">
-                    <span>
-                      <span className="font-medium text-vendor">{event.tablesAvailable}</span> tables{" "}
-                      <span className="text-vendor underline cursor-pointer">available</span>
-                    </span>
-                    {isVendorPro && (
-                      <Badge variant="secondary" className="text-xs bg-gradient-primary text-primary-foreground">
-                        <Crown className="w-3 h-3 mr-1" />
-                        Pro
-                      </Badge>
-                    )}
-                  </div>
-                ) : (
-                  <span>Tables <span className="text-destructive">not available</span></span>
-                )
-              ) : (
-                <span>
-                  <span className="font-medium text-vendor">{event.tablesAvailable}</span> tables available
-                </span>
-              )}
+              <span className="font-medium text-vendor">{event.totalTables}</span> tables
             </div>
             <div className="text-sm text-muted-foreground">
               by <span className="font-medium text-card-foreground">{event.organizer}</span>
@@ -161,28 +129,29 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1">
-              View Details
-            </Button>
             {userType === "vendor" ? (
-              <Button 
-                variant="vendor" 
-                className="flex-1 relative"
-                onClick={handleBookTable}
-                disabled={bookingLoading || subscriptionLoading || event.tablesAvailable === 0}
-              >
-                {bookingLoading ? 'Processing...' : (
-                  <>
-                    {isVendorPro ? 'Book Table (Free)' : 'Book Table ($5)'}
-                    {isVendorPro && <Crown className="w-4 h-4 ml-1" />}
-                  </>
-                )}
-              </Button>
+              <>
+                <Button variant="outline" className="flex-1">
+                  View Details
+                </Button>
+                <Button 
+                  variant="vendor" 
+                  className="flex-1 relative"
+                  onClick={handleBookTable}
+                  disabled={bookingLoading || subscriptionLoading || event.tablesAvailable === 0}
+                >
+                  {bookingLoading ? 'Processing...' : (
+                    <>
+                      {isVendorPro ? 'Book Table (Free)' : 'Book Table ($5)'}
+                      {isVendorPro && <Crown className="w-4 h-4 ml-1" />}
+                    </>
+                  )}
+                </Button>
+              </>
             ) : userType === "organizer" && isMyEvent ? (
               <>
-                <Button variant="default" className="flex-1 gap-2">
-                  <Settings className="w-4 h-4" />
-                  Manage Vendors
+                <Button variant="outline" className="flex-1">
+                  View Details
                 </Button>
                 <Button variant="outline" className="flex-1 gap-2">
                   <UserCheck className="w-4 h-4" />
@@ -190,9 +159,14 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                 </Button>
               </>
             ) : (
-              <Button variant="default" className="flex-1">
-                Buy Tickets
-              </Button>
+              <>
+                <Button variant="outline" className="flex-1">
+                  View Details
+                </Button>
+                <Button variant="default" className="flex-1">
+                  Buy Tickets
+                </Button>
+              </>
             )}
           </div>
         </div>
