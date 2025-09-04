@@ -13,6 +13,7 @@ import { Search, Filter, MapPin, Calendar, Plus, Edit } from "lucide-react";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Events = () => {
@@ -23,6 +24,9 @@ const Events = () => {
   const [selectedEventType, setSelectedEventType] = useState("all");
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [allEvents, setAllEvents] = useState<any[]>([]);
+  const [myEvents, setMyEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { profile } = useProfile();
 
@@ -80,6 +84,60 @@ const Events = () => {
     { label: "Wyoming", value: "WY" }
   ];
 
+  // Fetch events from database
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setLoading(true);
+      try {
+        // Fetch all events
+        const { data: eventsData, error } = await supabase
+          .from('events')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Transform database events to match expected format
+        const transformedEvents = eventsData?.map(event => ({
+          id: event.id,
+          title: event.title,
+          date: event.date,
+          time: event.time,
+          location: event.venue,
+          city: event.city,
+          state: event.state,
+          organizer: event.organizer_name || 'Unknown Organizer',
+          rating: 4.5, // Default rating since we don't have ratings yet
+          attendees: 0, // Default attendees since we don't have this data yet
+          maxAttendees: event.max_attendees || 100,
+          tablesAvailable: event.tables_available || 0,
+          totalTables: event.total_tables || 0,
+          cardTypes: event.card_types || [],
+          eventType: event.event_type,
+          price: event.entry_fee || 0
+        })) || [];
+
+        setAllEvents(transformedEvents);
+
+        // Filter my events if user is an organizer
+        if (user && profile?.role === 'organizer') {
+          const userEvents = transformedEvents.filter(event => 
+            eventsData?.find(dbEvent => dbEvent.id === event.id)?.organizer_id === user.id
+          );
+          setMyEvents(userEvents);
+        }
+
+      } catch (error) {
+        console.error('Error fetching events:', error);
+        toast.error('Failed to load events');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [user, profile]);
+
   // Handle navigation state from Hero buttons
   useEffect(() => {
     if (location.state?.showCreateEvent) {
@@ -109,102 +167,31 @@ const Events = () => {
     }
   }, [location.state]);
 
-  // Mock data for events
-  const events = [
-    {
-      id: "1",
-      title: "Pokemon Regional Tournament",
-      date: "March 15, 2024",
-      time: "10:00 AM",
-      location: "Convention Center",
-      city: "Los Angeles",
-      state: "CA",
-      organizer: "West Coast Cards",
-      rating: 4.8,
-      attendees: 156,
-      maxAttendees: 200,
-      tablesAvailable: 12,
-      totalTables: 40,
-      cardTypes: ["Pokemon", "TCG"],
-      eventType: "play",
-      price: 25
-    },
-    {
-      id: "2", 
-      title: "Magic: The Gathering Draft Night",
-      date: "March 18, 2024",
-      time: "7:00 PM",
-      location: "Gaming Lounge",
-      city: "San Francisco",
-      state: "CA",
-      organizer: "Bay Area MTG",
-      rating: 4.6,
-      attendees: 32,
-      maxAttendees: 48,
-      tablesAvailable: 4,
-      totalTables: 12,
-      cardTypes: ["MTG", "Draft"],
-      eventType: "play",
-      price: 15
-    },
-    {
-      id: "3",
-      title: "Sports Card Show & Trade",
-      date: "March 20, 2024", 
-      time: "11:00 AM",
-      location: "Sports Arena",
-      city: "San Diego",
-      state: "CA",
-      organizer: "SoCal Sports Cards",
-      rating: 4.9,
-      attendees: 89,
-      maxAttendees: 150,
-      tablesAvailable: 8,
-      totalTables: 25,
-      cardTypes: ["Sports", "Baseball", "Football"],
-      eventType: "collect",
-      price: 20
-    },
-    {
-      id: "4",
-      title: "One Piece Card Game Championship",
-      date: "March 22, 2024",
-      time: "2:00 PM", 
-      location: "Anime Convention Hall",
-      city: "Anaheim",
-      state: "CA",
-      organizer: "Orange County Gaming",
-      rating: 4.7,
-      attendees: 67,
-      maxAttendees: 100,
-      tablesAvailable: 6,
-      totalTables: 20,
-      cardTypes: ["One Piece", "Anime"],
-      eventType: "play",
-      price: 30
-    }
-  ];
-
   const cardTypes = ["all", "Pokemon", "MTG", "Sports", "One Piece", "Yu-Gi-Oh"];
   const eventTypes = ["all", "play", "collect"];
 
   // Filter events based on selected filters
-  const filteredEvents = events.filter((event) => {
-    const matchesSearch = searchQuery === "" || 
-      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.organizer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.city.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCardType = selectedCardType === "all" || 
-      event.cardTypes.some(type => type.toLowerCase().includes(selectedCardType.toLowerCase()));
-    
-    const matchesStates = selectedStates.length === 0 || 
-      selectedStates.includes(event.state);
-    
-    const matchesEventType = selectedEventType === "all" || event.eventType === selectedEventType;
-    
-    return matchesSearch && matchesCardType && matchesStates && matchesEventType;
-  });
+  const getFilteredEvents = (eventsToFilter: any[]) => {
+    return eventsToFilter.filter((event) => {
+      const matchesSearch = searchQuery === "" || 
+        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.organizer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.city.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesCardType = selectedCardType === "all" || 
+        event.cardTypes.some((type: string) => type.toLowerCase().includes(selectedCardType.toLowerCase()));
+      
+      const matchesStates = selectedStates.length === 0 || 
+        selectedStates.includes(event.state);
+      
+      const matchesEventType = selectedEventType === "all" || event.eventType === selectedEventType;
+      
+      return matchesSearch && matchesCardType && matchesStates && matchesEventType;
+    });
+  };
+
+  const filteredAllEvents = getFilteredEvents(allEvents);
+  const filteredMyEvents = getFilteredEvents(myEvents);
 
   return (
     <div className="min-h-screen bg-background">
@@ -319,28 +306,43 @@ const Events = () => {
                 </Button>
               </div>
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {/* Organizer's own events - would come from database */}
-                {filteredEvents.slice(0, 2).map((event) => (
-                  <div key={`my-${event.id}`} className="relative">
-                    <EventCard event={event} userType="organizer" isMyEvent={true} />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="absolute top-2 right-2 gap-1"
-                    >
-                      <Edit className="w-3 h-3" />
-                      Edit
-                    </Button>
+                {loading ? (
+                  <div className="col-span-full text-center py-8">Loading your events...</div>
+                ) : filteredMyEvents.length === 0 ? (
+                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                    No events found. Create your first event!
                   </div>
-                ))}
+                ) : (
+                  filteredMyEvents.map((event) => (
+                    <div key={`my-${event.id}`} className="relative">
+                      <EventCard event={event} userType="organizer" isMyEvent={true} />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute top-2 right-2 gap-1"
+                      >
+                        <Edit className="w-3 h-3" />
+                        Edit
+                      </Button>
+                    </div>
+                  ))
+                )}
               </div>
             </TabsContent>
             
             <TabsContent value="all-events" className="mt-6">
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredEvents.map((event) => (
-                  <EventCard key={event.id} event={event} userType="organizer" isMyEvent={false} />
-                ))}
+                {loading ? (
+                  <div className="col-span-full text-center py-8">Loading events...</div>
+                ) : filteredAllEvents.length === 0 ? (
+                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                    No events found matching your filters.
+                  </div>
+                ) : (
+                  filteredAllEvents.map((event) => (
+                    <EventCard key={event.id} event={event} userType="organizer" isMyEvent={false} />
+                  ))
+                )}
               </div>
             </TabsContent>
           </Tabs>
@@ -352,24 +354,48 @@ const Events = () => {
             </TabsList>
             <TabsContent value="tickets" className="mt-6">
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredEvents.map((event) => (
-                  <EventCard key={event.id} event={event} userType="collector" />
-                ))}
+                {loading ? (
+                  <div className="col-span-full text-center py-8">Loading events...</div>
+                ) : filteredAllEvents.length === 0 ? (
+                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                    No events found matching your filters.
+                  </div>
+                ) : (
+                  filteredAllEvents.map((event) => (
+                    <EventCard key={event.id} event={event} userType="collector" />
+                  ))
+                )}
               </div>
             </TabsContent>
             <TabsContent value="tables" className="mt-6">
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredEvents.map((event) => (
-                  <EventCard key={event.id} event={event} userType="vendor" />
-                ))}
+                {loading ? (
+                  <div className="col-span-full text-center py-8">Loading events...</div>
+                ) : filteredAllEvents.length === 0 ? (
+                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                    No events found matching your filters.
+                  </div>
+                ) : (
+                  filteredAllEvents.map((event) => (
+                    <EventCard key={event.id} event={event} userType="vendor" />
+                  ))
+                )}
               </div>
             </TabsContent>
           </Tabs>
         ) : (
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredEvents.map((event) => (
-              <EventCard key={event.id} event={event} userType={profile?.role || "user"} />
-            ))}
+            {loading ? (
+              <div className="col-span-full text-center py-8">Loading events...</div>
+            ) : filteredAllEvents.length === 0 ? (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                No events found matching your filters.
+              </div>
+            ) : (
+              filteredAllEvents.map((event) => (
+                <EventCard key={event.id} event={event} userType={profile?.role || "user"} />
+              ))
+            )}
           </div>
         )}
 
@@ -385,7 +411,7 @@ const Events = () => {
       <AdvancedSearch 
         isOpen={showAdvancedSearch} 
         onClose={() => setShowAdvancedSearch(false)}
-        events={events}
+        events={allEvents}
       />
 
       {/* Create Event Dialog */}

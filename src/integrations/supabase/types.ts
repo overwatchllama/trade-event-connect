@@ -112,6 +112,81 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          address: string
+          card_types: string[]
+          city: string
+          created_at: string
+          date: string
+          description: string | null
+          entry_fee: number | null
+          event_type: string
+          id: string
+          image_url: string | null
+          max_attendees: number | null
+          organizer_id: string
+          organizer_name: string
+          state: string
+          tables_available: number | null
+          time: string
+          title: string
+          total_tables: number | null
+          updated_at: string
+          vendor_table_price: number | null
+          venue: string
+          zip_code: string
+        }
+        Insert: {
+          address: string
+          card_types?: string[]
+          city: string
+          created_at?: string
+          date: string
+          description?: string | null
+          entry_fee?: number | null
+          event_type: string
+          id?: string
+          image_url?: string | null
+          max_attendees?: number | null
+          organizer_id: string
+          organizer_name: string
+          state: string
+          tables_available?: number | null
+          time: string
+          title: string
+          total_tables?: number | null
+          updated_at?: string
+          vendor_table_price?: number | null
+          venue: string
+          zip_code: string
+        }
+        Update: {
+          address?: string
+          card_types?: string[]
+          city?: string
+          created_at?: string
+          date?: string
+          description?: string | null
+          entry_fee?: number | null
+          event_type?: string
+          id?: string
+          image_url?: string | null
+          max_attendees?: number | null
+          organizer_id?: string
+          organizer_name?: string
+          state?: string
+          tables_available?: number | null
+          time?: string
+          title?: string
+          total_tables?: number | null
+          updated_at?: string
+          vendor_table_price?: number | null
+          venue?: string
+          zip_code?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address_city: string | null

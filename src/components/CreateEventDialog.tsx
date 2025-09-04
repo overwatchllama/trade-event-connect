@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { MultiSelect, Option } from '@/components/ui/multi-select';
 import { Calendar, MapPin, Users, DollarSign, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface CreateEventDialogProps {
@@ -67,9 +68,40 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
 
     setLoading(true);
     try {
-      // Here you would typically save to your database
-      // For now, we'll just simulate the creation
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get user profile for organizer name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      const organizer_name = profile?.full_name || user.email || 'Unknown Organizer';
+
+      // Save event to database
+      const { error } = await supabase
+        .from('events')
+        .insert({
+          title: formData.title,
+          description: formData.description,
+          date: formData.date,
+          time: formData.time,
+          venue: formData.venue,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          zip_code: formData.zipCode,
+          event_type: formData.eventType,
+          card_types: selectedCardTypes,
+          max_attendees: formData.maxAttendees ? parseInt(formData.maxAttendees) : null,
+          entry_fee: formData.entryFee ? parseFloat(formData.entryFee) : null,
+          vendor_table_price: formData.vendorTablePrice ? parseFloat(formData.vendorTablePrice) : null,
+          total_tables: formData.totalTables ? parseInt(formData.totalTables) : null,
+          tables_available: formData.totalTables ? parseInt(formData.totalTables) : null,
+          organizer_id: user.id,
+          organizer_name: organizer_name
+        });
+
+      if (error) throw error;
       
       toast.success('Event created successfully!');
       onOpenChange(false);
@@ -92,7 +124,11 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
         totalTables: ''
       });
       setSelectedCardTypes([]);
+
+      // Refresh the page to show the new event
+      window.location.reload();
     } catch (error) {
+      console.error('Error creating event:', error);
       toast.error('Failed to create event. Please try again.');
     } finally {
       setLoading(false);
