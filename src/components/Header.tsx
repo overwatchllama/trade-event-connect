@@ -44,6 +44,14 @@ const Header = () => {
               Vendors
             </Link>
             <Link 
+              to="/subscription" 
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === '/subscription' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              Plans
+            </Link>
+            <Link 
               to="/my-collection" 
               className={`text-sm font-medium transition-colors hover:text-primary ${
                 location.pathname === '/my-collection' ? 'text-primary' : 'text-muted-foreground'

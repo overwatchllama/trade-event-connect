@@ -10,6 +10,8 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Vendors from "./pages/Vendors";
 import MyCollection from "./pages/MyCollection";
+import Subscription from "./pages/Subscription";
+import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/vendors" element={<Vendors />} />
+          <Route path="/subscription" element={<Subscription />} />
+          <Route path="/subscription-success" element={<SubscriptionSuccess />} />
           <Route path="/my-collection" element={
             <ProtectedRoute>
               <MyCollection />

@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import UserTypeSelector from "@/components/UserTypeSelector";
+import SubscriptionTiers from "@/components/SubscriptionTiers";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +42,7 @@ const Index = () => {
       <Header />
       <Hero />
       <UserTypeSelector />
+      <SubscriptionTiers />
       
       {/* Featured Events Section */}
       <section className="py-20 bg-background">
