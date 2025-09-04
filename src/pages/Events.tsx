@@ -303,37 +303,48 @@ const Events = () => {
         </div>
 
         {/* Role-based content */}
-        {profile?.role === 'organizer' && (
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-foreground">My Events</h2>
-              <Button variant="default" className="gap-2" onClick={() => setShowCreateEvent(true)}>
-                <Plus className="w-4 h-4" />
-                Create Event
-              </Button>
-            </div>
-            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
-              {/* Organizer's own events - would come from database */}
-              {filteredEvents.slice(0, 2).map((event) => (
-                <div key={`my-${event.id}`} className="relative">
-                  <EventCard event={event} userType="organizer" />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="absolute top-2 right-2 gap-1"
-                  >
-                    <Edit className="w-3 h-3" />
-                    Edit
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <h2 className="text-2xl font-bold text-foreground mb-4">All Events</h2>
-          </div>
-        )}
-
-        {/* Events Grid */}
-        {profile?.role === 'vendor' ? (
+        {profile?.role === 'organizer' ? (
+          <Tabs defaultValue="my-events" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="my-events">My Events</TabsTrigger>
+              <TabsTrigger value="all-events">All Events</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="my-events" className="mt-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-foreground">My Events</h2>
+                <Button variant="default" className="gap-2" onClick={() => setShowCreateEvent(true)}>
+                  <Plus className="w-4 h-4" />
+                  Create Event
+                </Button>
+              </div>
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {/* Organizer's own events - would come from database */}
+                {filteredEvents.slice(0, 2).map((event) => (
+                  <div key={`my-${event.id}`} className="relative">
+                    <EventCard event={event} userType="organizer" isMyEvent={true} />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="absolute top-2 right-2 gap-1"
+                    >
+                      <Edit className="w-3 h-3" />
+                      Edit
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="all-events" className="mt-6">
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredEvents.map((event) => (
+                  <EventCard key={event.id} event={event} userType="organizer" isMyEvent={false} />
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+        ) : profile?.role === 'vendor' ? (
           <Tabs defaultValue="tickets" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="tickets">Buy Tickets</TabsTrigger>

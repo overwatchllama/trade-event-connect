@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Users, Clock, Star, Crown } from "lucide-react";
+import { MapPin, Calendar, Users, Clock, Star, Crown, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,9 +28,10 @@ interface EventCardProps {
     price: number;
   };
   userType?: "collector" | "vendor" | "organizer";
+  isMyEvent?: boolean;
 }
 
-const EventCard = ({ event, userType = "collector" }: EventCardProps) => {
+const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCardProps) => {
   const { user } = useAuth();
   const { subscribed, subscription_tier, loading: subscriptionLoading } = useSubscription();
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -176,6 +177,11 @@ const EventCard = ({ event, userType = "collector" }: EventCardProps) => {
                     {isVendorPro && <Crown className="w-4 h-4 ml-1" />}
                   </>
                 )}
+              </Button>
+            ) : userType === "organizer" && isMyEvent ? (
+              <Button variant="default" className="flex-1 gap-2">
+                <Settings className="w-4 h-4" />
+                Manage Vendors
               </Button>
             ) : (
               <Button variant="default" className="flex-1">
