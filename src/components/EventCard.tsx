@@ -130,28 +130,24 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
 
           <div className="flex gap-2 pt-2">
             {userType === "vendor" ? (
-              <>
-                <Button variant="outline" className="flex-1">
-                  View Details
-                </Button>
-                <Button 
-                  variant="vendor" 
-                  className="flex-1 relative"
-                  onClick={handleBookTable}
-                  disabled={bookingLoading || subscriptionLoading || event.tablesAvailable === 0}
-                >
-                  {bookingLoading ? 'Processing...' : (
-                    <>
-                      {isVendorPro ? 'Book Table (Free)' : 'Book Table ($5)'}
-                      {isVendorPro && <Crown className="w-4 h-4 ml-1" />}
-                    </>
-                  )}
-                </Button>
-              </>
+              <Button 
+                variant="vendor" 
+                className="flex-1 relative"
+                onClick={handleBookTable}
+                disabled={bookingLoading || subscriptionLoading || event.tablesAvailable === 0}
+              >
+                {bookingLoading ? 'Processing...' : (
+                  <>
+                    {isVendorPro ? 'Book Table (Free)' : 'Book Table ($5)'}
+                    {isVendorPro && <Crown className="w-4 h-4 ml-1" />}
+                  </>
+                )}
+              </Button>
             ) : userType === "organizer" && isMyEvent ? (
               <>
-                <Button variant="outline" className="flex-1">
-                  View Details
+                <Button variant="outline" className="flex-1 gap-2">
+                  <Settings className="w-4 h-4" />
+                  Manage Vendors
                 </Button>
                 <Button variant="outline" className="flex-1 gap-2">
                   <UserCheck className="w-4 h-4" />
@@ -159,14 +155,9 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                 </Button>
               </>
             ) : (
-              <>
-                <Button variant="outline" className="flex-1">
-                  View Details
-                </Button>
-                <Button variant="default" className="flex-1">
-                  Buy Tickets
-                </Button>
-              </>
+              <Button variant="default" className="flex-1">
+                Buy Tickets
+              </Button>
             )}
           </div>
         </div>
