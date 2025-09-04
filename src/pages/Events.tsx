@@ -90,6 +90,23 @@ const Events = () => {
       // You could implement reverse geocoding here to set the location filter
       toast.success("Found your location! Showing nearby events.");
     }
+
+    // Handle payment return URLs
+    const urlParams = new URLSearchParams(window.location.search);
+    const registration = urlParams.get('registration');
+    const eventId = urlParams.get('event');
+    
+    if (registration === 'success' && eventId) {
+      toast.success('Table registration successful! Payment processed.');
+      // Clean up URL parameters
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    } else if (registration === 'cancelled' && eventId) {
+      toast.error('Table registration cancelled. You can try again anytime.');
+      // Clean up URL parameters
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
   }, [location.state]);
 
   // Mock data for events

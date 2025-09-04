@@ -1,7 +1,12 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Users, Clock, Star } from "lucide-react";
+import { MapPin, Calendar, Users, Clock, Star, Crown } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface EventCardProps {
   event: {
@@ -26,6 +31,44 @@ interface EventCardProps {
 }
 
 const EventCard = ({ event, userType = "collector" }: EventCardProps) => {
+  const { user } = useAuth();
+  const { subscribed, subscription_tier, loading: subscriptionLoading } = useSubscription();
+  const [bookingLoading, setBookingLoading] = useState(false);
+
+  const isVendorPro = subscribed && 
+    (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
+
+  const handleBookTable = async () => {
+    if (!user) {
+      toast.error('Please sign in to book a table');
+      return;
+    }
+
+    setBookingLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('vendor-registration-payment', {
+        body: {
+          eventId: event.id,
+          eventTitle: event.title
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.isPro) {
+        // Pro user - no payment needed
+        toast.success('Table booked successfully! Pro subscription waives the fee.');
+      } else if (data.url) {
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
+      toast.error('Failed to process table booking');
+    } finally {
+      setBookingLoading(false);
+    }
+  };
   return (
     <Card className="overflow-hidden hover:shadow-event transition-all duration-300 group">
       <div className="aspect-video bg-gradient-subtle relative overflow-hidden">
@@ -90,10 +133,18 @@ const EventCard = ({ event, userType = "collector" }: EventCardProps) => {
             <div className="text-sm text-muted-foreground">
               {userType === "vendor" ? (
                 event.tablesAvailable > 0 ? (
-                  <span>
-                    <span className="font-medium text-vendor">{event.tablesAvailable}</span> tables{" "}
-                    <span className="text-vendor underline cursor-pointer">available</span>
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span>
+                      <span className="font-medium text-vendor">{event.tablesAvailable}</span> tables{" "}
+                      <span className="text-vendor underline cursor-pointer">available</span>
+                    </span>
+                    {isVendorPro && (
+                      <Badge variant="secondary" className="text-xs bg-gradient-primary text-primary-foreground">
+                        <Crown className="w-3 h-3 mr-1" />
+                        Pro
+                      </Badge>
+                    )}
+                  </div>
                 ) : (
                   <span>Tables <span className="text-destructive">not available</span></span>
                 )
@@ -113,8 +164,18 @@ const EventCard = ({ event, userType = "collector" }: EventCardProps) => {
               View Details
             </Button>
             {userType === "vendor" ? (
-              <Button variant="vendor" className="flex-1">
-                Book Table
+              <Button 
+                variant="vendor" 
+                className="flex-1 relative"
+                onClick={handleBookTable}
+                disabled={bookingLoading || subscriptionLoading || event.tablesAvailable === 0}
+              >
+                {bookingLoading ? 'Processing...' : (
+                  <>
+                    {isVendorPro ? 'Book Table (Free)' : 'Book Table ($5)'}
+                    {isVendorPro && <Crown className="w-4 h-4 ml-1" />}
+                  </>
+                )}
               </Button>
             ) : (
               <Button variant="default" className="flex-1">
