@@ -105,38 +105,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 text-center">
-            <div className="space-y-2">
-              <div className="text-3xl md:text-4xl font-bold text-foreground">
-                500+
-              </div>
-              <div className="text-muted-foreground">Events Listed</div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-3xl md:text-4xl font-bold text-foreground">
-                2,500+
-              </div>
-              <div className="text-muted-foreground">Active Vendors</div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-3xl md:text-4xl font-bold text-foreground">
-                15,000+
-              </div>
-              <div className="text-muted-foreground">Collectors</div>
-            </div>
-            <div className="space-y-2">
-              <div className="text-3xl md:text-4xl font-bold text-foreground">
-                98%
-              </div>
-              <div className="text-muted-foreground">Satisfaction Rate</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="py-20 bg-gradient-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
@@ -151,7 +119,7 @@ const Index = () => {
             <Button variant="secondary" size="lg" className="text-lg px-8" onClick={() => navigate('/auth')}>
               Sign Up Free
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary" onClick={() => navigate('/events')}>
+            <Button variant="secondary" size="lg" className="text-lg px-8" onClick={() => navigate('/events')}>
               Browse Events
             </Button>
           </div>

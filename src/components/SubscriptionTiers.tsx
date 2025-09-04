@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ export interface SubscriptionTier {
 
 const SubscriptionTiers = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isYearly, setIsYearly] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -73,7 +75,9 @@ const SubscriptionTiers = () => {
 
   const handleSubscribe = async (tier: SubscriptionTier) => {
     if (!user) {
-      toast.error('Please sign in to subscribe');
+      // Redirect to auth page for account creation/login
+      toast.info('Please sign in or create an account to subscribe');
+      navigate('/auth');
       return;
     }
 
@@ -203,12 +207,6 @@ const SubscriptionTiers = () => {
               </Card>
             );
           })}
-        </div>
-
-        <div className="text-center mt-12">
-          <p className="text-sm text-muted-foreground">
-            All plans include a 14-day free trial. Cancel anytime.
-          </p>
         </div>
       </div>
     </section>
