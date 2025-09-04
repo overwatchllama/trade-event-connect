@@ -179,11 +179,6 @@ const SubscriptionTiers = () => {
                         <>or ${tier.yearlyPrice}/year</>
                       )}
                     </div>
-                    {isYearly && (
-                      <div className="text-sm text-success">
-                        Save ${savings.amount}/year ({savings.percentage}% off)
-                      </div>
-                    )}
                   </div>
                 </div>
 
