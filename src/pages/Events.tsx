@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import EventCard from "@/components/EventCard";
+import CreateEventDialog from "@/components/CreateEventDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,15 +12,30 @@ import { Search, Filter, MapPin, Calendar, Plus, Edit } from "lucide-react";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const Events = () => {
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCardType, setSelectedCardType] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
   const [selectedEventType, setSelectedEventType] = useState("all");
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
   const { user } = useAuth();
   const { profile } = useProfile();
+
+  // Handle navigation state from Hero buttons
+  useEffect(() => {
+    if (location.state?.showCreateEvent) {
+      setShowCreateEvent(true);
+    }
+    
+    if (location.state?.latitude && location.state?.longitude) {
+      // You could implement reverse geocoding here to set the location filter
+      toast.success("Found your location! Showing nearby events.");
+    }
+  }, [location.state]);
 
   // Mock data for events
   const events = [
@@ -217,7 +234,7 @@ const Events = () => {
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold text-foreground">My Events</h2>
-              <Button variant="default" className="gap-2">
+              <Button variant="default" className="gap-2" onClick={() => setShowCreateEvent(true)}>
                 <Plus className="w-4 h-4" />
                 Create Event
               </Button>
@@ -285,6 +302,12 @@ const Events = () => {
         isOpen={showAdvancedSearch} 
         onClose={() => setShowAdvancedSearch(false)}
         events={events}
+      />
+
+      {/* Create Event Dialog */}
+      <CreateEventDialog 
+        open={showCreateEvent} 
+        onOpenChange={setShowCreateEvent}
       />
     </div>
   );

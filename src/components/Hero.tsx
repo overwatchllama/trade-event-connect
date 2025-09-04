@@ -1,8 +1,42 @@
 import { Button } from "@/components/ui/button";
 import { Calendar, Users, Store, MapPin, Bell } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import heroImage from "@/assets/hero-marketplace.jpg";
 
 const Hero = () => {
+  const navigate = useNavigate();
+  const [userLocation, setUserLocation] = useState<string>("");
+
+  const handleFindEvents = () => {
+    // Try to get user's location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // Navigate with location parameters
+          navigate('/events', { 
+            state: { 
+              latitude: position.coords.latitude, 
+              longitude: position.coords.longitude 
+            } 
+          });
+        },
+        (error) => {
+          // Fallback: navigate without location
+          console.log("Location access denied:", error);
+          navigate('/events');
+        }
+      );
+    } else {
+      // Browser doesn't support geolocation
+      navigate('/events');
+    }
+  };
+
+  const handleListEvent = () => {
+    // Navigate to events page with creation intent
+    navigate('/events', { state: { showCreateEvent: true } });
+  };
   return (
     <section className="relative min-h-[600px] bg-gradient-subtle overflow-hidden">
       <div className="absolute inset-0 bg-gradient-primary/10"></div>
@@ -22,10 +56,20 @@ const Hero = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button variant="hero" size="lg" className="text-lg px-8">
+              <Button 
+                variant="hero" 
+                size="lg" 
+                className="text-lg px-8"
+                onClick={handleFindEvents}
+              >
                 Find Events Near You
               </Button>
-              <Button variant="outline" size="lg" className="text-lg px-8">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="text-lg px-8"
+                onClick={handleListEvent}
+              >
                 List Your Event
               </Button>
             </div>
