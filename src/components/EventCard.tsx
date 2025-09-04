@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Users, Clock, Star, Crown, Settings } from "lucide-react";
+import { MapPin, Calendar, Users, Clock, Star, Crown, Settings, UserCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
@@ -179,10 +179,16 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                 )}
               </Button>
             ) : userType === "organizer" && isMyEvent ? (
-              <Button variant="default" className="flex-1 gap-2">
-                <Settings className="w-4 h-4" />
-                Manage Vendors
-              </Button>
+              <>
+                <Button variant="default" className="flex-1 gap-2">
+                  <Settings className="w-4 h-4" />
+                  Manage Vendors
+                </Button>
+                <Button variant="outline" className="flex-1 gap-2">
+                  <UserCheck className="w-4 h-4" />
+                  Manage Attendees
+                </Button>
+              </>
             ) : (
               <Button variant="default" className="flex-1">
                 Buy Tickets
