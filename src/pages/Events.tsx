@@ -102,7 +102,7 @@ const Events = () => {
           id: event.id,
           title: event.title,
           date: event.date,
-          time: event.time,
+          time: event.is_multi_day ? 'Multi-day event' : 'Single day',
           location: event.venue,
           city: event.city,
           state: event.state,
@@ -114,7 +114,9 @@ const Events = () => {
           totalTables: event.total_tables || 0,
           cardTypes: event.card_types || [],
           eventType: event.event_type,
-          price: event.entry_fee || 0
+          price: event.entry_fee || 0,
+          flyerUrl: event.flyer_url,
+          isMultiDay: event.is_multi_day
         })) || [];
 
         setAllEvents(transformedEvents);
