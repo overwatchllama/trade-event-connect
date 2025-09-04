@@ -112,6 +112,91 @@ export type Database = {
         }
         Relationships: []
       }
+      event_announcements: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          message: string
+          organizer_id: string
+          sent_at: string
+          target_audience: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          message: string
+          organizer_id: string
+          sent_at?: string
+          target_audience: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          message?: string
+          organizer_id?: string
+          sent_at?: string
+          target_audience?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_event_announcements_event_id"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_days: {
+        Row: {
+          created_at: string
+          day_date: string
+          day_number: number
+          end_time: string
+          event_id: string
+          id: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_date: string
+          day_number: number
+          end_time: string
+          event_id: string
+          id?: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_date?: string
+          day_number?: number
+          end_time?: string
+          event_id?: string
+          id?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_event_days_event_id"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           address: string
@@ -122,14 +207,15 @@ export type Database = {
           description: string | null
           entry_fee: number | null
           event_type: string
+          flyer_url: string | null
           id: string
           image_url: string | null
+          is_multi_day: boolean
           max_attendees: number | null
           organizer_id: string
           organizer_name: string
           state: string
           tables_available: number | null
-          time: string
           title: string
           total_tables: number | null
           updated_at: string
@@ -146,14 +232,15 @@ export type Database = {
           description?: string | null
           entry_fee?: number | null
           event_type: string
+          flyer_url?: string | null
           id?: string
           image_url?: string | null
+          is_multi_day?: boolean
           max_attendees?: number | null
           organizer_id: string
           organizer_name: string
           state: string
           tables_available?: number | null
-          time: string
           title: string
           total_tables?: number | null
           updated_at?: string
@@ -170,14 +257,15 @@ export type Database = {
           description?: string | null
           entry_fee?: number | null
           event_type?: string
+          flyer_url?: string | null
           id?: string
           image_url?: string | null
+          is_multi_day?: boolean
           max_attendees?: number | null
           organizer_id?: string
           organizer_name?: string
           state?: string
           tables_available?: number | null
-          time?: string
           title?: string
           total_tables?: number | null
           updated_at?: string
