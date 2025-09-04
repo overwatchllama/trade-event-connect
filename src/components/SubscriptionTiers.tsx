@@ -33,13 +33,11 @@ const SubscriptionTiers = () => {
       monthlyPrice: 30,
       yearlyPrice: 330,
       features: [
-        'Unlimited event listings',
         'Advanced event analytics',
         'Priority support',
         'Custom branding options',
         'Vendor management tools'
-      ],
-      popular: true
+      ]
     },
     {
       id: 'vendor_pro',
@@ -52,7 +50,7 @@ const SubscriptionTiers = () => {
         'Enhanced vendor profile',
         'Inventory management',
         'Sales analytics',
-        'Priority table booking',
+        'Pre-verified booking profile',
         'Customer relationship tools'
       ]
     },
@@ -173,6 +171,13 @@ const SubscriptionTiers = () => {
                       <span className="text-lg font-normal text-muted-foreground">
                         /{isYearly ? 'year' : 'month'}
                       </span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {isYearly ? (
+                        <>or ${tier.monthlyPrice}/month</>
+                      ) : (
+                        <>or ${tier.yearlyPrice}/year</>
+                      )}
                     </div>
                     {isYearly && (
                       <div className="text-sm text-success">
