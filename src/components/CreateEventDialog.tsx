@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MultiSelect, Option } from '@/components/ui/multi-select';
 import { Calendar, MapPin, Users, DollarSign, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -17,6 +18,25 @@ interface CreateEventDialogProps {
 const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [selectedCardTypes, setSelectedCardTypes] = useState<string[]>([]);
+
+  const cardTypeOptions: Option[] = [
+    { label: 'Pokemon', value: 'pokemon' },
+    { label: 'Magic: The Gathering', value: 'mtg' },
+    { label: 'Yu-Gi-Oh!', value: 'yugioh' },
+    { label: 'Dragon Ball Super', value: 'dragonball' },
+    { label: 'One Piece', value: 'onepiece' },
+    { label: 'Digimon', value: 'digimon' },
+    { label: 'Sports Cards', value: 'sports' },
+    { label: 'Marvel', value: 'marvel' },
+    { label: 'DC Comics', value: 'dc' },
+    { label: 'Final Fantasy', value: 'finalfantasy' },
+    { label: 'Weiss Schwarz', value: 'weiss' },
+    { label: 'Flesh and Blood', value: 'fab' },
+    { label: 'Lorcana', value: 'lorcana' },
+    { label: 'Star Wars', value: 'starwars' }
+  ];
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -28,7 +48,6 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
     state: '',
     zipCode: '',
     eventType: '',
-    cardTypes: '',
     maxAttendees: '',
     entryFee: '',
     vendorTablePrice: '',
@@ -67,12 +86,12 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
         state: '',
         zipCode: '',
         eventType: '',
-        cardTypes: '',
         maxAttendees: '',
         entryFee: '',
         vendorTablePrice: '',
         totalTables: ''
       });
+      setSelectedCardTypes([]);
     } catch (error) {
       toast.error('Failed to create event. Please try again.');
     } finally {
@@ -230,11 +249,11 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
 
               <div className="space-y-2">
                 <Label htmlFor="cardTypes">Card Types</Label>
-                <Input
-                  id="cardTypes"
-                  placeholder="e.g., Pokemon, MTG, Sports"
-                  value={formData.cardTypes}
-                  onChange={(e) => handleInputChange('cardTypes', e.target.value)}
+                <MultiSelect
+                  options={cardTypeOptions}
+                  selected={selectedCardTypes}
+                  onChange={setSelectedCardTypes}
+                  placeholder="Select card types..."
                 />
               </div>
             </div>
