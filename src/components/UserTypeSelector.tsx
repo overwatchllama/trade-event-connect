@@ -1,8 +1,58 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar, Store, Users, CheckCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
+import { toast } from "sonner";
 
 const UserTypeSelector = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { profile } = useProfile();
+
+  const handleUserTypeClick = (userTypeVariant: string) => {
+    if (!user) {
+      // Not signed in - redirect to auth page
+      toast.info('Please sign in to get started');
+      navigate('/auth');
+      return;
+    }
+
+    // User is signed in - determine where to redirect based on user type
+    switch (userTypeVariant) {
+      case 'organizer':
+        if (profile?.role === 'organizer') {
+          // Already an organizer - go to events page to create event
+          navigate('/events', { state: { showCreateEvent: true } });
+        } else {
+          // Need to request organizer role - go to profile to request role
+          navigate('/profile');
+          toast.info('Request organizer role in your profile to start hosting events');
+        }
+        break;
+      
+      case 'vendor':
+        if (profile?.role === 'vendor') {
+          // Already a vendor - go to events page to book tables
+          navigate('/events');
+        } else {
+          // Need to request vendor role - go to profile
+          navigate('/profile');
+          toast.info('Request vendor role in your profile to start selling');
+        }
+        break;
+      
+      case 'default': // Collector
+        // All users can collect - go to events to find events
+        navigate('/events');
+        toast.success('Welcome! Discover events near you');
+        break;
+      
+      default:
+        navigate('/events');
+    }
+  };
   const userTypes = [
     {
       type: "Event Organizer",
@@ -91,6 +141,7 @@ const UserTypeSelector = () => {
                   variant={userType.variant} 
                   size="lg" 
                   className="w-full"
+                  onClick={() => handleUserTypeClick(userType.variant)}
                 >
                   {userType.cta}
                 </Button>
