@@ -256,6 +256,65 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_applications: {
+        Row: {
+          application_date: string
+          application_status: Database["public"]["Enums"]["vendor_application_status"]
+          approved_date: string | null
+          created_at: string
+          event_id: string
+          id: string
+          notes: string | null
+          payment_date: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          stripe_payment_intent_id: string | null
+          table_number: number | null
+          updated_at: string
+          user_id: string
+          vendor_id: string
+        }
+        Insert: {
+          application_date?: string
+          application_status?: Database["public"]["Enums"]["vendor_application_status"]
+          approved_date?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          stripe_payment_intent_id?: string | null
+          table_number?: number | null
+          updated_at?: string
+          user_id: string
+          vendor_id: string
+        }
+        Update: {
+          application_date?: string
+          application_status?: Database["public"]["Enums"]["vendor_application_status"]
+          approved_date?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          stripe_payment_intent_id?: string | null
+          table_number?: number | null
+          updated_at?: string
+          user_id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_vendor_applications_vendor_id"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendors: {
         Row: {
           business_address: string | null
@@ -333,7 +392,9 @@ export type Database = {
         | "moderate_play"
         | "heavy_play"
         | "damaged"
+      payment_status: "unpaid" | "paid" | "refunded"
       user_role: "user" | "vendor" | "organizer" | "venue" | "admin"
+      vendor_application_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -481,7 +542,9 @@ export const Constants = {
         "heavy_play",
         "damaged",
       ],
+      payment_status: ["unpaid", "paid", "refunded"],
       user_role: ["user", "vendor", "organizer", "venue", "admin"],
+      vendor_application_status: ["pending", "approved", "rejected"],
     },
   },
 } as const

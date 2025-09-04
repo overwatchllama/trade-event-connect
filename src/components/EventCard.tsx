@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ManageVendorsDialog from "./ManageVendorsDialog";
 
 interface EventCardProps {
   event: {
@@ -35,6 +36,7 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
   const { user } = useAuth();
   const { subscribed, subscription_tier, loading: subscriptionLoading } = useSubscription();
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [manageVendorsOpen, setManageVendorsOpen] = useState(false);
 
   const isVendorPro = subscribed && 
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
@@ -71,98 +73,111 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
     }
   };
   return (
-    <Card className="overflow-hidden hover:shadow-event transition-all duration-300 group">
-      <div className="aspect-video bg-gradient-subtle relative overflow-hidden">
-        {event.image ? (
-          <img 
-            src={event.image} 
-            alt={event.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-primary flex items-center justify-center">
-            <Calendar className="w-12 h-12 text-primary-foreground opacity-50" />
-          </div>
-        )}
-        <div className="absolute top-4 right-4">
-          <Badge variant="secondary" className="bg-background/90 text-foreground">
-            ${event.price}
-          </Badge>
-        </div>
-        <div className="absolute top-4 left-4 flex gap-2">
-          {event.cardTypes.slice(0, 2).map((type, index) => (
-            <Badge key={index} variant="outline" className="bg-background/90 text-foreground">
-              {type}
-            </Badge>
-          ))}
-          {event.cardTypes.length > 2 && (
-            <Badge variant="outline" className="bg-background/90 text-foreground">
-              +{event.cardTypes.length - 2}
-            </Badge>
+    <>
+      <Card className="overflow-hidden hover:shadow-event transition-all duration-300 group">
+        <div className="aspect-video bg-gradient-subtle relative overflow-hidden">
+          {event.image ? (
+            <img 
+              src={event.image} 
+              alt={event.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-primary flex items-center justify-center">
+              <Calendar className="w-12 h-12 text-primary-foreground opacity-50" />
+            </div>
           )}
-        </div>
-      </div>
-
-      <div className="p-6">
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-xl font-bold text-card-foreground mb-2 group-hover:text-primary transition-colors">
-              {event.title}
-            </h3>
-            <div className="flex items-center text-sm text-muted-foreground mb-2">
-              <MapPin className="w-4 h-4 mr-2" />
-              <span>{event.location}, {event.city}, {event.state}</span>
-            </div>
-            <div className="flex items-center text-sm text-muted-foreground">
-              <Clock className="w-4 h-4 mr-2" />
-              <span>{event.date} at {event.time}</span>
-            </div>
+          <div className="absolute top-4 right-4">
+            <Badge variant="secondary" className="bg-background/90 text-foreground">
+              ${event.price}
+            </Badge>
           </div>
-
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-muted-foreground">
-              <span className="font-medium text-vendor">{event.totalTables}</span> tables
-            </div>
-            <div className="text-sm text-muted-foreground">
-              by <span className="font-medium text-card-foreground">{event.organizer}</span>
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            {userType === "vendor" ? (
-              <Button 
-                variant="vendor" 
-                className="flex-1 relative"
-                onClick={handleBookTable}
-                disabled={bookingLoading || subscriptionLoading || event.tablesAvailable === 0}
-              >
-                {bookingLoading ? 'Processing...' : (
-                  <>
-                    {isVendorPro ? 'Book Table (Free)' : 'Book Table ($5)'}
-                    {isVendorPro && <Crown className="w-4 h-4 ml-1" />}
-                  </>
-                )}
-              </Button>
-            ) : userType === "organizer" && isMyEvent ? (
-              <>
-                <Button variant="outline" className="flex-1 gap-2">
-                  <Settings className="w-4 h-4" />
-                  Manage Vendors
-                </Button>
-                <Button variant="outline" className="flex-1 gap-2">
-                  <UserCheck className="w-4 h-4" />
-                  Manage Attendees
-                </Button>
-              </>
-            ) : (
-              <Button variant="default" className="flex-1">
-                Buy Tickets
-              </Button>
+          <div className="absolute top-4 left-4 flex gap-2">
+            {event.cardTypes.slice(0, 2).map((type, index) => (
+              <Badge key={index} variant="outline" className="bg-background/90 text-foreground">
+                {type}
+              </Badge>
+            ))}
+            {event.cardTypes.length > 2 && (
+              <Badge variant="outline" className="bg-background/90 text-foreground">
+                +{event.cardTypes.length - 2}
+              </Badge>
             )}
           </div>
         </div>
-      </div>
-    </Card>
+
+        <div className="p-6">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-xl font-bold text-card-foreground mb-2 group-hover:text-primary transition-colors">
+                {event.title}
+              </h3>
+              <div className="flex items-center text-sm text-muted-foreground mb-2">
+                <MapPin className="w-4 h-4 mr-2" />
+                <span>{event.location}, {event.city}, {event.state}</span>
+              </div>
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Clock className="w-4 h-4 mr-2" />
+                <span>{event.date} at {event.time}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-muted-foreground">
+                <span className="font-medium text-vendor">{event.totalTables}</span> tables
+              </div>
+              <div className="text-sm text-muted-foreground">
+                by <span className="font-medium text-card-foreground">{event.organizer}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              {userType === "vendor" ? (
+                <Button 
+                  variant="vendor" 
+                  className="flex-1 relative"
+                  onClick={handleBookTable}
+                  disabled={bookingLoading || subscriptionLoading || event.tablesAvailable === 0}
+                >
+                  {bookingLoading ? 'Processing...' : (
+                    <>
+                      {isVendorPro ? 'Book Table (Free)' : 'Book Table ($5)'}
+                      {isVendorPro && <Crown className="w-4 h-4 ml-1" />}
+                    </>
+                  )}
+                </Button>
+              ) : userType === "organizer" && isMyEvent ? (
+                <>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 gap-2"
+                    onClick={() => setManageVendorsOpen(true)}
+                  >
+                    <Settings className="w-4 h-4" />
+                    Manage Vendors
+                  </Button>
+                  <Button variant="outline" className="flex-1 gap-2">
+                    <UserCheck className="w-4 h-4" />
+                    Manage Attendees
+                  </Button>
+                </>
+              ) : (
+                <Button variant="default" className="flex-1">
+                  Buy Tickets
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </Card>
+      
+      <ManageVendorsDialog
+        open={manageVendorsOpen}
+        onOpenChange={setManageVendorsOpen}
+        eventId={event.id}
+        eventTitle={event.title}
+      />
+    </>
   );
 };
 
