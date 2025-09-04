@@ -73,6 +73,28 @@ export const useAuth = () => {
     return { error };
   };
 
+  const signInWithFacebook = async () => {
+    const redirectUrl = `${window.location.origin}/`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options: {
+        redirectTo: redirectUrl,
+      }
+    });
+    return { error };
+  };
+
+  const signInWithDiscord = async () => {
+    const redirectUrl = `${window.location.origin}/`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'discord',
+      options: {
+        redirectTo: redirectUrl,
+      }
+    });
+    return { error };
+  };
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     return { error };
@@ -100,6 +122,8 @@ export const useAuth = () => {
     signIn,
     signInWithGoogle,
     signInWithApple,
+    signInWithFacebook,
+    signInWithDiscord,
     signOut,
     requestRole,
   };

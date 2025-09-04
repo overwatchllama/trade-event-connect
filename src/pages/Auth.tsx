@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 import { RoleSelector } from '@/components/RoleSelector';
 import { toast } from '@/components/ui/use-toast';
-import { LogIn, UserPlus, Mail, Apple } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Apple, Facebook, MessageCircle } from 'lucide-react';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -32,7 +32,7 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { user, signUp, signIn, signInWithGoogle, signInWithApple, requestRole } = useAuth();
+  const { user, signUp, signIn, signInWithGoogle, signInWithApple, signInWithFacebook, signInWithDiscord, requestRole } = useAuth();
   const navigate = useNavigate();
 
   const signInForm = useForm<SignInForm>({
@@ -121,6 +121,34 @@ const Auth = () => {
     setLoading(false);
   };
 
+  const handleFacebookSignIn = async () => {
+    setLoading(true);
+    const { error } = await signInWithFacebook();
+    
+    if (error) {
+      toast({
+        title: 'Facebook Sign In Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+    setLoading(false);
+  };
+
+  const handleDiscordSignIn = async () => {
+    setLoading(true);
+    const { error } = await signInWithDiscord();
+    
+    if (error) {
+      toast({
+        title: 'Discord Sign In Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+    setLoading(false);
+  };
+
   const handleRoleSelect = async (role: 'vendor' | 'organizer' | 'venue', reason: string) => {
     const { error } = await requestRole(role, reason);
     
@@ -190,6 +218,24 @@ const Auth = () => {
             >
               <Apple className="h-4 w-4 mr-2" />
               Apple
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleFacebookSignIn}
+              disabled={loading}
+              className="w-full"
+            >
+              <Facebook className="h-4 w-4 mr-2" />
+              Facebook
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleDiscordSignIn}
+              disabled={loading}
+              className="w-full"
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Discord
             </Button>
           </div>
 
