@@ -22,7 +22,7 @@ interface RoleRequest {
     full_name: string;
     email: string;
     avatar_url: string;
-  };
+  } | null;
 }
 
 export const RoleRequests = () => {
@@ -41,12 +41,21 @@ export const RoleRequests = () => {
         .from('role_requests')
         .select(`
           *,
-          profiles!user_id(full_name, email, avatar_url)
+          profiles(full_name, email, avatar_url)
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRequests(data || []);
+      
+      // Transform data to handle potential null profiles
+      const transformedData = (data || []).map(request => ({
+        ...request,
+        profiles: request.profiles && typeof request.profiles === 'object' && !('error' in (request.profiles as any)) 
+          ? request.profiles 
+          : null
+      }));
+      
+      setRequests(transformedData as RoleRequest[]);
     } catch (error) {
       console.error('Error fetching role requests:', error);
       toast({
