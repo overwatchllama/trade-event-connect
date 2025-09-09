@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_actions: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_actions_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_actions_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collection_items: {
         Row: {
           acquired_date: string | null
@@ -284,6 +326,9 @@ export type Database = {
           address_zip_code: string | null
           avatar_url: string | null
           birthday: string | null
+          block_reason: string | null
+          blocked_at: string | null
+          blocked_by: string | null
           communications_enabled: boolean | null
           created_at: string
           email: string
@@ -297,6 +342,7 @@ export type Database = {
           social_instagram: string | null
           social_linkedin: string | null
           social_twitter: string | null
+          status: string | null
           updated_at: string
         }
         Insert: {
@@ -307,6 +353,9 @@ export type Database = {
           address_zip_code?: string | null
           avatar_url?: string | null
           birthday?: string | null
+          block_reason?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
           communications_enabled?: boolean | null
           created_at?: string
           email: string
@@ -320,6 +369,7 @@ export type Database = {
           social_instagram?: string | null
           social_linkedin?: string | null
           social_twitter?: string | null
+          status?: string | null
           updated_at?: string
         }
         Update: {
@@ -330,6 +380,9 @@ export type Database = {
           address_zip_code?: string | null
           avatar_url?: string | null
           birthday?: string | null
+          block_reason?: string | null
+          blocked_at?: string | null
+          blocked_by?: string | null
           communications_enabled?: boolean | null
           created_at?: string
           email?: string
@@ -343,6 +396,7 @@ export type Database = {
           social_instagram?: string | null
           social_linkedin?: string | null
           social_twitter?: string | null
+          status?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -534,7 +588,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { user_id?: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      is_admin: {
+        Args: { user_id?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       approval_status: "pending" | "approved" | "rejected"
