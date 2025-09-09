@@ -85,30 +85,6 @@ const Vendors = () => {
           </div>
         </div>
 
-        {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-6 text-center">
-              <Store className="h-8 w-8 text-vendor mx-auto mb-2" />
-              <div className="text-2xl font-bold text-foreground">{vendors.length}</div>
-              <div className="text-sm text-muted-foreground">Active Vendors</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6 text-center">
-              <Users className="h-8 w-8 text-primary mx-auto mb-2" />
-              <div className="text-2xl font-bold text-foreground">15K+</div>
-              <div className="text-sm text-muted-foreground">Happy Customers</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6 text-center">
-              <Star className="h-8 w-8 text-warning mx-auto mb-2" />
-              <div className="text-2xl font-bold text-foreground">4.8</div>
-              <div className="text-sm text-muted-foreground">Average Rating</div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Vendors Grid */}
         {loading ? (
