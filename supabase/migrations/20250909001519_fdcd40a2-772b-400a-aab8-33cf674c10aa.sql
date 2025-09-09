@@ -1,0 +1,1 @@
+UPDATE profiles SET role = 'vendor' WHERE email = 'christopher.mllr@gmail.com';
