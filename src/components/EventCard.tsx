@@ -8,6 +8,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ManageVendorsDialog from "./ManageVendorsDialog";
+import EventVendors from "./EventVendors";
 
 interface EventCardProps {
   event: {
@@ -130,6 +131,9 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                 by <span className="font-medium text-card-foreground">{event.organizer}</span>
               </div>
             </div>
+
+            {/* Event Vendors */}
+            <EventVendors eventId={event.id} maxDisplay={2} />
 
             <div className="flex gap-2 pt-2">
               {userType === "vendor" ? (
