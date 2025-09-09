@@ -78,7 +78,7 @@ const Hero = () => {
               <div className="text-center">
                 <Calendar className="w-8 h-8 text-accent mx-auto mb-2" />
                 <h3 className="font-semibold text-foreground mb-1">Event Organizers</h3>
-                <p className="text-sm text-muted-foreground">List events for $20</p>
+                <p className="text-sm text-muted-foreground">List events easily</p>
               </div>
               <div className="text-center">
                 <Store className="w-8 h-8 text-vendor mx-auto mb-2" />
@@ -104,7 +104,7 @@ const Hero = () => {
                 <MapPin className="w-5 h-5 text-primary" />
                 <div>
                   <p className="font-semibold text-sm text-card-foreground">Local Events</p>
-                  <p className="text-xs text-muted-foreground">23 events this week</p>
+                  <p className="text-xs text-muted-foreground">Find events near you</p>
                 </div>
               </div>
             </div>

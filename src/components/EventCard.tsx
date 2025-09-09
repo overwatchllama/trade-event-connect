@@ -133,19 +133,28 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
 
             <div className="flex gap-2 pt-2">
               {userType === "vendor" ? (
-                <Button 
-                  variant="vendor" 
-                  className="flex-1 relative"
-                  onClick={handleBookTable}
-                  disabled={bookingLoading || subscriptionLoading || event.tablesAvailable === 0}
-                >
-                  {bookingLoading ? 'Processing...' : (
-                    <>
-                      {isVendorPro ? 'Book Table (Free)' : 'Book Table ($5)'}
-                      {isVendorPro && <Crown className="w-4 h-4 ml-1" />}
-                    </>
-                  )}
-                </Button>
+                <>
+                  <Button 
+                    variant="vendor" 
+                    className="flex-1 relative"
+                    onClick={handleBookTable}
+                    disabled={bookingLoading || subscriptionLoading || event.tablesAvailable === 0}
+                  >
+                    {bookingLoading ? 'Processing...' : (
+                      <>
+                        {isVendorPro ? 'Book Table (Free)' : 'Book Table ($5)'}
+                        {isVendorPro && <Crown className="w-4 h-4 ml-1" />}
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => toast.info('Claim event feature coming soon!')}
+                  >
+                    Claim Event
+                  </Button>
+                </>)
               ) : userType === "organizer" && isMyEvent ? (
                 <>
                   <Button 
