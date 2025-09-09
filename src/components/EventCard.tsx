@@ -154,7 +154,7 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                   >
                     Claim Event
                   </Button>
-                </>)
+                </>
               ) : userType === "organizer" && isMyEvent ? (
                 <>
                   <Button 
