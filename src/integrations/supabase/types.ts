@@ -534,6 +534,8 @@ export type Database = {
       }
       vendors: {
         Row: {
+          avatar_url: string | null
+          banner_url: string | null
           business_address: string | null
           business_description: string | null
           business_email: string | null
@@ -542,6 +544,10 @@ export type Database = {
           created_at: string | null
           id: string
           rating: number | null
+          social_facebook: string | null
+          social_instagram: string | null
+          social_linkedin: string | null
+          social_twitter: string | null
           specialties: string[] | null
           total_reviews: number | null
           updated_at: string | null
@@ -550,6 +556,8 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          avatar_url?: string | null
+          banner_url?: string | null
           business_address?: string | null
           business_description?: string | null
           business_email?: string | null
@@ -558,6 +566,10 @@ export type Database = {
           created_at?: string | null
           id?: string
           rating?: number | null
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin?: string | null
+          social_twitter?: string | null
           specialties?: string[] | null
           total_reviews?: number | null
           updated_at?: string | null
@@ -566,6 +578,8 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          avatar_url?: string | null
+          banner_url?: string | null
           business_address?: string | null
           business_description?: string | null
           business_email?: string | null
@@ -574,6 +588,10 @@ export type Database = {
           created_at?: string | null
           id?: string
           rating?: number | null
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin?: string | null
+          social_twitter?: string | null
           specialties?: string[] | null
           total_reviews?: number | null
           updated_at?: string | null

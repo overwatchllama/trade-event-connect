@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { Search, Store, Mail, MapPin, Star, Users } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 interface VendorProfile {
   id: string;
@@ -39,11 +40,7 @@ const Vendors = () => {
       if (error) throw error;
       setVendors(data || []);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load vendors. Please try again.',
-        variant: 'destructive',
-      });
+      toast.error('Failed to load vendors. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -160,8 +157,8 @@ const Vendors = () => {
                   
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-sm text-muted-foreground">
-                      <Star className="h-4 w-4 text-warning fill-warning mr-1" />
-                      4.8 (127 reviews)
+                      <Star className="w-4 h-4 text-muted-foreground mr-1" />
+                      Not yet reviewed
                     </div>
                     <div className="text-sm text-muted-foreground">
                       Member since {new Date(vendor.created_at).getFullYear()}
@@ -169,10 +166,16 @@ const Vendors = () => {
                   </div>
                   
                   <div className="flex gap-2">
-                    <Button className="flex-1" size="sm">
-                      View Profile
+                    <Button className="flex-1" size="sm" asChild>
+                      <Link to={`/vendor/${vendor.id}`}>
+                        View Profile
+                      </Link>
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => toast.info('Contact feature coming soon!')}
+                    >
                       Contact
                     </Button>
                   </div>
