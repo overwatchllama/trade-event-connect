@@ -11,17 +11,24 @@ import { X, Plus } from 'lucide-react';
 
 interface VendorProfile {
   id: string;
+  user_id: string;
   business_name: string;
   business_description: string | null;
   business_address: string | null;
   business_phone: string | null;
   business_email: string | null;
   website_url: string | null;
+  avatar_url: string | null;
+  banner_url: string | null;
   social_instagram: string | null;
   social_twitter: string | null;
   social_facebook: string | null;
   social_linkedin: string | null;
   specialties: string[] | null;
+  rating: number | null;
+  total_reviews: number | null;
+  verified: boolean | null;
+  created_at: string;
 }
 
 interface EditVendorProfileProps {

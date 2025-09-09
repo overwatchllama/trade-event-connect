@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Header from '@/components/Header';
+import EditVendorProfile from '@/components/EditVendorProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { 
@@ -418,6 +419,16 @@ const VendorProfile = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Profile Dialog */}
+      <EditVendorProfile
+        vendor={vendor}
+        open={editMode}
+        onOpenChange={setEditMode}
+        onUpdate={(updatedVendor) => {
+          setVendor(updatedVendor);
+        }}
+      />
     </div>
   );
 };
