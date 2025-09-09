@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useVendorProfile } from '@/hooks/useVendorProfile';
 import { Search, Store, Mail, MapPin, Star, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -41,6 +43,8 @@ interface VendorProfile {
 }
 
 const Vendors = () => {
+  const { user } = useAuth();
+  const { hasVendorRole } = useVendorProfile();
   const [vendors, setVendors] = useState<VendorProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -118,12 +122,23 @@ const Vendors = () => {
       <main className="container mx-auto px-4 py-8">
         {/* Header Section */}
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Trading Card Vendors
-          </h1>
-          <p className="text-lg text-muted-foreground mb-6">
-            Connect with verified vendors offering trading cards, collectibles, and more.
-          </p>
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Trading Card Vendors
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                Connect with verified vendors offering trading cards, collectibles, and more.
+              </p>
+            </div>
+            
+            {/* Apply to Become Vendor Button - Only show if not already a vendor */}
+            {user && !hasVendorRole && (
+              <Button variant="hero" size="lg">
+                Apply to Become a Vendor
+              </Button>
+            )}
+          </div>
 
           {/* Search Bar */}
           <div className="relative max-w-md">
@@ -239,8 +254,8 @@ const Vendors = () => {
           </div>
         )}
 
-        {/* Call to Action */}
-        {!loading && vendors.length > 0 && (
+        {/* Call to Action - Only show if not already a vendor */}
+        {!loading && vendors.length > 0 && user && !hasVendorRole && (
           <div className="text-center mt-12 p-8 bg-muted/30 rounded-lg">
             <h3 className="text-xl font-semibold text-foreground mb-2">
               Want to become a vendor?
