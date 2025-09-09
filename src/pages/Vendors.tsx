@@ -13,11 +13,31 @@ import { toast } from 'sonner';
 
 interface VendorProfile {
   id: string;
-  email: string;
-  full_name: string | null;
+  user_id: string;
+  business_name: string;
+  business_description: string | null;
+  business_address: string | null;
+  business_phone: string | null;
+  business_email: string | null;
+  website_url: string | null;
   avatar_url: string | null;
-  role: string;
+  banner_url: string | null;
+  social_instagram: string | null;
+  social_twitter: string | null;
+  social_facebook: string | null;
+  social_linkedin: string | null;
+  specialties: string[] | null;
+  rating: number | null;
+  total_reviews: number | null;
+  verified: boolean | null;
   created_at: string;
+  profiles: {
+    id: string;
+    full_name: string | null;
+    email: string;
+    avatar_url: string | null;
+    role: string;
+  };
 }
 
 const Vendors = () => {
@@ -32,13 +52,47 @@ const Vendors = () => {
   const fetchVendors = async () => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'vendor')
+        .from('vendors')
+        .select(`
+          id,
+          user_id,
+          business_name,
+          business_description,
+          business_address,
+          business_phone,
+          business_email,
+          website_url,
+          avatar_url,
+          banner_url,
+          social_instagram,
+          social_twitter,
+          social_facebook,
+          social_linkedin,
+          specialties,
+          rating,
+          total_reviews,
+          verified,
+          created_at,
+          profiles!inner(
+            id,
+            full_name,
+            email,
+            avatar_url,
+            role
+          )
+        `)
+        .eq('profiles.role', 'vendor')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setVendors(data || []);
+      
+      // Transform the data to handle the join properly
+      const transformedData = data?.map(vendor => ({
+        ...vendor,
+        profiles: Array.isArray(vendor.profiles) ? vendor.profiles[0] : vendor.profiles
+      })) || [];
+      
+      setVendors(transformedData);
     } catch (error) {
       toast.error('Failed to load vendors. Please try again.');
     } finally {
@@ -47,8 +101,9 @@ const Vendors = () => {
   };
 
   const filteredVendors = vendors.filter(vendor =>
-    vendor.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendor.email.toLowerCase().includes(searchTerm.toLowerCase())
+    vendor.business_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    vendor.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    vendor.profiles?.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getInitials = (name: string | null) => {
@@ -81,7 +136,6 @@ const Vendors = () => {
             />
           </div>
         </div>
-
 
         {/* Vendors Grid */}
         {loading ? (
@@ -129,18 +183,18 @@ const Vendors = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={vendor.avatar_url || ''} />
+                        <AvatarImage src={vendor.avatar_url || vendor.profiles?.avatar_url || ''} />
                         <AvatarFallback className="bg-vendor text-vendor-foreground">
-                          {getInitials(vendor.full_name)}
+                          {getInitials(vendor.profiles?.full_name || vendor.business_name)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <CardTitle className="text-lg">
-                          {vendor.full_name || 'Vendor'}
+                          {vendor.business_name}
                         </CardTitle>
                         <div className="flex items-center text-sm text-muted-foreground">
                           <Mail className="h-3 w-3 mr-1" />
-                          {vendor.email}
+                          {vendor.profiles?.email}
                         </div>
                       </div>
                     </div>
@@ -152,7 +206,7 @@ const Vendors = () => {
                 <CardContent className="space-y-4">
                   <div className="flex items-center text-sm text-muted-foreground">
                     <MapPin className="h-4 w-4 mr-2" />
-                    Available nationwide
+                    {vendor.business_address || 'Available nationwide'}
                   </div>
                   
                   <div className="flex items-center justify-between">

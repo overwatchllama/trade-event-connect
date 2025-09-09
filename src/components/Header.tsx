@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Calendar, User, LogOut, Settings } from "lucide-react";
+import { Calendar, User, LogOut, Settings, Store } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useVendorProfile } from "@/hooks/useVendorProfile";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -9,6 +10,7 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut, loading } = useAuth();
+  const { hasVendorRole } = useVendorProfile();
 
   const handleSignOut = async () => {
     await signOut();
@@ -90,6 +92,12 @@ const Header = () => {
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </DropdownMenuItem>
+                  {hasVendorRole && (
+                    <DropdownMenuItem onClick={() => navigate('/my-vendor-profile')}>
+                      <Store className="mr-2 h-4 w-4" />
+                      My Vendor Profile
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => navigate('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     Settings

@@ -30,6 +30,7 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/vendor/:id" element={<VendorProfile />} />
+          <Route path="/my-vendor-profile" element={<VendorProfile />} />
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/subscription-success" element={<SubscriptionSuccess />} />
           <Route path="/my-collection" element={

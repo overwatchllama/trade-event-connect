@@ -12,6 +12,7 @@ import Header from '@/components/Header';
 import EditVendorProfile from '@/components/EditVendorProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useVendorProfile } from '@/hooks/useVendorProfile';
 import { 
   MapPin, 
   Phone, 
@@ -54,6 +55,7 @@ interface VendorProfile {
 const VendorProfile = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { vendorProfile: currentUserVendor } = useVendorProfile();
   const [vendor, setVendor] = useState<VendorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
@@ -63,8 +65,12 @@ const VendorProfile = () => {
   useEffect(() => {
     if (id) {
       fetchVendorProfile();
+    } else if (currentUserVendor) {
+      // If no ID provided but user has vendor profile, show their own profile
+      setVendor(currentUserVendor);
+      setLoading(false);
     }
-  }, [id]);
+  }, [id, currentUserVendor]);
 
   const fetchVendorProfile = async () => {
     try {
