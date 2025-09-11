@@ -552,6 +552,7 @@ export type Database = {
           total_reviews: number | null
           updated_at: string | null
           user_id: string
+          vendor_types: string[] | null
           verified: boolean | null
           website_url: string | null
         }
@@ -574,6 +575,7 @@ export type Database = {
           total_reviews?: number | null
           updated_at?: string | null
           user_id: string
+          vendor_types?: string[] | null
           verified?: boolean | null
           website_url?: string | null
         }
@@ -596,6 +598,7 @@ export type Database = {
           total_reviews?: number | null
           updated_at?: string | null
           user_id?: string
+          vendor_types?: string[] | null
           verified?: boolean | null
           website_url?: string | null
         }

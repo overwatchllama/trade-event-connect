@@ -22,6 +22,7 @@ interface VendorProfile {
   social_facebook: string | null;
   social_linkedin: string | null;
   specialties: string[] | null;
+  vendor_types: string[] | null;
   rating: number | null;
   total_reviews: number | null;
   verified: boolean | null;
@@ -41,6 +42,10 @@ interface VendorGridCardProps {
 }
 
 export const VendorGridCard = ({ vendor, getInitials }: VendorGridCardProps) => {
+  const formatVendorType = (type: string) => {
+    return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
   return (
     <Card className="hover:shadow-lg-custom transition-shadow">
       <CardHeader className="pb-4">
@@ -72,6 +77,17 @@ export const VendorGridCard = ({ vendor, getInitials }: VendorGridCardProps) => 
           <MapPin className="h-4 w-4 mr-2" />
           {vendor.business_address || 'Available nationwide'}
         </div>
+        
+        {/* Vendor Types */}
+        {vendor.vendor_types && vendor.vendor_types.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {vendor.vendor_types.map((type, index) => (
+              <Badge key={index} variant="outline" className="text-xs">
+                {formatVendorType(type)}
+              </Badge>
+            ))}
+          </div>
+        )}
         
         <div className="flex items-center justify-between">
           <div className="flex items-center text-sm text-muted-foreground">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import ManageVendorsDialog from "./ManageVendorsDialog";
 import EventVendors from "./EventVendors";
 
@@ -20,6 +21,7 @@ interface EventCardProps {
     city: string;
     state: string;
     organizer: string;
+    organizer_id?: string;
     rating: number;
     attendees: number;
     maxAttendees: number;
@@ -38,9 +40,33 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
   const { subscribed, subscription_tier, loading: subscriptionLoading } = useSubscription();
   const [bookingLoading, setBookingLoading] = useState(false);
   const [manageVendorsOpen, setManageVendorsOpen] = useState(false);
+  const [organizerVendorId, setOrganizerVendorId] = useState<string | null>(null);
 
   const isVendorPro = subscribed && 
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
+
+  // Check if organizer is a vendor
+  useEffect(() => {
+    const checkOrganizerVendorStatus = async () => {
+      if (event.organizer_id) {
+        try {
+          const { data, error } = await supabase
+            .from('vendors')
+            .select('id')
+            .eq('user_id', event.organizer_id)
+            .single();
+          
+          if (data && !error) {
+            setOrganizerVendorId(data.id);
+          }
+        } catch (error) {
+          // Organizer is not a vendor, which is fine
+        }
+      }
+    };
+
+    checkOrganizerVendorStatus();
+  }, [event.organizer_id]);
 
   const handleBookTable = async () => {
     if (!user) {
@@ -128,7 +154,16 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                 <span className="font-medium text-vendor">{event.totalTables}</span> tables
               </div>
               <div className="text-sm text-muted-foreground">
-                by <span className="font-medium text-card-foreground">{event.organizer}</span>
+                by {organizerVendorId ? (
+                  <Link 
+                    to={`/vendor/${organizerVendorId}`}
+                    className="font-medium text-card-foreground hover:text-primary transition-colors underline decoration-dotted"
+                  >
+                    {event.organizer}
+                  </Link>
+                ) : (
+                  <span className="font-medium text-card-foreground">{event.organizer}</span>
+                )}
               </div>
             </div>
 

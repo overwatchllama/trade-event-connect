@@ -107,6 +107,7 @@ const Events = () => {
           city: event.city,
           state: event.state,
           organizer: event.organizer_name || 'Unknown Organizer',
+          organizer_id: event.organizer_id,
           rating: 4.5, // Default rating since we don't have ratings yet
           attendees: 0, // Default attendees since we don't have this data yet
           maxAttendees: event.max_attendees || 100,

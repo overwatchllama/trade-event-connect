@@ -31,6 +31,7 @@ interface VendorProfile {
   social_facebook: string | null;
   social_linkedin: string | null;
   specialties: string[] | null;
+  vendor_types: string[] | null;
   rating: number | null;
   total_reviews: number | null;
   verified: boolean | null;
@@ -76,6 +77,7 @@ const Vendors = () => {
           social_facebook,
           social_linkedin,
           specialties,
+          vendor_types,
           rating,
           total_reviews,
           verified,
@@ -226,12 +228,28 @@ const Vendors = () => {
                       </div>
                     </div>
                     {myVendorProfile.specialties && myVendorProfile.specialties.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {myVendorProfile.specialties.map((specialty, index) => (
-                          <Badge key={index} variant="outline">
-                            {specialty}
-                          </Badge>
-                        ))}
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-foreground">Specialties</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {myVendorProfile.specialties.map((specialty, index) => (
+                            <Badge key={index} variant="outline">
+                              {specialty}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {myVendorProfile.vendor_types && myVendorProfile.vendor_types.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-foreground">Vendor Types</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {myVendorProfile.vendor_types.map((type, index) => (
+                            <Badge key={index} variant="default" className="text-xs">
+                              {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </CardContent>

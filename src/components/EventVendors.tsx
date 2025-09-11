@@ -11,6 +11,7 @@ interface Vendor {
   rating: number;
   total_reviews: number;
   specialties: string[];
+  vendor_types: string[];
   avatar_url: string | null;
   verified: boolean;
 }
@@ -39,6 +40,7 @@ const EventVendors = ({ eventId, maxDisplay = 3 }: EventVendorsProps) => {
               rating,
               total_reviews,
               specialties,
+              vendor_types,
               avatar_url,
               verified
             )
@@ -129,11 +131,17 @@ const EventVendors = ({ eventId, maxDisplay = 3 }: EventVendorsProps) => {
 
       {vendors.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {vendors[0].specialties?.slice(0, 3).map((specialty, index) => (
+          {/* Show vendor types instead of specialties for better context */}
+          {vendors[0].vendor_types?.slice(0, 2).map((type, index) => (
             <Badge key={index} variant="outline" className="text-xs">
-              {specialty}
+              {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </Badge>
           ))}
+          {vendors[0].vendor_types && vendors[0].vendor_types.length > 2 && (
+            <Badge variant="outline" className="text-xs">
+              +{vendors[0].vendor_types.length - 2}
+            </Badge>
+          )}
         </div>
       )}
     </div>
