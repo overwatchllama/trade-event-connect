@@ -55,43 +55,47 @@ const Vendors = () => {
 
   const fetchVendors = async () => {
     try {
-      const { data, error } = await supabase
+      console.log('Fetching vendors...');
+      
+      // First get all vendors
+      const { data: vendorData, error: vendorError } = await supabase
         .from('vendors')
-        .select(`
-          id,
-          user_id,
-          business_name,
-          business_description,
-          business_address,
-          business_phone,
-          business_email,
-          website_url,
-          avatar_url,
-          banner_url,
-          social_instagram,
-          social_twitter,
-          social_facebook,
-          social_linkedin,
-          specialties,
-          rating,
-          total_reviews,
-          verified,
-          created_at,
-          profiles!inner(
-            id,
-            full_name,
-            email,
-            avatar_url,
-            role
-          )
-        `)
-        .eq('profiles.role', 'vendor')
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (vendorError) {
+        console.log('Vendor error:', vendorError);
+        throw vendorError;
+      }
+
+      console.log('Raw vendor data:', vendorData);
+
+      // Then get profiles for vendor users
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'vendor');
+
+      if (profileError) {
+        console.log('Profile error:', profileError);
+        throw profileError;
+      }
+
+      console.log('Profile data:', profileData);
+
+      // Combine the data
+      const combinedData = vendorData?.map(vendor => {
+        const profile = profileData?.find(p => p.id === vendor.user_id);
+        return {
+          ...vendor,
+          profiles: profile
+        };
+      }).filter(vendor => vendor.profiles) || [];
+
+      console.log('Combined vendor data:', combinedData);
       
       // Transform the data to handle the join properly
-      const transformedData = data?.map(vendor => ({
+      const transformedData = combinedData?.map(vendor => ({
         ...vendor,
         profiles: Array.isArray(vendor.profiles) ? vendor.profiles[0] : vendor.profiles
       })) || [];
