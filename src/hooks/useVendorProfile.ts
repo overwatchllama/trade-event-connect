@@ -18,6 +18,7 @@ interface VendorProfile {
   social_facebook: string | null;
   social_linkedin: string | null;
   specialties: string[] | null;
+  vendor_types: string[] | null;
   rating: number | null;
   total_reviews: number | null;
   verified: boolean | null;

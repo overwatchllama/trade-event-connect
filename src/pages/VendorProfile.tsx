@@ -46,6 +46,7 @@ interface VendorProfile {
   social_facebook: string | null;
   social_linkedin: string | null;
   specialties: string[] | null;
+  vendor_types: string[] | null;
   rating: number | null;
   total_reviews: number | null;
   verified: boolean | null;
@@ -281,6 +282,24 @@ const VendorProfile = () => {
                 </p>
               </CardContent>
             </Card>
+
+            {/* Vendor Types */}
+            {vendor.vendor_types && vendor.vendor_types.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Vendor Types</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {vendor.vendor_types.map((type, index) => (
+                      <Badge key={index} variant="secondary">
+                        {type}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Specialties */}
             {vendor.specialties && vendor.specialties.length > 0 && (

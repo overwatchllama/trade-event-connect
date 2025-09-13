@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { X, Plus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface VendorProfile {
   id: string;
@@ -25,6 +26,7 @@ interface VendorProfile {
   social_facebook: string | null;
   social_linkedin: string | null;
   specialties: string[] | null;
+  vendor_types: string[] | null;
   rating: number | null;
   total_reviews: number | null;
   verified: boolean | null;
@@ -66,6 +68,7 @@ const EditVendorProfile = ({ vendor, open, onOpenChange, onUpdate }: EditVendorP
           social_facebook: formData.social_facebook,
           social_linkedin: formData.social_linkedin,
           specialties: formData.specialties,
+          vendor_types: formData.vendor_types,
         })
         .eq('id', vendor.id);
 
@@ -97,6 +100,28 @@ const EditVendorProfile = ({ vendor, open, onOpenChange, onUpdate }: EditVendorP
       ...prev,
       specialties: prev.specialties?.filter(s => s !== specialtyToRemove) || []
     }));
+  };
+
+  const vendorTypeOptions = [
+    'Event Runner',
+    'Tournament',
+    'Brick & Mortar',
+    'Online',
+    'Show Vendor'
+  ];
+
+  const toggleVendorType = (vendorType: string) => {
+    setFormData(prev => {
+      const currentTypes = prev.vendor_types || [];
+      const isSelected = currentTypes.includes(vendorType);
+      
+      return {
+        ...prev,
+        vendor_types: isSelected 
+          ? currentTypes.filter(type => type !== vendorType)
+          : [...currentTypes, vendorType]
+      };
+    });
   };
 
   return (
@@ -223,6 +248,25 @@ const EditVendorProfile = ({ vendor, open, onOpenChange, onUpdate }: EditVendorP
                 onChange={(e) => setFormData(prev => ({ ...prev, social_linkedin: e.target.value }))}
                 placeholder="https://linkedin.com/company/yourbusiness"
               />
+            </div>
+          </div>
+
+          {/* Vendor Types */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Vendor Types</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {vendorTypeOptions.map((type) => (
+                <div key={type} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={type}
+                    checked={formData.vendor_types?.includes(type) || false}
+                    onCheckedChange={() => toggleVendorType(type)}
+                  />
+                  <Label htmlFor={type} className="text-sm font-normal">
+                    {type}
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
 
