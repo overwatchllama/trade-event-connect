@@ -59,47 +59,32 @@ const Vendors = () => {
 
   const fetchVendors = async () => {
     try {
-      const { data, error } = await supabase
+      // First get vendors
+      const { data: vendorsData, error: vendorsError } = await supabase
         .from('vendors')
-        .select(`
-          id,
-          user_id,
-          business_name,
-          business_description,
-          business_address,
-          business_phone,
-          business_email,
-          website_url,
-          avatar_url,
-          banner_url,
-          social_instagram,
-          social_twitter,
-          social_facebook,
-          social_linkedin,
-          specialties,
-          vendor_types,
-          rating,
-          total_reviews,
-          verified,
-          created_at,
-          profiles!inner(
-            id,
-            full_name,
-            email,
-            avatar_url,
-            role
-          )
-        `)
-        .eq('profiles.role', 'vendor')
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
-      // Transform the data to handle the join properly
-      const transformedData = data?.map(vendor => ({
-        ...vendor,
-        profiles: Array.isArray(vendor.profiles) ? vendor.profiles[0] : vendor.profiles
-      })) || [];
+      if (vendorsError) throw vendorsError;
+
+      // Then get profiles for the vendor users
+      const userIds = vendorsData?.map(v => v.user_id) || [];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url, role')
+        .in('id', userIds)
+        .eq('role', 'vendor');
+
+      if (profilesError) throw profilesError;
+
+      // Combine the data
+      const transformedData = vendorsData?.map(vendor => {
+        const profile = profilesData?.find(p => p.id === vendor.user_id);
+        return {
+          ...vendor,
+          profiles: profile
+        };
+      }).filter(vendor => vendor.profiles) || [];
       
       // Separate current user's profile from others
       const currentUserProfile = transformedData.find(vendor => vendor.user_id === user?.id);
@@ -108,6 +93,7 @@ const Vendors = () => {
       setMyVendorProfile(currentUserProfile || null);
       setVendors(otherVendors);
     } catch (error) {
+      console.error('Error fetching vendors:', error);
       toast.error('Failed to load vendors. Please try again.');
     } finally {
       setLoading(false);
@@ -395,121 +381,6 @@ const Vendors = () => {
 
         {/* Call to Action - Only show if not already a vendor */}
         {!loading && (vendors.length > 0 || myVendorProfile) && user && !hasVendorRole && (
-          <div className="text-center mt-12 p-8 bg-muted/30 rounded-lg">
-            <h3 className="text-xl font-semibold text-foreground mb-2">
-              Want to become a vendor?
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              Join our marketplace and connect with thousands of collectors.
-            </p>
-            <Button variant="hero" size="lg">
-              Apply to Become a Vendor
-            </Button>
-          </div>
-        )}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i}>
-                <CardHeader className="pb-4">
-                  <div className="flex items-center space-x-4">
-                    <Skeleton className="h-12 w-12 rounded-full" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-[150px]" />
-                      <Skeleton className="h-3 w-[100px]" />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-10 w-full" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : filteredVendors.length === 0 ? (
-          <div className="text-center py-12">
-            <Store className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">
-              {searchTerm ? 'No vendors found' : 'No vendors yet'}
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              {searchTerm 
-                ? 'Try adjusting your search terms or browse all vendors.'
-                : 'Be the first vendor to join our marketplace!'
-              }
-            </p>
-            {searchTerm && (
-              <Button variant="outline" onClick={() => setSearchTerm('')}>
-                Clear Search
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVendors.map((vendor) => (
-              <Card key={vendor.id} className="hover:shadow-lg-custom transition-shadow">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={vendor.avatar_url || vendor.profiles?.avatar_url || ''} />
-                        <AvatarFallback className="bg-vendor text-vendor-foreground">
-                          {getInitials(vendor.profiles?.full_name || vendor.business_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="text-lg">
-                          {vendor.business_name}
-                        </CardTitle>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Mail className="h-3 w-3 mr-1" />
-                          {vendor.profiles?.email}
-                        </div>
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="bg-vendor/10 text-vendor border-vendor/20">
-                      Vendor
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    {vendor.business_address || 'Available nationwide'}
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Star className="w-4 h-4 text-muted-foreground mr-1" />
-                      Not yet reviewed
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Member since {new Date(vendor.created_at).getFullYear()}
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button className="flex-1" size="sm" asChild>
-                      <Link to={`/vendor/${vendor.id}`}>
-                        View Profile
-                      </Link>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => toast.info('Contact feature coming soon!')}
-                    >
-                      Contact
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Call to Action - Only show if not already a vendor */}
-        {!loading && vendors.length > 0 && user && !hasVendorRole && (
           <div className="text-center mt-12 p-8 bg-muted/30 rounded-lg">
             <h3 className="text-xl font-semibold text-foreground mb-2">
               Want to become a vendor?
