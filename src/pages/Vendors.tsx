@@ -55,7 +55,7 @@ const Vendors = () => {
 
   useEffect(() => {
     fetchVendors();
-  }, []);
+  }, [user]);
 
   const fetchVendors = async () => {
     try {
@@ -86,12 +86,18 @@ const Vendors = () => {
         };
       }).filter(vendor => vendor.profiles) || [];
       
-      // Separate current user's profile from others
-      const currentUserProfile = transformedData.find(vendor => vendor.user_id === user?.id);
-      const otherVendors = transformedData.filter(vendor => vendor.user_id !== user?.id);
-      
-      setMyVendorProfile(currentUserProfile || null);
-      setVendors(otherVendors);
+      // Separate current user's profile from others - ensure user is available
+      if (user?.id) {
+        const currentUserProfile = transformedData.find(vendor => vendor.user_id === user.id);
+        const otherVendors = transformedData.filter(vendor => vendor.user_id !== user.id);
+        
+        setMyVendorProfile(currentUserProfile || null);
+        setVendors(otherVendors);
+      } else {
+        // If no user, show all vendors in the other vendors list
+        setMyVendorProfile(null);
+        setVendors(transformedData);
+      }
     } catch (error) {
       console.error('Error fetching vendors:', error);
       toast.error('Failed to load vendors. Please try again.');
