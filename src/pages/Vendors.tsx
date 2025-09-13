@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Header from '@/components/Header';
 import { VendorGridCard } from '@/components/VendorGridCard';
+import EditVendorProfile from '@/components/EditVendorProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useVendorProfile } from '@/hooks/useVendorProfile';
@@ -52,6 +53,7 @@ const Vendors = () => {
   const [myVendorProfile, setMyVendorProfile] = useState<VendorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchVendors();
@@ -104,6 +106,11 @@ const Vendors = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleProfileUpdate = (updatedProfile: VendorProfile) => {
+    setMyVendorProfile(updatedProfile);
+    toast.success('Profile updated successfully!');
   };
 
   const filteredVendors = vendors.filter(vendor =>
@@ -192,7 +199,7 @@ const Vendors = () => {
                           )}
                         </div>
                       </div>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
                         <Edit className="h-4 w-4 mr-2" />
                         Edit Profile
                       </Button>
@@ -400,6 +407,16 @@ const Vendors = () => {
           </div>
         )}
       </main>
+
+      {/* Edit Profile Dialog */}
+      {myVendorProfile && (
+        <EditVendorProfile
+          vendor={myVendorProfile}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onUpdate={handleProfileUpdate}
+        />
+      )}
     </div>
   );
 };
