@@ -263,6 +263,7 @@ export type Database = {
           updated_at: string
           vendor_table_price: number | null
           venue: string
+          venue_id: string | null
           zip_code: string
         }
         Insert: {
@@ -288,6 +289,7 @@ export type Database = {
           updated_at?: string
           vendor_table_price?: number | null
           venue: string
+          venue_id?: string | null
           zip_code: string
         }
         Update: {
@@ -313,9 +315,18 @@ export type Database = {
           updated_at?: string
           vendor_table_price?: number | null
           venue?: string
+          venue_id?: string | null
           zip_code?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -603,6 +614,132 @@ export type Database = {
           website_url?: string | null
         }
         Relationships: []
+      }
+      venue_claims: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          claim_type: string
+          claimed_at: string
+          claimer_id: string
+          id: string
+          reason: string | null
+          status: string
+          venue_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          claim_type: string
+          claimed_at?: string
+          claimer_id: string
+          id?: string
+          reason?: string | null
+          status?: string
+          venue_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          claim_type?: string
+          claimed_at?: string
+          claimer_id?: string
+          id?: string
+          reason?: string | null
+          status?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_claims_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_claims_claimer_id_fkey"
+            columns: ["claimer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_claims_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venues: {
+        Row: {
+          address: string
+          amenities: string[] | null
+          capacity: number | null
+          city: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          owner_id: string | null
+          state: string
+          updated_at: string
+          verified: boolean | null
+          website_url: string | null
+          zip_code: string
+        }
+        Insert: {
+          address: string
+          amenities?: string[] | null
+          capacity?: number | null
+          city: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          owner_id?: string | null
+          state: string
+          updated_at?: string
+          verified?: boolean | null
+          website_url?: string | null
+          zip_code: string
+        }
+        Update: {
+          address?: string
+          amenities?: string[] | null
+          capacity?: number | null
+          city?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          owner_id?: string | null
+          state?: string
+          updated_at?: string
+          verified?: boolean | null
+          website_url?: string | null
+          zip_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venues_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

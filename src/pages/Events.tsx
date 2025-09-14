@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import EventCard from "@/components/EventCard";
 import EventsCalendar from "@/components/EventsCalendar";
 import CreateEventDialog from "@/components/CreateEventDialog";
+import { VenuesList } from "@/components/VenuesList";
 import { MultiSelect, Option } from "@/components/ui/multi-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -296,11 +297,12 @@ const Events = () => {
         {/* Role-based content */}
         {profile?.role === 'organizer' ? (
           <Tabs defaultValue="my-events" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="my-events">My Events</TabsTrigger>
               <TabsTrigger value="my-calendar">My Calendar</TabsTrigger>
               <TabsTrigger value="all-events">All Events</TabsTrigger>
               <TabsTrigger value="all-calendar">Calendar View</TabsTrigger>
+              <TabsTrigger value="venues">Venues</TabsTrigger>
             </TabsList>
             
             <TabsContent value="my-events" className="mt-6">
@@ -366,14 +368,19 @@ const Events = () => {
             <TabsContent value="all-calendar" className="mt-6">
               <EventsCalendar events={filteredAllEvents} userType="organizer" />
             </TabsContent>
+
+            <TabsContent value="venues" className="mt-6">
+              <VenuesList />
+            </TabsContent>
           </Tabs>
         ) : profile?.role === 'vendor' ? (
           <Tabs defaultValue="tickets" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="tickets">Buy Tickets</TabsTrigger>
               <TabsTrigger value="tables">Book Tables</TabsTrigger>
               <TabsTrigger value="calendar-tickets">Calendar</TabsTrigger>
               <TabsTrigger value="calendar-tables">Table Calendar</TabsTrigger>
+              <TabsTrigger value="venues">Venues</TabsTrigger>
             </TabsList>
             <TabsContent value="tickets" className="mt-6">
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -411,21 +418,38 @@ const Events = () => {
             <TabsContent value="calendar-tables" className="mt-6">
               <EventsCalendar events={filteredAllEvents} userType="vendor" />
             </TabsContent>
+
+            <TabsContent value="venues" className="mt-6">
+              <VenuesList />
+            </TabsContent>
           </Tabs>
         ) : (
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {loading ? (
-              <div className="col-span-full text-center py-8">Loading events...</div>
-            ) : filteredAllEvents.length === 0 ? (
-              <div className="col-span-full text-center py-8 text-muted-foreground">
-                No events found matching your filters.
+          <Tabs defaultValue="events" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="events">Events</TabsTrigger>
+              <TabsTrigger value="venues">Venues</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="events" className="mt-6">
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {loading ? (
+                  <div className="col-span-full text-center py-8">Loading events...</div>
+                ) : filteredAllEvents.length === 0 ? (
+                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                    No events found matching your filters.
+                  </div>
+                ) : (
+                  filteredAllEvents.map((event) => (
+                    <EventCard key={event.id} event={event} userType={profile?.role || "user"} />
+                  ))
+                )}
               </div>
-            ) : (
-              filteredAllEvents.map((event) => (
-                <EventCard key={event.id} event={event} userType={profile?.role || "user"} />
-              ))
-            )}
-          </div>
+            </TabsContent>
+
+            <TabsContent value="venues" className="mt-6">
+              <VenuesList />
+            </TabsContent>
+          </Tabs>
         )}
 
         {/* Load More */}
