@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import EventCard from "@/components/EventCard";
+import EventsCalendar from "@/components/EventsCalendar";
 import CreateEventDialog from "@/components/CreateEventDialog";
 import { MultiSelect, Option } from "@/components/ui/multi-select";
 import { Button } from "@/components/ui/button";
@@ -295,9 +296,11 @@ const Events = () => {
         {/* Role-based content */}
         {profile?.role === 'organizer' ? (
           <Tabs defaultValue="my-events" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="my-events">My Events</TabsTrigger>
+              <TabsTrigger value="my-calendar">My Calendar</TabsTrigger>
               <TabsTrigger value="all-events">All Events</TabsTrigger>
+              <TabsTrigger value="all-calendar">Calendar View</TabsTrigger>
             </TabsList>
             
             <TabsContent value="my-events" className="mt-6">
@@ -332,6 +335,17 @@ const Events = () => {
                 )}
               </div>
             </TabsContent>
+
+            <TabsContent value="my-calendar" className="mt-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-foreground">My Events Calendar</h2>
+                <Button variant="default" className="gap-2" onClick={() => setShowCreateEvent(true)}>
+                  <Plus className="w-4 h-4" />
+                  Create Event
+                </Button>
+              </div>
+              <EventsCalendar events={filteredMyEvents} userType="organizer" />
+            </TabsContent>
             
             <TabsContent value="all-events" className="mt-6">
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -348,12 +362,18 @@ const Events = () => {
                 )}
               </div>
             </TabsContent>
+
+            <TabsContent value="all-calendar" className="mt-6">
+              <EventsCalendar events={filteredAllEvents} userType="organizer" />
+            </TabsContent>
           </Tabs>
         ) : profile?.role === 'vendor' ? (
           <Tabs defaultValue="tickets" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="tickets">Buy Tickets</TabsTrigger>
               <TabsTrigger value="tables">Book Tables</TabsTrigger>
+              <TabsTrigger value="calendar-tickets">Calendar</TabsTrigger>
+              <TabsTrigger value="calendar-tables">Table Calendar</TabsTrigger>
             </TabsList>
             <TabsContent value="tickets" className="mt-6">
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -384,6 +404,12 @@ const Events = () => {
                   ))
                 )}
               </div>
+            </TabsContent>
+            <TabsContent value="calendar-tickets" className="mt-6">
+              <EventsCalendar events={filteredAllEvents} userType="collector" />
+            </TabsContent>
+            <TabsContent value="calendar-tables" className="mt-6">
+              <EventsCalendar events={filteredAllEvents} userType="vendor" />
             </TabsContent>
           </Tabs>
         ) : (
