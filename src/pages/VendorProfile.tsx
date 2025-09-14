@@ -8,8 +8,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Header from '@/components/Header';
 import EditVendorProfile from '@/components/EditVendorProfile';
+import VendorCalendar from '@/components/VendorCalendar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useVendorProfile } from '@/hooks/useVendorProfile';
@@ -26,7 +28,8 @@ import {
   Twitter,
   Facebook,
   Linkedin,
-  Upload
+  Upload,
+  CalendarDays
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -235,9 +238,20 @@ const VendorProfile = () => {
         </div>
 
         {/* Profile Content */}
-        <div className="pt-16 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="pt-16">
+          <Tabs defaultValue="profile" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="profile">Profile</TabsTrigger>
+              <TabsTrigger value="calendar" className="flex items-center gap-2">
+                <CalendarDays className="w-4 h-4" />
+                Event Calendar
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="profile">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                {/* Main Content */}
+                <div className="lg:col-span-2 space-y-6">
             {/* Header */}
             <div className="flex items-start justify-between">
               <div>
@@ -420,7 +434,16 @@ const VendorProfile = () => {
                 </CardContent>
               </Card>
             )}
-          </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="calendar">
+              <div className="mt-6">
+                <VendorCalendar vendorId={vendor.id} />
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
 
