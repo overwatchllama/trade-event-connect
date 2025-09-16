@@ -91,11 +91,15 @@ const Events = () => {
     const fetchEvents = async () => {
       setLoading(true);
       try {
+        console.log('Fetching events...');
         // Fetch all events
         const { data: eventsData, error } = await supabase
           .from('events')
           .select('*')
           .order('created_at', { ascending: false });
+
+        console.log('Events data:', eventsData);
+        console.log('Events error:', error);
 
         if (error) throw error;
 
@@ -121,6 +125,10 @@ const Events = () => {
           flyerUrl: event.flyer_url,
           isMultiDay: event.is_multi_day
         })) || [];
+
+        console.log('Transformed events:', transformedEvents);
+        console.log('User:', user);
+        console.log('Profile:', profile);
 
         setAllEvents(transformedEvents);
 
