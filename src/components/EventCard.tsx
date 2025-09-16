@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Clock, Crown, Settings, UserCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { SubscriptionButton } from "@/components/SubscriptionButton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -210,11 +211,31 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                   </Button>
                 </>
               ) : (
-                <Button variant="default" className="flex-1">
-                  Buy Tickets
-                </Button>
+                <>
+                  <Button variant="default" className="flex-1">
+                    Buy Tickets
+                  </Button>
+                  <SubscriptionButton
+                    type="event"
+                    targetId={event.id}
+                    size="default"
+                    showText={false}
+                  />
+                </>
               )}
             </div>
+            
+            {/* Subscription button for vendors (additional row) */}
+            {userType === "vendor" && (
+              <div className="flex justify-center pt-2">
+                <SubscriptionButton
+                  type="event"
+                  targetId={event.id}
+                  variant="ghost"
+                  size="sm"
+                />
+              </div>
+            )}
           </div>
         </div>
       </Card>

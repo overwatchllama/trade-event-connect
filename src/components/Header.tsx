@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Calendar, User, LogOut, Settings, Store } from "lucide-react";
+import { Calendar, User, LogOut, Settings, Store, Bell } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorProfile } from "@/hooks/useVendorProfile";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -91,6 +91,10 @@ const Header = () => {
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
                     <User className="mr-2 h-4 w-4" />
                     Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/subscriptions')}>
+                    <Bell className="mr-2 h-4 w-4" />
+                    My Subscriptions
                   </DropdownMenuItem>
                   {hasVendorRole && (
                     <DropdownMenuItem onClick={() => navigate('/my-vendor-profile')}>

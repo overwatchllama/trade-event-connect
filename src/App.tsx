@@ -13,6 +13,7 @@ import VendorProfile from "./pages/VendorProfile";
 import MyCollection from "./pages/MyCollection";
 import Subscription from "./pages/Subscription";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
+import Subscriptions from "./pages/Subscriptions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,11 @@ const App = () => (
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/vendor/:id" element={<VendorProfile />} />
           <Route path="/my-vendor-profile" element={<VendorProfile />} />
+          <Route path="/subscriptions" element={
+            <ProtectedRoute>
+              <Subscriptions />
+            </ProtectedRoute>
+          } />
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/subscription-success" element={<SubscriptionSuccess />} />
           <Route path="/my-collection" element={

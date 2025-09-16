@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Header from '@/components/Header';
 import EditVendorProfile from '@/components/EditVendorProfile';
 import VendorCalendar from '@/components/VendorCalendar';
+import { SubscriptionButton } from '@/components/SubscriptionButton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useVendorProfile } from '@/hooks/useVendorProfile';
@@ -284,12 +285,22 @@ const VendorProfile = () => {
                 )}
               </div>
               
-              {isOwner && (
-                <Button variant="outline" onClick={() => setEditMode(true)}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Profile
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {!isOwner && (
+                  <SubscriptionButton
+                    type="vendor"
+                    targetId={vendor.id}
+                    variant="outline"
+                  />
+                )}
+                
+                {isOwner && (
+                  <Button variant="outline" onClick={() => setEditMode(true)}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Profile
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Description */}

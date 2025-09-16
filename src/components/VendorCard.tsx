@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SubscriptionButton } from '@/components/SubscriptionButton';
 import { Star, MapPin, Phone, Mail, Globe, Shield } from 'lucide-react';
 
 interface Vendor {
@@ -141,6 +142,13 @@ export const VendorCard: React.FC<VendorCardProps> = ({ vendor, onContactVendor 
             <Button size="sm" variant="outline">
               View Profile
             </Button>
+            <SubscriptionButton
+              type="vendor"
+              targetId={vendor.id}
+              size="sm"
+              showText={false}
+              variant="outline"
+            />
           </div>
         </div>
       </CardContent>
