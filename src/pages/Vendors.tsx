@@ -31,6 +31,7 @@ interface VendorProfile {
   social_twitter: string | null;
   social_facebook: string | null;
   social_linkedin: string | null;
+  social_links: any[] | null;
   specialties: string[] | null;
   vendor_types: string[] | null;
   rating: number | null;
@@ -88,17 +89,23 @@ const Vendors = () => {
         };
       }).filter(vendor => vendor.profiles) || [];
       
+      // Transform the data to ensure social_links is an array
+      const transformedVendorsWithSocialLinks = transformedData.map(vendor => ({
+        ...vendor,
+        social_links: Array.isArray(vendor.social_links) ? vendor.social_links : []
+      }));
+      
       // Separate current user's profile from others - ensure user is available
       if (user?.id) {
-        const currentUserProfile = transformedData.find(vendor => vendor.user_id === user.id);
-        const otherVendors = transformedData.filter(vendor => vendor.user_id !== user.id);
+        const currentUserProfile = transformedVendorsWithSocialLinks.find(vendor => vendor.user_id === user.id);
+        const otherVendors = transformedVendorsWithSocialLinks.filter(vendor => vendor.user_id !== user.id);
         
         setMyVendorProfile(currentUserProfile || null);
         setVendors(otherVendors);
       } else {
         // If no user, show all vendors in the other vendors list
         setMyVendorProfile(null);
-        setVendors(transformedData);
+        setVendors(transformedVendorsWithSocialLinks);
       }
     } catch (error) {
       console.error('Error fetching vendors:', error);

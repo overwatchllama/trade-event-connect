@@ -17,6 +17,7 @@ interface VendorProfile {
   social_twitter: string | null;
   social_facebook: string | null;
   social_linkedin: string | null;
+  social_links: any[] | null;
   specialties: string[] | null;
   vendor_types: string[] | null;
   rating: number | null;
@@ -66,7 +67,10 @@ export const useVendorProfile = () => {
         if (vendorError) throw vendorError;
 
         if (vendor) {
-          setVendorProfile(vendor);
+          setVendorProfile({
+            ...vendor,
+            social_links: Array.isArray(vendor.social_links) ? vendor.social_links : []
+          });
         } else {
           // Create vendor profile if it doesn't exist
           await createVendorProfile();
@@ -100,7 +104,10 @@ export const useVendorProfile = () => {
         .single();
 
       if (error) throw error;
-      setVendorProfile(vendor);
+      setVendorProfile({
+        ...vendor,
+        social_links: Array.isArray(vendor.social_links) ? vendor.social_links : []
+      });
     } catch (error) {
       console.error('Error creating vendor profile:', error);
     }

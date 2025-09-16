@@ -10,6 +10,11 @@ import { toast } from 'sonner';
 import { X, Plus } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 
+interface SocialLink {
+  platform: string;
+  url: string;
+}
+
 interface VendorProfile {
   id: string;
   user_id: string;
@@ -25,6 +30,7 @@ interface VendorProfile {
   social_twitter: string | null;
   social_facebook: string | null;
   social_linkedin: string | null;
+  social_links: any[] | null;
   specialties: string[] | null;
   vendor_types: string[] | null;
   rating: number | null;
@@ -44,9 +50,35 @@ const EditVendorProfile = ({ vendor, open, onOpenChange, onUpdate }: EditVendorP
   const [formData, setFormData] = useState<VendorProfile>(vendor);
   const [newSpecialty, setNewSpecialty] = useState('');
   const [loading, setLoading] = useState(false);
+  const [newSocialPlatform, setNewSocialPlatform] = useState('');
+  const [newSocialUrl, setNewSocialUrl] = useState('');
 
   useEffect(() => {
-    setFormData(vendor);
+    // Convert legacy social media fields to social_links format
+    const socialLinks: SocialLink[] = [];
+    
+    if (vendor.social_instagram) {
+      socialLinks.push({ platform: 'Instagram', url: vendor.social_instagram });
+    }
+    if (vendor.social_twitter) {
+      socialLinks.push({ platform: 'Twitter', url: vendor.social_twitter });
+    }
+    if (vendor.social_facebook) {
+      socialLinks.push({ platform: 'Facebook', url: vendor.social_facebook });
+    }
+    if (vendor.social_linkedin) {
+      socialLinks.push({ platform: 'LinkedIn', url: vendor.social_linkedin });
+    }
+    
+    // Add any existing social_links
+    if (vendor.social_links) {
+      socialLinks.push(...vendor.social_links);
+    }
+    
+    setFormData({
+      ...vendor,
+      social_links: socialLinks.length > 0 ? socialLinks : []
+    });
   }, [vendor]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,6 +86,15 @@ const EditVendorProfile = ({ vendor, open, onOpenChange, onUpdate }: EditVendorP
     setLoading(true);
 
     try {
+      // Extract legacy social media fields for backward compatibility
+      const socialLinks = formData.social_links || [];
+      const legacySocial = {
+        social_instagram: socialLinks.find(link => link.platform.toLowerCase() === 'instagram')?.url || null,
+        social_twitter: socialLinks.find(link => link.platform.toLowerCase() === 'twitter')?.url || null,
+        social_facebook: socialLinks.find(link => link.platform.toLowerCase() === 'facebook')?.url || null,
+        social_linkedin: socialLinks.find(link => link.platform.toLowerCase() === 'linkedin')?.url || null,
+      };
+
       const { error } = await supabase
         .from('vendors')
         .update({
@@ -63,10 +104,8 @@ const EditVendorProfile = ({ vendor, open, onOpenChange, onUpdate }: EditVendorP
           business_phone: formData.business_phone,
           business_email: formData.business_email,
           website_url: formData.website_url,
-          social_instagram: formData.social_instagram,
-          social_twitter: formData.social_twitter,
-          social_facebook: formData.social_facebook,
-          social_linkedin: formData.social_linkedin,
+          ...legacySocial,
+          social_links: socialLinks as any,
           specialties: formData.specialties,
           vendor_types: formData.vendor_types,
         })
@@ -99,6 +138,31 @@ const EditVendorProfile = ({ vendor, open, onOpenChange, onUpdate }: EditVendorP
     setFormData(prev => ({
       ...prev,
       specialties: prev.specialties?.filter(s => s !== specialtyToRemove) || []
+    }));
+  };
+
+  const addSocialLink = () => {
+    if (newSocialPlatform.trim() && newSocialUrl.trim()) {
+      const existingLinks = formData.social_links || [];
+      const newLink: SocialLink = {
+        platform: newSocialPlatform.trim(),
+        url: newSocialUrl.trim()
+      };
+      
+      setFormData(prev => ({
+        ...prev,
+        social_links: [...existingLinks, newLink]
+      }));
+      
+      setNewSocialPlatform('');
+      setNewSocialUrl('');
+    }
+  };
+
+  const removeSocialLink = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      social_links: prev.social_links?.filter((_, i) => i !== index) || []
     }));
   };
 
@@ -210,45 +274,59 @@ const EditVendorProfile = ({ vendor, open, onOpenChange, onUpdate }: EditVendorP
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Social Media</h3>
             
-            <div>
-              <Label htmlFor="social_instagram">Instagram URL</Label>
-              <Input
-                id="social_instagram"
-                value={formData.social_instagram || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, social_instagram: e.target.value }))}
-                placeholder="https://instagram.com/yourbusiness"
-              />
+            {/* Add new social media link */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="social_platform">Platform</Label>
+                <Input
+                  id="social_platform"
+                  value={newSocialPlatform}
+                  onChange={(e) => setNewSocialPlatform(e.target.value)}
+                  placeholder="e.g., Instagram, TikTok, YouTube"
+                />
+              </div>
+              <div>
+                <Label htmlFor="social_url">URL</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="social_url"
+                    value={newSocialUrl}
+                    onChange={(e) => setNewSocialUrl(e.target.value)}
+                    placeholder="https://..."
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSocialLink())}
+                  />
+                  <Button type="button" onClick={addSocialLink} size="sm">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="social_twitter">Twitter URL</Label>
-              <Input
-                id="social_twitter"
-                value={formData.social_twitter || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, social_twitter: e.target.value }))}
-                placeholder="https://twitter.com/yourbusiness"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="social_facebook">Facebook URL</Label>
-              <Input
-                id="social_facebook"
-                value={formData.social_facebook || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, social_facebook: e.target.value }))}
-                placeholder="https://facebook.com/yourbusiness"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="social_linkedin">LinkedIn URL</Label>
-              <Input
-                id="social_linkedin"
-                value={formData.social_linkedin || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, social_linkedin: e.target.value }))}
-                placeholder="https://linkedin.com/company/yourbusiness"
-              />
-            </div>
+            {/* Display existing social media links */}
+            {formData.social_links && formData.social_links.length > 0 && (
+              <div className="space-y-2">
+                <Label>Current Social Media Links</Label>
+                <div className="space-y-2">
+                  {formData.social_links.map((link, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
+                      <div className="flex-1">
+                        <span className="font-medium text-sm">{link.platform}:</span>
+                        <span className="text-sm text-muted-foreground ml-2">{link.url}</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeSocialLink(index)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Vendor Types */}

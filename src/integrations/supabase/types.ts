@@ -558,6 +558,7 @@ export type Database = {
           social_facebook: string | null
           social_instagram: string | null
           social_linkedin: string | null
+          social_links: Json | null
           social_twitter: string | null
           specialties: string[] | null
           total_reviews: number | null
@@ -581,6 +582,7 @@ export type Database = {
           social_facebook?: string | null
           social_instagram?: string | null
           social_linkedin?: string | null
+          social_links?: Json | null
           social_twitter?: string | null
           specialties?: string[] | null
           total_reviews?: number | null
@@ -604,6 +606,7 @@ export type Database = {
           social_facebook?: string | null
           social_instagram?: string | null
           social_linkedin?: string | null
+          social_links?: Json | null
           social_twitter?: string | null
           specialties?: string[] | null
           total_reviews?: number | null

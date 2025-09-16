@@ -48,6 +48,7 @@ interface VendorProfile {
   social_twitter: string | null;
   social_facebook: string | null;
   social_linkedin: string | null;
+  social_links: any[] | null;
   specialties: string[] | null;
   vendor_types: string[] | null;
   rating: number | null;
@@ -71,7 +72,10 @@ const VendorProfile = () => {
       fetchVendorProfile();
     } else if (currentUserVendor) {
       // If no ID provided but user has vendor profile, show their own profile
-      setVendor(currentUserVendor);
+      setVendor({
+        ...currentUserVendor,
+        social_links: Array.isArray(currentUserVendor.social_links) ? currentUserVendor.social_links : []
+      });
       setLoading(false);
     }
   }, [id, currentUserVendor]);
@@ -85,7 +89,10 @@ const VendorProfile = () => {
         .single();
 
       if (error) throw error;
-      setVendor(data);
+      setVendor({
+        ...data,
+        social_links: Array.isArray(data.social_links) ? data.social_links : []
+      });
     } catch (error) {
       console.error('Error fetching vendor:', error);
       toast.error('Failed to load vendor profile');
