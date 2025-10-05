@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const { user, signUp, signIn, signInWithGoogle, signInWithApple, signInWithFacebook, signInWithDiscord, requestRole } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as any)?.from || '/';
 
   const signInForm = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
@@ -48,9 +50,9 @@ const Auth = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user && !showRoleSelector) {
-      navigate('/');
+      navigate(from, { replace: true });
     }
-  }, [user, showRoleSelector, navigate]);
+  }, [user, showRoleSelector, navigate, from]);
 
 
   const onSignIn = async (data: SignInForm) => {

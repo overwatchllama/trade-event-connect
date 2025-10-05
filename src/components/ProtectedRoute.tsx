@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -11,12 +11,13 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ children, requireAuth = true }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!loading && requireAuth && !user) {
-      navigate('/auth', { replace: true });
+      navigate('/auth', { replace: true, state: { from: location.pathname } });
     }
-  }, [user, loading, requireAuth, navigate]);
+  }, [user, loading, requireAuth, navigate, location.pathname]);
 
   if (loading) {
     return (
