@@ -15,6 +15,7 @@ import EventVendors from '@/components/EventVendors';
 import { SubscriptionButton } from '@/components/SubscriptionButton';
 import { LayoutDrawingTool } from '@/components/LayoutDrawingTool';
 import { VendorApplicationDialog } from '@/components/VendorApplicationDialog';
+import { SponsorApplicationDialog } from '@/components/SponsorApplicationDialog';
 import { EventSponsors } from '@/components/EventSponsors';
 
 const EventDetails = () => {
@@ -28,10 +29,12 @@ const EventDetails = () => {
   const [purchasing, setPurchasing] = useState(false);
   const [isOrganizer, setIsOrganizer] = useState(false);
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
+  const [sponsorDialogOpen, setSponsorDialogOpen] = useState(false);
 
   const isVendorPro = subscribed && 
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
   const canSeeVendorInfo = hasRole('vendor') || isVendorPro;
+  const canSeeSponsorInfo = hasRole('sponsor');
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -225,6 +228,13 @@ const EventDetails = () => {
                 )}
 
                 <Separator />
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Event Sponsors</h3>
+                  <EventSponsors eventId={event.id} />
+                </div>
+
+                <Separator />
 
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Vendors at this Event</h3>
@@ -310,6 +320,30 @@ const EventDetails = () => {
                 </CardContent>
               </Card>
             )}
+
+            {canSeeSponsorInfo && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Sponsor Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Support this event and get your brand in front of the community.
+                  </p>
+
+                  {!isOrganizer && (
+                    <Button
+                      className="w-full"
+                      variant="outline"
+                      onClick={() => setSponsorDialogOpen(true)}
+                    >
+                      <Store className="mr-2 h-4 w-4" />
+                      Apply to be a Sponsor
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
@@ -319,6 +353,13 @@ const EventDetails = () => {
           vendorTablePrice={event.vendor_table_price}
           open={vendorDialogOpen}
           onOpenChange={setVendorDialogOpen}
+        />
+
+        <SponsorApplicationDialog
+          eventId={event.id}
+          eventTitle={event.title}
+          open={sponsorDialogOpen}
+          onOpenChange={setSponsorDialogOpen}
         />
       </div>
     </div>
