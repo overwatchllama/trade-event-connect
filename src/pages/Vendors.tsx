@@ -127,8 +127,39 @@ const Vendors = () => {
     if (!user) return;
 
     if (isVendor) {
-      // If already a vendor, open edit dialog
-      setEditDialogOpen(true);
+      // If already a vendor, check if profile exists
+      if (myVendorProfile) {
+        setEditDialogOpen(true);
+      } else {
+        // Create vendor profile first
+        setAddingRole(true);
+        try {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', user.id)
+            .single();
+
+          const { error } = await supabase
+            .from('vendors')
+            .insert({
+              user_id: user.id,
+              business_name: profileData?.full_name || 'My Business',
+              business_email: profileData?.email || user.email
+            });
+
+          if (error) throw error;
+
+          toast.success('Vendor profile created! Refreshing...');
+          await fetchVendors();
+          setEditDialogOpen(true);
+        } catch (error) {
+          console.error('Error creating vendor profile:', error);
+          toast.error('Failed to create vendor profile. Please try again.');
+        } finally {
+          setAddingRole(false);
+        }
+      }
       return;
     }
 
