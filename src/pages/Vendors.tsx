@@ -78,8 +78,7 @@ const Vendors = () => {
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email, avatar_url, role')
-        .in('id', userIds)
-        .eq('role', 'vendor');
+        .in('id', userIds);
 
       if (profilesError) throw profilesError;
 
