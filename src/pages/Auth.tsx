@@ -66,10 +66,13 @@ const Auth = () => {
         variant: 'destructive',
       });
     } else {
+      console.debug('Auth: redirecting after sign-in to', from);
       toast({
         title: 'Welcome back!',
         description: 'You have successfully signed in.',
       });
+      // Immediately redirect to intended page
+      navigate(from, { replace: true });
     }
     setLoading(false);
   };
