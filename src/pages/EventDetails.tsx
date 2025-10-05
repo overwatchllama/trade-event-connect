@@ -227,14 +227,7 @@ const EventDetails = () => {
                   </>
                 )}
 
-                <Separator />
-                
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">Event Sponsors</h3>
-                  <EventSponsors eventId={event.id} />
-                </div>
-
-                <Separator />
+                <EventSponsors eventId={event.id} />
 
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Vendors at this Event</h3>

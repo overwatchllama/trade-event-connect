@@ -55,11 +55,10 @@ export const EventSponsors = ({ eventId }: EventSponsorsProps) => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Event Sponsors</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <h3 className="text-lg font-semibold mb-4">Event Sponsors</h3>
+      <Card>
+        <CardContent className="pt-6">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {eventSponsors.map((eventSponsor) => (
             <div
@@ -104,5 +103,6 @@ export const EventSponsors = ({ eventId }: EventSponsorsProps) => {
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 };
