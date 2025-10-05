@@ -111,7 +111,7 @@ const UserTypeSelector = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-3 gap-8 mb-12">
           {userTypes.map((userType) => {
             const Icon = userType.icon;
             return (
@@ -128,7 +128,7 @@ const UserTypeSelector = () => {
                   </p>
                 </div>
 
-                <div className="space-y-3 mb-8">
+                <div className="space-y-3">
                   {userType.features.map((feature, index) => (
                     <div key={index} className="flex items-center text-sm text-card-foreground">
                       <CheckCircle className="w-4 h-4 text-success mr-3 flex-shrink-0" />
@@ -136,18 +136,26 @@ const UserTypeSelector = () => {
                     </div>
                   ))}
                 </div>
-
-                <Button 
-                  variant={userType.variant} 
-                  size="lg" 
-                  className="w-full"
-                  onClick={() => handleUserTypeClick(userType.variant)}
-                >
-                  {userType.cta}
-                </Button>
               </Card>
             );
           })}
+        </div>
+
+        <div className="text-center">
+          <Button 
+            variant="hero" 
+            size="lg"
+            onClick={() => {
+              if (!user) {
+                toast.info('Please sign in to get started');
+                navigate('/auth');
+              } else {
+                navigate('/events');
+              }
+            }}
+          >
+            Get Started
+          </Button>
         </div>
       </div>
     </section>
