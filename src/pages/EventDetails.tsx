@@ -8,6 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, MapPin, Calendar, Users, Tag, Settings, Store } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRoles } from '@/hooks/useUserRoles';
+import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
 import EventVendors from '@/components/EventVendors';
 import { SubscriptionButton } from '@/components/SubscriptionButton';
@@ -19,11 +21,17 @@ const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { hasRole } = useUserRoles();
+  const { subscribed, subscription_tier } = useSubscription();
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [isOrganizer, setIsOrganizer] = useState(false);
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
+
+  const isVendorPro = subscribed && 
+    (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
+  const canSeeVendorInfo = hasRole('vendor') || isVendorPro;
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -276,30 +284,18 @@ const EventDetails = () => {
               </CardContent>
             </Card>
 
-            {event.total_tables && (
+            {event.total_tables && canSeeVendorInfo && (
               <Card>
                 <CardHeader>
                   <CardTitle>Vendor Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Total Tables</span>
-                      <span className="font-medium">{event.total_tables}</span>
+                  {event.vendor_table_price && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Table Price</span>
+                      <span className="text-2xl font-bold">${event.vendor_table_price}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Available Tables</span>
-                      <span className="font-medium text-success">
-                        {event.tables_available || 0}
-                      </span>
-                    </div>
-                    {event.vendor_table_price && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Table Price</span>
-                        <span className="font-medium">${event.vendor_table_price}</span>
-                      </div>
-                    )}
-                  </div>
+                  )}
 
                   {!isOrganizer && (
                     <Button
