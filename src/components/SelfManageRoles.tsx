@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-type NonProRole = 'vendor' | 'organizer' | 'venue';
+type NonProRole = 'vendor' | 'organizer' | 'venue' | 'sponsor';
 
 interface RoleInfo {
   id: NonProRole;
@@ -29,6 +29,11 @@ const roleDefinitions: RoleInfo[] = [
     id: 'venue',
     label: 'I have a venue',
     description: 'Host events at your location',
+  },
+  {
+    id: 'sponsor',
+    label: "I'm an event sponsor",
+    description: 'Sponsor events and promote your brand',
   },
 ];
 
@@ -55,7 +60,7 @@ export const SelfManageRoles = () => {
 
       // Filter to only non-pro roles (exclude 'user' from display)
       const nonProRoles = (data?.map(r => r.role) || []).filter(role =>
-        ['vendor', 'organizer', 'venue'].includes(role)
+        ['vendor', 'organizer', 'venue', 'sponsor'].includes(role)
       ) as NonProRole[];
 
       setCurrentRoles(nonProRoles);
