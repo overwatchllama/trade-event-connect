@@ -11,8 +11,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Shield, Ban, CheckCircle, MoreHorizontal } from 'lucide-react';
+import { Search, Shield, Ban, CheckCircle, MoreHorizontal, Crown } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ManageSubscriptionDialog } from './ManageSubscriptionDialog';
 
 interface Profile {
   id: string;
@@ -34,6 +35,7 @@ export const UserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [blockReason, setBlockReason] = useState('');
 
@@ -179,6 +181,9 @@ export const UserManagement = () => {
       case 'organizer': return 'default';
       case 'vendor': return 'secondary';
       case 'venue': return 'outline';
+      case 'event_pro': return 'default';
+      case 'vendor_pro': return 'secondary';
+      case 'collector_pro': return 'outline';
       default: return 'secondary';
     }
   };
@@ -273,6 +278,9 @@ export const UserManagement = () => {
                     <SelectItem value="vendor">Add Vendor</SelectItem>
                     <SelectItem value="organizer">Add Organizer</SelectItem>
                     <SelectItem value="venue">Add Venue</SelectItem>
+                    <SelectItem value="event_pro">Add Event Pro</SelectItem>
+                    <SelectItem value="vendor_pro">Add Vendor Pro</SelectItem>
+                    <SelectItem value="collector_pro">Add Collector Pro</SelectItem>
                     <SelectItem value="admin">Add Admin</SelectItem>
                   </SelectContent>
                 </Select>
@@ -284,6 +292,15 @@ export const UserManagement = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setSubscriptionDialogOpen(true);
+                      }}
+                    >
+                      <Crown className="mr-2 h-4 w-4" />
+                      Manage Subscription
+                    </DropdownMenuItem>
                     {user.status === 'blocked' ? (
                       <DropdownMenuItem onClick={() => handleUnblockUser(user.id)}>
                         <CheckCircle className="mr-2 h-4 w-4" />
@@ -307,6 +324,20 @@ export const UserManagement = () => {
           ))}
         </div>
       </CardContent>
+
+      {selectedUser && (
+        <ManageSubscriptionDialog
+          open={subscriptionDialogOpen}
+          onOpenChange={(open) => {
+            setSubscriptionDialogOpen(open);
+            if (!open) {
+              fetchUsers(); // Refresh the list when dialog closes
+            }
+          }}
+          userId={selectedUser.id}
+          userEmail={selectedUser.email}
+        />
+      )}
 
       <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
         <DialogContent>
