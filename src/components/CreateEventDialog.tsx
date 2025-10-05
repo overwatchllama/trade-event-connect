@@ -52,7 +52,8 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
     maxAttendees: '',
     entryFee: '',
     vendorTablePrice: '',
-    totalTables: ''
+    totalTables: '',
+    sponsorTiers: ''
   });
 
   const [isMultiDay, setIsMultiDay] = useState(false);
@@ -212,7 +213,8 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
         maxAttendees: '',
         entryFee: '',
         vendorTablePrice: '',
-        totalTables: ''
+        totalTables: '',
+        sponsorTiers: ''
       });
       setSelectedCardTypes([]);
       setIsMultiDay(false);
@@ -474,7 +476,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="maxAttendees">Max Attendees</Label>
+                <Label htmlFor="maxAttendees">Max Tickets to Sell Online (Optional)</Label>
                 <Input
                   id="maxAttendees"
                   type="number"
@@ -516,6 +518,17 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
                   onChange={(e) => handleInputChange('vendorTablePrice', e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sponsorTiers">Sponsor Tiers (Optional)</Label>
+              <Textarea
+                id="sponsorTiers"
+                placeholder="Describe available sponsorship tiers and benefits (e.g., Platinum - $5000, Gold - $2500, Silver - $1000)"
+                value={formData.sponsorTiers}
+                onChange={(e) => handleInputChange('sponsorTiers', e.target.value)}
+                rows={3}
+              />
             </div>
           </div>
 

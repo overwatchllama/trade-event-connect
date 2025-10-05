@@ -219,13 +219,6 @@ const EventDetails = () => {
                     <p className="font-medium capitalize">{event.event_type} Event</p>
                   </div>
 
-                  {event.max_attendees && (
-                    <div className="flex items-center gap-3">
-                      <Users className="w-5 h-5 text-muted-foreground" />
-                      <p className="font-medium">Max {event.max_attendees} attendees</p>
-                    </div>
-                  )}
-
                   <div className="flex items-center gap-3">
                     <Store className="w-5 h-5 text-muted-foreground" />
                     <p className="font-medium">{vendorCount} vendor{vendorCount !== 1 ? 's' : ''}</p>
