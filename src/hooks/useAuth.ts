@@ -52,7 +52,7 @@ export const useAuth = () => {
   };
 
   const signInWithGoogle = async () => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${window.location.origin}/auth${window.location.search || ''}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -63,7 +63,7 @@ export const useAuth = () => {
   };
 
   const signInWithApple = async () => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${window.location.origin}/auth${window.location.search || ''}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'apple',
       options: {
@@ -74,7 +74,7 @@ export const useAuth = () => {
   };
 
   const signInWithFacebook = async () => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${window.location.origin}/auth${window.location.search || ''}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
       options: {
@@ -85,7 +85,7 @@ export const useAuth = () => {
   };
 
   const signInWithDiscord = async () => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${window.location.origin}/auth${window.location.search || ''}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'discord',
       options: {

@@ -35,7 +35,9 @@ const Auth = () => {
   const { user, signUp, signIn, signInWithGoogle, signInWithApple, signInWithFacebook, signInWithDiscord, requestRole } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as any)?.from || '/';
+  const params = new URLSearchParams(location.search);
+  const fromQuery = params.get('from');
+  const from = fromQuery || (location.state as any)?.from || '/';
 
   const signInForm = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),

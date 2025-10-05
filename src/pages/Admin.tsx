@@ -13,6 +13,7 @@ import { Shield, Users, FileText, Activity } from 'lucide-react';
 const Admin = () => {
   const { user } = useAuth();
   const { isAdmin, loading } = useAdmin();
+  console.debug('AdminPage state', { userPresent: !!user, isAdmin, loading });
 
   if (loading) {
     return (

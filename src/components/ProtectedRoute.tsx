@@ -15,7 +15,9 @@ export const ProtectedRoute = ({ children, requireAuth = true }: ProtectedRouteP
 
   useEffect(() => {
     if (!loading && requireAuth && !user) {
-      navigate('/auth', { replace: true, state: { from: location.pathname } });
+      console.debug('ProtectedRoute redirecting to /auth', { requireAuth, userPresent: !!user, from: location.pathname });
+      const authUrl = `/auth?from=${encodeURIComponent(location.pathname)}`;
+      navigate(authUrl, { replace: true, state: { from: location.pathname } });
     }
   }, [user, loading, requireAuth, navigate, location.pathname]);
 
