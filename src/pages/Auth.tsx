@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
@@ -12,7 +13,8 @@ import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 import { RoleSelector } from '@/components/RoleSelector';
 import { toast } from '@/components/ui/use-toast';
-import { LogIn, UserPlus, Mail, Apple, Facebook, MessageCircle } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Apple, Facebook, MessageCircle, Store, Calendar, MapPin, Award } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -23,6 +25,7 @@ const signUpSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+  roles: z.array(z.enum(['vendor', 'organizer', 'venue', 'sponsor'])).optional(),
 });
 
 type SignInForm = z.infer<typeof signInSchema>;
@@ -32,6 +35,7 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const { user, signUp, signIn, signInWithGoogle, signInWithApple, signInWithFacebook, signInWithDiscord, requestRole } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,7 +50,7 @@ const Auth = () => {
 
   const signUpForm = useForm<SignUpForm>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { email: '', password: '', fullName: '' },
+    defaultValues: { email: '', password: '', fullName: '', roles: [] },
   });
 
   // Redirect if already authenticated
@@ -91,11 +95,57 @@ const Auth = () => {
       });
       setLoading(false);
     } else {
-      toast({
-        title: 'Account Created!',
-        description: 'Please check your email to verify your account.',
-      });
-      setShowRoleSelector(true);
+      // If roles are selected, add them directly
+      if (data.roles && data.roles.length > 0) {
+        try {
+          // Wait a moment for the user to be created
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Get the newly created user
+          const { data: { user: newUser } } = await supabase.auth.getUser();
+          
+          if (newUser) {
+            // Insert all selected roles
+            const roleInserts = data.roles.map(role => ({
+              user_id: newUser.id,
+              role: role
+            }));
+            
+            const { error: roleError } = await supabase
+              .from('user_roles')
+              .insert(roleInserts);
+            
+            if (roleError) {
+              console.error('Error adding roles:', roleError);
+              toast({
+                title: 'Account Created',
+                description: 'Account created successfully! Your selected roles will be activated shortly.',
+                variant: 'default',
+              });
+            } else {
+              toast({
+                title: 'Account Created!',
+                description: `Welcome to CardboardCurators! Your ${data.roles.join(', ')} role${data.roles.length > 1 ? 's have' : ' has'} been activated.`,
+              });
+            }
+          }
+        } catch (roleError) {
+          console.error('Error adding roles:', roleError);
+          toast({
+            title: 'Account Created',
+            description: 'Account created successfully! You can set up your roles in your profile.',
+            variant: 'default',
+          });
+        }
+      } else {
+        toast({
+          title: 'Account Created!',
+          description: 'Welcome to CardboardCurators!',
+        });
+      }
+      
+      // Redirect to home
+      navigate(from, { replace: true });
       setLoading(false);
     }
   };
@@ -312,6 +362,98 @@ const Auth = () => {
                     </FormItem>
                   )}
                 />
+                
+                {/* Role Selection Checkboxes */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Select Your Roles (Optional)</Label>
+                  <p className="text-xs text-muted-foreground">Choose roles that apply to you. You can always update these later.</p>
+                  <div className="space-y-3">
+                    <div className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-secondary/30 transition-colors">
+                      <Checkbox
+                        id="role-vendor"
+                        checked={selectedRoles.includes('vendor')}
+                        onCheckedChange={(checked) => {
+                          const newRoles = checked 
+                            ? [...selectedRoles, 'vendor']
+                            : selectedRoles.filter(r => r !== 'vendor');
+                          setSelectedRoles(newRoles);
+                          signUpForm.setValue('roles', newRoles as any);
+                        }}
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="role-vendor" className="flex items-center gap-2 cursor-pointer font-medium">
+                          <Store className="h-4 w-4 text-vendor" />
+                          Vendor
+                        </Label>
+                        <p className="text-xs text-muted-foreground">I sell trading cards and collectibles</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-secondary/30 transition-colors">
+                      <Checkbox
+                        id="role-organizer"
+                        checked={selectedRoles.includes('organizer')}
+                        onCheckedChange={(checked) => {
+                          const newRoles = checked 
+                            ? [...selectedRoles, 'organizer']
+                            : selectedRoles.filter(r => r !== 'organizer');
+                          setSelectedRoles(newRoles);
+                          signUpForm.setValue('roles', newRoles as any);
+                        }}
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="role-organizer" className="flex items-center gap-2 cursor-pointer font-medium">
+                          <Calendar className="h-4 w-4 text-accent" />
+                          Event Organizer
+                        </Label>
+                        <p className="text-xs text-muted-foreground">I organize trading card events</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-secondary/30 transition-colors">
+                      <Checkbox
+                        id="role-venue"
+                        checked={selectedRoles.includes('venue')}
+                        onCheckedChange={(checked) => {
+                          const newRoles = checked 
+                            ? [...selectedRoles, 'venue']
+                            : selectedRoles.filter(r => r !== 'venue');
+                          setSelectedRoles(newRoles);
+                          signUpForm.setValue('roles', newRoles as any);
+                        }}
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="role-venue" className="flex items-center gap-2 cursor-pointer font-medium">
+                          <MapPin className="h-4 w-4 text-primary" />
+                          Venue Owner
+                        </Label>
+                        <p className="text-xs text-muted-foreground">I host events at my location</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start space-x-3 p-3 rounded-lg border border-border hover:bg-secondary/30 transition-colors">
+                      <Checkbox
+                        id="role-sponsor"
+                        checked={selectedRoles.includes('sponsor')}
+                        onCheckedChange={(checked) => {
+                          const newRoles = checked 
+                            ? [...selectedRoles, 'sponsor']
+                            : selectedRoles.filter(r => r !== 'sponsor');
+                          setSelectedRoles(newRoles);
+                          signUpForm.setValue('roles', newRoles as any);
+                        }}
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="role-sponsor" className="flex items-center gap-2 cursor-pointer font-medium">
+                          <Award className="h-4 w-4 text-secondary" />
+                          Sponsor
+                        </Label>
+                        <p className="text-xs text-muted-foreground">I sponsor trading card events</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Creating Account...' : 'Create Account'}
                 </Button>
