@@ -141,22 +141,17 @@ const UserTypeSelector = () => {
           })}
         </div>
 
-        <div className="text-center">
-          <Button 
-            variant="hero" 
-            size="lg"
-            onClick={() => {
-              if (!user) {
-                toast.info('Please sign in to get started');
-                navigate('/auth');
-              } else {
-                navigate('/events');
-              }
-            }}
-          >
-            Get Started
-          </Button>
-        </div>
+        {!user && (
+          <div className="text-center">
+            <Button 
+              variant="hero" 
+              size="lg"
+              onClick={() => navigate('/auth')}
+            >
+              Get Started
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );
