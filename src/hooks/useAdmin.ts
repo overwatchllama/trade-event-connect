@@ -10,15 +10,33 @@ export const useAdmin = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !profile) {
-      setIsAdmin(false);
-      setLoading(false);
-      return;
-    }
+    const checkAdmin = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
 
-    setIsAdmin(profile.role === 'admin');
-    setLoading(false);
-  }, [user, profile]);
+      try {
+        // Prefer server-side check to avoid stale client cache
+        const { data, error } = await supabase.rpc('is_admin', { user_id: user.id });
+        if (error) {
+          console.error('is_admin RPC error:', error);
+          // Fallback to profile role if RPC fails
+          setIsAdmin(profile?.role === 'admin');
+        } else {
+          setIsAdmin(!!data);
+        }
+      } catch (e) {
+        console.error('is_admin RPC exception:', e);
+        setIsAdmin(profile?.role === 'admin');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAdmin();
+  }, [user, profile?.role]);
 
   const promoteUser = async (userId: string, newRole: 'user' | 'vendor' | 'organizer' | 'venue' | 'admin') => {
     if (!isAdmin) throw new Error('Unauthorized');
