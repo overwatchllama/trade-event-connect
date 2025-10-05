@@ -464,7 +464,13 @@ const Vendors = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredVendors.map((vendor) => (
-                    <VendorGridCard key={vendor.id} vendor={vendor} getInitials={getInitials} />
+                    <VendorGridCard 
+                      key={vendor.id} 
+                      vendor={vendor} 
+                      getInitials={getInitials}
+                      currentUserId={user?.id}
+                      onEditClick={() => setEditDialogOpen(true)}
+                    />
                   ))}
                 </div>
               )}
@@ -556,7 +562,13 @@ const Vendors = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredVendors.map((vendor) => (
-                <VendorGridCard key={vendor.id} vendor={vendor} getInitials={getInitials} />
+                <VendorGridCard 
+                  key={vendor.id} 
+                  vendor={vendor} 
+                  getInitials={getInitials}
+                  currentUserId={user?.id}
+                  onEditClick={() => setEditDialogOpen(true)}
+                />
               ))}
             </div>
           )

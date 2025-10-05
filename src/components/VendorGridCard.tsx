@@ -40,9 +40,11 @@ interface VendorProfile {
 interface VendorGridCardProps {
   vendor: VendorProfile;
   getInitials: (name: string | null) => string;
+  currentUserId?: string;
+  onEditClick?: () => void;
 }
 
-export const VendorGridCard = ({ vendor, getInitials }: VendorGridCardProps) => {
+export const VendorGridCard = ({ vendor, getInitials, currentUserId, onEditClick }: VendorGridCardProps) => {
   const formatVendorType = (type: string) => {
     return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
@@ -128,13 +130,23 @@ export const VendorGridCard = ({ vendor, getInitials }: VendorGridCardProps) => 
               View Profile
             </Link>
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => toast.info('Contact feature coming soon!')}
-          >
-            Contact
-          </Button>
+          {currentUserId === vendor.user_id ? (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={onEditClick}
+            >
+              Edit Profile
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => toast.info('Contact feature coming soon!')}
+            >
+              Contact
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
