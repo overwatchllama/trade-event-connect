@@ -294,8 +294,10 @@ export const UserManagement = () => {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem 
                       onClick={() => {
+                        console.log('Manage Subscription clicked for user:', user.email);
                         setSelectedUser(user);
                         setSubscriptionDialogOpen(true);
+                        console.log('State set - subscriptionDialogOpen:', true, 'selectedUser:', user.email);
                       }}
                     >
                       <Crown className="mr-2 h-4 w-4" />
@@ -326,17 +328,24 @@ export const UserManagement = () => {
       </CardContent>
 
       {selectedUser && (
-        <ManageSubscriptionDialog
-          open={subscriptionDialogOpen}
-          onOpenChange={(open) => {
-            setSubscriptionDialogOpen(open);
-            if (!open) {
-              fetchUsers(); // Refresh the list when dialog closes
-            }
-          }}
-          userId={selectedUser.id}
-          userEmail={selectedUser.email}
-        />
+        <>
+          {console.log('Rendering ManageSubscriptionDialog:', { 
+            subscriptionDialogOpen, 
+            selectedUserEmail: selectedUser.email 
+          })}
+          <ManageSubscriptionDialog
+            open={subscriptionDialogOpen}
+            onOpenChange={(open) => {
+              console.log('Dialog onOpenChange called:', open);
+              setSubscriptionDialogOpen(open);
+              if (!open) {
+                fetchUsers(); // Refresh the list when dialog closes
+              }
+            }}
+            userId={selectedUser.id}
+            userEmail={selectedUser.email}
+          />
+        </>
       )}
 
       <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
