@@ -120,7 +120,7 @@ const Events = () => {
           tablesAvailable: event.tables_available || 0,
           totalTables: event.total_tables || 0,
           cardTypes: event.card_types || [],
-          eventType: event.event_type,
+          event_type: event.event_type,
           price: event.entry_fee || 0,
           flyerUrl: event.flyer_url,
           isMultiDay: event.is_multi_day
@@ -187,7 +187,7 @@ const Events = () => {
   }, [location.state]);
 
   const cardTypes = ["all", "Pokemon", "MTG", "Sports", "One Piece", "Yu-Gi-Oh"];
-  const eventTypes = ["all", "play", "collect"];
+  const eventTypes = ["all", "play", "show"];
 
   // Filter events based on selected filters
   const getFilteredEvents = (eventsToFilter: any[]) => {
@@ -203,7 +203,7 @@ const Events = () => {
       const matchesStates = selectedStates.length === 0 || 
         selectedStates.includes(event.state);
       
-      const matchesEventType = selectedEventType === "all" || event.eventType === selectedEventType;
+      const matchesEventType = selectedEventType === "all" || event.event_type === selectedEventType;
       
       return matchesSearch && matchesCardType && matchesStates && matchesEventType;
     });
@@ -244,7 +244,7 @@ const Events = () => {
               <SelectContent>
                 {eventTypes.map((type) => (
                   <SelectItem key={type} value={type}>
-                    {type === "all" ? "All Events" : type === "play" ? "Play Events" : "Collect Events"}
+                    {type === "all" ? "All Events" : type === "play" ? "Play Events" : "Show Events"}
                   </SelectItem>
                 ))}
               </SelectContent>

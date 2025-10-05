@@ -455,11 +455,8 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
                     <SelectValue placeholder="Select event type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="tournament">Tournament</SelectItem>
-                    <SelectItem value="draft">Draft Event</SelectItem>
-                    <SelectItem value="trade">Trade Show</SelectItem>
-                    <SelectItem value="casual">Casual Play</SelectItem>
-                    <SelectItem value="release">Release Event</SelectItem>
+                    <SelectItem value="play">Play Event (Tournament/Gameplay)</SelectItem>
+                    <SelectItem value="show">Show Event (Trade Show/Exhibition)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

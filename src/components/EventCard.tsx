@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Clock, Crown, Settings, UserCheck } from "lucide-react";
+import { MapPin, Calendar, Clock, Crown, Settings, UserCheck, Store } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { SubscriptionButton } from "@/components/SubscriptionButton";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import ManageVendorsDialog from "./ManageVendorsDialog";
 import EventVendors from "./EventVendors";
+import { VendorApplicationDialog } from "./VendorApplicationDialog";
 
 interface EventCardProps {
   event: {
@@ -31,6 +32,7 @@ interface EventCardProps {
     cardTypes: string[];
     image?: string;
     price: number;
+    event_type?: string;
   };
   userType?: "collector" | "vendor" | "organizer";
   isMyEvent?: boolean;
@@ -43,9 +45,12 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
   const [bookingLoading, setBookingLoading] = useState(false);
   const [manageVendorsOpen, setManageVendorsOpen] = useState(false);
   const [organizerVendorId, setOrganizerVendorId] = useState<string | null>(null);
+  const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
 
   const isVendorPro = subscribed && 
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
+
+  const isShowEvent = event.event_type === 'show';
 
   // Check if organizer is a vendor
   useEffect(() => {
@@ -163,6 +168,7 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                   <Link 
                     to={`/vendor/${organizerVendorId}`}
                     className="font-medium text-card-foreground hover:text-primary transition-colors underline decoration-dotted"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     {event.organizer}
                   </Link>
@@ -171,6 +177,23 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                 )}
               </div>
             </div>
+
+            {isShowEvent && (
+              <div className="text-sm text-center">
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setVendorDialogOpen(true);
+                  }}
+                >
+                  <Store className="w-3 h-3 mr-1" />
+                  Apply to be a Vendor
+                </Button>
+              </div>
+            )}
 
             {/* Event Vendors */}
             <EventVendors eventId={event.id} maxDisplay={2} />
@@ -273,6 +296,14 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
         onOpenChange={setManageVendorsOpen}
         eventId={event.id}
         eventTitle={event.title}
+      />
+
+      <VendorApplicationDialog
+        eventId={event.id}
+        eventTitle={event.title}
+        vendorTablePrice={event.price}
+        open={vendorDialogOpen}
+        onOpenChange={setVendorDialogOpen}
       />
     </>
   );
