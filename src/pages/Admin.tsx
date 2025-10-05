@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserManagement } from '@/components/UserManagement';
 import { RoleRequests } from '@/components/RoleRequests';
 import { AdminActions } from '@/components/AdminActions';
+import { AdminAnnouncements } from '@/components/AdminAnnouncements';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Users, FileText, Activity } from 'lucide-react';
+import { Shield, Users, FileText, Activity, Mail } from 'lucide-react';
 
 const Admin = () => {
   const { user } = useAuth();
@@ -61,7 +62,7 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Users
@@ -69,6 +70,10 @@ const Admin = () => {
             <TabsTrigger value="role-requests" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Role Requests
+            </TabsTrigger>
+            <TabsTrigger value="announcements" className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              Announcements
             </TabsTrigger>
             <TabsTrigger value="actions" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
@@ -86,6 +91,10 @@ const Admin = () => {
 
           <TabsContent value="role-requests">
             <RoleRequests />
+          </TabsContent>
+
+          <TabsContent value="announcements">
+            <AdminAnnouncements />
           </TabsContent>
 
           <TabsContent value="actions">
