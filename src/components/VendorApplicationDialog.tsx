@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { toast } from "sonner";
 import { Loader2, Store } from "lucide-react";
 
@@ -32,6 +33,7 @@ export const VendorApplicationDialog = ({
   onOpenChange,
 }: VendorApplicationDialogProps) => {
   const { user } = useAuth();
+  const { hasRole } = useUserRoles();
   const navigate = useNavigate();
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -62,6 +64,13 @@ export const VendorApplicationDialog = ({
     if (!user) {
       toast.error("Please sign in to apply");
       navigate("/auth");
+      return;
+    }
+
+    // Check if user has vendor role
+    if (!hasRole('vendor')) {
+      toast.error("You need the vendor role to apply. Please request it from your profile.");
+      navigate("/profile");
       return;
     }
 

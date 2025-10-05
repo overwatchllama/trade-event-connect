@@ -5,6 +5,7 @@ import EventCard from "@/components/EventCard";
 import EventsCalendar from "@/components/EventsCalendar";
 import CreateEventDialog from "@/components/CreateEventDialog";
 import { VenuesList } from "@/components/VenuesList";
+import { EventSponsors } from "@/components/EventSponsors";
 import { MultiSelect, Option } from "@/components/ui/multi-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -448,9 +449,10 @@ const Events = () => {
           </Tabs>
         ) : profile?.role === 'vendor' ? (
           <Tabs defaultValue="tickets" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="tickets">Buy Tickets</TabsTrigger>
               <TabsTrigger value="tables">Book Tables</TabsTrigger>
+              <TabsTrigger value="sponsors">Sponsor Info</TabsTrigger>
               <TabsTrigger value="calendar-tickets">Calendar</TabsTrigger>
               <TabsTrigger value="calendar-tables">Table Calendar</TabsTrigger>
               <TabsTrigger value="venues">Venues</TabsTrigger>
@@ -492,14 +494,32 @@ const Events = () => {
               <EventsCalendar events={filteredAllEvents} userType="vendor" />
             </TabsContent>
 
+            <TabsContent value="sponsors" className="mt-6">
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-foreground mb-4">Event Sponsors</h2>
+                <p className="text-muted-foreground mb-6">
+                  View sponsor opportunities at upcoming events. Contact event organizers for sponsorship details.
+                </p>
+              </div>
+              <div className="space-y-8">
+                {filteredAllEvents.map((event) => (
+                  <div key={`sponsor-${event.id}`}>
+                    <h3 className="text-xl font-semibold mb-4">{event.title}</h3>
+                    <EventSponsors eventId={event.id} />
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+
             <TabsContent value="venues" className="mt-6">
               <VenuesList />
             </TabsContent>
           </Tabs>
         ) : (
           <Tabs defaultValue="events" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="events">Events</TabsTrigger>
+              <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
               <TabsTrigger value="venues">Venues</TabsTrigger>
             </TabsList>
             
@@ -516,6 +536,23 @@ const Events = () => {
                     <EventCard key={event.id} event={event} userType={profile?.role || "user"} />
                   ))
                 )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="sponsors" className="mt-6">
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-foreground mb-4">Event Sponsors</h2>
+                <p className="text-muted-foreground mb-6">
+                  Check out companies sponsoring upcoming events in our community.
+                </p>
+              </div>
+              <div className="space-y-8">
+                {filteredAllEvents.map((event) => (
+                  <div key={`sponsor-${event.id}`}>
+                    <h3 className="text-xl font-semibold mb-4">{event.title}</h3>
+                    <EventSponsors eventId={event.id} />
+                  </div>
+                ))}
               </div>
             </TabsContent>
 

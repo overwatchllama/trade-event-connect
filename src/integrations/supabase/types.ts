@@ -935,6 +935,7 @@ export type Database = {
         | "event_pro"
         | "vendor_pro"
         | "collector_pro"
+        | "sponsor"
       vendor_application_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -1093,6 +1094,7 @@ export const Constants = {
         "event_pro",
         "vendor_pro",
         "collector_pro",
+        "sponsor",
       ],
       vendor_application_status: ["pending", "approved", "rejected"],
     },

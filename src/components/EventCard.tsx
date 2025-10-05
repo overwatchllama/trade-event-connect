@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Clock, Crown, Settings, UserCheck, Store } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { useSubscription } from "@/hooks/useSubscription";
 import { SubscriptionButton } from "@/components/SubscriptionButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import ManageVendorsDialog from "./ManageVendorsDialog";
 import EventVendors from "./EventVendors";
 import { VendorApplicationDialog } from "./VendorApplicationDialog";
+import { SponsorApplicationDialog } from "./SponsorApplicationDialog";
 
 interface EventCardProps {
   event: {
@@ -40,12 +42,14 @@ interface EventCardProps {
 
 const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCardProps) => {
   const { user } = useAuth();
+  const { hasRole } = useUserRoles();
   const navigate = useNavigate();
   const { subscribed, subscription_tier, loading: subscriptionLoading } = useSubscription();
   const [bookingLoading, setBookingLoading] = useState(false);
   const [manageVendorsOpen, setManageVendorsOpen] = useState(false);
   const [organizerVendorId, setOrganizerVendorId] = useState<string | null>(null);
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
+  const [sponsorDialogOpen, setSponsorDialogOpen] = useState(false);
 
   const isVendorPro = subscribed && 
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
@@ -179,19 +183,35 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
             </div>
 
             {isShowEvent && (
-              <div className="text-sm text-center">
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="h-auto p-0 text-primary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setVendorDialogOpen(true);
-                  }}
-                >
-                  <Store className="w-3 h-3 mr-1" />
-                  Apply to be a Vendor
-                </Button>
+              <div className="flex flex-col sm:flex-row gap-2 text-sm text-center">
+                {hasRole('vendor') && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-primary flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setVendorDialogOpen(true);
+                    }}
+                  >
+                    <Store className="w-3 h-3 mr-1" />
+                    Apply as Vendor
+                  </Button>
+                )}
+                {hasRole('sponsor') && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-primary flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSponsorDialogOpen(true);
+                    }}
+                  >
+                    <Crown className="w-3 h-3 mr-1" />
+                    Become a Sponsor
+                  </Button>
+                )}
               </div>
             )}
 
@@ -304,6 +324,13 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
         vendorTablePrice={event.price}
         open={vendorDialogOpen}
         onOpenChange={setVendorDialogOpen}
+      />
+
+      <SponsorApplicationDialog
+        eventId={event.id}
+        eventTitle={event.title}
+        open={sponsorDialogOpen}
+        onOpenChange={setSponsorDialogOpen}
       />
     </>
   );
