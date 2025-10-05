@@ -54,13 +54,15 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
     maxAttendees: '',
     entryFee: '',
     vendorTablePrice: '',
-    totalTables: '',
-    sponsorTiers: ''
+    totalTables: ''
   });
 
   const [isMultiDay, setIsMultiDay] = useState(false);
   const [eventDays, setEventDays] = useState([
     { date: '', startTime: '', endTime: '', dayNumber: 1 }
+  ]);
+  const [sponsorTiers, setSponsorTiers] = useState([
+    { tier: '', cost: '' }
   ]);
   const [flyerFile, setFlyerFile] = useState<File | null>(null);
   const [flyerPreview, setFlyerPreview] = useState<string | null>(null);
@@ -94,13 +96,26 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
         maxAttendees: event.max_attendees?.toString() || '',
         entryFee: event.entry_fee?.toString() || '',
         vendorTablePrice: event.vendor_table_price?.toString() || '',
-        totalTables: event.total_tables?.toString() || '',
-        sponsorTiers: event.sponsor_tiers || ''
+        totalTables: event.total_tables?.toString() || ''
       });
 
       setSelectedCardTypes(event.card_types || []);
       setIsMultiDay(event.is_multi_day || false);
       setFlyerPreview(event.flyer_url || null);
+
+      // Parse sponsor tiers from JSON
+      if (event.sponsor_tiers) {
+        try {
+          const tiers = typeof event.sponsor_tiers === 'string' 
+            ? JSON.parse(event.sponsor_tiers) 
+            : event.sponsor_tiers;
+          setSponsorTiers(tiers.length > 0 ? tiers : [{ tier: '', cost: '' }]);
+        } catch (e) {
+          setSponsorTiers([{ tier: '', cost: '' }]);
+        }
+      } else {
+        setSponsorTiers([{ tier: '', cost: '' }]);
+      }
 
       // Fetch event days
       const { data: days, error: daysError } = await supabase
@@ -163,6 +178,22 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
     ));
   };
 
+  const addSponsorTier = () => {
+    setSponsorTiers(prev => [...prev, { tier: '', cost: '' }]);
+  };
+
+  const removeSponsorTier = (index: number) => {
+    if (sponsorTiers.length > 1) {
+      setSponsorTiers(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateSponsorTier = (index: number, field: string, value: string) => {
+    setSponsorTiers(prev => prev.map((tier, i) => 
+      i === index ? { ...tier, [field]: value } : tier
+    ));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
@@ -217,7 +248,9 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
           total_tables: formData.totalTables ? parseInt(formData.totalTables) : null,
           is_multi_day: isMultiDay,
           flyer_url: flyerUrl,
-          sponsor_tiers: formData.sponsorTiers || null
+          sponsor_tiers: sponsorTiers.some(t => t.tier && t.cost) 
+            ? JSON.stringify(sponsorTiers.filter(t => t.tier && t.cost)) 
+            : null
         })
         .eq('id', eventId);
 
@@ -551,13 +584,49 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
 
             <div className="space-y-2">
               <Label htmlFor="sponsorTiers">Sponsor Tiers (Optional)</Label>
-              <Textarea
-                id="sponsorTiers"
-                placeholder="Describe available sponsorship tiers and benefits (e.g., Platinum - $5000, Gold - $2500, Silver - $1000)"
-                value={formData.sponsorTiers}
-                onChange={(e) => handleInputChange('sponsorTiers', e.target.value)}
-                rows={3}
-              />
+              <div className="space-y-3">
+                {sponsorTiers.map((tier, index) => (
+                  <div key={index} className="flex gap-2 items-end">
+                    <div className="flex-1 space-y-2">
+                      <Label className="text-xs">Tier Name</Label>
+                      <Input
+                        placeholder="e.g., Platinum"
+                        value={tier.tier}
+                        onChange={(e) => updateSponsorTier(index, 'tier', e.target.value)}
+                      />
+                    </div>
+                    <div className="w-32 space-y-2">
+                      <Label className="text-xs">Cost ($)</Label>
+                      <Input
+                        type="number"
+                        placeholder="5000"
+                        value={tier.cost}
+                        onChange={(e) => updateSponsorTier(index, 'cost', e.target.value)}
+                      />
+                    </div>
+                    {sponsorTiers.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeSponsorTier(index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addSponsorTier}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Sponsor Tier
+                </Button>
+              </div>
             </div>
           </div>
 
