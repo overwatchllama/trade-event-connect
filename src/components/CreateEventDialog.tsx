@@ -168,7 +168,8 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
           organizer_id: user.id,
           organizer_name: organizer_name,
           is_multi_day: isMultiDay,
-          flyer_url: flyerUrl
+          flyer_url: flyerUrl,
+          sponsor_tiers: formData.sponsorTiers || null
         })
         .select()
         .single();

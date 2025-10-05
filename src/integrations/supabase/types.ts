@@ -302,6 +302,7 @@ export type Database = {
           max_attendees: number | null
           organizer_id: string
           organizer_name: string
+          sponsor_tiers: string | null
           state: string
           tables_available: number | null
           title: string
@@ -329,6 +330,7 @@ export type Database = {
           max_attendees?: number | null
           organizer_id: string
           organizer_name: string
+          sponsor_tiers?: string | null
           state: string
           tables_available?: number | null
           title: string
@@ -356,6 +358,7 @@ export type Database = {
           max_attendees?: number | null
           organizer_id?: string
           organizer_name?: string
+          sponsor_tiers?: string | null
           state?: string
           tables_available?: number | null
           title?: string
