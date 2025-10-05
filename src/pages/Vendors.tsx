@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Header from '@/components/Header';
@@ -45,6 +46,7 @@ interface VendorProfile {
     email: string;
     avatar_url: string | null;
     role: string;
+    location_state: string | null;
   };
 }
 
@@ -56,6 +58,7 @@ const Vendors = () => {
   const [myVendorProfile, setMyVendorProfile] = useState<VendorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedState, setSelectedState] = useState<string>('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [addingRole, setAddingRole] = useState(false);
 
@@ -77,7 +80,7 @@ const Vendors = () => {
       const userIds = vendorsData?.map(v => v.user_id) || [];
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, email, avatar_url, role')
+        .select('id, full_name, email, avatar_url, role, location_state')
         .in('id', userIds);
 
       if (profilesError) throw profilesError;
@@ -117,8 +120,9 @@ const Vendors = () => {
     }
   };
 
-  const handleProfileUpdate = (updatedProfile: VendorProfile) => {
+  const handleProfileUpdate = async (updatedProfile: VendorProfile) => {
     setMyVendorProfile(updatedProfile);
+    await fetchVendors(); // Refetch to update the list
     toast.success('Profile updated successfully!');
   };
 
@@ -196,11 +200,22 @@ const Vendors = () => {
     }
   };
 
-  const filteredVendors = vendors.filter(vendor =>
-    vendor.business_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendor.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendor.profiles?.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredVendors = vendors.filter(vendor => {
+    const matchesSearch = vendor.business_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.profiles?.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesState = !selectedState || selectedState === 'all' || vendor.profiles?.location_state === selectedState;
+    
+    return matchesSearch && matchesState;
+  });
+
+  // Get unique states for filter
+  const availableStates = Array.from(new Set(
+    vendors
+      .map(v => v.profiles?.location_state)
+      .filter(Boolean)
+  )).sort() as string[];
 
   const getInitials = (name: string | null) => {
     if (!name) return 'V';
@@ -355,8 +370,8 @@ const Vendors = () => {
             </TabsContent>
             <TabsContent value="others">
               {/* Search Bar for Other Vendors */}
-              <div className="mb-6">
-                <div className="relative max-w-md">
+              <div className="mb-6 flex gap-4">
+                <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
                     placeholder="Search other vendors..."
@@ -365,6 +380,17 @@ const Vendors = () => {
                     className="pl-10"
                   />
                 </div>
+                <Select value={selectedState} onValueChange={setSelectedState}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Filter by state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All States</SelectItem>
+                    {availableStates.map(state => (
+                      <SelectItem key={state} value={state}>{state}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
               {/* Other Vendors Grid */}
@@ -416,14 +442,27 @@ const Vendors = () => {
           </Tabs>
         ) : (
           /* Search Bar for non-vendors */
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search vendors by name or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search vendors by name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={selectedState} onValueChange={setSelectedState}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filter by state" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All States</SelectItem>
+                {availableStates.map(state => (
+                  <SelectItem key={state} value={state}>{state}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
         </div>

@@ -33,6 +33,7 @@ interface VendorProfile {
     email: string;
     avatar_url: string | null;
     role: string;
+    location_state: string | null;
   };
 }
 
@@ -45,6 +46,13 @@ export const VendorGridCard = ({ vendor, getInitials }: VendorGridCardProps) => 
   const formatVendorType = (type: string) => {
     return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
+
+  // Check if vendor is brick and mortar (has physical store)
+  const isBrickAndMortar = vendor.vendor_types?.some(type => 
+    type.toLowerCase().includes('brick') || 
+    type.toLowerCase().includes('store') ||
+    type.toLowerCase().includes('shop')
+  );
 
   return (
     <Card className="hover:shadow-lg-custom transition-shadow">
@@ -73,10 +81,21 @@ export const VendorGridCard = ({ vendor, getInitials }: VendorGridCardProps) => 
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center text-sm text-muted-foreground">
-          <MapPin className="h-4 w-4 mr-2" />
-          {vendor.business_address || 'Available nationwide'}
-        </div>
+        {/* Only show address for brick and mortar vendors */}
+        {isBrickAndMortar && vendor.business_address && (
+          <div className="flex items-center text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4 mr-2" />
+            {vendor.business_address}
+          </div>
+        )}
+        
+        {/* Show state for all vendors */}
+        {!isBrickAndMortar && vendor.profiles?.location_state && (
+          <div className="flex items-center text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4 mr-2" />
+            {vendor.profiles.location_state}
+          </div>
+        )}
         
         {/* Vendor Types */}
         {vendor.vendor_types && vendor.vendor_types.length > 0 && (
