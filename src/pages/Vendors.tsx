@@ -235,6 +235,10 @@ const Vendors = () => {
       .filter(Boolean)
   )).sort();
 
+  const formatVendorType = (type: string) => {
+    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
   const getInitials = (name: string | null) => {
     if (!name) return 'V';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -406,7 +410,7 @@ const Vendors = () => {
                     <SelectItem value="all">All Types</SelectItem>
                     {availableVendorTypes.map(type => (
                       <SelectItem key={type} value={type}>
-                        {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        {formatVendorType(type)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -491,7 +495,7 @@ const Vendors = () => {
                 <SelectItem value="all">All Types</SelectItem>
                 {availableVendorTypes.map(type => (
                   <SelectItem key={type} value={type}>
-                    {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    {formatVendorType(type)}
                   </SelectItem>
                 ))}
               </SelectContent>

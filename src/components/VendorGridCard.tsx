@@ -44,7 +44,7 @@ interface VendorGridCardProps {
 
 export const VendorGridCard = ({ vendor, getInitials }: VendorGridCardProps) => {
   const formatVendorType = (type: string) => {
-    return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   // Check if vendor is brick and mortar (has physical store)
