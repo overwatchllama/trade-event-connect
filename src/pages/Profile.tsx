@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SelfManageRoles } from '@/components/SelfManageRoles';
+import { ManageVenue } from '@/components/ManageVenue';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Full name must be at least 2 characters'),
@@ -50,6 +51,7 @@ const Profile = () => {
   const [profile, setProfile] = useState<any>(null);
   const [roleRequests, setRoleRequests] = useState<any[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialMediaLink[]>([]);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
   const { user, requestRole } = useAuth();
   const navigate = useNavigate();
 
@@ -118,8 +120,22 @@ const Profile = () => {
       }
     };
 
+    const fetchUserRoles = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+
+      if (data) {
+        setUserRoles(data.map(r => r.role));
+      }
+    };
+
     fetchProfile();
     fetchRoleRequests();
+    fetchUserRoles();
   }, [user, form]);
 
   const socialPlatforms = [
@@ -265,9 +281,12 @@ const Profile = () => {
           </div>
 
           <Tabs defaultValue="personal" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className={`grid w-full ${userRoles.includes('venue') ? 'grid-cols-4' : 'grid-cols-3'}`}>
               <TabsTrigger value="personal">Personal Info</TabsTrigger>
               <TabsTrigger value="roles">Roles</TabsTrigger>
+              {userRoles.includes('venue') && (
+                <TabsTrigger value="venue">My Venue</TabsTrigger>
+              )}
               <TabsTrigger value="plans">Plans</TabsTrigger>
             </TabsList>
 
@@ -581,6 +600,12 @@ const Profile = () => {
             <TabsContent value="roles" className="space-y-6">
               <SelfManageRoles />
             </TabsContent>
+
+            {userRoles.includes('venue') && (
+              <TabsContent value="venue" className="space-y-6">
+                <ManageVenue />
+              </TabsContent>
+            )}
 
             <TabsContent value="plans" className="space-y-6">
               <Card>
