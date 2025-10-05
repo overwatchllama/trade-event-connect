@@ -13,6 +13,7 @@ import EditVendorProfile from '@/components/EditVendorProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useVendorProfile } from '@/hooks/useVendorProfile';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import { Search, Store, Mail, MapPin, Star, Users, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -50,11 +51,13 @@ interface VendorProfile {
 const Vendors = () => {
   const { user } = useAuth();
   const { hasVendorRole } = useVendorProfile();
+  const { isVendor } = useUserRoles();
   const [vendors, setVendors] = useState<VendorProfile[]>([]);
   const [myVendorProfile, setMyVendorProfile] = useState<VendorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [addingRole, setAddingRole] = useState(false);
 
   useEffect(() => {
     fetchVendors();
@@ -120,6 +123,35 @@ const Vendors = () => {
     toast.success('Profile updated successfully!');
   };
 
+  const handleBecomeVendor = async () => {
+    if (!user) return;
+
+    if (isVendor) {
+      // If already a vendor, open edit dialog
+      setEditDialogOpen(true);
+      return;
+    }
+
+    // Add vendor role
+    setAddingRole(true);
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .insert({ user_id: user.id, role: 'vendor' });
+
+      if (error) throw error;
+
+      toast.success('Vendor role added! Refreshing...');
+      // Refresh the page to update the UI
+      window.location.reload();
+    } catch (error) {
+      console.error('Error adding vendor role:', error);
+      toast.error('Failed to add vendor role. Please try again.');
+    } finally {
+      setAddingRole(false);
+    }
+  };
+
   const filteredVendors = vendors.filter(vendor =>
     vendor.business_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vendor.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -148,10 +180,15 @@ const Vendors = () => {
               </p>
             </div>
             
-            {/* Apply to Become Vendor Button - Only show if not already a vendor */}
-            {user && !hasVendorRole && (
-              <Button variant="hero" size="lg">
-                + Become a Vendor
+            {/* Become/Edit Vendor Button */}
+            {user && (
+              <Button 
+                variant="hero" 
+                size="lg"
+                onClick={handleBecomeVendor}
+                disabled={addingRole}
+              >
+                {isVendor ? 'Edit Vendor Profile' : '+ Become a Vendor'}
               </Button>
             )}
           </div>
