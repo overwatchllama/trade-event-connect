@@ -59,8 +59,21 @@ const Vendors = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedState, setSelectedState] = useState<string>('');
+  const [selectedVendorType, setSelectedVendorType] = useState<string>('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [addingRole, setAddingRole] = useState(false);
+
+  // US States list
+  const usStates = [
+    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+    'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
+    'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan',
+    'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
+    'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
+    'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
+    'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia',
+    'Wisconsin', 'Wyoming'
+  ];
 
   useEffect(() => {
     fetchVendors();
@@ -203,19 +216,24 @@ const Vendors = () => {
   const filteredVendors = vendors.filter(vendor => {
     const matchesSearch = vendor.business_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vendor.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vendor.profiles?.email.toLowerCase().includes(searchTerm.toLowerCase());
+      vendor.profiles?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.profiles?.location_state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.business_address?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesState = !selectedState || selectedState === 'all' || vendor.profiles?.location_state === selectedState;
     
-    return matchesSearch && matchesState;
+    const matchesVendorType = !selectedVendorType || selectedVendorType === 'all' || 
+      vendor.vendor_types?.includes(selectedVendorType);
+    
+    return matchesSearch && matchesState && matchesVendorType;
   });
 
-  // Get unique states for filter
-  const availableStates = Array.from(new Set(
+  // Get unique vendor types for filter
+  const availableVendorTypes = Array.from(new Set(
     vendors
-      .map(v => v.profiles?.location_state)
+      .flatMap(v => v.vendor_types || [])
       .filter(Boolean)
-  )).sort() as string[];
+  )).sort();
 
   const getInitials = (name: string | null) => {
     if (!name) return 'V';
@@ -369,24 +387,37 @@ const Vendors = () => {
               )}
             </TabsContent>
             <TabsContent value="others">
-              {/* Search Bar for Other Vendors */}
-              <div className="mb-6 flex gap-4">
+              {/* Search and Filter Bar for Other Vendors */}
+              <div className="mb-6 flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder="Search other vendors..."
+                    placeholder="Search vendors by name, email, state, or zip..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
                   />
                 </div>
+                <Select value={selectedVendorType} onValueChange={setSelectedVendorType}>
+                  <SelectTrigger className="w-full md:w-[200px] bg-background">
+                    <SelectValue placeholder="Vendor Type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    <SelectItem value="all">All Types</SelectItem>
+                    {availableVendorTypes.map(type => (
+                      <SelectItem key={type} value={type}>
+                        {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={selectedState} onValueChange={setSelectedState}>
-                  <SelectTrigger className="w-[200px]">
+                  <SelectTrigger className="w-full md:w-[200px] bg-background">
                     <SelectValue placeholder="Filter by state" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background z-50">
                     <SelectItem value="all">All States</SelectItem>
-                    {availableStates.map(state => (
+                    {usStates.map(state => (
                       <SelectItem key={state} value={state}>{state}</SelectItem>
                     ))}
                   </SelectContent>
@@ -441,24 +472,37 @@ const Vendors = () => {
             </TabsContent>
           </Tabs>
         ) : (
-          /* Search Bar for non-vendors */
-          <div className="flex gap-4">
+          /* Search and Filters for non-vendors */
+          <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search vendors by name or email..."
+                placeholder="Search vendors by name, email, state, or zip..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
+            <Select value={selectedVendorType} onValueChange={setSelectedVendorType}>
+              <SelectTrigger className="w-full md:w-[200px] bg-background">
+                <SelectValue placeholder="Vendor Type" />
+              </SelectTrigger>
+              <SelectContent className="bg-background z-50">
+                <SelectItem value="all">All Types</SelectItem>
+                {availableVendorTypes.map(type => (
+                  <SelectItem key={type} value={type}>
+                    {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={selectedState} onValueChange={setSelectedState}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full md:w-[200px] bg-background">
                 <SelectValue placeholder="Filter by state" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background z-50">
                 <SelectItem value="all">All States</SelectItem>
-                {availableStates.map(state => (
+                {usStates.map(state => (
                   <SelectItem key={state} value={state}>{state}</SelectItem>
                 ))}
               </SelectContent>
