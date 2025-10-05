@@ -839,7 +839,15 @@ export type Database = {
         | "heavy_play"
         | "damaged"
       payment_status: "unpaid" | "paid" | "refunded"
-      user_role: "user" | "vendor" | "organizer" | "venue" | "admin"
+      user_role:
+        | "user"
+        | "vendor"
+        | "organizer"
+        | "venue"
+        | "admin"
+        | "event_pro"
+        | "vendor_pro"
+        | "collector_pro"
       vendor_application_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -989,7 +997,16 @@ export const Constants = {
         "damaged",
       ],
       payment_status: ["unpaid", "paid", "refunded"],
-      user_role: ["user", "vendor", "organizer", "venue", "admin"],
+      user_role: [
+        "user",
+        "vendor",
+        "organizer",
+        "venue",
+        "admin",
+        "event_pro",
+        "vendor_pro",
+        "collector_pro",
+      ],
       vendor_application_status: ["pending", "approved", "rejected"],
     },
   },

@@ -56,6 +56,16 @@ serve(async (req) => {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'email' });
       
+      // Remove all subscription roles
+      const allSubscriptionRoles = ['event_pro', 'vendor_pro', 'collector_pro'];
+      await supabaseClient
+        .from('user_roles')
+        .delete()
+        .eq('user_id', user.id)
+        .in('role', allSubscriptionRoles);
+      
+      logStep("Removed all subscription roles (no customer)");
+      
       return new Response(JSON.stringify({ 
         subscribed: false, 
         subscription_tier: null,
@@ -128,6 +138,54 @@ serve(async (req) => {
       subscriptionTier,
       billingPeriod
     });
+
+    // Manage subscription roles
+    const allSubscriptionRoles = ['event_pro', 'vendor_pro', 'collector_pro'];
+    
+    if (hasActiveSub && subscriptionTier) {
+      // Grant the appropriate role for active subscription
+      const { error: insertRoleError } = await supabaseClient
+        .from('user_roles')
+        .upsert(
+          { user_id: user.id, role: subscriptionTier },
+          { onConflict: 'user_id,role' }
+        );
+      
+      if (insertRoleError) {
+        logStep("Error granting subscription role", { error: insertRoleError.message });
+      } else {
+        logStep("Granted subscription role", { role: subscriptionTier });
+      }
+      
+      // Remove other subscription roles
+      const otherRoles = allSubscriptionRoles.filter(r => r !== subscriptionTier);
+      if (otherRoles.length > 0) {
+        const { error: deleteRoleError } = await supabaseClient
+          .from('user_roles')
+          .delete()
+          .eq('user_id', user.id)
+          .in('role', otherRoles);
+        
+        if (deleteRoleError) {
+          logStep("Error removing other subscription roles", { error: deleteRoleError.message });
+        } else {
+          logStep("Removed other subscription roles", { removedRoles: otherRoles });
+        }
+      }
+    } else {
+      // No active subscription - remove all subscription roles
+      const { error: deleteRoleError } = await supabaseClient
+        .from('user_roles')
+        .delete()
+        .eq('user_id', user.id)
+        .in('role', allSubscriptionRoles);
+      
+      if (deleteRoleError) {
+        logStep("Error removing subscription roles", { error: deleteRoleError.message });
+      } else {
+        logStep("Removed all subscription roles");
+      }
+    }
 
     return new Response(JSON.stringify({
       subscribed: hasActiveSub,
