@@ -26,7 +26,7 @@ interface RoleRequest {
 }
 
 export const RoleRequests = () => {
-  const { approveRoleRequest, promoteUser } = useAdmin();
+  const { approveRoleRequest, addUserRole } = useAdmin();
   const { toast } = useToast();
   const [requests, setRequests] = useState<RoleRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,9 +85,9 @@ export const RoleRequests = () => {
       
       if (requestError) throw requestError;
 
-      // If approved, also update the user's role
+      // If approved, also add the role to the user
       if (approve) {
-        const { error: roleError } = await promoteUser(
+        const { error: roleError } = await addUserRole(
           selectedRequest.user_id,
           selectedRequest.requested_role as any
         );

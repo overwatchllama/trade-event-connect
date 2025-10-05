@@ -24,10 +24,11 @@ interface Profile {
   created_at: string;
   blocked_at: string | null;
   block_reason: string | null;
+  user_roles?: { role: string }[];
 }
 
 export const UserManagement = () => {
-  const { promoteUser, blockUser, unblockUser } = useAdmin();
+  const { addUserRole, removeUserRole, blockUser, unblockUser } = useAdmin();
   const { toast } = useToast();
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,13 +39,29 @@ export const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setUsers(data || []);
+      if (profilesError) throw profilesError;
+
+      // Fetch roles for each user
+      const usersWithRoles = await Promise.all(
+        (profilesData || []).map(async (profile) => {
+          const { data: rolesData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profile.id);
+          
+          return {
+            ...profile,
+            user_roles: rolesData || []
+          };
+        })
+      );
+
+      setUsers(usersWithRoles);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -63,20 +80,42 @@ export const UserManagement = () => {
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
-      const { error } = await promoteUser(userId, newRole as any);
+      // Add the new role
+      const { error } = await addUserRole(userId, newRole as any);
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "User role updated successfully"
+        description: "User role added successfully"
       });
       
       fetchUsers();
     } catch (error) {
-      console.error('Error updating role:', error);
+      console.error('Error adding role:', error);
       toast({
         title: "Error",
-        description: "Failed to update user role",
+        description: "Failed to add user role",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRemoveRole = async (userId: string, role: string) => {
+    try {
+      const { error } = await removeUserRole(userId, role as any);
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "User role removed successfully"
+      });
+      
+      fetchUsers();
+    } catch (error) {
+      console.error('Error removing role:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove user role",
         variant: "destructive"
       });
     }
@@ -199,10 +238,21 @@ export const UserManagement = () => {
                 <div>
                   <div className="font-medium">{user.full_name || 'Unknown'}</div>
                   <div className="text-sm text-muted-foreground">{user.email}</div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant={getRoleBadgeVariant(user.role)}>
-                      {user.role}
-                    </Badge>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {user.user_roles && user.user_roles.length > 0 ? (
+                      user.user_roles.map((ur, idx) => (
+                        <Badge 
+                          key={idx}
+                          variant={getRoleBadgeVariant(ur.role)}
+                          className="cursor-pointer hover:opacity-80"
+                          onClick={() => handleRemoveRole(user.id, ur.role)}
+                        >
+                          {ur.role} ×
+                        </Badge>
+                      ))
+                    ) : (
+                      <Badge variant="secondary">No roles</Badge>
+                    )}
                     <Badge variant={getStatusBadgeVariant(user.status)}>
                       {user.status}
                     </Badge>
@@ -212,18 +262,18 @@ export const UserManagement = () => {
 
               <div className="flex items-center space-x-2">
                 <Select 
-                  value={user.role} 
+                  value="" 
                   onValueChange={(value) => handleRoleChange(user.id, value)}
                 >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
+                  <SelectTrigger className="w-36">
+                    <SelectValue placeholder="Add role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="vendor">Vendor</SelectItem>
-                    <SelectItem value="organizer">Organizer</SelectItem>
-                    <SelectItem value="venue">Venue</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="user">Add User</SelectItem>
+                    <SelectItem value="vendor">Add Vendor</SelectItem>
+                    <SelectItem value="organizer">Add Organizer</SelectItem>
+                    <SelectItem value="venue">Add Venue</SelectItem>
+                    <SelectItem value="admin">Add Admin</SelectItem>
                   </SelectContent>
                 </Select>
 

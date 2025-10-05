@@ -40,13 +40,12 @@ export const useAdmin = () => {
     checkAdmin();
   }, [user, profile?.role, profileLoading]);
 
-  const promoteUser = async (userId: string, newRole: 'user' | 'vendor' | 'organizer' | 'venue' | 'admin') => {
+  const addUserRole = async (userId: string, role: 'user' | 'vendor' | 'organizer' | 'venue' | 'admin') => {
     if (!isAdmin) throw new Error('Unauthorized');
 
     const { error } = await supabase
-      .from('profiles')
-      .update({ role: newRole })
-      .eq('id', userId);
+      .from('user_roles')
+      .insert({ user_id: userId, role });
 
     if (!error) {
       // Log the admin action
@@ -55,8 +54,32 @@ export const useAdmin = () => {
         .insert({
           admin_id: user!.id,
           target_user_id: userId,
-          action: 'role_change',
-          details: { new_role: newRole }
+          action: 'role_added',
+          details: { role }
+        });
+    }
+
+    return { error };
+  };
+
+  const removeUserRole = async (userId: string, role: 'user' | 'vendor' | 'organizer' | 'venue' | 'admin') => {
+    if (!isAdmin) throw new Error('Unauthorized');
+
+    const { error } = await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId)
+      .eq('role', role);
+
+    if (!error) {
+      // Log the admin action
+      await supabase
+        .from('admin_actions')
+        .insert({
+          admin_id: user!.id,
+          target_user_id: userId,
+          action: 'role_removed',
+          details: { role }
         });
     }
 
@@ -136,7 +159,8 @@ export const useAdmin = () => {
   return {
     isAdmin,
     loading,
-    promoteUser,
+    addUserRole,
+    removeUserRole,
     blockUser,
     unblockUser,
     approveRoleRequest
