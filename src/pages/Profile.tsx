@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -263,8 +264,15 @@ const Profile = () => {
             </p>
           </div>
 
-          <div className="space-y-6">
-            <Card>
+          <Tabs defaultValue="personal" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="personal">Personal Info</TabsTrigger>
+              <TabsTrigger value="roles">Roles</TabsTrigger>
+              <TabsTrigger value="plans">Plans</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="personal" className="space-y-6">
+              <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
@@ -568,61 +576,80 @@ const Profile = () => {
                 </CardContent>
               </Card>
             )}
+            </TabsContent>
 
-            {profile?.role === 'user' && (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button onClick={() => handleRoleRequest('vendor')} className="flex-1">
-                      <Building className="h-4 w-4 mr-2" />
-                      Request to be a Vendor
-                    </Button>
-                    <Button onClick={() => handleRoleRequest('organizer')} className="flex-1">
-                      <Building className="h-4 w-4 mr-2" />
-                      Request to be an Event Organizer
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <TabsContent value="roles" className="space-y-6">
+              {profile?.role === 'user' && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button onClick={() => handleRoleRequest('vendor')} className="flex-1">
+                        <Building className="h-4 w-4 mr-2" />
+                        Request to be a Vendor
+                      </Button>
+                      <Button onClick={() => handleRoleRequest('organizer')} className="flex-1">
+                        <Building className="h-4 w-4 mr-2" />
+                        Request to be an Event Organizer
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-            {roleRequests.length > 0 && (
+              {roleRequests.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Role Requests</CardTitle>
+                    <CardDescription>
+                      Your role request history and status.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {roleRequests.map((request) => {
+                        const role = roles.find(r => r.id === request.requested_role);
+                        const Icon = role?.icon || Users;
+                        return (
+                          <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Icon className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="font-medium">{role?.title || request.requested_role}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  Requested {new Date(request.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            <Badge variant={getStatusColor(request.status)}>
+                              {request.status}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <SelfManageRoles />
+            </TabsContent>
+
+            <TabsContent value="plans" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Role Requests</CardTitle>
+                  <CardTitle>Subscription Plans</CardTitle>
                   <CardDescription>
-                    Your role request history and status.
+                    View and manage your subscription plan
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {roleRequests.map((request) => {
-                      const role = roles.find(r => r.id === request.requested_role);
-                      const Icon = role?.icon || Users;
-                      return (
-                        <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <Icon className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="font-medium">{role?.title || request.requested_role}</p>
-                              <p className="text-sm text-muted-foreground">
-                                Requested {new Date(request.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <Badge variant={getStatusColor(request.status)}>
-                            {request.status}
-                          </Badge>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <Button onClick={() => navigate('/subscription')} className="w-full">
+                    View All Plans
+                  </Button>
                 </CardContent>
               </Card>
-            )}
-
-            <SelfManageRoles />
-          </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </ProtectedRoute>

@@ -48,14 +48,6 @@ const Header = () => {
               Vendors
             </Link>
             <Link 
-              to="/subscription" 
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                location.pathname === '/subscription' ? 'text-primary' : 'text-muted-foreground'
-              }`}
-            >
-              Plans
-            </Link>
-            <Link 
               to="/my-collection" 
               className={`text-sm font-medium transition-colors hover:text-primary ${
                 location.pathname === '/my-collection' ? 'text-primary' : 'text-muted-foreground'
@@ -93,6 +85,10 @@ const Header = () => {
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
                     <User className="mr-2 h-4 w-4" />
                     Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/subscription')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Plans
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/subscriptions')}>
                     <Bell className="mr-2 h-4 w-4" />
