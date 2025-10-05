@@ -37,6 +37,7 @@ const Events = () => {
   const { subscription_tier, subscribed } = useSubscription();
 
   const isEventUser = subscribed && (subscription_tier === "event_pro" || subscription_tier === "Event Pro");
+  const canManageEvents = profile?.role === 'organizer' || isEventUser;
 
   // US States options for multi-select
   const stateOptions: Option[] = [
@@ -233,7 +234,7 @@ const Events = () => {
                 Find Pokemon, MTG, sports cards, and other trading card events near you.
               </p>
             </div>
-            {isEventUser && myEvents.length > 0 && (
+            {canManageEvents && myEvents.length > 0 && (
               <Button
                 onClick={() => setShowMyEventsTab(!showMyEventsTab)}
                 variant="default"
@@ -329,7 +330,7 @@ const Events = () => {
         </div>
 
         {/* Role-based content */}
-        {showMyEventsTab && isEventUser ? (
+        {showMyEventsTab && canManageEvents ? (
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-foreground">My Events</h2>

@@ -58,6 +58,7 @@ const Profile = () => {
   const navigate = useNavigate();
 
   const isEventUser = subscribed && (subscription_tier === "event_pro" || subscription_tier === "Event Pro");
+  const canManageEvents = profile?.role === 'organizer' || isEventUser;
 
   const form = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -285,7 +286,7 @@ const Profile = () => {
                   Manage your account information and preferences.
                 </p>
               </div>
-              {isEventUser && (
+              {canManageEvents && (
                 <Button
                   onClick={() => navigate('/events')}
                   variant="default"
