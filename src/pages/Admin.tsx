@@ -27,8 +27,28 @@ const Admin = () => {
     );
   }
 
-  if (!user || !isAdmin) {
-    return <Navigate to="/" replace />;
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Access Denied</CardTitle>
+              <CardDescription>Admin access required to view this page.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">If you were just granted admin access, try signing out and back in.</p>
+              <a href="/" className="underline">Go back home</a>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
   }
 
   return (
