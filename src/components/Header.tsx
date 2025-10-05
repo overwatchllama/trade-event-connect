@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Calendar, User, LogOut, Settings, Store, Bell, Shield } from "lucide-react";
+import { Calendar, User, LogOut, Settings, Store, Bell, Shield, PenTool } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorProfile } from "@/hooks/useVendorProfile";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useSubscription } from "@/hooks/useSubscription";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -13,6 +14,7 @@ const Header = () => {
   const { user, signOut, loading } = useAuth();
   const { hasVendorRole } = useVendorProfile();
   const { isAdmin } = useAdmin();
+  const { subscription_tier } = useSubscription();
 
   const handleSignOut = async () => {
     await signOut();
@@ -104,6 +106,12 @@ const Header = () => {
                     <DropdownMenuItem onClick={() => navigate('/admin')}>
                       <Shield className="mr-2 h-4 w-4" />
                       Admin Panel
+                    </DropdownMenuItem>
+                  )}
+                  {subscription_tier === "vendor_pro" && (
+                    <DropdownMenuItem onClick={() => navigate('/layout-tool')}>
+                      <PenTool className="mr-2 h-4 w-4" />
+                      Layout Tool
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={() => navigate('/settings')}>

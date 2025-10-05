@@ -16,6 +16,7 @@ import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import Subscriptions from "./pages/Subscriptions";
 import Admin from "./pages/Admin";
 import EventDetails from "./pages/EventDetails";
+import LayoutTool from "./pages/LayoutTool";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
               <Admin />
             </ProtectedRoute>
           } />
+          <Route path="/layout-tool" element={<LayoutTool />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
