@@ -2,13 +2,21 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas as FabricCanvas, Circle, Rect, Line, PencilBrush } from "fabric";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { Pencil, Square, Circle as CircleIcon, Move, Trash2, Download, Upload } from "lucide-react";
+import { Pencil, Square, Circle as CircleIcon, Move, Trash2, Download, Upload, Save } from "lucide-react";
 import { toast } from "sonner";
 
-export const LayoutDrawingTool = () => {
+interface LayoutDrawingToolProps {
+  eventId?: string;
+  initialLayout?: any;
+  onSave?: (layoutJson: any) => Promise<void>;
+  readOnly?: boolean;
+}
+
+export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = false }: LayoutDrawingToolProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
   const [activeTool, setActiveTool] = useState<"select" | "draw" | "rectangle" | "circle">("select");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -23,13 +31,29 @@ export const LayoutDrawingTool = () => {
     canvas.freeDrawingBrush.color = "#000000";
     canvas.freeDrawingBrush.width = 2;
 
+    // Load initial layout if provided
+    if (initialLayout) {
+      canvas.loadFromJSON(initialLayout, () => {
+        canvas.renderAll();
+      });
+    }
+
+    // Make canvas read-only if specified
+    if (readOnly) {
+      canvas.selection = false;
+      canvas.forEachObject((obj) => {
+        obj.selectable = false;
+        obj.evented = false;
+      });
+    }
+
     setFabricCanvas(canvas);
     toast.success("Layout tool ready!");
 
     return () => {
       canvas.dispose();
     };
-  }, []);
+  }, [initialLayout, readOnly]);
 
   useEffect(() => {
     if (!fabricCanvas) return;
@@ -135,63 +159,96 @@ export const LayoutDrawingTool = () => {
     input.click();
   };
 
+  const handleSaveToEvent = async () => {
+    if (!fabricCanvas || !onSave) return;
+    
+    setSaving(true);
+    try {
+      const json = fabricCanvas.toJSON();
+      await onSave(json);
+      toast.success("Layout saved to event!");
+    } catch (error) {
+      console.error("Error saving layout:", error);
+      toast.error("Failed to save layout");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <Card className="p-4">
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant={activeTool === "select" ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleToolClick("select")}
-          >
-            <Move className="h-4 w-4 mr-2" />
-            Select
-          </Button>
-          <Button
-            variant={activeTool === "draw" ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleToolClick("draw")}
-          >
-            <Pencil className="h-4 w-4 mr-2" />
-            Draw
-          </Button>
-          <Button
-            variant={activeTool === "rectangle" ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleToolClick("rectangle")}
-          >
-            <Square className="h-4 w-4 mr-2" />
-            Rectangle
-          </Button>
-          <Button
-            variant={activeTool === "circle" ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleToolClick("circle")}
-          >
-            <CircleIcon className="h-4 w-4 mr-2" />
-            Circle
-          </Button>
-          
-          <div className="border-l border-border mx-2" />
-          
-          <Button variant="outline" size="sm" onClick={handleClear}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Clear
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleDownload}>
-            <Download className="h-4 w-4 mr-2" />
-            Download PNG
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleSaveJSON}>
-            <Download className="h-4 w-4 mr-2" />
-            Save
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleLoadJSON}>
-            <Upload className="h-4 w-4 mr-2" />
-            Load
-          </Button>
-        </div>
-      </Card>
+      {!readOnly && (
+        <Card className="p-4">
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant={activeTool === "select" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleToolClick("select")}
+            >
+              <Move className="h-4 w-4 mr-2" />
+              Select
+            </Button>
+            <Button
+              variant={activeTool === "draw" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleToolClick("draw")}
+            >
+              <Pencil className="h-4 w-4 mr-2" />
+              Draw
+            </Button>
+            <Button
+              variant={activeTool === "rectangle" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleToolClick("rectangle")}
+            >
+              <Square className="h-4 w-4 mr-2" />
+              Rectangle
+            </Button>
+            <Button
+              variant={activeTool === "circle" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleToolClick("circle")}
+            >
+              <CircleIcon className="h-4 w-4 mr-2" />
+              Circle
+            </Button>
+            
+            <div className="border-l border-border mx-2" />
+            
+            <Button variant="outline" size="sm" onClick={handleClear}>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-2" />
+              Download PNG
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleSaveJSON}>
+              <Download className="h-4 w-4 mr-2" />
+              Save
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleLoadJSON}>
+              <Upload className="h-4 w-4 mr-2" />
+              Load
+            </Button>
+            
+            {eventId && onSave && (
+              <>
+                <div className="border-l border-border mx-2" />
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  onClick={handleSaveToEvent}
+                  disabled={saving}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? "Saving..." : "Save to Event"}
+                </Button>
+              </>
+            )}
+          </div>
+        </Card>
+      )}
 
       <Card className="p-4">
         <div className="border border-border rounded-lg overflow-hidden bg-white">

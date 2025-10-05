@@ -1,0 +1,222 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import Header from '@/components/Header';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Upload, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { LayoutDrawingTool } from '@/components/LayoutDrawingTool';
+
+const ManageEvent = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [event, setEvent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [flyerFile, setFlyerFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    fetchEvent();
+  }, [id]);
+
+  const fetchEvent = async () => {
+    if (!id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+
+      // Check if user is the organizer
+      if (data.organizer_id !== user?.id) {
+        toast.error('You do not have permission to manage this event');
+        navigate('/events');
+        return;
+      }
+
+      setEvent(data);
+    } catch (error) {
+      console.error('Error fetching event:', error);
+      toast.error('Failed to load event');
+      navigate('/events');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFlyerUpload = async () => {
+    if (!flyerFile || !event) return;
+
+    setUploading(true);
+
+    try {
+      const fileExt = flyerFile.name.split('.').pop();
+      const fileName = `${event.id}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('event-flyers')
+        .upload(filePath, flyerFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('event-flyers')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('events')
+        .update({ flyer_url: publicUrl })
+        .eq('id', event.id);
+
+      if (updateError) throw updateError;
+
+      setEvent({ ...event, flyer_url: publicUrl });
+      setFlyerFile(null);
+      toast.success('Flyer uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading flyer:', error);
+      toast.error('Failed to upload flyer');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSaveLayout = async (layoutJson: any) => {
+    if (!event) return;
+
+    const { error } = await supabase
+      .from('events')
+      .update({ layout_json: layoutJson })
+      .eq('id', event.id);
+
+    if (error) throw error;
+
+    setEvent({ ...event, layout_json: layoutJson });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!event) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      
+      <div className="container mx-auto px-4 py-8">
+        <Button
+          variant="ghost"
+          className="mb-6"
+          onClick={() => navigate(`/event/${event.id}`)}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Event
+        </Button>
+
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold">{event.title}</h1>
+          <p className="text-muted-foreground">Manage your event details</p>
+        </div>
+
+        <Tabs defaultValue="flyer" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="flyer">Event Flyer</TabsTrigger>
+            <TabsTrigger value="layout">Floor Plan Layout</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="flyer" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Upload Event Flyer</CardTitle>
+                <CardDescription>
+                  Upload a promotional flyer for your event. This will be displayed on the event details page.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {event.flyer_url && (
+                  <div className="aspect-video rounded-lg overflow-hidden border border-border">
+                    <img
+                      src={event.flyer_url}
+                      alt="Current flyer"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="flyer">Choose Flyer Image</Label>
+                  <Input
+                    id="flyer"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setFlyerFile(e.target.files?.[0] || null)}
+                  />
+                </div>
+
+                <Button
+                  onClick={handleFlyerUpload}
+                  disabled={!flyerFile || uploading}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Flyer
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="layout" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Floor Plan Layout</CardTitle>
+                <CardDescription>
+                  Design the floor plan layout for your event. This will be visible to attendees and vendors.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <LayoutDrawingTool
+                  eventId={event.id}
+                  initialLayout={event.layout_json}
+                  onSave={handleSaveLayout}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+};
+
+export default ManageEvent;

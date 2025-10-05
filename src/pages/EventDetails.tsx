@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MapPin, Calendar, Clock, Users, DollarSign, Tag } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Users, Tag, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import EventVendors from '@/components/EventVendors';
 import { SubscriptionButton } from '@/components/SubscriptionButton';
+import { LayoutDrawingTool } from '@/components/LayoutDrawingTool';
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,7 @@ const EventDetails = () => {
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
+  const [isOrganizer, setIsOrganizer] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -34,6 +36,7 @@ const EventDetails = () => {
         if (error) throw error;
 
         setEvent(data);
+        setIsOrganizer(user?.id === data.organizer_id);
       } catch (error) {
         console.error('Error fetching event:', error);
         toast.error('Failed to load event details');
@@ -43,7 +46,7 @@ const EventDetails = () => {
     };
 
     fetchEvent();
-  }, [id]);
+  }, [id, user]);
 
   const handleBuyTicket = async () => {
     if (!user) {
@@ -129,6 +132,18 @@ const EventDetails = () => {
           Back to Events
         </Button>
 
+        {isOrganizer && (
+          <div className="mb-6">
+            <Button
+              onClick={() => navigate(`/event/${id}/manage`)}
+              variant="outline"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Manage Event
+            </Button>
+          </div>
+        )}
+
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -204,6 +219,19 @@ const EventDetails = () => {
                   <h3 className="text-lg font-semibold mb-4">Vendors at this Event</h3>
                   <EventVendors eventId={event.id} maxDisplay={10} />
                 </div>
+
+                {event.layout_json && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Floor Plan Layout</h3>
+                      <LayoutDrawingTool
+                        initialLayout={event.layout_json}
+                        readOnly={true}
+                      />
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>

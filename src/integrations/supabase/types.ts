@@ -253,6 +253,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_multi_day: boolean
+          layout_json: Json | null
           max_attendees: number | null
           organizer_id: string
           organizer_name: string
@@ -279,6 +280,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_multi_day?: boolean
+          layout_json?: Json | null
           max_attendees?: number | null
           organizer_id: string
           organizer_name: string
@@ -305,6 +307,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_multi_day?: boolean
+          layout_json?: Json | null
           max_attendees?: number | null
           organizer_id?: string
           organizer_name?: string
