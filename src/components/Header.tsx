@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Calendar, User, LogOut, Settings, Store, Bell, Shield, PenTool } from "lucide-react";
+import { Calendar, User, LogOut, Settings, Store, Bell, Shield, PenTool, Award } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorProfile } from "@/hooks/useVendorProfile";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -102,6 +102,10 @@ const Header = () => {
                       My Vendor Profile
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuItem onClick={() => navigate('/my-sponsor-profile')}>
+                    <Award className="mr-2 h-4 w-4" />
+                    My Sponsor Profile
+                  </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => navigate('/admin')}>
                       <Shield className="mr-2 h-4 w-4" />

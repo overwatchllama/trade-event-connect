@@ -13,6 +13,7 @@ import EventVendors from '@/components/EventVendors';
 import { SubscriptionButton } from '@/components/SubscriptionButton';
 import { LayoutDrawingTool } from '@/components/LayoutDrawingTool';
 import { VendorApplicationDialog } from '@/components/VendorApplicationDialog';
+import { EventSponsors } from '@/components/EventSponsors';
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -234,6 +235,9 @@ const EventDetails = () => {
                     </div>
                   </>
                 )}
+
+                <Separator />
+                <EventSponsors eventId={event.id} />
               </CardContent>
             </Card>
           </div>

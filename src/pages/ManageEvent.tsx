@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { LayoutDrawingTool } from '@/components/LayoutDrawingTool';
+import { ManageEventSponsors } from '@/components/ManageEventSponsors';
 
 const ManageEvent = () => {
   const { id } = useParams<{ id: string }>();
@@ -145,6 +146,7 @@ const ManageEvent = () => {
           <TabsList>
             <TabsTrigger value="flyer">Event Flyer</TabsTrigger>
             <TabsTrigger value="layout">Floor Plan Layout</TabsTrigger>
+            <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
           </TabsList>
 
           <TabsContent value="flyer" className="space-y-6">
@@ -212,6 +214,10 @@ const ManageEvent = () => {
                 />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="sponsors" className="space-y-6">
+            <ManageEventSponsors eventId={event.id} />
           </TabsContent>
         </Tabs>
       </div>

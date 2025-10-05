@@ -239,6 +239,51 @@ export type Database = {
           },
         ]
       }
+      event_sponsors: {
+        Row: {
+          amount: number | null
+          benefits: string | null
+          created_at: string
+          event_id: string
+          id: string
+          sponsor_id: string
+          sponsorship_level: string | null
+        }
+        Insert: {
+          amount?: number | null
+          benefits?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          sponsor_id: string
+          sponsorship_level?: string | null
+        }
+        Update: {
+          amount?: number | null
+          benefits?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          sponsor_id?: string
+          sponsorship_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_sponsors_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_sponsors_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "sponsors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           address: string
@@ -445,6 +490,45 @@ export type Database = {
           status?: Database["public"]["Enums"]["approval_status"]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      sponsors: {
+        Row: {
+          company_description: string | null
+          company_name: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          updated_at: string
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          company_description?: string | null
+          company_name: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          company_description?: string | null
+          company_name?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
         }
         Relationships: []
       }
