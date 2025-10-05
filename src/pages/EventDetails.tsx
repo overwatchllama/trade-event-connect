@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MapPin, Calendar, Users, Tag, Settings } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Users, Tag, Settings, Store } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import EventVendors from '@/components/EventVendors';
 import { SubscriptionButton } from '@/components/SubscriptionButton';
 import { LayoutDrawingTool } from '@/components/LayoutDrawingTool';
+import { VendorApplicationDialog } from '@/components/VendorApplicationDialog';
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +22,7 @@ const EventDetails = () => {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [isOrganizer, setIsOrganizer] = useState(false);
+  const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -275,28 +277,49 @@ const EventDetails = () => {
                 <CardHeader>
                   <CardTitle>Vendor Information</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total Tables</span>
-                    <span className="font-medium">{event.total_tables}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Available Tables</span>
-                    <span className="font-medium text-success">
-                      {event.tables_available || 0}
-                    </span>
-                  </div>
-                  {event.vendor_table_price && (
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Table Price</span>
-                      <span className="font-medium">${event.vendor_table_price}</span>
+                      <span className="text-muted-foreground">Total Tables</span>
+                      <span className="font-medium">{event.total_tables}</span>
                     </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Available Tables</span>
+                      <span className="font-medium text-success">
+                        {event.tables_available || 0}
+                      </span>
+                    </div>
+                    {event.vendor_table_price && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Table Price</span>
+                        <span className="font-medium">${event.vendor_table_price}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {!isOrganizer && (
+                    <Button
+                      className="w-full"
+                      variant="outline"
+                      onClick={() => setVendorDialogOpen(true)}
+                    >
+                      <Store className="mr-2 h-4 w-4" />
+                      Apply to be a Vendor
+                    </Button>
                   )}
                 </CardContent>
               </Card>
             )}
           </div>
         </div>
+
+        <VendorApplicationDialog
+          eventId={event.id}
+          eventTitle={event.title}
+          vendorTablePrice={event.vendor_table_price}
+          open={vendorDialogOpen}
+          onOpenChange={setVendorDialogOpen}
+        />
       </div>
     </div>
   );
