@@ -28,10 +28,6 @@ const Admin = () => {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background">
