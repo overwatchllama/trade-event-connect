@@ -13,13 +13,14 @@ import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { User, Mail, ArrowLeft, Save, Building, MapPin, Users, Plus, Trash2 } from 'lucide-react';
+import { User, Mail, ArrowLeft, Save, Building, MapPin, Users, Plus, Trash2, UserCog } from 'lucide-react';
 import Header from '@/components/Header';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelfManageRoles } from '@/components/SelfManageRoles';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Full name must be at least 2 characters'),
@@ -619,6 +620,8 @@ const Profile = () => {
                 </CardContent>
               </Card>
             )}
+
+            <SelfManageRoles />
           </div>
         </div>
       </div>
