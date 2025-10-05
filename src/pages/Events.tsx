@@ -16,6 +16,7 @@ import { Search, Filter, MapPin, Calendar, Plus, Edit, Settings } from "lucide-r
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -35,10 +36,12 @@ const Events = () => {
   const [showMyEventsTab, setShowMyEventsTab] = useState(false);
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { hasRole } = useUserRoles();
   const { subscription_tier, subscribed } = useSubscription();
 
   const isEventUser = subscribed && (subscription_tier === "event_pro" || subscription_tier === "Event Pro");
   const canManageEvents = profile?.role === 'organizer' || isEventUser;
+  const canCreateEvents = hasRole('organizer') || isEventUser;
 
   // US States options for multi-select
   const stateOptions: Option[] = [
@@ -235,16 +238,28 @@ const Events = () => {
                 Find Pokemon, MTG, sports cards, and other trading card events near you.
               </p>
             </div>
-            {canManageEvents && myEvents.length > 0 && (
-              <Button
-                onClick={() => setShowMyEventsTab(!showMyEventsTab)}
-                variant="default"
-                className="gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                {showMyEventsTab ? "Browse All Events" : "Manage My Events"}
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {canCreateEvents && (
+                <Button
+                  onClick={() => setShowCreateEvent(true)}
+                  variant="default"
+                  className="gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Event
+                </Button>
+              )}
+              {canManageEvents && myEvents.length > 0 && (
+                <Button
+                  onClick={() => setShowMyEventsTab(!showMyEventsTab)}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Settings className="w-4 h-4" />
+                  {showMyEventsTab ? "Browse All Events" : "Manage My Events"}
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Search and Filters */}
