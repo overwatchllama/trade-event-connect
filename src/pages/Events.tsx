@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import EventCard from "@/components/EventCard";
 import EventsCalendar from "@/components/EventsCalendar";
@@ -11,15 +11,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, MapPin, Calendar, Plus, Edit } from "lucide-react";
+import { Search, Filter, MapPin, Calendar, Plus, Edit, Settings } from "lucide-react";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Events = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCardType, setSelectedCardType] = useState("all");
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
@@ -29,8 +31,12 @@ const Events = () => {
   const [allEvents, setAllEvents] = useState<any[]>([]);
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showMyEventsTab, setShowMyEventsTab] = useState(false);
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { subscription_tier, subscribed } = useSubscription();
+
+  const isEventUser = subscribed && (subscription_tier === "event_pro" || subscription_tier === "Event Pro");
 
   // US States options for multi-select
   const stateOptions: Option[] = [
@@ -132,8 +138,8 @@ const Events = () => {
 
         setAllEvents(transformedEvents);
 
-        // Filter my events if user is an organizer
-        if (user && profile?.role === 'organizer') {
+        // Filter my events if user is logged in
+        if (user) {
           const userEvents = transformedEvents.filter(event => 
             eventsData?.find(dbEvent => dbEvent.id === event.id)?.organizer_id === user.id
           );
@@ -218,12 +224,26 @@ const Events = () => {
       
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Events
-          </h1>
-          <p className="text-lg text-muted-foreground mb-6">
-            Find Pokemon, MTG, sports cards, and other trading card events near you.
-          </p>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+                Events
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                Find Pokemon, MTG, sports cards, and other trading card events near you.
+              </p>
+            </div>
+            {isEventUser && myEvents.length > 0 && (
+              <Button
+                onClick={() => setShowMyEventsTab(!showMyEventsTab)}
+                variant="default"
+                className="gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                {showMyEventsTab ? "Browse All Events" : "Manage My Events"}
+              </Button>
+            )}
+          </div>
 
           {/* Search and Filters */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -309,7 +329,45 @@ const Events = () => {
         </div>
 
         {/* Role-based content */}
-        {profile?.role === 'organizer' ? (
+        {showMyEventsTab && isEventUser ? (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-foreground">My Events</h2>
+              <Button variant="default" className="gap-2" onClick={() => setShowCreateEvent(true)}>
+                <Plus className="w-4 h-4" />
+                Create Event
+              </Button>
+            </div>
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {loading ? (
+                <div className="col-span-full text-center py-8">Loading your events...</div>
+              ) : myEvents.length === 0 ? (
+                <div className="col-span-full text-center py-8 text-muted-foreground">
+                  <p className="mb-4">No events found. Create your first event!</p>
+                  <Button variant="default" className="gap-2" onClick={() => setShowCreateEvent(true)}>
+                    <Plus className="w-4 h-4" />
+                    Create Event
+                  </Button>
+                </div>
+              ) : (
+                myEvents.map((event) => (
+                  <div key={`my-${event.id}`} className="relative">
+                    <EventCard event={event} userType="organizer" isMyEvent={true} />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="absolute top-2 right-2 gap-1"
+                      onClick={() => navigate(`/event/${event.id}/manage`)}
+                    >
+                      <Edit className="w-3 h-3" />
+                      Edit
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        ) : profile?.role === 'organizer' ? (
           <Tabs defaultValue="my-events" className="w-full">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="my-events">My Events</TabsTrigger>

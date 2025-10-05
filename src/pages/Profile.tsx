@@ -12,9 +12,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { User, Mail, ArrowLeft, Save, Building, MapPin, Users, Plus, Trash2, UserCog } from 'lucide-react';
+import { User, Mail, ArrowLeft, Save, Building, MapPin, Users, Plus, Trash2, UserCog, Settings } from 'lucide-react';
 import Header from '@/components/Header';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Badge } from '@/components/ui/badge';
@@ -53,7 +54,10 @@ const Profile = () => {
   const [socialLinks, setSocialLinks] = useState<SocialMediaLink[]>([]);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const { user, requestRole } = useAuth();
+  const { subscription_tier, subscribed } = useSubscription();
   const navigate = useNavigate();
+
+  const isEventUser = subscribed && (subscription_tier === "event_pro" || subscription_tier === "Event Pro");
 
   const form = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -274,10 +278,24 @@ const Profile = () => {
               Back
             </Button>
             
-            <h1 className="text-3xl font-bold text-foreground mb-2">Profile Settings</h1>
-            <p className="text-muted-foreground">
-              Manage your account information and preferences.
-            </p>
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground mb-2">Profile Settings</h1>
+                <p className="text-muted-foreground">
+                  Manage your account information and preferences.
+                </p>
+              </div>
+              {isEventUser && (
+                <Button
+                  onClick={() => navigate('/events')}
+                  variant="default"
+                  className="gap-2"
+                >
+                  <Settings className="w-4 h-4" />
+                  Manage My Events
+                </Button>
+              )}
+            </div>
           </div>
 
           <Tabs defaultValue="personal" className="space-y-6">
