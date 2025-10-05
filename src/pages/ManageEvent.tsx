@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { LayoutDrawingTool } from '@/components/LayoutDrawingTool';
 import { ManageEventSponsors } from '@/components/ManageEventSponsors';
+import ManageVendorsDialog from '@/components/ManageVendorsDialog';
 
 const ManageEvent = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +22,7 @@ const ManageEvent = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [flyerFile, setFlyerFile] = useState<File | null>(null);
+  const [vendorsDialogOpen, setVendorsDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchEvent();
@@ -146,6 +148,7 @@ const ManageEvent = () => {
           <TabsList>
             <TabsTrigger value="flyer">Event Flyer</TabsTrigger>
             <TabsTrigger value="layout">Floor Plan Layout</TabsTrigger>
+            <TabsTrigger value="vendors">Vendor Applications</TabsTrigger>
             <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
           </TabsList>
 
@@ -216,10 +219,34 @@ const ManageEvent = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="vendors" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Vendor Applications</CardTitle>
+                <CardDescription>
+                  Review and manage vendor applications for your event.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => setVendorsDialogOpen(true)}>
+                  Manage Vendor Applications
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="sponsors" className="space-y-6">
             <ManageEventSponsors eventId={event.id} />
           </TabsContent>
         </Tabs>
+
+        {/* Vendor Applications Dialog */}
+        <ManageVendorsDialog
+          open={vendorsDialogOpen}
+          onOpenChange={setVendorsDialogOpen}
+          eventId={event.id}
+          eventTitle={event.title}
+        />
       </div>
     </div>
   );
