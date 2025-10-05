@@ -17,6 +17,7 @@ import { LayoutDrawingTool } from '@/components/LayoutDrawingTool';
 import { VendorApplicationDialog } from '@/components/VendorApplicationDialog';
 import { SponsorApplicationDialog } from '@/components/SponsorApplicationDialog';
 import { EventSponsors } from '@/components/EventSponsors';
+import EditEventDialog from '@/components/EditEventDialog';
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +32,7 @@ const EventDetails = () => {
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [sponsorDialogOpen, setSponsorDialogOpen] = useState(false);
   const [vendorCount, setVendorCount] = useState(0);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const isVendorPro = subscribed && 
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
@@ -161,11 +163,11 @@ const EventDetails = () => {
         {isOrganizer && (
           <div className="mb-6">
             <Button
-              onClick={() => navigate(`/event/${id}/manage`)}
+              onClick={() => setEditDialogOpen(true)}
               variant="outline"
             >
               <Settings className="w-4 h-4 mr-2" />
-              Manage Event
+              Edit Event
             </Button>
           </div>
         )}
@@ -363,6 +365,16 @@ const EventDetails = () => {
           eventTitle={event.title}
           open={sponsorDialogOpen}
           onOpenChange={setSponsorDialogOpen}
+        />
+
+        <EditEventDialog
+          eventId={event.id}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onEventUpdated={() => {
+            // Refresh event data
+            window.location.reload();
+          }}
         />
       </div>
     </div>
