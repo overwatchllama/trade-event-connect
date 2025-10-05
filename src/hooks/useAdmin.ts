@@ -5,7 +5,7 @@ import { useProfile } from './useProfile';
 
 export const useAdmin = () => {
   const { user } = useAuth();
-  const { profile } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -20,23 +20,24 @@ export const useAdmin = () => {
       try {
         // Prefer server-side check to avoid stale client cache
         const { data, error } = await supabase.rpc('is_admin', { user_id: user.id });
-        if (error) {
-          console.error('is_admin RPC error:', error);
-          // Fallback to profile role if RPC fails
-          setIsAdmin(profile?.role === 'admin');
-        } else {
+        if (!error) {
           setIsAdmin(!!data);
+          setLoading(false);
+          return;
         }
+        console.error('is_admin RPC error:', error);
       } catch (e) {
         console.error('is_admin RPC exception:', e);
-        setIsAdmin(profile?.role === 'admin');
-      } finally {
-        setLoading(false);
       }
+
+      // Fallback to profile role if RPC fails; wait until profile is loaded
+      if (profileLoading) return;
+      setIsAdmin(profile?.role === 'admin');
+      setLoading(false);
     };
 
     checkAdmin();
-  }, [user, profile?.role]);
+  }, [user, profile?.role, profileLoading]);
 
   const promoteUser = async (userId: string, newRole: 'user' | 'vendor' | 'organizer' | 'venue' | 'admin') => {
     if (!isAdmin) throw new Error('Unauthorized');
