@@ -1,55 +1,34 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { UserPlus, UserMinus, Building, Calendar, MapPin, User } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
-type NonProRole = 'user' | 'vendor' | 'organizer' | 'venue';
+type NonProRole = 'vendor' | 'organizer' | 'venue';
 
 interface RoleInfo {
   id: NonProRole;
   label: string;
   description: string;
-  icon: React.ElementType;
 }
 
 const roleDefinitions: RoleInfo[] = [
   {
-    id: 'user',
-    label: 'User',
-    description: 'Basic user access',
-    icon: User,
-  },
-  {
     id: 'vendor',
-    label: 'Vendor',
-    description: 'Sell trading cards and collectibles',
-    icon: Building,
+    label: "I'm a vendor",
+    description: 'Sell trading cards and collectibles at events',
   },
   {
     id: 'organizer',
-    label: 'Event Organizer',
-    description: 'Create and manage events',
-    icon: Calendar,
+    label: "I'm an event organizer",
+    description: 'Create and manage trading card events',
   },
   {
     id: 'venue',
-    label: 'Venue',
+    label: 'I have a venue',
     description: 'Host events at your location',
-    icon: MapPin,
   },
 ];
 
@@ -58,9 +37,6 @@ export const SelfManageRoles = () => {
   const { toast } = useToast();
   const [currentRoles, setCurrentRoles] = useState<NonProRole[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{ role: NonProRole; action: 'add' | 'remove' } | null>(null);
 
   useEffect(() => {
     fetchRoles();
@@ -77,9 +53,9 @@ export const SelfManageRoles = () => {
 
       if (error) throw error;
 
-      // Filter to only non-pro roles
+      // Filter to only non-pro roles (exclude 'user' from display)
       const nonProRoles = (data?.map(r => r.role) || []).filter(role =>
-        ['user', 'vendor', 'organizer', 'venue'].includes(role)
+        ['vendor', 'organizer', 'venue'].includes(role)
       ) as NonProRole[];
 
       setCurrentRoles(nonProRoles);
@@ -95,98 +71,55 @@ export const SelfManageRoles = () => {
     }
   };
 
-  const handleAddRole = async (role: NonProRole) => {
+  const handleToggleRole = async (role: NonProRole, isChecked: boolean) => {
     if (!user) return;
-    
-    setActionLoading(true);
+
     try {
-      const { error } = await supabase
-        .from('user_roles')
-        .insert({ user_id: user.id, role });
+      if (isChecked) {
+        // Add role
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({ user_id: user.id, role });
 
-      if (error) throw error;
+        if (error) {
+          if (error.message.includes('duplicate')) {
+            return; // Already has role, no need to show error
+          }
+          throw error;
+        }
 
-      toast({
-        title: 'Role Added',
-        description: `${roleDefinitions.find(r => r.id === role)?.label} role has been added`,
-      });
+        toast({
+          title: 'Role Added',
+          description: `${roleDefinitions.find(r => r.id === role)?.label}`,
+        });
+      } else {
+        // Remove role
+        const { error } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('role', role);
+
+        if (error) throw error;
+
+        toast({
+          title: 'Role Removed',
+          description: `Removed: ${roleDefinitions.find(r => r.id === role)?.label}`,
+        });
+      }
 
       await fetchRoles();
     } catch (error: any) {
-      console.error('Error adding role:', error);
+      console.error('Error toggling role:', error);
       toast({
         title: 'Error',
-        description: error.message.includes('duplicate') 
-          ? 'You already have this role'
-          : 'Failed to add role',
+        description: 'Failed to update role',
         variant: 'destructive',
       });
-    } finally {
-      setActionLoading(false);
-      setDialogOpen(false);
-      setPendingAction(null);
-    }
-  };
-
-  const handleRemoveRole = async (role: NonProRole) => {
-    if (!user) return;
-
-    // Prevent removing the user role if it's the only role
-    if (role === 'user' && currentRoles.length === 1) {
-      toast({
-        title: 'Cannot Remove',
-        description: 'You must have at least one role',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setActionLoading(true);
-    try {
-      const { error } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('role', role);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Role Removed',
-        description: `${roleDefinitions.find(r => r.id === role)?.label} role has been removed`,
-      });
-
+      // Revert checkbox state
       await fetchRoles();
-    } catch (error: any) {
-      console.error('Error removing role:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to remove role',
-        variant: 'destructive',
-      });
-    } finally {
-      setActionLoading(false);
-      setDialogOpen(false);
-      setPendingAction(null);
     }
   };
-
-  const confirmAction = (role: NonProRole, action: 'add' | 'remove') => {
-    setPendingAction({ role, action });
-    setDialogOpen(true);
-  };
-
-  const executeAction = () => {
-    if (!pendingAction) return;
-    
-    if (pendingAction.action === 'add') {
-      handleAddRole(pendingAction.role);
-    } else {
-      handleRemoveRole(pendingAction.role);
-    }
-  };
-
-  const getRoleInfo = (roleId: NonProRole) => roleDefinitions.find(r => r.id === roleId);
 
   if (loading) {
     return (
@@ -201,117 +134,39 @@ export const SelfManageRoles = () => {
   }
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle>My Roles</CardTitle>
-          <CardDescription>
-            Manage your account roles. You can add or remove basic roles anytime.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Current Roles */}
-          <div>
-            <h3 className="text-sm font-medium mb-3">Current Roles</h3>
-            <div className="flex flex-wrap gap-2">
-              {currentRoles.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No roles assigned</p>
-              ) : (
-                currentRoles.map((role) => {
-                  const roleInfo = getRoleInfo(role);
-                  const Icon = roleInfo?.icon || User;
-                  return (
-                    <Badge key={role} variant="default" className="px-3 py-1.5 gap-2">
-                      <Icon className="h-3 w-3" />
-                      {roleInfo?.label || role}
-                      {(role !== 'user' || currentRoles.length > 1) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 p-0 ml-1 hover:bg-destructive/20"
-                          onClick={() => confirmAction(role, 'remove')}
-                          disabled={actionLoading}
-                        >
-                          <UserMinus className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </Badge>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* Available Roles to Add */}
-          <div>
-            <h3 className="text-sm font-medium mb-3">Add Roles</h3>
-            <div className="grid gap-3">
-              {roleDefinitions
-                .filter(role => !currentRoles.includes(role.id))
-                .map((role) => {
-                  const Icon = role.icon;
-                  return (
-                    <div
-                      key={role.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:border-primary/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{role.label}</p>
-                          <p className="text-sm text-muted-foreground">{role.description}</p>
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => confirmAction(role.id, 'add')}
-                        disabled={actionLoading}
-                      >
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Add
-                      </Button>
-                    </div>
-                  );
-                })}
-              {roleDefinitions.filter(role => !currentRoles.includes(role.id)).length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  You have all available roles
+    <Card>
+      <CardHeader>
+        <CardTitle>My Roles</CardTitle>
+        <CardDescription>
+          Select the roles that apply to you
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {roleDefinitions.map((role) => {
+          const isChecked = currentRoles.includes(role.id);
+          return (
+            <div key={role.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+              <Checkbox
+                id={role.id}
+                checked={isChecked}
+                onCheckedChange={(checked) => handleToggleRole(role.id, checked as boolean)}
+                disabled={loading}
+              />
+              <div className="flex-1 space-y-1">
+                <Label
+                  htmlFor={role.id}
+                  className="text-base font-medium cursor-pointer"
+                >
+                  {role.label}
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  {role.description}
                 </p>
-              )}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pendingAction?.action === 'add' ? 'Add Role' : 'Remove Role'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingAction?.action === 'add' ? (
-                <>
-                  Are you sure you want to add the <strong>{getRoleInfo(pendingAction.role)?.label}</strong> role?
-                  This will grant you access to {getRoleInfo(pendingAction.role)?.description.toLowerCase()}.
-                </>
-              ) : (
-                <>
-                  Are you sure you want to remove the <strong>{getRoleInfo(pendingAction?.role!)?.label}</strong> role?
-                  You may lose access to certain features.
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={executeAction} disabled={actionLoading}>
-              {actionLoading ? 'Processing...' : 'Confirm'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 };
