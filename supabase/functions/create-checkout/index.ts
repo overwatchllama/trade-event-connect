@@ -35,7 +35,62 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { tier, billing_period } = await req.json();
+    const requestBody = await req.json();
+    
+    // Check if this is a subscription or one-time payment
+    if (requestBody.priceAmount !== undefined) {
+      // One-time payment (e.g., event tickets)
+      const { priceAmount, successUrl, cancelUrl, metadata } = requestBody;
+      
+      if (priceAmount === undefined) {
+        throw new Error("Missing priceAmount for one-time payment");
+      }
+
+      logStep("One-time payment request", { priceAmount, metadata });
+
+      const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+        apiVersion: "2023-10-16",
+      });
+
+      // Check if customer already exists
+      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+      let customerId;
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        customer_email: customerId ? undefined : user.email,
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: { 
+                name: metadata?.event_title || "Event Ticket",
+                description: "Event ticket purchase"
+              },
+              unit_amount: Math.round(priceAmount * 100), // Convert dollars to cents
+            },
+            quantity: 1,
+          },
+        ],
+        mode: "payment",
+        success_url: successUrl || `${req.headers.get("origin")}/events?ticket=success`,
+        cancel_url: cancelUrl || `${req.headers.get("origin")}/events`,
+        metadata: metadata || {},
+      });
+
+      logStep("One-time checkout session created", { sessionId: session.id, url: session.url });
+
+      return new Response(JSON.stringify({ url: session.url }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Subscription payment
+    const { tier, billing_period } = requestBody;
     if (!tier || !billing_period) {
       throw new Error("Missing tier or billing_period");
     }

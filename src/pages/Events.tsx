@@ -165,6 +165,7 @@ const Events = () => {
     // Handle payment return URLs
     const urlParams = new URLSearchParams(window.location.search);
     const registration = urlParams.get('registration');
+    const ticket = urlParams.get('ticket');
     const eventId = urlParams.get('event');
     
     if (registration === 'success' && eventId) {
@@ -174,6 +175,11 @@ const Events = () => {
       window.history.replaceState({}, document.title, newUrl);
     } else if (registration === 'cancelled' && eventId) {
       toast.error('Table registration cancelled. You can try again anytime.');
+      // Clean up URL parameters
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    } else if (ticket === 'success' && eventId) {
+      toast.success('Ticket purchase successful! Payment processed.');
       // Clean up URL parameters
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);

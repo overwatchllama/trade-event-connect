@@ -8,7 +8,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { SubscriptionButton } from "@/components/SubscriptionButton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import ManageVendorsDialog from "./ManageVendorsDialog";
 import EventVendors from "./EventVendors";
 
@@ -38,6 +38,7 @@ interface EventCardProps {
 
 const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCardProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { subscribed, subscription_tier, loading: subscriptionLoading } = useSubscription();
   const [bookingLoading, setBookingLoading] = useState(false);
   const [manageVendorsOpen, setManageVendorsOpen] = useState(false);
@@ -102,7 +103,10 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
   };
   return (
     <>
-      <Card className="overflow-hidden hover:shadow-event transition-all duration-300 group">
+      <Card 
+        className="overflow-hidden hover:shadow-event transition-all duration-300 group cursor-pointer"
+        onClick={() => navigate(`/event/${event.id}`)}
+      >
         <div className="aspect-video bg-gradient-subtle relative overflow-hidden">
           {event.image ? (
             <img 
@@ -177,7 +181,10 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                   <Button 
                     variant="vendor" 
                     className="flex-1 relative"
-                    onClick={handleBookTable}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBookTable();
+                    }}
                     disabled={bookingLoading || subscriptionLoading || event.tablesAvailable === 0}
                   >
                     {bookingLoading ? 'Processing...' : (
@@ -190,7 +197,10 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                   <Button 
                     variant="outline" 
                     className="flex-1"
-                    onClick={() => toast.info('Claim event feature coming soon!')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toast.info('Claim event feature coming soon!');
+                    }}
                   >
                     Claim Event
                   </Button>
@@ -200,34 +210,52 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                   <Button 
                     variant="outline" 
                     className="flex-1 gap-2"
-                    onClick={() => setManageVendorsOpen(true)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setManageVendorsOpen(true);
+                    }}
                   >
                     <Settings className="w-4 h-4" />
                     Manage Vendors
                   </Button>
-                  <Button variant="outline" className="flex-1 gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 gap-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
                     <UserCheck className="w-4 h-4" />
                     Manage Attendees
                   </Button>
                 </>
               ) : (
                 <>
-                  <Button variant="default" className="flex-1">
+                  <Button 
+                    variant="default" 
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/event/${event.id}`);
+                    }}
+                  >
                     Buy Tickets
                   </Button>
-                  <SubscriptionButton
-                    type="event"
-                    targetId={event.id}
-                    size="default"
-                    showText={false}
-                  />
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <SubscriptionButton
+                      type="event"
+                      targetId={event.id}
+                      size="default"
+                      showText={false}
+                    />
+                  </div>
                 </>
               )}
             </div>
             
             {/* Subscription button for vendors (additional row) */}
             {userType === "vendor" && (
-              <div className="flex justify-center pt-2">
+              <div className="flex justify-center pt-2" onClick={(e) => e.stopPropagation()}>
                 <SubscriptionButton
                   type="event"
                   targetId={event.id}
