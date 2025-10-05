@@ -30,6 +30,7 @@ const EventDetails = () => {
   const [isOrganizer, setIsOrganizer] = useState(false);
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [sponsorDialogOpen, setSponsorDialogOpen] = useState(false);
+  const [vendorCount, setVendorCount] = useState(0);
 
   const isVendorPro = subscribed && 
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
@@ -51,6 +52,17 @@ const EventDetails = () => {
 
         setEvent(data);
         setIsOrganizer(user?.id === data.organizer_id);
+
+        // Fetch vendor count
+        const { count, error: vendorError } = await supabase
+          .from('vendor_applications')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_id', id)
+          .eq('application_status', 'approved');
+
+        if (!vendorError && count !== null) {
+          setVendorCount(count);
+        }
       } catch (error) {
         console.error('Error fetching event:', error);
         toast.error('Failed to load event details');
@@ -213,6 +225,11 @@ const EventDetails = () => {
                       <p className="font-medium">Max {event.max_attendees} attendees</p>
                     </div>
                   )}
+
+                  <div className="flex items-center gap-3">
+                    <Store className="w-5 h-5 text-muted-foreground" />
+                    <p className="font-medium">{vendorCount} vendor{vendorCount !== 1 ? 's' : ''}</p>
+                  </div>
                 </div>
 
                 {event.description && (
