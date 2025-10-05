@@ -113,22 +113,13 @@ const Vendors = () => {
         social_links: Array.isArray(vendor.social_links) ? vendor.social_links : []
       }));
       
-      // Separate current user's profile from others - ensure user is available
-      if (user?.id && isVendor) {
-        // Only separate if user has vendor role (for tabs view)
-        const currentUserProfile = transformedVendorsWithSocialLinks.find(vendor => vendor.user_id === user.id);
-        const otherVendors = transformedVendorsWithSocialLinks.filter(vendor => vendor.user_id !== user.id);
-        
-        setMyVendorProfile(currentUserProfile || null);
-        setVendors(otherVendors);
-      } else {
-        // Show all vendors (including current user's if they have one)
-        const currentUserProfile = user?.id 
-          ? transformedVendorsWithSocialLinks.find(vendor => vendor.user_id === user.id)
-          : null;
-        setMyVendorProfile(currentUserProfile || null);
-        setVendors(transformedVendorsWithSocialLinks);
-      }
+      // Always include all vendors in the list; also surface "my" vendor profile if present
+      const currentUserProfile = user?.id 
+        ? transformedVendorsWithSocialLinks.find(vendor => vendor.user_id === user.id)
+        : null;
+
+      setMyVendorProfile(currentUserProfile || null);
+      setVendors(transformedVendorsWithSocialLinks);
     } catch (error) {
       console.error('Error fetching vendors:', error);
       toast.error('Failed to load vendors. Please try again.');
