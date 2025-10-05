@@ -77,7 +77,7 @@ const Vendors = () => {
 
   useEffect(() => {
     fetchVendors();
-  }, [user]);
+  }, [user, isVendor]);
 
   const fetchVendors = async () => {
     try {
@@ -114,15 +114,19 @@ const Vendors = () => {
       }));
       
       // Separate current user's profile from others - ensure user is available
-      if (user?.id) {
+      if (user?.id && isVendor) {
+        // Only separate if user has vendor role (for tabs view)
         const currentUserProfile = transformedVendorsWithSocialLinks.find(vendor => vendor.user_id === user.id);
         const otherVendors = transformedVendorsWithSocialLinks.filter(vendor => vendor.user_id !== user.id);
         
         setMyVendorProfile(currentUserProfile || null);
         setVendors(otherVendors);
       } else {
-        // If no user, show all vendors in the other vendors list
-        setMyVendorProfile(null);
+        // Show all vendors (including current user's if they have one)
+        const currentUserProfile = user?.id 
+          ? transformedVendorsWithSocialLinks.find(vendor => vendor.user_id === user.id)
+          : null;
+        setMyVendorProfile(currentUserProfile || null);
         setVendors(transformedVendorsWithSocialLinks);
       }
     } catch (error) {
