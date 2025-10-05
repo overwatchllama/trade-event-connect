@@ -131,31 +131,46 @@ const Vendors = () => {
       if (myVendorProfile) {
         setEditDialogOpen(true);
       } else {
-        // Create vendor profile first
+        // Check if vendor profile exists in database
         setAddingRole(true);
         try {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('full_name, email')
-            .eq('id', user.id)
-            .single();
-
-          const { error } = await supabase
+          const { data: existingVendor, error: fetchError } = await supabase
             .from('vendors')
-            .insert({
-              user_id: user.id,
-              business_name: profileData?.full_name || 'My Business',
-              business_email: profileData?.email || user.email
-            });
+            .select('*')
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-          if (error) throw error;
+          if (fetchError) throw fetchError;
 
-          toast.success('Vendor profile created! Refreshing...');
-          await fetchVendors();
-          setEditDialogOpen(true);
+          if (existingVendor) {
+            // Profile exists, just fetch the full data and open dialog
+            await fetchVendors();
+            setEditDialogOpen(true);
+          } else {
+            // Create new vendor profile
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('full_name, email')
+              .eq('id', user.id)
+              .single();
+
+            const { error: insertError } = await supabase
+              .from('vendors')
+              .insert({
+                user_id: user.id,
+                business_name: profileData?.full_name || 'My Business',
+                business_email: profileData?.email || user.email
+              });
+
+            if (insertError) throw insertError;
+
+            toast.success('Vendor profile created!');
+            await fetchVendors();
+            setEditDialogOpen(true);
+          }
         } catch (error) {
-          console.error('Error creating vendor profile:', error);
-          toast.error('Failed to create vendor profile. Please try again.');
+          console.error('Error with vendor profile:', error);
+          toast.error('Failed to open vendor profile. Please try again.');
         } finally {
           setAddingRole(false);
         }
@@ -173,7 +188,6 @@ const Vendors = () => {
       if (error) throw error;
 
       toast.success('Vendor role added! Refreshing...');
-      // Refresh the page to update the UI
       window.location.reload();
     } catch (error) {
       console.error('Error adding vendor role:', error);
