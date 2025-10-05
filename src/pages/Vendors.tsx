@@ -151,7 +151,7 @@ const Vendors = () => {
             {/* Apply to Become Vendor Button - Only show if not already a vendor */}
             {user && !hasVendorRole && (
               <Button variant="hero" size="lg">
-                Apply to Become a Vendor
+                + Become a Vendor
               </Button>
             )}
           </div>
@@ -399,20 +399,6 @@ const Vendors = () => {
           )
         )}
 
-        {/* Call to Action - Only show if not already a vendor */}
-        {!loading && (vendors.length > 0 || myVendorProfile) && user && !hasVendorRole && (
-          <div className="text-center mt-12 p-8 bg-muted/30 rounded-lg">
-            <h3 className="text-xl font-semibold text-foreground mb-2">
-              Want to become a vendor?
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              Join our marketplace and connect with thousands of collectors.
-            </p>
-            <Button variant="hero" size="lg">
-              Apply to Become a Vendor
-            </Button>
-          </div>
-        )}
       </main>
 
       {/* Edit Profile Dialog */}
