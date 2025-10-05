@@ -33,6 +33,7 @@ const EventDetails = () => {
   const [sponsorDialogOpen, setSponsorDialogOpen] = useState(false);
   const [vendorCount, setVendorCount] = useState(0);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [organizerEmail, setOrganizerEmail] = useState<string | null>(null);
 
   const isVendorPro = subscribed && 
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
@@ -54,6 +55,17 @@ const EventDetails = () => {
 
         setEvent(data);
         setIsOrganizer(user?.id === data.organizer_id);
+
+        // Fetch organizer email
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', data.organizer_id)
+          .single();
+        
+        if (profileData) {
+          setOrganizerEmail(profileData.email);
+        }
 
         // Fetch vendor count
         const { count, error: vendorError } = await supabase
@@ -185,9 +197,16 @@ const EventDetails = () => {
                   ))}
                 </div>
                 <CardTitle className="text-3xl">{event.title}</CardTitle>
-                <CardDescription className="text-base">
-                  Organized by {event.organizer_name}
-                </CardDescription>
+                {organizerEmail && !isOrganizer && (
+                  <CardDescription className="text-base">
+                    <a 
+                      href={`mailto:${organizerEmail}?subject=Question about ${encodeURIComponent(event.title)}`}
+                      className="text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      Contact Event Organizer
+                    </a>
+                  </CardDescription>
+                )}
               </CardHeader>
               <CardContent className="space-y-6">
                 {event.flyer_url && (
