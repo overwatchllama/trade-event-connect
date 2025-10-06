@@ -1,16 +1,39 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CheckCircle, XCircle, Clock, Crown, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Trash2, ExternalLink, Loader2 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+interface SponsorApplication {
+  id: string;
+  event_id: string;
+  sponsor_id: string;
+  user_id: string;
+  application_status: 'pending' | 'approved' | 'rejected' | 'waitlist';
+  sponsorship_level: string;
+  amount?: number;
+  benefits?: string;
+  application_date: string;
+  approved_date?: string;
+  notes?: string;
+  sponsors: {
+    company_name: string;
+    company_description?: string;
+    logo_url?: string;
+    website_url?: string;
+    contact_email?: string;
+    contact_phone?: string;
+  };
+}
 
 interface ManageSponsorsDialogProps {
   open: boolean;
@@ -20,314 +43,332 @@ interface ManageSponsorsDialogProps {
 }
 
 const ManageSponsorsDialog = ({ open, onOpenChange, eventId, eventTitle }: ManageSponsorsDialogProps) => {
-  const [sponsors, setSponsors] = useState<any[]>([]);
-  const [eventSponsors, setEventSponsors] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [selectedSponsorId, setSelectedSponsorId] = useState("");
-  const [sponsorshipLevel, setSponsorshipLevel] = useState("standard");
-  const [amount, setAmount] = useState("");
-  const [benefits, setBenefits] = useState("");
-  const [adding, setAdding] = useState(false);
+  const [applications, setApplications] = useState<SponsorApplication[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      fetchData();
-    }
-  }, [open, eventId]);
-
-  const fetchData = async () => {
+  const fetchApplications = async () => {
     setLoading(true);
     try {
-      const { data: sponsorsData, error: sponsorsError } = await supabase
-        .from("sponsors")
-        .select("*")
-        .order("company_name");
-
-      if (sponsorsError) throw sponsorsError;
-
-      const { data: eventSponsorsData, error: eventSponsorsError } = await supabase
-        .from("event_sponsors")
+      const { data, error } = await supabase
+        .from('sponsor_applications')
         .select(`
           *,
-          sponsors:sponsor_id (*)
+          sponsors:sponsor_id (
+            company_name,
+            company_description,
+            logo_url,
+            website_url,
+            contact_email,
+            contact_phone
+          )
         `)
-        .eq("event_id", eventId);
+        .eq('event_id', eventId);
 
-      if (eventSponsorsError) throw eventSponsorsError;
-
-      setSponsors(sponsorsData || []);
-      setEventSponsors(eventSponsorsData || []);
+      if (error) throw error;
+      setApplications(data as SponsorApplication[] || []);
     } catch (error) {
-      console.error("Error fetching sponsors:", error);
-      toast.error("Failed to load sponsors");
+      console.error('Error fetching sponsor applications:', error);
+      toast.error('Failed to load sponsor applications');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddSponsor = async () => {
-    if (!selectedSponsorId) {
-      toast.error("Please select a sponsor");
-      return;
-    }
-
-    setAdding(true);
-    try {
-      const { error } = await supabase.from("event_sponsors").insert({
-        event_id: eventId,
-        sponsor_id: selectedSponsorId,
-        sponsorship_level: sponsorshipLevel,
-        amount: amount ? parseFloat(amount) : null,
-        benefits: benefits || null,
-      });
-
-      if (error) throw error;
-
-      toast.success("Sponsor added successfully!");
-      setAddDialogOpen(false);
-      resetForm();
-      fetchData();
-    } catch (error: any) {
-      console.error("Error adding sponsor:", error);
-      if (error.code === "23505") {
-        toast.error("This sponsor is already added to the event");
-      } else {
-        toast.error("Failed to add sponsor");
-      }
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  const handleRemoveSponsor = async (eventSponsorId: string) => {
-    if (!confirm("Are you sure you want to remove this sponsor?")) return;
-
+  const updateApplicationStatus = async (applicationId: string, status: 'approved' | 'rejected' | 'waitlist') => {
     try {
       const { error } = await supabase
-        .from("event_sponsors")
-        .delete()
-        .eq("id", eventSponsorId);
+        .from('sponsor_applications')
+        .update({
+          application_status: status,
+          approved_date: status === 'approved' ? new Date().toISOString() : null
+        })
+        .eq('id', applicationId);
 
       if (error) throw error;
-
-      toast.success("Sponsor removed successfully!");
-      fetchData();
+      
+      toast.success(`Application ${status === 'waitlist' ? 'added to waitlist' : status} successfully`);
+      fetchApplications();
     } catch (error) {
-      console.error("Error removing sponsor:", error);
-      toast.error("Failed to remove sponsor");
+      console.error('Error updating application status:', error);
+      toast.error('Failed to update application status');
     }
   };
 
-  const resetForm = () => {
-    setSelectedSponsorId("");
-    setSponsorshipLevel("standard");
-    setAmount("");
-    setBenefits("");
+  useEffect(() => {
+    if (open) {
+      fetchApplications();
+    }
+  }, [open, eventId]);
+
+  const getStatusBadge = (status: string) => {
+    const baseClasses = "font-medium";
+    
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary" className={`${baseClasses} bg-yellow-100 text-yellow-800`}>
+          <Clock className="w-3 h-3 mr-1" />
+          Pending
+        </Badge>;
+      case 'approved':
+        return <Badge variant="secondary" className={`${baseClasses} bg-green-100 text-green-800`}>
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Approved
+        </Badge>;
+      case 'rejected':
+        return <Badge variant="secondary" className={`${baseClasses} bg-red-100 text-red-800`}>
+          <XCircle className="w-3 h-3 mr-1" />
+          Rejected
+        </Badge>;
+      case 'waitlist':
+        return <Badge variant="secondary" className={`${baseClasses} bg-blue-100 text-blue-800`}>
+          <Clock className="w-3 h-3 mr-1" />
+          Waitlist
+        </Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
   };
 
-  const availableSponsors = sponsors.filter(
-    (sponsor) => !eventSponsors.some((es) => es.sponsor_id === sponsor.id)
+  const getLevelBadge = (level: string) => {
+    const colors: Record<string, string> = {
+      platinum: "bg-slate-200 text-slate-900",
+      gold: "bg-yellow-100 text-yellow-900",
+      silver: "bg-gray-100 text-gray-900",
+      bronze: "bg-orange-100 text-orange-900",
+      standard: "bg-blue-100 text-blue-900"
+    };
+    
+    return <Badge variant="secondary" className={colors[level] || colors.standard}>
+      <Crown className="w-3 h-3 mr-1" />
+      {level.charAt(0).toUpperCase() + level.slice(1)}
+    </Badge>;
+  };
+
+  const filterApplications = (status: string) => {
+    if (status === 'all') return applications;
+    return applications.filter(app => app.application_status === status);
+  };
+
+  const SponsorApplicationCard = ({ application }: { application: SponsorApplication }) => (
+    <Card className="p-4 space-y-4">
+      <div className="flex justify-between items-start">
+        <div className="space-y-2 flex-1">
+          <div className="flex items-center gap-3">
+            {application.sponsors.logo_url && (
+              <img
+                src={application.sponsors.logo_url}
+                alt={application.sponsors.company_name}
+                className="h-12 w-12 rounded object-cover"
+              />
+            )}
+            <div>
+              <h4 className="font-semibold text-lg">{application.sponsors.company_name}</h4>
+              {application.sponsors.website_url && (
+                <a
+                  href={application.sponsors.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
+                >
+                  Visit website
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+          </div>
+          {application.sponsors.company_description && (
+            <p className="text-sm text-muted-foreground">{application.sponsors.company_description}</p>
+          )}
+          {application.sponsors.contact_email && (
+            <p className="text-sm text-muted-foreground">{application.sponsors.contact_email}</p>
+          )}
+          {application.sponsors.contact_phone && (
+            <p className="text-sm text-muted-foreground">{application.sponsors.contact_phone}</p>
+          )}
+        </div>
+        <div className="text-right space-y-2">
+          {getStatusBadge(application.application_status)}
+          {getLevelBadge(application.sponsorship_level)}
+        </div>
+      </div>
+
+      {application.amount && (
+        <div className="text-sm">
+          <strong>Sponsorship Amount:</strong> ${application.amount.toFixed(2)}
+        </div>
+      )}
+
+      {application.benefits && (
+        <div className="text-sm">
+          <strong>Benefits:</strong> {application.benefits}
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        {application.application_status === 'pending' && (
+          <>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => updateApplicationStatus(application.id, 'approved')}
+            >
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => updateApplicationStatus(application.id, 'waitlist')}
+            >
+              <Clock className="w-3 h-3 mr-1" />
+              Waitlist
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => updateApplicationStatus(application.id, 'rejected')}
+            >
+              <XCircle className="w-3 h-3 mr-1" />
+              Reject
+            </Button>
+          </>
+        )}
+        
+        {application.application_status === 'waitlist' && (
+          <>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => updateApplicationStatus(application.id, 'approved')}
+            >
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => updateApplicationStatus(application.id, 'rejected')}
+            >
+              <XCircle className="w-3 h-3 mr-1" />
+              Reject
+            </Button>
+          </>
+        )}
+      </div>
+
+      {application.notes && (
+        <div className="text-sm text-muted-foreground">
+          <strong>Notes:</strong> {application.notes}
+        </div>
+      )}
+
+      <div className="text-xs text-muted-foreground">
+        Applied: {new Date(application.application_date).toLocaleDateString()}
+        {application.approved_date && (
+          <span> • Approved: {new Date(application.approved_date).toLocaleDateString()}</span>
+        )}
+      </div>
+    </Card>
   );
 
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case "platinum":
-        return "default";
-      case "gold":
-        return "secondary";
-      case "silver":
-        return "outline";
-      default:
-        return "outline";
-    }
-  };
-
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Manage Sponsors - {eventTitle}</DialogTitle>
-            <DialogDescription>
-              Add or remove sponsors for this event
-            </DialogDescription>
-          </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Manage Sponsors - {eventTitle}</DialogTitle>
+        </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Current Sponsors</h3>
-              <Button onClick={() => setAddDialogOpen(true)} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Sponsor
-              </Button>
-            </div>
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="all">All ({applications.length})</TabsTrigger>
+            <TabsTrigger value="pending">
+              Pending ({filterApplications('pending').length})
+            </TabsTrigger>
+            <TabsTrigger value="waitlist">
+              Waitlist ({filterApplications('waitlist').length})
+            </TabsTrigger>
+            <TabsTrigger value="approved">
+              Approved ({filterApplications('approved').length})
+            </TabsTrigger>
+            <TabsTrigger value="rejected">
+              Rejected ({filterApplications('rejected').length})
+            </TabsTrigger>
+          </TabsList>
 
+          <TabsContent value="all" className="space-y-4">
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin" />
+              <div className="text-center py-8">Loading sponsor applications...</div>
+            ) : applications.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No sponsor applications yet
               </div>
-            ) : eventSponsors.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                No sponsors added yet. Add your first sponsor!
-              </p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Level</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Benefits</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {eventSponsors.map((eventSponsor) => (
-                    <TableRow key={eventSponsor.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {eventSponsor.sponsors.logo_url && (
-                            <img
-                              src={eventSponsor.sponsors.logo_url}
-                              alt={eventSponsor.sponsors.company_name}
-                              className="h-8 w-8 rounded object-cover"
-                            />
-                          )}
-                          <div>
-                            <p className="font-medium">
-                              {eventSponsor.sponsors.company_name}
-                            </p>
-                            {eventSponsor.sponsors.website_url && (
-                              <a
-                                href={eventSponsor.sponsors.website_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
-                              >
-                                Visit website
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getLevelColor(eventSponsor.sponsorship_level)}>
-                          {eventSponsor.sponsorship_level}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {eventSponsor.amount ? `$${eventSponsor.amount}` : "-"}
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {eventSponsor.benefits || "-"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleRemoveSponsor(eventSponsor.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="space-y-4">
+                {applications.map((application) => (
+                  <SponsorApplicationCard key={application.id} application={application} />
+                ))}
+              </div>
             )}
-          </div>
-        </DialogContent>
-      </Dialog>
+          </TabsContent>
 
-      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Event Sponsor</DialogTitle>
-            <DialogDescription>
-              Select a sponsor and configure the sponsorship details
-            </DialogDescription>
-          </DialogHeader>
+          <TabsContent value="pending" className="space-y-4">
+            {filterApplications('pending').length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No pending applications
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filterApplications('pending').map((application) => (
+                  <SponsorApplicationCard key={application.id} application={application} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Sponsor</Label>
-              <Select value={selectedSponsorId} onValueChange={setSelectedSponsorId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a sponsor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableSponsors.length === 0 ? (
-                    <div className="p-2 text-sm text-muted-foreground">
-                      No available sponsors
-                    </div>
-                  ) : (
-                    availableSponsors.map((sponsor) => (
-                      <SelectItem key={sponsor.id} value={sponsor.id}>
-                        {sponsor.company_name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+          <TabsContent value="approved" className="space-y-4">
+            {filterApplications('approved').length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No approved applications
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filterApplications('approved').map((application) => (
+                  <SponsorApplicationCard key={application.id} application={application} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
 
-            <div className="space-y-2">
-              <Label>Sponsorship Level</Label>
-              <Select value={sponsorshipLevel} onValueChange={setSponsorshipLevel}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="platinum">Platinum</SelectItem>
-                  <SelectItem value="gold">Gold</SelectItem>
-                  <SelectItem value="silver">Silver</SelectItem>
-                  <SelectItem value="bronze">Bronze</SelectItem>
-                  <SelectItem value="standard">Standard</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <TabsContent value="waitlist" className="space-y-4">
+            {filterApplications('waitlist').length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No waitlisted applications
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filterApplications('waitlist').map((application) => (
+                  <SponsorApplicationCard key={application.id} application={application} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
 
-            <div className="space-y-2">
-              <Label>Sponsorship Amount (Optional)</Label>
-              <Input
-                type="number"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Benefits (Optional)</Label>
-              <Textarea
-                placeholder="List the benefits included in this sponsorship..."
-                value={benefits}
-                onChange={(e) => setBenefits(e.target.value)}
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddSponsor} disabled={adding || !selectedSponsorId}>
-              {adding ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Adding...
-                </>
-              ) : (
-                "Add Sponsor"
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+          <TabsContent value="rejected" className="space-y-4">
+            {filterApplications('rejected').length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No rejected applications
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filterApplications('rejected').map((application) => (
+                  <SponsorApplicationCard key={application.id} application={application} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   );
 };
 

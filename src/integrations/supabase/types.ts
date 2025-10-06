@@ -590,6 +590,69 @@ export type Database = {
         }
         Relationships: []
       }
+      sponsor_applications: {
+        Row: {
+          amount: number | null
+          application_date: string
+          application_status: string
+          approved_date: string | null
+          benefits: string | null
+          created_at: string
+          event_id: string
+          id: string
+          notes: string | null
+          sponsor_id: string
+          sponsorship_level: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          application_date?: string
+          application_status?: string
+          approved_date?: string | null
+          benefits?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          notes?: string | null
+          sponsor_id: string
+          sponsorship_level?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          application_date?: string
+          application_status?: string
+          approved_date?: string | null
+          benefits?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          notes?: string | null
+          sponsor_id?: string
+          sponsorship_level?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsor_applications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsor_applications_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "sponsors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sponsors: {
         Row: {
           company_description: string | null
