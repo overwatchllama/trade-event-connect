@@ -113,38 +113,25 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
   return (
     <>
       <Card 
-        className="overflow-hidden hover:shadow-event transition-all duration-300 group cursor-pointer"
+        className="overflow-hidden hover:shadow-event transition-all duration-300 group cursor-pointer max-w-sm mx-auto"
         onClick={() => navigate(`/event/${event.id}`)}
       >
-        <div className="aspect-video bg-gradient-subtle relative overflow-hidden">
-          {event.image ? (
-            <img 
-              src={event.image} 
-              alt={event.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-primary flex items-center justify-center">
-              <Calendar className="w-12 h-12 text-primary-foreground opacity-50" />
-            </div>
-          )}
-          <div className="absolute top-4 right-4">
-            <Badge variant="secondary" className="bg-background/90 text-foreground">
-              ${event.price}
-            </Badge>
-          </div>
-          <div className="absolute top-4 left-4 flex gap-2">
+        <div className="h-16 bg-gradient-primary relative overflow-hidden flex items-center justify-between px-4">
+          <div className="flex gap-2 flex-wrap">
             {event.cardTypes.slice(0, 2).map((type, index) => (
-              <Badge key={index} variant="outline" className="bg-background/90 text-foreground">
+              <Badge key={index} variant="outline" className="bg-background/90 text-foreground text-xs">
                 {type}
               </Badge>
             ))}
             {event.cardTypes.length > 2 && (
-              <Badge variant="outline" className="bg-background/90 text-foreground">
+              <Badge variant="outline" className="bg-background/90 text-foreground text-xs">
                 +{event.cardTypes.length - 2}
               </Badge>
             )}
           </div>
+          <Badge variant="secondary" className="bg-background/90 text-foreground">
+            ${event.price}
+          </Badge>
         </div>
 
         <div className="p-6">
