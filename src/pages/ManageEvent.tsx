@@ -28,8 +28,10 @@ const ManageEvent = () => {
   const [vendorsDialogOpen, setVendorsDialogOpen] = useState(false);
 
   useEffect(() => {
-    fetchEvent();
-  }, [id]);
+    if (user) {
+      fetchEvent();
+    }
+  }, [id, user]);
 
   const fetchEvent = async () => {
     if (!id) return;
