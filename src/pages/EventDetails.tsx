@@ -18,6 +18,8 @@ import { VendorApplicationDialog } from '@/components/VendorApplicationDialog';
 import { SponsorApplicationDialog } from '@/components/SponsorApplicationDialog';
 import { EventSponsors } from '@/components/EventSponsors';
 import EditEventDialog from '@/components/EditEventDialog';
+import ManageVendorsDialog from '@/components/ManageVendorsDialog';
+import ManageSponsorsDialog from '@/components/ManageSponsorsDialog';
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +36,8 @@ const EventDetails = () => {
   const [vendorCount, setVendorCount] = useState(0);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [organizerEmail, setOrganizerEmail] = useState<string | null>(null);
+  const [manageVendorsOpen, setManageVendorsOpen] = useState(false);
+  const [manageSponsorsOpen, setManageSponsorsOpen] = useState(false);
 
   const isVendorPro = subscribed && 
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
@@ -173,13 +177,27 @@ const EventDetails = () => {
         </Button>
 
         {isOrganizer && (
-          <div className="mb-6">
+          <div className="mb-6 flex gap-2">
             <Button
               onClick={() => setEditDialogOpen(true)}
               variant="outline"
             >
               <Settings className="w-4 h-4 mr-2" />
               Edit Event
+            </Button>
+            <Button
+              onClick={() => setManageVendorsOpen(true)}
+              variant="outline"
+            >
+              <Store className="w-4 h-4 mr-2" />
+              Manage Vendors
+            </Button>
+            <Button
+              onClick={() => setManageSponsorsOpen(true)}
+              variant="outline"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Manage Sponsors
             </Button>
           </div>
         )}
@@ -394,6 +412,20 @@ const EventDetails = () => {
             // Refresh event data
             window.location.reload();
           }}
+        />
+
+        <ManageVendorsDialog
+          open={manageVendorsOpen}
+          onOpenChange={setManageVendorsOpen}
+          eventId={event.id}
+          eventTitle={event.title}
+        />
+
+        <ManageSponsorsDialog
+          open={manageSponsorsOpen}
+          onOpenChange={setManageSponsorsOpen}
+          eventId={event.id}
+          eventTitle={event.title}
         />
       </div>
     </div>
