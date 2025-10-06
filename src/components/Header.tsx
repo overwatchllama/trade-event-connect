@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Calendar, User, LogOut, Settings, Store, Bell, Shield, PenTool, Award } from "lucide-react";
+import { User, LogOut, Settings, Store, Bell, Shield, PenTool, Award } from "lucide-react";
+import logo from "@/assets/logo.jpg";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorProfile } from "@/hooks/useVendorProfile";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -26,10 +27,8 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">CardEvents</span>
+            <img src={logo} alt="Cardboard Curators" className="w-10 h-10 rounded-lg" />
+            <span className="text-xl font-bold text-foreground">Cardboard Curators</span>
           </Link>
 
           <nav className="hidden md:flex items-center space-x-8">
