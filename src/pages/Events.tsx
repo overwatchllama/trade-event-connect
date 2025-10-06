@@ -126,22 +126,59 @@ const Events = () => {
 
         const vendorMap = new Map(vendorsData?.map(v => [v.user_id, v.business_name]) || []);
 
+        // Get event days for multi-day events
+        const eventIds = eventsData?.map(e => e.id) || [];
+        const { data: eventDaysData } = await supabase
+          .from('event_days')
+          .select('event_id, day_date, start_time, end_time, day_number')
+          .in('event_id', eventIds)
+          .order('day_number', { ascending: true });
+
+        const eventDaysMap = new Map<string, any[]>();
+        eventDaysData?.forEach(day => {
+          const days = eventDaysMap.get(day.event_id) || [];
+          days.push(day);
+          eventDaysMap.set(day.event_id, days);
+        });
+
         // Transform database events to match expected format
         const transformedEvents = eventsData?.map(event => {
           const organizerName = vendorMap.get(event.organizer_id) || event.organizer_name || 'Unknown Organizer';
           
+          let dateStr = event.date;
+          let timeStr = 'Single day';
+          
+          if (event.is_multi_day) {
+            const days = eventDaysMap.get(event.id) || [];
+            if (days.length > 0) {
+              const firstDay = days[0];
+              const lastDay = days[days.length - 1];
+              dateStr = `${new Date(firstDay.day_date).toLocaleDateString()} - ${new Date(lastDay.day_date).toLocaleDateString()}`;
+              timeStr = `${firstDay.start_time} - ${lastDay.end_time}`;
+            } else {
+              dateStr = event.date;
+              timeStr = 'Multi-day';
+            }
+          } else {
+            const days = eventDaysMap.get(event.id) || [];
+            if (days.length > 0) {
+              dateStr = new Date(days[0].day_date).toLocaleDateString();
+              timeStr = `${days[0].start_time} - ${days[0].end_time}`;
+            }
+          }
+          
           return {
             id: event.id,
             title: event.title,
-            date: event.date,
-            time: event.is_multi_day ? 'Multi-day event' : 'Single day',
+            date: dateStr,
+            time: timeStr,
             location: event.venue,
             city: event.city,
             state: event.state,
             organizer: organizerName,
             organizer_id: event.organizer_id,
-            rating: 4.5, // Default rating since we don't have ratings yet
-            attendees: 0, // Default attendees since we don't have this data yet
+            rating: 4.5,
+            attendees: 0,
             maxAttendees: event.max_attendees || 100,
             tablesAvailable: event.tables_available || 0,
             totalTables: event.total_tables || 0,
@@ -204,14 +241,51 @@ const Events = () => {
 
           const vendorMap = new Map(vendorsData?.map(v => [v.user_id, v.business_name]) || []);
 
+          // Get event days
+          const eventIds = data.map(e => e.id);
+          const { data: eventDaysData } = await supabase
+            .from('event_days')
+            .select('event_id, day_date, start_time, end_time, day_number')
+            .in('event_id', eventIds)
+            .order('day_number', { ascending: true });
+
+          const eventDaysMap = new Map<string, any[]>();
+          eventDaysData?.forEach(day => {
+            const days = eventDaysMap.get(day.event_id) || [];
+            days.push(day);
+            eventDaysMap.set(day.event_id, days);
+          });
+
           const events = data.map(event => {
             const organizerName = vendorMap.get(event.organizer_id) || event.organizer_name || 'Unknown Organizer';
+            
+            let dateStr = event.date;
+            let timeStr = 'Single day';
+            
+            if (event.is_multi_day) {
+              const days = eventDaysMap.get(event.id) || [];
+              if (days.length > 0) {
+                const firstDay = days[0];
+                const lastDay = days[days.length - 1];
+                dateStr = `${new Date(firstDay.day_date).toLocaleDateString()} - ${new Date(lastDay.day_date).toLocaleDateString()}`;
+                timeStr = `${firstDay.start_time} - ${lastDay.end_time}`;
+              } else {
+                dateStr = event.date;
+                timeStr = 'Multi-day';
+              }
+            } else {
+              const days = eventDaysMap.get(event.id) || [];
+              if (days.length > 0) {
+                dateStr = new Date(days[0].day_date).toLocaleDateString();
+                timeStr = `${days[0].start_time} - ${days[0].end_time}`;
+              }
+            }
             
             return {
               id: event.id,
               title: event.title,
-              date: event.date,
-              time: event.is_multi_day ? 'Multi-day event' : 'Single day',
+              date: dateStr,
+              time: timeStr,
               location: event.venue,
               city: event.city,
               state: event.state,
@@ -271,14 +345,51 @@ const Events = () => {
 
           const vendorMap = new Map(vendorsData?.map(v => [v.user_id, v.business_name]) || []);
 
+          // Get event days
+          const eventIds = data.map(e => e.id);
+          const { data: eventDaysData } = await supabase
+            .from('event_days')
+            .select('event_id, day_date, start_time, end_time, day_number')
+            .in('event_id', eventIds)
+            .order('day_number', { ascending: true });
+
+          const eventDaysMap = new Map<string, any[]>();
+          eventDaysData?.forEach(day => {
+            const days = eventDaysMap.get(day.event_id) || [];
+            days.push(day);
+            eventDaysMap.set(day.event_id, days);
+          });
+
           const events = data.map(event => {
             const organizerName = vendorMap.get(event.organizer_id) || event.organizer_name || 'Unknown Organizer';
+            
+            let dateStr = event.date;
+            let timeStr = 'Single day';
+            
+            if (event.is_multi_day) {
+              const days = eventDaysMap.get(event.id) || [];
+              if (days.length > 0) {
+                const firstDay = days[0];
+                const lastDay = days[days.length - 1];
+                dateStr = `${new Date(firstDay.day_date).toLocaleDateString()} - ${new Date(lastDay.day_date).toLocaleDateString()}`;
+                timeStr = `${firstDay.start_time} - ${lastDay.end_time}`;
+              } else {
+                dateStr = event.date;
+                timeStr = 'Multi-day';
+              }
+            } else {
+              const days = eventDaysMap.get(event.id) || [];
+              if (days.length > 0) {
+                dateStr = new Date(days[0].day_date).toLocaleDateString();
+                timeStr = `${days[0].start_time} - ${days[0].end_time}`;
+              }
+            }
             
             return {
               id: event.id,
               title: event.title,
-              date: event.date,
-              time: event.is_multi_day ? 'Multi-day event' : 'Single day',
+              date: dateStr,
+              time: timeStr,
               location: event.venue,
               city: event.city,
               state: event.state,
