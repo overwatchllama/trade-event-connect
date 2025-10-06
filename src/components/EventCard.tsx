@@ -113,7 +113,7 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
   return (
     <>
       <Card 
-        className="overflow-hidden hover:shadow-event transition-all duration-300 group cursor-pointer max-w-sm mx-auto"
+        className="overflow-hidden hover:shadow-event transition-all duration-300 group cursor-pointer w-full"
         onClick={() => navigate(`/event/${event.id}`)}
       >
         <div className="h-16 bg-gradient-primary relative overflow-hidden flex items-center justify-between px-4">
