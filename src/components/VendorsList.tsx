@@ -1,166 +1,355 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
-import { Building2, Calendar } from "lucide-react";
+import { Mail, Star, StickyNote, Filter } from "lucide-react";
+import { toast } from "sonner";
 
-interface VendorWithEvents {
+interface VendorData {
   id: string;
   business_name: string;
-  avatar_url: string | null;
+  business_email: string;
   user_id: string;
-  events: {
-    id: string;
-    title: string;
-    date: string;
-  }[];
-  sharedEvents: number;
+  status: 'pending' | 'approved' | 'previous';
+  event_title?: string;
+  event_id?: string;
+  application_id?: string;
+  private_notes?: string;
+  private_rating?: number;
 }
 
 export const VendorsList = () => {
-  const [vendors, setVendors] = useState<VendorWithEvents[]>([]);
+  const [vendors, setVendors] = useState<VendorData[]>([]);
+  const [filteredVendors, setFilteredVendors] = useState<VendorData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedVendor, setSelectedVendor] = useState<VendorData | null>(null);
+  const [notes, setNotes] = useState("");
+  const [rating, setRating] = useState<number>(0);
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchVendors = async () => {
-      if (!user) return;
-
-      try {
-        // Get current user's events (as organizer)
-        const { data: myEvents } = await supabase
-          .from('events')
-          .select('id')
-          .eq('organizer_id', user.id);
-
-        const myEventIds = myEvents?.map(event => event.id) || [];
-
-        // Get all vendors
-        const { data: vendorsData } = await supabase
-          .from('vendors')
-          .select('id, business_name, avatar_url, user_id')
-          .neq('user_id', user.id);
-
-        if (!vendorsData) {
-          setLoading(false);
-          return;
-        }
-
-        // For each vendor, get their events
-        const vendorsWithEvents = await Promise.all(
-          vendorsData.map(async (vendor) => {
-            const { data: applications } = await supabase
-              .from('vendor_applications')
-              .select('event_id')
-              .eq('user_id', vendor.user_id)
-              .eq('application_status', 'approved');
-
-            const vendorEventIds = applications?.map(app => app.event_id) || [];
-            
-            // Find shared events
-            const sharedEventIds = vendorEventIds.filter(id => myEventIds.includes(id));
-            
-            // Get event details for shared events
-            const { data: events } = await supabase
-              .from('events')
-              .select('id, title, date')
-              .in('id', sharedEventIds)
-              .order('date', { ascending: false });
-
-            return {
-              ...vendor,
-              events: events || [],
-              sharedEvents: sharedEventIds.length
-            };
-          })
-        );
-
-        // Sort by number of shared events
-        vendorsWithEvents.sort((a, b) => b.sharedEvents - a.sharedEvents);
-        setVendors(vendorsWithEvents);
-      } catch (error) {
-        console.error('Error fetching vendors:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchVendors();
   }, [user]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [filter, searchQuery, vendors]);
+
+  const fetchVendors = async () => {
+    if (!user) return;
+
+    try {
+      const { data: myEvents } = await supabase
+        .from('events')
+        .select('id')
+        .eq('organizer_id', user.id);
+
+      const myEventIds = myEvents?.map(event => event.id) || [];
+
+      if (myEventIds.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      // Get all vendor applications for organizer's events
+      const { data: applications } = await supabase
+        .from('vendor_applications')
+        .select('id, user_id, event_id, application_status')
+        .in('event_id', myEventIds);
+
+      // Get event details separately
+      const { data: eventsData } = await supabase
+        .from('events')
+        .select('id, title')
+        .in('id', myEventIds);
+
+      const eventsMap = new Map(eventsData?.map(e => [e.id, e.title]) || []);
+
+      // Get vendor details
+      const vendorUserIds = [...new Set(applications?.map(app => app.user_id) || [])];
+      const { data: vendorsData } = await supabase
+        .from('vendors')
+        .select('id, business_name, business_email, user_id')
+        .in('user_id', vendorUserIds);
+
+      // Get organizer's private notes
+      const { data: notesData } = await supabase
+        .from('organizer_vendor_notes')
+        .select('*')
+        .eq('organizer_id', user.id);
+
+      const notesMap = new Map(notesData?.map(n => [n.vendor_id, n]) || []);
+
+      // Build vendor list with status
+      const vendorsList: VendorData[] = [];
+      const processedVendors = new Set<string>();
+
+      applications?.forEach(app => {
+        const vendor = vendorsData?.find(v => v.user_id === app.user_id);
+        if (!vendor) return;
+
+        const vendorKey = `${vendor.id}-${app.event_id}`;
+        if (processedVendors.has(vendorKey)) return;
+        processedVendors.add(vendorKey);
+
+        const noteData = notesMap.get(vendor.id);
+        const status = app.application_status === 'approved' ? 'approved' : 'pending';
+
+        vendorsList.push({
+          id: vendor.id,
+          business_name: vendor.business_name,
+          business_email: vendor.business_email || '',
+          user_id: vendor.user_id,
+          status,
+          event_title: eventsMap.get(app.event_id) || 'Unknown Event',
+          event_id: app.event_id,
+          application_id: app.id,
+          private_notes: noteData?.private_notes || '',
+          private_rating: noteData?.private_rating || 0
+        });
+      });
+
+      // Add vendors worked with before (approved in past events)
+      const previousVendors = vendorsList.filter(v => v.status === 'approved');
+      const uniquePreviousVendors = new Map<string, VendorData>();
+      
+      previousVendors.forEach(v => {
+        if (!uniquePreviousVendors.has(v.user_id)) {
+          uniquePreviousVendors.set(v.user_id, { ...v, status: 'previous' });
+        }
+      });
+
+      setVendors(vendorsList);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+      toast.error('Failed to load vendors');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...vendors];
+
+    // Apply status filter
+    if (filter !== "all") {
+      filtered = filtered.filter(v => v.status === filter);
+    }
+
+    // Apply search
+    if (searchQuery) {
+      filtered = filtered.filter(v =>
+        v.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.business_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.event_title?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredVendors(filtered);
+  };
+
+  const handleSaveNotes = async () => {
+    if (!selectedVendor || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('organizer_vendor_notes')
+        .upsert({
+          organizer_id: user.id,
+          vendor_id: selectedVendor.id,
+          private_notes: notes,
+          private_rating: rating > 0 ? rating : null
+        });
+
+      if (error) throw error;
+
+      toast.success('Notes saved successfully');
+      setSelectedVendor(null);
+      fetchVendors();
+    } catch (error) {
+      console.error('Error saving notes:', error);
+      toast.error('Failed to save notes');
+    }
+  };
+
+  const handleEmailAll = () => {
+    const emails = filteredVendors
+      .filter(v => v.business_email)
+      .map(v => v.business_email)
+      .join(',');
+    
+    if (emails) {
+      window.location.href = `mailto:${emails}`;
+    } else {
+      toast.error('No vendor emails available');
+    }
+  };
+
+  const openNotesDialog = (vendor: VendorData) => {
+    setSelectedVendor(vendor);
+    setNotes(vendor.private_notes || '');
+    setRating(vendor.private_rating || 0);
+  };
 
   if (loading) {
     return <div className="text-center py-8">Loading vendors...</div>;
   }
 
-  if (vendors.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        No other vendors found yet. As you attend more events, you'll see vendors you've worked with here.
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-foreground mb-2">Vendor Network</h2>
-        <p className="text-muted-foreground">Connect with other vendors you've met at events</p>
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Vendor Management</h2>
+          <p className="text-sm text-muted-foreground">Manage and track vendors across your events</p>
+        </div>
+        <Button onClick={handleEmailAll} className="gap-2" disabled={filteredVendors.length === 0}>
+          <Mail className="h-4 w-4" />
+          Email All ({filteredVendors.length})
+        </Button>
       </div>
-      
-      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {vendors.map((vendor) => (
-          <Card 
-            key={vendor.id} 
-            className="cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => navigate(`/vendors?id=${vendor.user_id}`)}
-          >
-            <CardHeader>
-              <div className="flex items-start gap-3">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={vendor.avatar_url || undefined} />
-                  <AvatarFallback>
-                    <Building2 className="h-6 w-6" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="text-lg truncate">{vendor.business_name}</CardTitle>
-                  {vendor.sharedEvents > 0 && (
-                    <Badge variant="secondary" className="mt-1">
-                      {vendor.sharedEvents} shared event{vendor.sharedEvents !== 1 ? 's' : ''}
+
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <Input
+          placeholder="Search vendors, events..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="md:max-w-xs"
+        />
+        <Select value={filter} onValueChange={setFilter}>
+          <SelectTrigger className="md:w-48">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Vendors</SelectItem>
+            <SelectItem value="pending">Pending Applications</SelectItem>
+            <SelectItem value="approved">Accepted Vendors</SelectItem>
+            <SelectItem value="previous">Previous Partners</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Vendor Table */}
+      {filteredVendors.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          No vendors found. {filter !== "all" && "Try changing your filter."}
+        </div>
+      ) : (
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Business Name</TableHead>
+                <TableHead>Event</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredVendors.map((vendor) => (
+                <TableRow key={`${vendor.id}-${vendor.event_id}`}>
+                  <TableCell className="font-medium">{vendor.business_name}</TableCell>
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">{vendor.event_title || 'N/A'}</span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={
+                      vendor.status === 'approved' ? 'default' :
+                      vendor.status === 'pending' ? 'secondary' : 'outline'
+                    }>
+                      {vendor.status}
                     </Badge>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {vendor.events.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    Events together:
-                  </p>
-                  <div className="space-y-1">
-                    {vendor.events.slice(0, 3).map((event) => (
-                      <div key={event.id} className="text-sm text-foreground truncate">
-                        • {event.title}
+                  </TableCell>
+                  <TableCell>
+                    {vendor.private_rating ? (
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm">{vendor.private_rating}</span>
                       </div>
-                    ))}
-                    {vendor.events.length > 3 && (
-                      <div className="text-sm text-muted-foreground">
-                        +{vendor.events.length - 3} more
-                      </div>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Not rated</span>
                     )}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      {vendor.business_email && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.location.href = `mailto:${vendor.business_email}`}
+                        >
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openNotesDialog(vendor)}
+                          >
+                            <StickyNote className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Private Notes - {vendor.business_name}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-sm font-medium mb-2 block">Private Rating</label>
+                              <div className="flex gap-2">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <button
+                                    key={star}
+                                    type="button"
+                                    onClick={() => setRating(star)}
+                                    className="hover:scale-110 transition-transform"
+                                  >
+                                    <Star
+                                      className={`h-6 w-6 ${
+                                        star <= rating
+                                          ? 'fill-yellow-400 text-yellow-400'
+                                          : 'text-gray-300'
+                                      }`}
+                                    />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium mb-2 block">Private Notes</label>
+                              <Textarea
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                placeholder="Add your private notes about this vendor..."
+                                rows={5}
+                              />
+                            </div>
+                            <Button onClick={handleSaveNotes} className="w-full">
+                              Save Notes
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 };

@@ -435,6 +435,44 @@ export type Database = {
           },
         ]
       }
+      organizer_vendor_notes: {
+        Row: {
+          created_at: string
+          id: string
+          organizer_id: string
+          private_notes: string | null
+          private_rating: number | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organizer_id: string
+          private_notes?: string | null
+          private_rating?: number | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organizer_id?: string
+          private_notes?: string | null
+          private_rating?: number | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizer_vendor_notes_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address_city: string | null
