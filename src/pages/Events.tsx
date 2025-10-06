@@ -490,7 +490,7 @@ const Events = () => {
               (isOrganizer && myEvents.length > 0 ? 1 : 0) +
               (isVendor && vendingEvents.length > 0 ? 1 : 0) +
               (isSponsor && sponsoringEvents.length > 0 ? 1 : 0) +
-              (isVendor ? 2 : 0) + // Vendor List and Sponsor List tabs
+              (isOrganizer ? 2 : 0) + // Vendor List and Sponsor List tabs for organizers
               1
             }, minmax(0, 1fr))` }}>
               <TabsTrigger value="events">Events</TabsTrigger>
@@ -503,7 +503,7 @@ const Events = () => {
               {isSponsor && sponsoringEvents.length > 0 && (
                 <TabsTrigger value="sponsorships">Manage Sponsorships</TabsTrigger>
               )}
-              {isVendor && (
+              {isOrganizer && (
                 <>
                   <TabsTrigger value="vendor-list">Vendor List</TabsTrigger>
                   <TabsTrigger value="sponsor-list">Sponsor List</TabsTrigger>
@@ -593,15 +593,15 @@ const Events = () => {
               </TabsContent>
             )}
 
-            {/* Vendor List Tab - For vendors */}
-            {isVendor && (
+            {/* Vendor List Tab - For organizers */}
+            {isOrganizer && (
               <TabsContent value="vendor-list" className="mt-6">
                 <VendorsList />
               </TabsContent>
             )}
 
-            {/* Sponsor List Tab - For vendors */}
-            {isVendor && (
+            {/* Sponsor List Tab - For organizers */}
+            {isOrganizer && (
               <TabsContent value="sponsor-list" className="mt-6">
                 <SponsorsList />
               </TabsContent>

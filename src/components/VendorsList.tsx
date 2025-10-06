@@ -31,14 +31,13 @@ export const VendorsList = () => {
       if (!user) return;
 
       try {
-        // Get current user's events
-        const { data: myApplications } = await supabase
-          .from('vendor_applications')
-          .select('event_id')
-          .eq('user_id', user.id)
-          .eq('application_status', 'approved');
+        // Get current user's events (as organizer)
+        const { data: myEvents } = await supabase
+          .from('events')
+          .select('id')
+          .eq('organizer_id', user.id);
 
-        const myEventIds = myApplications?.map(app => app.event_id) || [];
+        const myEventIds = myEvents?.map(event => event.id) || [];
 
         // Get all vendors
         const { data: vendorsData } = await supabase
