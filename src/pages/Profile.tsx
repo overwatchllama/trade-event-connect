@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { User, Mail, ArrowLeft, Save, Building, MapPin, Users, Plus, Trash2, UserCog, Settings } from 'lucide-react';
+import { User, Mail, ArrowLeft, Save, Building, MapPin, Users, Plus, Trash2, UserCog, Settings, Calendar } from 'lucide-react';
 import Header from '@/components/Header';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SelfManageRoles } from '@/components/SelfManageRoles';
 import { ManageVenue } from '@/components/ManageVenue';
+import EventCard from '@/components/EventCard';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Full name must be at least 2 characters'),
@@ -53,6 +54,9 @@ const Profile = () => {
   const [roleRequests, setRoleRequests] = useState<any[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialMediaLink[]>([]);
   const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [vendingEvents, setVendingEvents] = useState<any[]>([]);
+  const [hostingEvents, setHostingEvents] = useState<any[]>([]);
+  const [sponsoringEvents, setSponsoringEvents] = useState<any[]>([]);
   const { user, requestRole } = useAuth();
   const { subscription_tier, subscribed } = useSubscription();
   const navigate = useNavigate();
@@ -138,9 +142,143 @@ const Profile = () => {
       }
     };
 
+    const fetchVendingEvents = async () => {
+      if (!user) return;
+      
+      // First get all vendor applications for this user
+      const { data: applications, error: appError } = await supabase
+        .from('vendor_applications')
+        .select('event_id')
+        .eq('user_id', user.id)
+        .eq('application_status', 'approved');
+
+      if (!applications || applications.length === 0) return;
+
+      const eventIds = applications.map(app => app.event_id);
+
+      // Then get all events matching those IDs
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .in('id', eventIds);
+
+      if (data) {
+        const events = data.map(event => ({
+          id: event.id,
+          title: event.title,
+          date: event.date,
+          time: '10:00 AM',
+          location: event.venue,
+          city: event.city,
+          state: event.state,
+          organizer: event.organizer_name,
+          organizer_id: event.organizer_id,
+          rating: 4.5,
+          attendees: 0,
+          maxAttendees: event.max_attendees || 100,
+          tablesAvailable: event.tables_available || 0,
+          totalTables: event.total_tables || 0,
+          cardTypes: event.card_types || [],
+          image: event.image_url,
+          price: event.vendor_table_price || 0,
+          event_type: event.event_type,
+        }));
+        setVendingEvents(events);
+      }
+    };
+
+    const fetchHostingEvents = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('organizer_id', user.id);
+
+      if (data) {
+        const events = data.map(event => ({
+          id: event.id,
+          title: event.title,
+          date: event.date,
+          time: '10:00 AM',
+          location: event.venue,
+          city: event.city,
+          state: event.state,
+          organizer: event.organizer_name,
+          organizer_id: event.organizer_id,
+          rating: 4.5,
+          attendees: 0,
+          maxAttendees: event.max_attendees || 100,
+          tablesAvailable: event.tables_available || 0,
+          totalTables: event.total_tables || 0,
+          cardTypes: event.card_types || [],
+          image: event.image_url,
+          price: event.vendor_table_price || 0,
+          event_type: event.event_type,
+        }));
+        setHostingEvents(events);
+      }
+    };
+
+    const fetchSponsoringEvents = async () => {
+      if (!user) return;
+      
+      // First get the user's sponsor profile
+      const { data: sponsorData } = await supabase
+        .from('sponsors')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!sponsorData) return;
+
+      // Get all event sponsor records
+      const { data: sponsorships, error: sponsorError } = await supabase
+        .from('event_sponsors')
+        .select('event_id')
+        .eq('sponsor_id', sponsorData.id);
+
+      if (!sponsorships || sponsorships.length === 0) return;
+
+      const eventIds = sponsorships.map(s => s.event_id);
+
+      // Then get all events matching those IDs
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .in('id', eventIds);
+
+      if (data) {
+        const events = data.map(event => ({
+          id: event.id,
+          title: event.title,
+          date: event.date,
+          time: '10:00 AM',
+          location: event.venue,
+          city: event.city,
+          state: event.state,
+          organizer: event.organizer_name,
+          organizer_id: event.organizer_id,
+          rating: 4.5,
+          attendees: 0,
+          maxAttendees: event.max_attendees || 100,
+          tablesAvailable: event.tables_available || 0,
+          totalTables: event.total_tables || 0,
+          cardTypes: event.card_types || [],
+          image: event.image_url,
+          price: event.vendor_table_price || 0,
+          event_type: event.event_type,
+        }));
+        setSponsoringEvents(events);
+      }
+    };
+
     fetchProfile();
     fetchRoleRequests();
     fetchUserRoles();
+    fetchVendingEvents();
+    fetchHostingEvents();
+    fetchSponsoringEvents();
   }, [user, form]);
 
   const socialPlatforms = [
@@ -300,11 +438,37 @@ const Profile = () => {
           </div>
 
           <Tabs defaultValue="personal" className="space-y-6">
-            <TabsList className={`grid w-full ${userRoles.includes('venue') ? 'grid-cols-4' : 'grid-cols-3'}`}>
+            <TabsList className={`grid w-full ${
+              userRoles.includes('venue') 
+                ? (vendingEvents.length > 0 || hostingEvents.length > 0 || sponsoringEvents.length > 0) 
+                  ? 'grid-cols-7' 
+                  : 'grid-cols-4'
+                : (vendingEvents.length > 0 || hostingEvents.length > 0 || sponsoringEvents.length > 0)
+                  ? 'grid-cols-6'
+                  : 'grid-cols-3'
+            }`}>
               <TabsTrigger value="personal">Personal Info</TabsTrigger>
               <TabsTrigger value="roles">Roles</TabsTrigger>
               {userRoles.includes('venue') && (
                 <TabsTrigger value="venue">My Venue</TabsTrigger>
+              )}
+              {vendingEvents.length > 0 && (
+                <TabsTrigger value="vending">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Vending Events
+                </TabsTrigger>
+              )}
+              {hostingEvents.length > 0 && (
+                <TabsTrigger value="hosting">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Hosting Events
+                </TabsTrigger>
+              )}
+              {sponsoringEvents.length > 0 && (
+                <TabsTrigger value="sponsoring">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Sponsoring Events
+                </TabsTrigger>
               )}
               <TabsTrigger value="plans">Plans</TabsTrigger>
             </TabsList>
@@ -623,6 +787,79 @@ const Profile = () => {
             {userRoles.includes('venue') && (
               <TabsContent value="venue" className="space-y-6">
                 <ManageVenue />
+              </TabsContent>
+            )}
+
+            {vendingEvents.length > 0 && (
+              <TabsContent value="vending" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Vending Events</CardTitle>
+                    <CardDescription>
+                      Events where you're registered as a vendor
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {vendingEvents.map((event) => (
+                        <EventCard 
+                          key={event.id} 
+                          event={event} 
+                          userType="vendor"
+                        />
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
+
+            {hostingEvents.length > 0 && (
+              <TabsContent value="hosting" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Hosting Events</CardTitle>
+                    <CardDescription>
+                      Events you're organizing
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {hostingEvents.map((event) => (
+                        <EventCard 
+                          key={event.id} 
+                          event={event} 
+                          userType="organizer"
+                          isMyEvent={true}
+                        />
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
+
+            {sponsoringEvents.length > 0 && (
+              <TabsContent value="sponsoring" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Sponsoring Events</CardTitle>
+                    <CardDescription>
+                      Events you're sponsoring
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {sponsoringEvents.map((event) => (
+                        <EventCard 
+                          key={event.id} 
+                          event={event} 
+                          userType="collector"
+                        />
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
             )}
 
