@@ -265,7 +265,7 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                     className="w-full gap-2"
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/manage-event/${event.id}?tab=sponsors`);
+                      navigate(`/event/${event.id}/manage?tab=sponsors`);
                     }}
                   >
                     <Crown className="w-4 h-4" />
