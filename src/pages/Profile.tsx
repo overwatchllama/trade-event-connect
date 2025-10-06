@@ -55,7 +55,6 @@ const Profile = () => {
   const [socialLinks, setSocialLinks] = useState<SocialMediaLink[]>([]);
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [vendingEvents, setVendingEvents] = useState<any[]>([]);
-  const [hostingEvents, setHostingEvents] = useState<any[]>([]);
   const [sponsoringEvents, setSponsoringEvents] = useState<any[]>([]);
   const { user, requestRole } = useAuth();
   const { subscription_tier, subscribed } = useSubscription();
@@ -187,39 +186,6 @@ const Profile = () => {
       }
     };
 
-    const fetchHostingEvents = async () => {
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('organizer_id', user.id);
-
-      if (data) {
-        const events = data.map(event => ({
-          id: event.id,
-          title: event.title,
-          date: event.date,
-          time: '10:00 AM',
-          location: event.venue,
-          city: event.city,
-          state: event.state,
-          organizer: event.organizer_name,
-          organizer_id: event.organizer_id,
-          rating: 4.5,
-          attendees: 0,
-          maxAttendees: event.max_attendees || 100,
-          tablesAvailable: event.tables_available || 0,
-          totalTables: event.total_tables || 0,
-          cardTypes: event.card_types || [],
-          image: event.image_url,
-          price: event.vendor_table_price || 0,
-          event_type: event.event_type,
-        }));
-        setHostingEvents(events);
-      }
-    };
-
     const fetchSponsoringEvents = async () => {
       if (!user) return;
       
@@ -277,7 +243,6 @@ const Profile = () => {
     fetchRoleRequests();
     fetchUserRoles();
     fetchVendingEvents();
-    fetchHostingEvents();
     fetchSponsoringEvents();
   }, [user, form]);
 
@@ -440,11 +405,11 @@ const Profile = () => {
           <Tabs defaultValue="personal" className="space-y-6">
             <TabsList className={`grid w-full ${
               userRoles.includes('venue') 
-                ? (vendingEvents.length > 0 || hostingEvents.length > 0 || sponsoringEvents.length > 0) 
-                  ? 'grid-cols-7' 
+                ? (vendingEvents.length > 0 || sponsoringEvents.length > 0) 
+                  ? 'grid-cols-6' 
                   : 'grid-cols-4'
-                : (vendingEvents.length > 0 || hostingEvents.length > 0 || sponsoringEvents.length > 0)
-                  ? 'grid-cols-6'
+                : (vendingEvents.length > 0 || sponsoringEvents.length > 0)
+                  ? 'grid-cols-5'
                   : 'grid-cols-3'
             }`}>
               <TabsTrigger value="personal">Personal Info</TabsTrigger>
@@ -456,12 +421,6 @@ const Profile = () => {
                 <TabsTrigger value="vending">
                   <Calendar className="w-4 h-4 mr-2" />
                   Vending Events
-                </TabsTrigger>
-              )}
-              {hostingEvents.length > 0 && (
-                <TabsTrigger value="hosting">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Hosting Events
                 </TabsTrigger>
               )}
               {sponsoringEvents.length > 0 && (
@@ -806,31 +765,6 @@ const Profile = () => {
                           key={event.id} 
                           event={event} 
                           userType="vendor"
-                        />
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            )}
-
-            {hostingEvents.length > 0 && (
-              <TabsContent value="hosting" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Hosting Events</CardTitle>
-                    <CardDescription>
-                      Events you're organizing
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {hostingEvents.map((event) => (
-                        <EventCard 
-                          key={event.id} 
-                          event={event} 
-                          userType="organizer"
-                          isMyEvent={true}
                         />
                       ))}
                     </div>

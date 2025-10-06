@@ -32,16 +32,17 @@ const Events = () => {
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [allEvents, setAllEvents] = useState<any[]>([]);
   const [myEvents, setMyEvents] = useState<any[]>([]);
+  const [vendingEvents, setVendingEvents] = useState<any[]>([]);
+  const [sponsoringEvents, setSponsoringEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showMyEventsTab, setShowMyEventsTab] = useState(false);
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { hasRole } = useUserRoles();
+  const { hasRole, isOrganizer, isVendor, isSponsor } = useUserRoles();
   const { subscription_tier, subscribed } = useSubscription();
 
   const isEventUser = subscribed && (subscription_tier === "event_pro" || subscription_tier === "Event Pro");
-  const canManageEvents = profile?.role === 'organizer' || isEventUser;
-  const canCreateEvents = hasRole('organizer') || isEventUser;
+  const canManageEvents = isOrganizer || isEventUser;
+  const canCreateEvents = isOrganizer || isEventUser;
 
   // US States options for multi-select
   const stateOptions: Option[] = [
@@ -143,8 +144,9 @@ const Events = () => {
 
         setAllEvents(transformedEvents);
 
-        // Filter my events if user is logged in
+        // Filter events by user roles
         if (user) {
+          // My events (organizing)
           const userEvents = transformedEvents.filter(event => 
             eventsData?.find(dbEvent => dbEvent.id === event.id)?.organizer_id === user.id
           );
@@ -159,7 +161,112 @@ const Events = () => {
       }
     };
 
+    const fetchVendingEvents = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: applications } = await supabase
+          .from('vendor_applications')
+          .select('event_id')
+          .eq('user_id', user.id)
+          .eq('application_status', 'approved');
+
+        if (!applications || applications.length === 0) return;
+
+        const eventIds = applications.map(app => app.event_id);
+        const { data } = await supabase
+          .from('events')
+          .select('*')
+          .in('id', eventIds);
+
+        if (data) {
+          const events = data.map(event => ({
+            id: event.id,
+            title: event.title,
+            date: event.date,
+            time: event.is_multi_day ? 'Multi-day event' : 'Single day',
+            location: event.venue,
+            city: event.city,
+            state: event.state,
+            organizer: event.organizer_name || 'Unknown Organizer',
+            organizer_id: event.organizer_id,
+            rating: 4.5,
+            attendees: 0,
+            maxAttendees: event.max_attendees || 100,
+            tablesAvailable: event.tables_available || 0,
+            totalTables: event.total_tables || 0,
+            cardTypes: event.card_types || [],
+            event_type: event.event_type,
+            price: event.entry_fee || 0,
+            flyerUrl: event.flyer_url,
+            isMultiDay: event.is_multi_day
+          }));
+          setVendingEvents(events);
+        }
+      } catch (error) {
+        console.error('Error fetching vending events:', error);
+      }
+    };
+
+    const fetchSponsoringEvents = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: sponsorData } = await supabase
+          .from('sponsors')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (!sponsorData) return;
+
+        const { data: sponsorships } = await supabase
+          .from('event_sponsors')
+          .select('event_id')
+          .eq('sponsor_id', sponsorData.id);
+
+        if (!sponsorships || sponsorships.length === 0) return;
+
+        const eventIds = sponsorships.map(s => s.event_id);
+        const { data } = await supabase
+          .from('events')
+          .select('*')
+          .in('id', eventIds);
+
+        if (data) {
+          const events = data.map(event => ({
+            id: event.id,
+            title: event.title,
+            date: event.date,
+            time: event.is_multi_day ? 'Multi-day event' : 'Single day',
+            location: event.venue,
+            city: event.city,
+            state: event.state,
+            organizer: event.organizer_name || 'Unknown Organizer',
+            organizer_id: event.organizer_id,
+            rating: 4.5,
+            attendees: 0,
+            maxAttendees: event.max_attendees || 100,
+            tablesAvailable: event.tables_available || 0,
+            totalTables: event.total_tables || 0,
+            cardTypes: event.card_types || [],
+            event_type: event.event_type,
+            price: event.entry_fee || 0,
+            flyerUrl: event.flyer_url,
+            isMultiDay: event.is_multi_day
+          }));
+          setSponsoringEvents(events);
+        }
+      } catch (error) {
+        console.error('Error fetching sponsoring events:', error);
+      }
+    };
+
     fetchEvents();
+    if (user) {
+      fetchVendingEvents();
+      fetchSponsoringEvents();
+    }
   }, [user, profile]);
 
   // Handle navigation state from Hero buttons
@@ -249,16 +356,6 @@ const Events = () => {
                   Create Event
                 </Button>
               )}
-              {canManageEvents && myEvents.length > 0 && (
-                <Button
-                  onClick={() => setShowMyEventsTab(!showMyEventsTab)}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <Settings className="w-4 h-4" />
-                  {showMyEventsTab ? "Browse All Events" : "Manage My Events"}
-                </Button>
-              )}
             </div>
           </div>
 
@@ -345,199 +442,28 @@ const Events = () => {
           </div>
         </div>
 
-        {/* Role-based content */}
-        {showMyEventsTab && canManageEvents ? (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-foreground">My Events</h2>
-              <Button variant="default" className="gap-2" onClick={() => setShowCreateEvent(true)}>
-                <Plus className="w-4 h-4" />
-                Create Event
-              </Button>
-            </div>
-            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {loading ? (
-                <div className="col-span-full text-center py-8">Loading your events...</div>
-              ) : myEvents.length === 0 ? (
-                <div className="col-span-full text-center py-8 text-muted-foreground">
-                  <p className="mb-4">No events found. Create your first event!</p>
-                  <Button variant="default" className="gap-2" onClick={() => setShowCreateEvent(true)}>
-                    <Plus className="w-4 h-4" />
-                    Create Event
-                  </Button>
-                </div>
-              ) : (
-                myEvents.map((event) => (
-                  <div key={`my-${event.id}`} className="relative">
-                    <EventCard event={event} userType="organizer" isMyEvent={true} />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="absolute top-2 right-2 gap-1"
-                      onClick={() => navigate(`/event/${event.id}/manage`)}
-                    >
-                      <Edit className="w-3 h-3" />
-                      Edit
-                    </Button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        ) : profile?.role === 'organizer' ? (
-          <Tabs defaultValue="my-events" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="my-events">My Events</TabsTrigger>
-              <TabsTrigger value="my-calendar">My Calendar</TabsTrigger>
-              <TabsTrigger value="all-events">All Events</TabsTrigger>
-              <TabsTrigger value="all-calendar">Calendar View</TabsTrigger>
-              <TabsTrigger value="venues">Venues</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="my-events" className="mt-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-foreground">My Events</h2>
-                <Button variant="default" className="gap-2" onClick={() => setShowCreateEvent(true)}>
-                  <Plus className="w-4 h-4" />
-                  Create Event
-                </Button>
-              </div>
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {loading ? (
-                  <div className="col-span-full text-center py-8">Loading your events...</div>
-                ) : filteredMyEvents.length === 0 ? (
-                  <div className="col-span-full text-center py-8 text-muted-foreground">
-                    No events found. Create your first event!
-                  </div>
-                ) : (
-                  filteredMyEvents.map((event) => (
-                    <div key={`my-${event.id}`} className="relative">
-                      <EventCard event={event} userType="organizer" isMyEvent={true} />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="absolute top-2 right-2 gap-1"
-                      >
-                        <Edit className="w-3 h-3" />
-                        Edit
-                      </Button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="my-calendar" className="mt-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-foreground">My Events Calendar</h2>
-                <Button variant="default" className="gap-2" onClick={() => setShowCreateEvent(true)}>
-                  <Plus className="w-4 h-4" />
-                  Create Event
-                </Button>
-              </div>
-              <EventsCalendar events={filteredMyEvents} userType="organizer" />
-            </TabsContent>
-            
-            <TabsContent value="all-events" className="mt-6">
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {loading ? (
-                  <div className="col-span-full text-center py-8">Loading events...</div>
-                ) : filteredAllEvents.length === 0 ? (
-                  <div className="col-span-full text-center py-8 text-muted-foreground">
-                    No events found matching your filters.
-                  </div>
-                ) : (
-                  filteredAllEvents.map((event) => (
-                    <EventCard key={event.id} event={event} userType="organizer" isMyEvent={false} />
-                  ))
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="all-calendar" className="mt-6">
-              <EventsCalendar events={filteredAllEvents} userType="organizer" />
-            </TabsContent>
-
-            <TabsContent value="venues" className="mt-6">
-              <VenuesList />
-            </TabsContent>
-          </Tabs>
-        ) : profile?.role === 'vendor' ? (
-          <Tabs defaultValue="tickets" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="tickets">Buy Tickets</TabsTrigger>
-              <TabsTrigger value="tables">Book Tables</TabsTrigger>
-              <TabsTrigger value="sponsors">Sponsor Info</TabsTrigger>
-              <TabsTrigger value="calendar-tickets">Calendar</TabsTrigger>
-              <TabsTrigger value="calendar-tables">Table Calendar</TabsTrigger>
-              <TabsTrigger value="venues">Venues</TabsTrigger>
-            </TabsList>
-            <TabsContent value="tickets" className="mt-6">
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {loading ? (
-                  <div className="col-span-full text-center py-8">Loading events...</div>
-                ) : filteredAllEvents.length === 0 ? (
-                  <div className="col-span-full text-center py-8 text-muted-foreground">
-                    No events found matching your filters.
-                  </div>
-                ) : (
-                  filteredAllEvents.map((event) => (
-                    <EventCard key={event.id} event={event} userType="collector" />
-                  ))
-                )}
-              </div>
-            </TabsContent>
-            <TabsContent value="tables" className="mt-6">
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {loading ? (
-                  <div className="col-span-full text-center py-8">Loading events...</div>
-                ) : filteredAllEvents.length === 0 ? (
-                  <div className="col-span-full text-center py-8 text-muted-foreground">
-                    No events found matching your filters.
-                  </div>
-                ) : (
-                  filteredAllEvents.map((event) => (
-                    <EventCard key={event.id} event={event} userType="vendor" />
-                  ))
-                )}
-              </div>
-            </TabsContent>
-            <TabsContent value="calendar-tickets" className="mt-6">
-              <EventsCalendar events={filteredAllEvents} userType="collector" />
-            </TabsContent>
-            <TabsContent value="calendar-tables" className="mt-6">
-              <EventsCalendar events={filteredAllEvents} userType="vendor" />
-            </TabsContent>
-
-            <TabsContent value="sponsors" className="mt-6">
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-foreground mb-4">Event Sponsors</h2>
-                <p className="text-muted-foreground mb-6">
-                  View sponsor opportunities at upcoming events. Contact event organizers for sponsorship details.
-                </p>
-              </div>
-              <div className="space-y-8">
-                {filteredAllEvents.map((event) => (
-                  <div key={`sponsor-${event.id}`}>
-                    <h3 className="text-xl font-semibold mb-4">{event.title}</h3>
-                    <EventSponsors eventId={event.id} />
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="venues" className="mt-6">
-              <VenuesList />
-            </TabsContent>
-          </Tabs>
-        ) : (
+        {/* Role-based tabs */}
+        {user && (isOrganizer || isVendor || isSponsor) ? (
           <Tabs defaultValue="events" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${
+              (isOrganizer && myEvents.length > 0 ? 1 : 0) +
+              (isVendor && vendingEvents.length > 0 ? 1 : 0) +
+              (isSponsor && sponsoringEvents.length > 0 ? 1 : 0) +
+              1
+            }, minmax(0, 1fr))` }}>
               <TabsTrigger value="events">Events</TabsTrigger>
-              <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
-              <TabsTrigger value="venues">Venues</TabsTrigger>
+              {isOrganizer && myEvents.length > 0 && (
+                <TabsTrigger value="manage-events">Manage Events</TabsTrigger>
+              )}
+              {isVendor && vendingEvents.length > 0 && (
+                <TabsTrigger value="vending">Vending</TabsTrigger>
+              )}
+              {isSponsor && sponsoringEvents.length > 0 && (
+                <TabsTrigger value="sponsorships">Manage Sponsorships</TabsTrigger>
+              )}
             </TabsList>
-            
+
+            {/* Events Tab - Browse all events */}
             <TabsContent value="events" className="mt-6">
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {loading ? (
@@ -548,45 +474,97 @@ const Events = () => {
                   </div>
                 ) : (
                   filteredAllEvents.map((event) => (
-                    <EventCard key={event.id} event={event} userType={profile?.role || "user"} />
+                    <EventCard key={event.id} event={event} userType="collector" isMyEvent={false} />
                   ))
                 )}
               </div>
             </TabsContent>
 
-            <TabsContent value="sponsors" className="mt-6">
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-foreground mb-4">Event Sponsors</h2>
-                <p className="text-muted-foreground mb-6">
-                  Check out companies sponsoring upcoming events in our community.
-                </p>
-              </div>
-              <div className="space-y-8">
-                {filteredAllEvents.map((event) => (
-                  <div key={`sponsor-${event.id}`}>
-                    <h3 className="text-xl font-semibold mb-4">{event.title}</h3>
-                    <EventSponsors eventId={event.id} />
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
+            {/* Manage Events Tab - For organizers */}
+            {isOrganizer && myEvents.length > 0 && (
+              <TabsContent value="manage-events" className="mt-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-foreground">My Events</h2>
+                  <Button variant="default" className="gap-2" onClick={() => setShowCreateEvent(true)}>
+                    <Plus className="w-4 h-4" />
+                    Create Event
+                  </Button>
+                </div>
+                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredMyEvents.length === 0 ? (
+                    <div className="col-span-full text-center py-8 text-muted-foreground">
+                      No events found. Create your first event!
+                    </div>
+                  ) : (
+                    filteredMyEvents.map((event) => (
+                      <div key={`my-${event.id}`} className="relative">
+                        <EventCard event={event} userType="organizer" isMyEvent={true} />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="absolute top-2 right-2 gap-1"
+                          onClick={() => navigate(`/event/${event.id}/manage`)}
+                        >
+                          <Edit className="w-3 h-3" />
+                          Edit
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </TabsContent>
+            )}
 
-            <TabsContent value="venues" className="mt-6">
-              <VenuesList />
-            </TabsContent>
+            {/* Vending Tab - For vendors */}
+            {isVendor && vendingEvents.length > 0 && (
+              <TabsContent value="vending" className="mt-6">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-foreground mb-2">My Vending Events</h2>
+                  <p className="text-muted-foreground">Events where you have approved vendor tables</p>
+                </div>
+                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {vendingEvents.map((event) => (
+                    <EventCard key={`vending-${event.id}`} event={event} userType="vendor" isMyEvent={false} />
+                  ))}
+                </div>
+              </TabsContent>
+            )}
+
+            {/* Sponsorships Tab - For sponsors */}
+            {isSponsor && sponsoringEvents.length > 0 && (
+              <TabsContent value="sponsorships" className="mt-6">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-foreground mb-2">My Sponsorships</h2>
+                  <p className="text-muted-foreground">Events you are sponsoring</p>
+                </div>
+                <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {sponsoringEvents.map((event) => (
+                    <EventCard key={`sponsor-${event.id}`} event={event} userType="organizer" isMyEvent={false} />
+                  ))}
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
+        ) : (
+          /* No role tabs - show all events */
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {loading ? (
+              <div className="col-span-full text-center py-8">Loading events...</div>
+            ) : filteredAllEvents.length === 0 ? (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                No events found matching your filters.
+              </div>
+            ) : (
+              filteredAllEvents.map((event) => (
+                <EventCard key={event.id} event={event} userType="collector" isMyEvent={false} />
+              ))
+            )}
+          </div>
         )}
-
-        {/* Load More */}
-        <div className="text-center mt-12">
-          <Button variant="outline" size="lg">
-            Load More Events
-          </Button>
-        </div>
       </div>
 
       {/* Advanced Search Modal */}
-      <AdvancedSearch 
+      <AdvancedSearch
         isOpen={showAdvancedSearch} 
         onClose={() => setShowAdvancedSearch(false)}
         events={allEvents}
