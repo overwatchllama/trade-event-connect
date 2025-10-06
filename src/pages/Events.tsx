@@ -104,7 +104,7 @@ const Events = () => {
       setLoading(true);
       try {
         console.log('Fetching events...');
-        // Fetch all events
+        // Fetch all events with vendor business names
         const { data: eventsData, error } = await supabase
           .from('events')
           .select('*')
@@ -115,28 +115,41 @@ const Events = () => {
 
         if (error) throw error;
 
+        // Fetch vendor info for organizers
+        const organizerIds = eventsData?.map(e => e.organizer_id).filter(Boolean) || [];
+        const { data: vendorsData } = await supabase
+          .from('vendors')
+          .select('user_id, business_name')
+          .in('user_id', organizerIds);
+
+        const vendorMap = new Map(vendorsData?.map(v => [v.user_id, v.business_name]) || []);
+
         // Transform database events to match expected format
-        const transformedEvents = eventsData?.map(event => ({
-          id: event.id,
-          title: event.title,
-          date: event.date,
-          time: event.is_multi_day ? 'Multi-day event' : 'Single day',
-          location: event.venue,
-          city: event.city,
-          state: event.state,
-          organizer: event.organizer_name || 'Unknown Organizer',
-          organizer_id: event.organizer_id,
-          rating: 4.5, // Default rating since we don't have ratings yet
-          attendees: 0, // Default attendees since we don't have this data yet
-          maxAttendees: event.max_attendees || 100,
-          tablesAvailable: event.tables_available || 0,
-          totalTables: event.total_tables || 0,
-          cardTypes: event.card_types || [],
-          event_type: event.event_type,
-          price: event.entry_fee || 0,
-          flyerUrl: event.flyer_url,
-          isMultiDay: event.is_multi_day
-        })) || [];
+        const transformedEvents = eventsData?.map(event => {
+          const organizerName = vendorMap.get(event.organizer_id) || event.organizer_name || 'Unknown Organizer';
+          
+          return {
+            id: event.id,
+            title: event.title,
+            date: event.date,
+            time: event.is_multi_day ? 'Multi-day event' : 'Single day',
+            location: event.venue,
+            city: event.city,
+            state: event.state,
+            organizer: organizerName,
+            organizer_id: event.organizer_id,
+            rating: 4.5, // Default rating since we don't have ratings yet
+            attendees: 0, // Default attendees since we don't have this data yet
+            maxAttendees: event.max_attendees || 100,
+            tablesAvailable: event.tables_available || 0,
+            totalTables: event.total_tables || 0,
+            cardTypes: event.card_types || [],
+            event_type: event.event_type,
+            price: event.entry_fee || 0,
+            flyerUrl: event.flyer_url,
+            isMultiDay: event.is_multi_day
+          };
+        }) || [];
 
         console.log('Transformed events:', transformedEvents);
         console.log('User:', user);
@@ -180,27 +193,40 @@ const Events = () => {
           .in('id', eventIds);
 
         if (data) {
-          const events = data.map(event => ({
-            id: event.id,
-            title: event.title,
-            date: event.date,
-            time: event.is_multi_day ? 'Multi-day event' : 'Single day',
-            location: event.venue,
-            city: event.city,
-            state: event.state,
-            organizer: event.organizer_name || 'Unknown Organizer',
-            organizer_id: event.organizer_id,
-            rating: 4.5,
-            attendees: 0,
-            maxAttendees: event.max_attendees || 100,
-            tablesAvailable: event.tables_available || 0,
-            totalTables: event.total_tables || 0,
-            cardTypes: event.card_types || [],
-            event_type: event.event_type,
-            price: event.entry_fee || 0,
-            flyerUrl: event.flyer_url,
-            isMultiDay: event.is_multi_day
-          }));
+          // Fetch vendor info for organizers
+          const organizerIds = data.map(e => e.organizer_id).filter(Boolean);
+          const { data: vendorsData } = await supabase
+            .from('vendors')
+            .select('user_id, business_name')
+            .in('user_id', organizerIds);
+
+          const vendorMap = new Map(vendorsData?.map(v => [v.user_id, v.business_name]) || []);
+
+          const events = data.map(event => {
+            const organizerName = vendorMap.get(event.organizer_id) || event.organizer_name || 'Unknown Organizer';
+            
+            return {
+              id: event.id,
+              title: event.title,
+              date: event.date,
+              time: event.is_multi_day ? 'Multi-day event' : 'Single day',
+              location: event.venue,
+              city: event.city,
+              state: event.state,
+              organizer: organizerName,
+              organizer_id: event.organizer_id,
+              rating: 4.5,
+              attendees: 0,
+              maxAttendees: event.max_attendees || 100,
+              tablesAvailable: event.tables_available || 0,
+              totalTables: event.total_tables || 0,
+              cardTypes: event.card_types || [],
+              event_type: event.event_type,
+              price: event.entry_fee || 0,
+              flyerUrl: event.flyer_url,
+              isMultiDay: event.is_multi_day
+            };
+          });
           setVendingEvents(events);
         }
       } catch (error) {
@@ -234,27 +260,40 @@ const Events = () => {
           .in('id', eventIds);
 
         if (data) {
-          const events = data.map(event => ({
-            id: event.id,
-            title: event.title,
-            date: event.date,
-            time: event.is_multi_day ? 'Multi-day event' : 'Single day',
-            location: event.venue,
-            city: event.city,
-            state: event.state,
-            organizer: event.organizer_name || 'Unknown Organizer',
-            organizer_id: event.organizer_id,
-            rating: 4.5,
-            attendees: 0,
-            maxAttendees: event.max_attendees || 100,
-            tablesAvailable: event.tables_available || 0,
-            totalTables: event.total_tables || 0,
-            cardTypes: event.card_types || [],
-            event_type: event.event_type,
-            price: event.entry_fee || 0,
-            flyerUrl: event.flyer_url,
-            isMultiDay: event.is_multi_day
-          }));
+          // Fetch vendor info for organizers
+          const organizerIds = data.map(e => e.organizer_id).filter(Boolean);
+          const { data: vendorsData } = await supabase
+            .from('vendors')
+            .select('user_id, business_name')
+            .in('user_id', organizerIds);
+
+          const vendorMap = new Map(vendorsData?.map(v => [v.user_id, v.business_name]) || []);
+
+          const events = data.map(event => {
+            const organizerName = vendorMap.get(event.organizer_id) || event.organizer_name || 'Unknown Organizer';
+            
+            return {
+              id: event.id,
+              title: event.title,
+              date: event.date,
+              time: event.is_multi_day ? 'Multi-day event' : 'Single day',
+              location: event.venue,
+              city: event.city,
+              state: event.state,
+              organizer: organizerName,
+              organizer_id: event.organizer_id,
+              rating: 4.5,
+              attendees: 0,
+              maxAttendees: event.max_attendees || 100,
+              tablesAvailable: event.tables_available || 0,
+              totalTables: event.total_tables || 0,
+              cardTypes: event.card_types || [],
+              event_type: event.event_type,
+              price: event.entry_fee || 0,
+              flyerUrl: event.flyer_url,
+              isMultiDay: event.is_multi_day
+            };
+          });
           setSponsoringEvents(events);
         }
       } catch (error) {

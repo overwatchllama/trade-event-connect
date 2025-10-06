@@ -249,29 +249,42 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                   </Button>
                 </>
               ) : userType === "organizer" && isMyEvent ? (
-                <>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setManageVendorsOpen(true);
+                      }}
+                    >
+                      <Settings className="w-4 h-4" />
+                      Manage Vendors
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                    >
+                      <UserCheck className="w-4 h-4" />
+                      Manage Attendees
+                    </Button>
+                  </div>
                   <Button 
                     variant="outline" 
-                    className="flex-1 gap-2"
+                    className="w-full gap-2"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setManageVendorsOpen(true);
+                      navigate(`/manage-event/${event.id}?tab=sponsors`);
                     }}
                   >
-                    <Settings className="w-4 h-4" />
-                    Manage Vendors
+                    <Crown className="w-4 h-4" />
+                    Manage Sponsors
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    className="flex-1 gap-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                  >
-                    <UserCheck className="w-4 h-4" />
-                    Manage Attendees
-                  </Button>
-                </>
+                </div>
               ) : (
                 <>
                   <Button 
