@@ -213,7 +213,7 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
               onClick={() => updateApplicationStatus(application.id, 'approved')}
             >
               <CheckCircle className="w-3 h-3 mr-1" />
-              Approve
+              Accept/Invoice
             </Button>
             <Button
               size="sm"
@@ -242,7 +242,7 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
               onClick={() => updateApplicationStatus(application.id, 'approved')}
             >
               <CheckCircle className="w-3 h-3 mr-1" />
-              Approve
+              Accept/Invoice
             </Button>
             <Button
               size="sm"
