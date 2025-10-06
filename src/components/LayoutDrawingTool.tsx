@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Canvas as FabricCanvas, Circle, Rect, Line, PencilBrush } from "fabric";
+import { Canvas as FabricCanvas, Rect, Text as FabricText, Group } from "fabric";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { Pencil, Square, Circle as CircleIcon, Move, Trash2, Download, Upload, Save } from "lucide-react";
+import { Move, Trash2, Download, Upload, Save, Home, Bath, Table, DoorOpen, Cuboid } from "lucide-react";
 import { toast } from "sonner";
 
 interface LayoutDrawingToolProps {
@@ -15,7 +15,7 @@ interface LayoutDrawingToolProps {
 export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = false }: LayoutDrawingToolProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
-  const [activeTool, setActiveTool] = useState<"select" | "draw" | "rectangle" | "circle">("select");
+  const [activeTool, setActiveTool] = useState<"select" | "room" | "restroom" | "table" | "door" | "counter">("select");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -26,10 +26,6 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       height: 700,
       backgroundColor: "#ffffff",
     });
-
-    canvas.freeDrawingBrush = new PencilBrush(canvas);
-    canvas.freeDrawingBrush.color = "#000000";
-    canvas.freeDrawingBrush.width = 2;
 
     // Load initial layout if provided
     if (initialLayout) {
@@ -55,43 +51,93 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     };
   }, [initialLayout, readOnly]);
 
-  useEffect(() => {
-    if (!fabricCanvas) return;
+  const createLabeledObject = (rect: Rect, label: string) => {
+    const text = new FabricText(label, {
+      fontSize: 14,
+      fontFamily: 'Arial',
+      fill: '#000000',
+      originX: 'center',
+      originY: 'center',
+    });
 
-    fabricCanvas.isDrawingMode = activeTool === "draw";
-    
-    if (activeTool === "draw" && fabricCanvas.freeDrawingBrush) {
-      fabricCanvas.freeDrawingBrush.color = "#000000";
-      fabricCanvas.freeDrawingBrush.width = 2;
-    }
-  }, [activeTool, fabricCanvas]);
+    const group = new Group([rect, text], {
+      left: 100,
+      top: 100,
+    });
+
+    return group;
+  };
 
   const handleToolClick = (tool: typeof activeTool) => {
     setActiveTool(tool);
 
-    if (tool === "rectangle") {
+    if (!fabricCanvas) return;
+
+    if (tool === "room") {
       const rect = new Rect({
-        left: 100,
-        top: 100,
-        fill: "transparent",
-        stroke: "#000000",
+        width: 200,
+        height: 150,
+        fill: "#e3f2fd",
+        stroke: "#1976d2",
+        strokeWidth: 3,
+        originX: 'center',
+        originY: 'center',
+      });
+      const group = createLabeledObject(rect, "Room");
+      fabricCanvas.add(group);
+      fabricCanvas.setActiveObject(group);
+    } else if (tool === "restroom") {
+      const rect = new Rect({
+        width: 80,
+        height: 80,
+        fill: "#f3e5f5",
+        stroke: "#7b1fa2",
+        strokeWidth: 3,
+        originX: 'center',
+        originY: 'center',
+      });
+      const group = createLabeledObject(rect, "Restroom");
+      fabricCanvas.add(group);
+      fabricCanvas.setActiveObject(group);
+    } else if (tool === "table") {
+      const rect = new Rect({
+        width: 60,
+        height: 60,
+        fill: "#fff3e0",
+        stroke: "#f57c00",
         strokeWidth: 2,
+        originX: 'center',
+        originY: 'center',
+      });
+      const group = createLabeledObject(rect, "Table");
+      fabricCanvas.add(group);
+      fabricCanvas.setActiveObject(group);
+    } else if (tool === "door") {
+      const rect = new Rect({
+        width: 80,
+        height: 20,
+        fill: "#e8f5e9",
+        stroke: "#388e3c",
+        strokeWidth: 3,
+        originX: 'center',
+        originY: 'center',
+      });
+      const group = createLabeledObject(rect, "Door");
+      fabricCanvas.add(group);
+      fabricCanvas.setActiveObject(group);
+    } else if (tool === "counter") {
+      const rect = new Rect({
         width: 150,
-        height: 100,
-      });
-      fabricCanvas?.add(rect);
-      fabricCanvas?.setActiveObject(rect);
-    } else if (tool === "circle") {
-      const circle = new Circle({
-        left: 100,
-        top: 100,
-        fill: "transparent",
-        stroke: "#000000",
+        height: 60,
+        fill: "#fce4ec",
+        stroke: "#c2185b",
         strokeWidth: 2,
-        radius: 50,
+        originX: 'center',
+        originY: 'center',
       });
-      fabricCanvas?.add(circle);
-      fabricCanvas?.setActiveObject(circle);
+      const group = createLabeledObject(rect, "Counter");
+      fabricCanvas.add(group);
+      fabricCanvas.setActiveObject(group);
     }
   };
 
@@ -189,28 +235,44 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
               Select
             </Button>
             <Button
-              variant={activeTool === "draw" ? "default" : "outline"}
+              variant={activeTool === "room" ? "default" : "outline"}
               size="sm"
-              onClick={() => handleToolClick("draw")}
+              onClick={() => handleToolClick("room")}
             >
-              <Pencil className="h-4 w-4 mr-2" />
-              Draw
+              <Home className="h-4 w-4 mr-2" />
+              Room
             </Button>
             <Button
-              variant={activeTool === "rectangle" ? "default" : "outline"}
+              variant={activeTool === "restroom" ? "default" : "outline"}
               size="sm"
-              onClick={() => handleToolClick("rectangle")}
+              onClick={() => handleToolClick("restroom")}
             >
-              <Square className="h-4 w-4 mr-2" />
-              Rectangle
+              <Bath className="h-4 w-4 mr-2" />
+              Restroom
             </Button>
             <Button
-              variant={activeTool === "circle" ? "default" : "outline"}
+              variant={activeTool === "table" ? "default" : "outline"}
               size="sm"
-              onClick={() => handleToolClick("circle")}
+              onClick={() => handleToolClick("table")}
             >
-              <CircleIcon className="h-4 w-4 mr-2" />
-              Circle
+              <Table className="h-4 w-4 mr-2" />
+              Table
+            </Button>
+            <Button
+              variant={activeTool === "door" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleToolClick("door")}
+            >
+              <DoorOpen className="h-4 w-4 mr-2" />
+              Door
+            </Button>
+            <Button
+              variant={activeTool === "counter" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleToolClick("counter")}
+            >
+              <Cuboid className="h-4 w-4 mr-2" />
+              Counter
             </Button>
             
             <div className="border-l border-border mx-2" />
