@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import ManageVendorsDialog from "./ManageVendorsDialog";
+import ManageSponsorsDialog from "./ManageSponsorsDialog";
 import EventVendors from "./EventVendors";
 import { VendorApplicationDialog } from "./VendorApplicationDialog";
 import { SponsorApplicationDialog } from "./SponsorApplicationDialog";
@@ -47,6 +48,7 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
   const { subscribed, subscription_tier, loading: subscriptionLoading } = useSubscription();
   const [bookingLoading, setBookingLoading] = useState(false);
   const [manageVendorsOpen, setManageVendorsOpen] = useState(false);
+  const [manageSponsorsOpen, setManageSponsorsOpen] = useState(false);
   const [organizerVendorId, setOrganizerVendorId] = useState<string | null>(null);
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [sponsorDialogOpen, setSponsorDialogOpen] = useState(false);
@@ -265,7 +267,7 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                     className="w-full gap-2"
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/event/${event.id}/manage?tab=sponsors`);
+                      setManageSponsorsOpen(true);
                     }}
                   >
                     <Crown className="w-4 h-4" />
@@ -314,6 +316,13 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
       <ManageVendorsDialog
         open={manageVendorsOpen}
         onOpenChange={setManageVendorsOpen}
+        eventId={event.id}
+        eventTitle={event.title}
+      />
+
+      <ManageSponsorsDialog
+        open={manageSponsorsOpen}
+        onOpenChange={setManageSponsorsOpen}
         eventId={event.id}
         eventTitle={event.title}
       />
