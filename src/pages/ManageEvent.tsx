@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { LayoutDrawingTool } from '@/components/LayoutDrawingTool';
 import { ManageEventSponsors } from '@/components/ManageEventSponsors';
 import ManageVendorsDialog from '@/components/ManageVendorsDialog';
+import { EventFileManager } from '@/components/EventFileManager';
 
 const ManageEvent = () => {
   const { id } = useParams<{ id: string }>();
@@ -145,11 +146,12 @@ const ManageEvent = () => {
         </div>
 
         <Tabs defaultValue="flyer" className="space-y-6">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
             <TabsTrigger value="flyer">Event Flyer</TabsTrigger>
-            <TabsTrigger value="layout">Floor Plan Layout</TabsTrigger>
-            <TabsTrigger value="vendors">Vendor Applications</TabsTrigger>
+            <TabsTrigger value="layout">Floor Plan</TabsTrigger>
+            <TabsTrigger value="vendors">Vendors</TabsTrigger>
             <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
+            <TabsTrigger value="files">Files</TabsTrigger>
           </TabsList>
 
           <TabsContent value="flyer" className="space-y-6">
@@ -237,6 +239,10 @@ const ManageEvent = () => {
 
           <TabsContent value="sponsors" className="space-y-6">
             <ManageEventSponsors eventId={event.id} />
+          </TabsContent>
+
+          <TabsContent value="files" className="space-y-6">
+            <EventFileManager eventId={event.id} />
           </TabsContent>
         </Tabs>
 
