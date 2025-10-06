@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import ManageVendorsDialog from "./ManageVendorsDialog";
 import ManageSponsorsDialog from "./ManageSponsorsDialog";
+import ManageAttendeesDialog from "./ManageAttendeesDialog";
 import EventVendors from "./EventVendors";
 import { VendorApplicationDialog } from "./VendorApplicationDialog";
 import { SponsorApplicationDialog } from "./SponsorApplicationDialog";
@@ -49,6 +50,7 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
   const [bookingLoading, setBookingLoading] = useState(false);
   const [manageVendorsOpen, setManageVendorsOpen] = useState(false);
   const [manageSponsorsOpen, setManageSponsorsOpen] = useState(false);
+  const [manageAttendeesOpen, setManageAttendeesOpen] = useState(false);
   const [organizerVendorId, setOrganizerVendorId] = useState<string | null>(null);
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [sponsorDialogOpen, setSponsorDialogOpen] = useState(false);
@@ -256,6 +258,7 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
                       className="flex-1 gap-2"
                       onClick={(e) => {
                         e.stopPropagation();
+                        setManageAttendeesOpen(true);
                       }}
                     >
                       <UserCheck className="w-4 h-4" />
@@ -323,6 +326,13 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
       <ManageSponsorsDialog
         open={manageSponsorsOpen}
         onOpenChange={setManageSponsorsOpen}
+        eventId={event.id}
+        eventTitle={event.title}
+      />
+
+      <ManageAttendeesDialog
+        open={manageAttendeesOpen}
+        onOpenChange={setManageAttendeesOpen}
         eventId={event.id}
         eventTitle={event.title}
       />
