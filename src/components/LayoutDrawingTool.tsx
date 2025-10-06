@@ -101,8 +101,8 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       fabricCanvas.setActiveObject(group);
     } else if (tool === "table") {
       const rect = new Rect({
-        width: 60,
-        height: 60,
+        width: 80,
+        height: 50,
         fill: "#fff3e0",
         stroke: "#f57c00",
         strokeWidth: 2,
