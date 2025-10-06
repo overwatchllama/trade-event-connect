@@ -410,7 +410,7 @@ const Profile = () => {
       <div className="min-h-screen bg-background">
         <Header />
         
-        <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <div className="container mx-auto px-4 py-8 max-w-5xl">
           <div className="mb-6">
             <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
               <ArrowLeft className="h-4 w-4 mr-2" />

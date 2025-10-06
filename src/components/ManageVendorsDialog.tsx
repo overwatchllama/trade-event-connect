@@ -25,7 +25,7 @@ interface VendorApplication {
   event_id: string;
   vendor_id: string;
   user_id: string;
-  application_status: 'pending' | 'approved' | 'rejected';
+  application_status: 'pending' | 'approved' | 'rejected' | 'waitlist';
   payment_status: 'unpaid' | 'paid' | 'refunded';
   application_date: string;
   approved_date?: string;
@@ -79,7 +79,7 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
     }
   };
 
-  const updateApplicationStatus = async (applicationId: string, status: 'approved' | 'rejected') => {
+  const updateApplicationStatus = async (applicationId: string, status: 'approved' | 'rejected' | 'waitlist') => {
     try {
       const { error } = await supabase
         .from('vendor_applications')
@@ -91,7 +91,7 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
 
       if (error) throw error;
       
-      toast.success(`Application ${status} successfully`);
+      toast.success(`Application ${status === 'waitlist' ? 'added to waitlist' : status} successfully`);
       fetchApplications(); // Refresh the list
     } catch (error) {
       console.error('Error updating application status:', error);
@@ -144,6 +144,11 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
           return <Badge variant="secondary" className={`${baseClasses} bg-red-100 text-red-800`}>
             <XCircle className="w-3 h-3 mr-1" />
             Rejected
+          </Badge>;
+        case 'waitlist':
+          return <Badge variant="secondary" className={`${baseClasses} bg-blue-100 text-blue-800`}>
+            <Clock className="w-3 h-3 mr-1" />
+            Waitlist
           </Badge>;
         default:
           return <Badge variant="secondary">{status}</Badge>;
@@ -212,6 +217,35 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
             </Button>
             <Button
               size="sm"
+              variant="outline"
+              onClick={() => updateApplicationStatus(application.id, 'waitlist')}
+            >
+              <Clock className="w-3 h-3 mr-1" />
+              Waitlist
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => updateApplicationStatus(application.id, 'rejected')}
+            >
+              <XCircle className="w-3 h-3 mr-1" />
+              Reject
+            </Button>
+          </>
+        )}
+        
+        {application.application_status === 'waitlist' && (
+          <>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => updateApplicationStatus(application.id, 'approved')}
+            >
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Approve
+            </Button>
+            <Button
+              size="sm"
               variant="destructive"
               onClick={() => updateApplicationStatus(application.id, 'rejected')}
             >
@@ -264,10 +298,13 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
         </DialogHeader>
 
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="all">All ({applications.length})</TabsTrigger>
             <TabsTrigger value="pending">
               Pending ({filterApplications('pending').length})
+            </TabsTrigger>
+            <TabsTrigger value="waitlist">
+              Waitlist ({filterApplications('waitlist').length})
             </TabsTrigger>
             <TabsTrigger value="approved">
               Approved ({filterApplications('approved').length})
@@ -315,6 +352,20 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
             ) : (
               <div className="space-y-4">
                 {filterApplications('approved').map((application) => (
+                  <VendorApplicationCard key={application.id} application={application} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="waitlist" className="space-y-4">
+            {filterApplications('waitlist').length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No waitlisted applications
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filterApplications('waitlist').map((application) => (
                   <VendorApplicationCard key={application.id} application={application} />
                 ))}
               </div>
