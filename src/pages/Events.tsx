@@ -6,6 +6,8 @@ import EventsCalendar from "@/components/EventsCalendar";
 import CreateEventDialog from "@/components/CreateEventDialog";
 import { VenuesList } from "@/components/VenuesList";
 import { EventSponsors } from "@/components/EventSponsors";
+import { VendorsList } from "@/components/VendorsList";
+import { SponsorsList } from "@/components/SponsorsList";
 import { MultiSelect, Option } from "@/components/ui/multi-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -488,6 +490,7 @@ const Events = () => {
               (isOrganizer && myEvents.length > 0 ? 1 : 0) +
               (isVendor && vendingEvents.length > 0 ? 1 : 0) +
               (isSponsor && sponsoringEvents.length > 0 ? 1 : 0) +
+              (isVendor ? 2 : 0) + // Vendor List and Sponsor List tabs
               1
             }, minmax(0, 1fr))` }}>
               <TabsTrigger value="events">Events</TabsTrigger>
@@ -499,6 +502,12 @@ const Events = () => {
               )}
               {isSponsor && sponsoringEvents.length > 0 && (
                 <TabsTrigger value="sponsorships">Manage Sponsorships</TabsTrigger>
+              )}
+              {isVendor && (
+                <>
+                  <TabsTrigger value="vendor-list">Vendor List</TabsTrigger>
+                  <TabsTrigger value="sponsor-list">Sponsor List</TabsTrigger>
+                </>
               )}
             </TabsList>
 
@@ -581,6 +590,20 @@ const Events = () => {
                     <EventCard key={`sponsor-${event.id}`} event={event} userType="organizer" isMyEvent={false} />
                   ))}
                 </div>
+              </TabsContent>
+            )}
+
+            {/* Vendor List Tab - For vendors */}
+            {isVendor && (
+              <TabsContent value="vendor-list" className="mt-6">
+                <VendorsList />
+              </TabsContent>
+            )}
+
+            {/* Sponsor List Tab - For vendors */}
+            {isVendor && (
+              <TabsContent value="sponsor-list" className="mt-6">
+                <SponsorsList />
               </TabsContent>
             )}
           </Tabs>
