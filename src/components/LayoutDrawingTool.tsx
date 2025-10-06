@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas as FabricCanvas, Rect, Text as FabricText, Group } from "fabric";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { Move, Trash2, Download, Upload, Save, Home, Bath, Table, DoorOpen, Cuboid } from "lucide-react";
+import { Move, Trash2, Download, Upload, Save, Home, Bath, Table, DoorOpen, Cuboid, Presentation, UtensilsCrossed, Utensils } from "lucide-react";
 import { toast } from "sonner";
 
 interface LayoutDrawingToolProps {
@@ -15,7 +15,7 @@ interface LayoutDrawingToolProps {
 export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = false }: LayoutDrawingToolProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
-  const [activeTool, setActiveTool] = useState<"select" | "room" | "restroom" | "table" | "door" | "counter">("select");
+  const [activeTool, setActiveTool] = useState<"select" | "room" | "restroom" | "table" | "door" | "counter" | "stage" | "food" | "dining">("select");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -136,6 +136,45 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
         originY: 'center',
       });
       const group = createLabeledObject(rect, "Counter");
+      fabricCanvas.add(group);
+      fabricCanvas.setActiveObject(group);
+    } else if (tool === "stage") {
+      const rect = new Rect({
+        width: 250,
+        height: 100,
+        fill: "#ede7f6",
+        stroke: "#512da8",
+        strokeWidth: 3,
+        originX: 'center',
+        originY: 'center',
+      });
+      const group = createLabeledObject(rect, "Stage");
+      fabricCanvas.add(group);
+      fabricCanvas.setActiveObject(group);
+    } else if (tool === "food") {
+      const rect = new Rect({
+        width: 120,
+        height: 100,
+        fill: "#fff9c4",
+        stroke: "#f57f17",
+        strokeWidth: 2,
+        originX: 'center',
+        originY: 'center',
+      });
+      const group = createLabeledObject(rect, "Food");
+      fabricCanvas.add(group);
+      fabricCanvas.setActiveObject(group);
+    } else if (tool === "dining") {
+      const rect = new Rect({
+        width: 180,
+        height: 120,
+        fill: "#e0f2f1",
+        stroke: "#00897b",
+        strokeWidth: 2,
+        originX: 'center',
+        originY: 'center',
+      });
+      const group = createLabeledObject(rect, "Dining");
       fabricCanvas.add(group);
       fabricCanvas.setActiveObject(group);
     }
@@ -273,6 +312,30 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
             >
               <Cuboid className="h-4 w-4 mr-2" />
               Counter
+            </Button>
+            <Button
+              variant={activeTool === "stage" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleToolClick("stage")}
+            >
+              <Presentation className="h-4 w-4 mr-2" />
+              Stage
+            </Button>
+            <Button
+              variant={activeTool === "food" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleToolClick("food")}
+            >
+              <UtensilsCrossed className="h-4 w-4 mr-2" />
+              Food
+            </Button>
+            <Button
+              variant={activeTool === "dining" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleToolClick("dining")}
+            >
+              <Utensils className="h-4 w-4 mr-2" />
+              Dining
             </Button>
             
             <div className="border-l border-border mx-2" />
