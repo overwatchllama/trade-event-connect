@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Canvas as FabricCanvas, Rect, Text as FabricText, Group } from "fabric";
+import { Canvas as FabricCanvas, Rect, Text as FabricText, Group, FabricObject } from "fabric";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { Move, Trash2, Download, Upload, Save, Home, Bath, Table, DoorOpen, Cuboid, Presentation, UtensilsCrossed, Utensils } from "lucide-react";
+import { Move, Trash2, Download, Upload, Save, Home, Bath, Table, DoorOpen, Cuboid, Presentation, UtensilsCrossed, Utensils, Box } from "lucide-react";
 import { toast } from "sonner";
 
 interface LayoutDrawingToolProps {
@@ -15,8 +15,11 @@ interface LayoutDrawingToolProps {
 export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = false }: LayoutDrawingToolProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
-  const [activeTool, setActiveTool] = useState<"select" | "room" | "restroom" | "table" | "door" | "counter" | "stage" | "food" | "dining">("select");
+  const [activeTool, setActiveTool] = useState<"select" | "room" | "wall" | "restroom" | "table" | "door" | "counter" | "stage" | "food" | "dining">("select");
   const [saving, setSaving] = useState(false);
+
+  const SNAP_THRESHOLD = 10;
+  const WALL_THICKNESS = 3;
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -25,6 +28,39 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       width: 1000,
       height: 700,
       backgroundColor: "#ffffff",
+    });
+
+    // Enable snapping
+    canvas.on('object:moving', (e) => {
+      const obj = e.target;
+      if (!obj) return;
+
+      const snapThreshold = SNAP_THRESHOLD;
+      const objects = canvas.getObjects();
+
+      objects.forEach((target) => {
+        if (target === obj) return;
+
+        const objBounds = obj.getBoundingRect();
+        const targetBounds = target.getBoundingRect();
+
+        // Snap left to right
+        if (Math.abs(objBounds.left + objBounds.width - targetBounds.left) < snapThreshold) {
+          obj.set({ left: obj.left! + (targetBounds.left - (objBounds.left + objBounds.width)) });
+        }
+        // Snap right to left
+        if (Math.abs(objBounds.left - (targetBounds.left + targetBounds.width)) < snapThreshold) {
+          obj.set({ left: obj.left! + ((targetBounds.left + targetBounds.width) - objBounds.left) });
+        }
+        // Snap top to bottom
+        if (Math.abs(objBounds.top + objBounds.height - targetBounds.top) < snapThreshold) {
+          obj.set({ top: obj.top! + (targetBounds.top - (objBounds.top + objBounds.height)) });
+        }
+        // Snap bottom to top
+        if (Math.abs(objBounds.top - (targetBounds.top + targetBounds.height)) < snapThreshold) {
+          obj.set({ top: obj.top! + ((targetBounds.top + targetBounds.height) - objBounds.top) });
+        }
+      });
     });
 
     // Load initial layout if provided
@@ -51,7 +87,11 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     };
   }, [initialLayout, readOnly]);
 
-  const createLabeledObject = (rect: Rect, label: string) => {
+  const createLabeledObject = (rect: Rect, label: string, showLabel: boolean = true) => {
+    if (!showLabel) {
+      return rect;
+    }
+
     const text = new FabricText(label, {
       fontSize: 14,
       fontFamily: 'Arial',
@@ -75,24 +115,37 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
 
     if (tool === "room") {
       const rect = new Rect({
+        left: 100,
+        top: 100,
         width: 200,
         height: 150,
         fill: "#e3f2fd",
         stroke: "#1976d2",
-        strokeWidth: 3,
-        originX: 'center',
-        originY: 'center',
+        strokeWidth: WALL_THICKNESS,
       });
-      const group = createLabeledObject(rect, "Room");
-      fabricCanvas.add(group);
-      fabricCanvas.setActiveObject(group);
+      rect.set({ objectType: 'room' } as any);
+      fabricCanvas.add(rect);
+      fabricCanvas.setActiveObject(rect);
+    } else if (tool === "wall") {
+      const rect = new Rect({
+        left: 100,
+        top: 100,
+        width: 200,
+        height: WALL_THICKNESS,
+        fill: "#424242",
+        stroke: "#424242",
+        strokeWidth: 0,
+      });
+      rect.set({ objectType: 'wall' } as any);
+      fabricCanvas.add(rect);
+      fabricCanvas.setActiveObject(rect);
     } else if (tool === "restroom") {
       const rect = new Rect({
         width: 80,
         height: 80,
         fill: "#f3e5f5",
         stroke: "#7b1fa2",
-        strokeWidth: 3,
+        strokeWidth: WALL_THICKNESS,
         originX: 'center',
         originY: 'center',
       });
@@ -105,7 +158,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
         height: 50,
         fill: "#fff3e0",
         stroke: "#f57c00",
-        strokeWidth: 2,
+        strokeWidth: WALL_THICKNESS,
         originX: 'center',
         originY: 'center',
       });
@@ -118,7 +171,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
         height: 20,
         fill: "#e8f5e9",
         stroke: "#388e3c",
-        strokeWidth: 3,
+        strokeWidth: WALL_THICKNESS,
         originX: 'center',
         originY: 'center',
       });
@@ -131,7 +184,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
         height: 60,
         fill: "#fce4ec",
         stroke: "#c2185b",
-        strokeWidth: 2,
+        strokeWidth: WALL_THICKNESS,
         originX: 'center',
         originY: 'center',
       });
@@ -144,7 +197,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
         height: 100,
         fill: "#ede7f6",
         stroke: "#512da8",
-        strokeWidth: 3,
+        strokeWidth: WALL_THICKNESS,
         originX: 'center',
         originY: 'center',
       });
@@ -157,7 +210,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
         height: 100,
         fill: "#fff9c4",
         stroke: "#f57f17",
-        strokeWidth: 2,
+        strokeWidth: WALL_THICKNESS,
         originX: 'center',
         originY: 'center',
       });
@@ -170,7 +223,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
         height: 120,
         fill: "#e0f2f1",
         stroke: "#00897b",
-        strokeWidth: 2,
+        strokeWidth: WALL_THICKNESS,
         originX: 'center',
         originY: 'center',
       });
@@ -280,6 +333,14 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
             >
               <Home className="h-4 w-4 mr-2" />
               Room
+            </Button>
+            <Button
+              variant={activeTool === "wall" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleToolClick("wall")}
+            >
+              <Box className="h-4 w-4 mr-2" />
+              Wall
             </Button>
             <Button
               variant={activeTool === "restroom" ? "default" : "outline"}
