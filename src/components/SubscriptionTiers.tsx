@@ -25,6 +25,7 @@ const SubscriptionTiers = () => {
   const navigate = useNavigate();
   const [isYearly, setIsYearly] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
+  const [accountType, setAccountType] = useState<'event_host' | 'vendor' | 'collector'>('event_host');
 
   const tiers: SubscriptionTier[] = [
     {
@@ -120,11 +121,39 @@ const SubscriptionTiers = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Choose Your Plan
+            Select an account type
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             Upgrade to unlock premium features and take your trading card experience to the next level.
           </p>
+
+          {/* Account Type Selector */}
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <Button
+              variant={accountType === 'event_host' ? 'default' : 'outline'}
+              onClick={() => setAccountType('event_host')}
+              className="min-w-[120px]"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Event Host
+            </Button>
+            <Button
+              variant={accountType === 'vendor' ? 'default' : 'outline'}
+              onClick={() => setAccountType('vendor')}
+              className="min-w-[120px]"
+            >
+              <Store className="w-4 h-4 mr-2" />
+              Vendor
+            </Button>
+            <Button
+              variant={accountType === 'collector' ? 'default' : 'outline'}
+              onClick={() => setAccountType('collector')}
+              className="min-w-[120px]"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Collector
+            </Button>
+          </div>
           
           {/* Billing Toggle */}
           <div className="flex items-center justify-center gap-4 mb-8">
@@ -144,8 +173,14 @@ const SubscriptionTiers = () => {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {tiers.map((tier) => {
+        <div className="flex justify-center">
+          <div className="grid md:grid-cols-1 gap-8 max-w-md w-full">
+          {tiers.filter(tier => {
+            if (accountType === 'event_host') return tier.id === 'event_pro';
+            if (accountType === 'vendor') return tier.id === 'vendor_pro';
+            if (accountType === 'collector') return tier.id === 'collector_pro';
+            return true;
+          }).map((tier) => {
             const Icon = tier.icon;
             const price = getPrice(tier);
             const savings = getSavings(tier);
@@ -207,6 +242,7 @@ const SubscriptionTiers = () => {
               </Card>
             );
           })}
+          </div>
         </div>
       </div>
     </section>
