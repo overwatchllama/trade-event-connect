@@ -16,7 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, Clock, DollarSign, User } from "lucide-react";
+import { CheckCircle, XCircle, Clock, DollarSign, User, Star, Calendar, History } from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -33,12 +34,15 @@ interface VendorApplication {
   table_number?: number;
   notes?: string;
   vendor: {
+    id: string;
     business_name: string;
     business_email: string;
     business_phone?: string;
     rating: number;
     total_reviews: number;
   };
+  total_shows?: number;
+  previous_shows_with_organizer?: number;
 }
 
 interface ManageVendorsDialogProps {
@@ -60,6 +64,7 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
         .select(`
           *,
           vendor:vendor_id (
+            id,
             business_name,
             business_email,
             business_phone,
@@ -70,7 +75,42 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
         .eq('event_id', eventId);
 
       if (error) throw error;
-      setApplications(data || []);
+
+      // Get the organizer ID for this event
+      const { data: eventData } = await supabase
+        .from('events')
+        .select('organizer_id')
+        .eq('id', eventId)
+        .single();
+
+      // Enrich each application with additional stats
+      const enrichedApplications = await Promise.all(
+        (data || []).map(async (app) => {
+          // Get total shows for this vendor (approved applications)
+          const { count: totalShows } = await supabase
+            .from('vendor_applications')
+            .select('*', { count: 'exact', head: true })
+            .eq('vendor_id', app.vendor_id)
+            .eq('application_status', 'approved');
+
+          // Get previous shows with this organizer
+          const { count: previousShows } = await supabase
+            .from('vendor_applications')
+            .select('event_id, events!inner(organizer_id)', { count: 'exact', head: true })
+            .eq('vendor_id', app.vendor_id)
+            .eq('application_status', 'approved')
+            .eq('events.organizer_id', eventData?.organizer_id)
+            .neq('event_id', eventId); // Don't count current event
+
+          return {
+            ...app,
+            total_shows: totalShows || 0,
+            previous_shows_with_organizer: previousShows || 0,
+          };
+        })
+      );
+
+      setApplications(enrichedApplications);
     } catch (error) {
       console.error('Error fetching vendor applications:', error);
       toast.error('Failed to load vendor applications');
@@ -184,19 +224,54 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
   const VendorApplicationCard = ({ application }: { application: VendorApplication }) => (
     <Card className="p-4 space-y-4">
       <div className="flex justify-between items-start">
-        <div className="space-y-2">
+        <div className="space-y-2 flex-1">
           <div className="flex items-center gap-2">
             <User className="w-4 h-4 text-muted-foreground" />
-            <h4 className="font-semibold">{application.vendor.business_name}</h4>
+            <Link 
+              to={`/vendor/${application.vendor.id}`}
+              className="font-semibold text-primary hover:underline"
+            >
+              {application.vendor.business_name}
+            </Link>
           </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`w-4 h-4 ${
+                    star <= application.vendor.rating
+                      ? 'fill-yellow-400 text-yellow-400'
+                      : 'text-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {application.vendor.rating.toFixed(1)} ({application.vendor.total_reviews} reviews)
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              <span>{application.total_shows || 0} total shows</span>
+            </div>
+            {(application.previous_shows_with_organizer || 0) > 0 && (
+              <div className="flex items-center gap-1">
+                <History className="w-3 h-3" />
+                <span className="font-medium text-primary">
+                  {application.previous_shows_with_organizer} shows with you
+                </span>
+              </div>
+            )}
+          </div>
+
           <p className="text-sm text-muted-foreground">{application.vendor.business_email}</p>
           {application.vendor.business_phone && (
             <p className="text-sm text-muted-foreground">{application.vendor.business_phone}</p>
           )}
-          <div className="flex items-center gap-2 text-sm">
-            <span>Rating: {application.vendor.rating}/5.0</span>
-            <span>({application.vendor.total_reviews} reviews)</span>
-          </div>
         </div>
         <div className="text-right space-y-2">
           {getStatusBadge(application.application_status, 'application')}
