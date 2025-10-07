@@ -178,8 +178,8 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     } else if (tool === "table") {
       const tableNumber = getNextTableNumber();
       const rect = new Rect({
-        width: 80,
-        height: 50,
+        width: 38,
+        height: 96,
         fill: "#fff3e0",
         stroke: "#f57c00",
         strokeWidth: WALL_THICKNESS,
