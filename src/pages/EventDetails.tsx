@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MapPin, Calendar, Users, Tag, Settings, Store, Mail, Phone, Instagram, Twitter, Facebook, ExternalLink } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Users, Tag, Settings, Store, Mail, Phone, Instagram, Twitter, Facebook, ExternalLink, Share2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
@@ -102,6 +102,16 @@ const EventDetails = () => {
 
     fetchEvent();
   }, [id, user]);
+
+  const handleShareEvent = async () => {
+    const eventUrl = `${window.location.origin}/events/${id}`;
+    try {
+      await navigator.clipboard.writeText(eventUrl);
+      toast.success('Event link copied to clipboard!');
+    } catch (err) {
+      toast.error('Failed to copy link. Please try again.');
+    }
+  };
 
   const handleBuyTicket = async () => {
     if (!user) {
@@ -225,7 +235,18 @@ const EventDetails = () => {
                     </Badge>
                   ))}
                 </div>
-                <CardTitle className="text-3xl">{event.title}</CardTitle>
+                <div className="flex items-start justify-between gap-4">
+                  <CardTitle className="text-3xl">{event.title}</CardTitle>
+                  <Button
+                    onClick={handleShareEvent}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 shrink-0"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    Share
+                  </Button>
+                </div>
                 {organizerEmail && !isOrganizer && (
                   <CardDescription className="text-base">
                     <a 
