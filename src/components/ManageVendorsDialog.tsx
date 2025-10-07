@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -32,6 +33,8 @@ interface VendorApplication {
   approved_date?: string;
   payment_date?: string;
   table_number?: number;
+  requested_tables: number;
+  approved_tables?: number;
   notes?: string;
   vendor: {
     id: string;
@@ -43,6 +46,7 @@ interface VendorApplication {
   };
   total_shows?: number;
   previous_shows_with_organizer?: number;
+  event_table_price?: number;
 }
 
 interface ManageVendorsDialogProps {
@@ -76,10 +80,10 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
 
       if (error) throw error;
 
-      // Get the organizer ID for this event
+      // Get the organizer ID and table price for this event
       const { data: eventData } = await supabase
         .from('events')
-        .select('organizer_id')
+        .select('organizer_id, vendor_table_price')
         .eq('id', eventId)
         .single();
 
@@ -106,6 +110,7 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
             ...app,
             total_shows: totalShows || 0,
             previous_shows_with_organizer: previousShows || 0,
+            event_table_price: eventData?.vendor_table_price || 0,
           };
         })
       );
@@ -156,6 +161,25 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
     } catch (error) {
       console.error('Error updating payment status:', error);
       toast.error('Failed to update payment status');
+    }
+  };
+
+  const updateApprovedTables = async (applicationId: string, tables: number) => {
+    try {
+      const { error } = await supabase
+        .from('vendor_applications')
+        .update({
+          approved_tables: tables
+        })
+        .eq('id', applicationId);
+
+      if (error) throw error;
+      
+      toast.success(`Approved ${tables} table${tables > 1 ? 's' : ''}`);
+      fetchApplications(); // Refresh the list
+    } catch (error) {
+      console.error('Error updating approved tables:', error);
+      toast.error('Failed to update approved tables');
     }
   };
 
@@ -268,6 +292,27 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
             )}
           </div>
 
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">Requested Tables:</span>
+              <span className="text-primary font-bold">{application.requested_tables}</span>
+            </div>
+            {application.application_status === 'approved' && application.approved_tables && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Approved Tables:</span>
+                <span className="text-green-600 font-bold">{application.approved_tables}</span>
+              </div>
+            )}
+            {application.event_table_price && application.event_table_price > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Invoice Amount:</span>
+                <span className="text-lg font-bold text-primary">
+                  ${(application.event_table_price * (application.approved_tables || application.requested_tables)).toFixed(2)}
+                </span>
+              </div>
+            )}
+          </div>
+
           <p className="text-sm text-muted-foreground">{application.vendor.business_email}</p>
           {application.vendor.business_phone && (
             <p className="text-sm text-muted-foreground">{application.vendor.business_phone}</p>
@@ -331,19 +376,42 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
         )}
         
         {application.application_status === 'approved' && (
-          <Select
-            value={application.payment_status}
-            onValueChange={(value) => updatePaymentStatus(application.id, value as any)}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unpaid">Unpaid</SelectItem>
-              <SelectItem value="paid">Paid</SelectItem>
-              <SelectItem value="refunded">Refunded</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2 flex-wrap">
+            <div className="space-y-1">
+              <Label className="text-xs">Tables</Label>
+              <Select
+                value={application.approved_tables?.toString() || application.requested_tables.toString()}
+                onValueChange={(value) => updateApprovedTables(application.id, parseInt(value))}
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: Math.max(application.requested_tables + 10, 20) }, (_, i) => i + 1).map((num) => (
+                    <SelectItem key={num} value={num.toString()}>
+                      {num}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Payment</Label>
+              <Select
+                value={application.payment_status}
+                onValueChange={(value) => updatePaymentStatus(application.id, value as any)}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unpaid">Unpaid</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="refunded">Refunded</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         )}
       </div>
 

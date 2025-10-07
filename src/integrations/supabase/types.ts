@@ -903,12 +903,14 @@ export type Database = {
           application_date: string
           application_status: Database["public"]["Enums"]["vendor_application_status"]
           approved_date: string | null
+          approved_tables: number | null
           created_at: string
           event_id: string
           id: string
           notes: string | null
           payment_date: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
+          requested_tables: number
           stripe_payment_intent_id: string | null
           table_number: number | null
           updated_at: string
@@ -919,12 +921,14 @@ export type Database = {
           application_date?: string
           application_status?: Database["public"]["Enums"]["vendor_application_status"]
           approved_date?: string | null
+          approved_tables?: number | null
           created_at?: string
           event_id: string
           id?: string
           notes?: string | null
           payment_date?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          requested_tables?: number
           stripe_payment_intent_id?: string | null
           table_number?: number | null
           updated_at?: string
@@ -935,12 +939,14 @@ export type Database = {
           application_date?: string
           application_status?: Database["public"]["Enums"]["vendor_application_status"]
           approved_date?: string | null
+          approved_tables?: number | null
           created_at?: string
           event_id?: string
           id?: string
           notes?: string | null
           payment_date?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          requested_tables?: number
           stripe_payment_intent_id?: string | null
           table_number?: number | null
           updated_at?: string

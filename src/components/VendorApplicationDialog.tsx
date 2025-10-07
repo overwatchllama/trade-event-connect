@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
@@ -36,6 +37,7 @@ export const VendorApplicationDialog = ({
   const { hasRole } = useUserRoles();
   const navigate = useNavigate();
   const [notes, setNotes] = useState("");
+  const [requestedTables, setRequestedTables] = useState(1);
   const [loading, setLoading] = useState(false);
   const [checkingVendor, setCheckingVendor] = useState(false);
 
@@ -148,6 +150,7 @@ export const VendorApplicationDialog = ({
       user_id: user!.id,
       event_id: eventId,
       notes: notes || null,
+      requested_tables: requestedTables,
       application_status: "pending",
       payment_status: vendorTablePrice > 0 ? "unpaid" : "paid",
     }).select();
@@ -179,10 +182,29 @@ export const VendorApplicationDialog = ({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="tables">Number of Tables Requested</Label>
+            <Input
+              id="tables"
+              type="number"
+              min={1}
+              max={50}
+              value={requestedTables}
+              onChange={(e) => setRequestedTables(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground">
+              How many vendor tables do you need? (Min: 1, Max: 50)
+            </p>
+          </div>
+
           {vendorTablePrice > 0 && (
             <div className="rounded-lg border border-border bg-muted/50 p-4">
               <p className="text-sm font-medium">Vendor Table Fee</p>
-              <p className="text-2xl font-bold">${vendorTablePrice}</p>
+              <p className="text-2xl font-bold">${vendorTablePrice} per table</p>
+              <p className="text-lg font-semibold text-primary mt-1">
+                Total for {requestedTables} table{requestedTables > 1 ? 's' : ''}: ${vendorTablePrice * requestedTables}
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 No payment is collected now. If accepted, you'll receive a payment request.
               </p>
