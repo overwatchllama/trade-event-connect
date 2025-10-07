@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { LayoutDrawingTool } from '@/components/LayoutDrawingTool';
 import { ManageEventSponsors } from '@/components/ManageEventSponsors';
 import ManageVendorsDialog from '@/components/ManageVendorsDialog';
+import ManageSponsorsDialog from '@/components/ManageSponsorsDialog';
 import { EventFileManager } from '@/components/EventFileManager';
 
 const ManageEvent = () => {
@@ -26,6 +27,7 @@ const ManageEvent = () => {
   const [uploading, setUploading] = useState(false);
   const [flyerFile, setFlyerFile] = useState<File | null>(null);
   const [vendorsDialogOpen, setVendorsDialogOpen] = useState(false);
+  const [sponsorsDialogOpen, setSponsorsDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -242,7 +244,19 @@ const ManageEvent = () => {
           </TabsContent>
 
           <TabsContent value="sponsors" className="space-y-6">
-            <ManageEventSponsors eventId={event.id} />
+            <Card>
+              <CardHeader>
+                <CardTitle>Sponsor Applications</CardTitle>
+                <CardDescription>
+                  Review and manage sponsor applications for your event.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => setSponsorsDialogOpen(true)}>
+                  Manage Sponsor Applications
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="files" className="space-y-6">
@@ -254,6 +268,14 @@ const ManageEvent = () => {
         <ManageVendorsDialog
           open={vendorsDialogOpen}
           onOpenChange={setVendorsDialogOpen}
+          eventId={event.id}
+          eventTitle={event.title}
+        />
+
+        {/* Sponsor Applications Dialog */}
+        <ManageSponsorsDialog
+          open={sponsorsDialogOpen}
+          onOpenChange={setSponsorsDialogOpen}
           eventId={event.id}
           eventTitle={event.title}
         />
