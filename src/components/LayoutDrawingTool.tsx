@@ -56,6 +56,12 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     // Load initial layout if provided
     if (initialLayout) {
       canvas.loadFromJSON(initialLayout, () => {
+        // After loading, send all rooms to the back
+        canvas.getObjects().forEach((obj: any) => {
+          if (obj.objectType === 'room') {
+            canvas.sendObjectToBack(obj);
+          }
+        });
         canvas.renderAll();
       });
     }
@@ -115,6 +121,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       });
       rect.set({ objectType: 'room' } as any);
       fabricCanvas.add(rect);
+      fabricCanvas.sendObjectToBack(rect);
       fabricCanvas.setActiveObject(rect);
     } else if (tool === "wall") {
       const rect = new Rect({
