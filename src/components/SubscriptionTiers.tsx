@@ -99,8 +99,8 @@ const SubscriptionTiers = () => {
       name: 'Event Host Free',
       icon: Calendar,
       description: 'Start hosting events',
-      monthlyPrice: 20,
-      yearlyPrice: 240,
+      monthlyPrice: 0,
+      yearlyPrice: 0,
       features: [
         'List events for $20',
         'Basic vendor management',
@@ -132,8 +132,15 @@ const SubscriptionTiers = () => {
   const handleSubscribe = async (tier: SubscriptionTier) => {
     if (!user) {
       // Redirect to auth page for account creation/login
-      toast.info('Please sign in or create an account to subscribe');
+      toast.info('Please sign in or create an account to continue');
       navigate('/auth');
+      return;
+    }
+
+    // If it's a free tier, just redirect to events page
+    if (tier.monthlyPrice === 0) {
+      navigate('/events');
+      toast.success('Welcome! Start exploring events');
       return;
     }
 
@@ -290,7 +297,7 @@ const SubscriptionTiers = () => {
                   size="lg" 
                   className="w-full"
                   onClick={() => handleSubscribe(tier)}
-                  disabled={loading === tier.id || tier.monthlyPrice === 0}
+                  disabled={loading === tier.id}
                 >
                   {tier.monthlyPrice === 0 ? 'Get Started Free' : loading === tier.id ? 'Processing...' : `Subscribe to ${tier.name}`}
                 </Button>
