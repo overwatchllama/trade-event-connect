@@ -56,6 +56,8 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
     vendorTablePrice: '',
     totalTables: '',
     contactEmail: '',
+    contactPhone: '',
+    preferredContactMethod: '',
     socialInstagram: '',
     socialX: '',
     socialTiktok: '',
@@ -104,6 +106,8 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
         vendorTablePrice: event.vendor_table_price?.toString() || '',
         totalTables: event.total_tables?.toString() || '',
         contactEmail: event.contact_email || '',
+        contactPhone: event.contact_phone || '',
+        preferredContactMethod: event.preferred_contact_method || '',
         socialInstagram: event.social_instagram || '',
         socialX: event.social_x || '',
         socialTiktok: event.social_tiktok || '',
@@ -264,6 +268,8 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
             ? JSON.stringify(sponsorTiers.filter(t => t.tier && t.cost)) 
             : null,
           contact_email: formData.contactEmail || null,
+          contact_phone: formData.contactPhone || null,
+          preferred_contact_method: formData.preferredContactMethod || null,
           social_instagram: formData.socialInstagram || null,
           social_x: formData.socialX || null,
           social_tiktok: formData.socialTiktok || null,
@@ -652,15 +658,42 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Contact & Social Media</h3>
             
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="contactEmail">Contact Email</Label>
+                <Input
+                  id="contactEmail"
+                  type="email"
+                  placeholder="event@example.com"
+                  value={formData.contactEmail}
+                  onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contactPhone">Contact Phone</Label>
+                <Input
+                  id="contactPhone"
+                  type="tel"
+                  placeholder="(555) 123-4567"
+                  value={formData.contactPhone}
+                  onChange={(e) => handleInputChange('contactPhone', e.target.value)}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="contactEmail">Contact Email</Label>
-              <Input
-                id="contactEmail"
-                type="email"
-                placeholder="event@example.com"
-                value={formData.contactEmail}
-                onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-              />
+              <Label htmlFor="preferredContactMethod">Preferred Contact Method</Label>
+              <Select value={formData.preferredContactMethod} onValueChange={(value) => handleInputChange('preferredContactMethod', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select preferred contact method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="phone">Phone</SelectItem>
+                  <SelectItem value="social_media">Social Media</SelectItem>
+                  <SelectItem value="any">Any Method</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
