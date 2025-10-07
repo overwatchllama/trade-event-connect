@@ -16,7 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle, XCircle, Clock, DollarSign, User, Star, Calendar, History } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -203,6 +205,45 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
     } catch (error) {
       console.error('Error updating approved tables:', error);
       toast.error('Failed to update approved tables');
+    }
+  };
+
+  const updateTableNumber = async (applicationId: string, tableNumber: string) => {
+    try {
+      const tableNum = tableNumber ? parseInt(tableNumber) : null;
+      const { error } = await supabase
+        .from('vendor_applications')
+        .update({
+          table_number: tableNum
+        })
+        .eq('id', applicationId);
+
+      if (error) throw error;
+      
+      toast.success('Table number updated');
+      fetchApplications(); // Refresh the list
+    } catch (error) {
+      console.error('Error updating table number:', error);
+      toast.error('Failed to update table number');
+    }
+  };
+
+  const updateNotes = async (applicationId: string, notes: string) => {
+    try {
+      const { error } = await supabase
+        .from('vendor_applications')
+        .update({
+          notes: notes || null
+        })
+        .eq('id', applicationId);
+
+      if (error) throw error;
+      
+      toast.success('Notes updated');
+      fetchApplications(); // Refresh the list
+    } catch (error) {
+      console.error('Error updating notes:', error);
+      toast.error('Failed to update notes');
     }
   };
 
@@ -409,58 +450,89 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
         )}
         
         {application.application_status === 'approved' && (
-          <div className="flex gap-2 flex-wrap">
-            {application.payment_status === 'unpaid' && (
-              <Button
-                size="sm"
-                variant="default"
-                onClick={() => sendInvoice(application)}
-              >
-                <DollarSign className="w-3 h-3 mr-1" />
-                Send Invoice
-              </Button>
-            )}
-            <div className="space-y-1">
-              <Label className="text-xs">Tables</Label>
-              <Select
-                value={application.approved_tables?.toString() || application.requested_tables.toString()}
-                onValueChange={(value) => updateApprovedTables(application.id, parseInt(value))}
-              >
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: Math.max(application.requested_tables + 10, 20) }, (_, i) => i + 1).map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      {num}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-4">
+            <div className="flex gap-2 flex-wrap items-end">
+              {application.payment_status === 'unpaid' && (
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={() => sendInvoice(application)}
+                >
+                  <DollarSign className="w-3 h-3 mr-1" />
+                  Send Invoice
+                </Button>
+              )}
+              <div className="space-y-1">
+                <Label className="text-xs">Tables</Label>
+                <Select
+                  value={application.approved_tables?.toString() || application.requested_tables.toString()}
+                  onValueChange={(value) => updateApprovedTables(application.id, parseInt(value))}
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: Math.max(application.requested_tables + 10, 20) }, (_, i) => i + 1).map((num) => (
+                      <SelectItem key={num} value={num.toString()}>
+                        {num}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Table Number</Label>
+                <Input
+                  type="text"
+                  placeholder="e.g., 12, A5"
+                  value={application.table_number || ''}
+                  onChange={(e) => updateTableNumber(application.id, e.target.value)}
+                  onBlur={(e) => updateTableNumber(application.id, e.target.value)}
+                  className="w-28"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Payment</Label>
+                <Select
+                  value={application.payment_status}
+                  onValueChange={(value) => updatePaymentStatus(application.id, value as any)}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unpaid">Unpaid</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                    <SelectItem value="refunded">Refunded</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Payment</Label>
-              <Select
-                value={application.payment_status}
-                onValueChange={(value) => updatePaymentStatus(application.id, value as any)}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unpaid">Unpaid</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="refunded">Refunded</SelectItem>
-                </SelectContent>
-              </Select>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Organizer Notes</Label>
+              <Textarea
+                placeholder="Add notes about this vendor (table assignment, special requests, etc.)"
+                value={application.notes || ''}
+                onChange={(e) => setApplications(prev => 
+                  prev.map(app => 
+                    app.id === application.id 
+                      ? { ...app, notes: e.target.value }
+                      : app
+                  )
+                )}
+                onBlur={(e) => updateNotes(application.id, e.target.value)}
+                rows={2}
+                className="text-sm"
+              />
             </div>
           </div>
         )}
       </div>
 
-      {application.notes && (
-        <div className="text-sm text-muted-foreground">
-          <strong>Notes:</strong> {application.notes}
+      {application.notes && application.application_status !== 'approved' && (
+        <div className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-md">
+          <strong>Vendor Notes:</strong> {application.notes}
         </div>
       )}
 
