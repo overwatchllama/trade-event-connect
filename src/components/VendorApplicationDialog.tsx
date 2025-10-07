@@ -120,33 +120,9 @@ export const VendorApplicationDialog = ({
         return;
       }
 
-      // If there's a fee, redirect to payment
-      if (vendorTablePrice > 0) {
-        console.log("Event has vendor table fee - invoking payment function");
-        const { data, error } = await supabase.functions.invoke("vendor-registration-payment", {
-          body: {
-            eventId,
-            eventTitle,
-          },
-        });
-
-        console.log("Payment function response:", { data, error });
-
-        if (error) throw error;
-
-        if (data.requiresPayment && data.checkoutUrl) {
-          console.log("Redirecting to checkout:", data.checkoutUrl);
-          window.location.href = data.checkoutUrl;
-        } else if (data.message) {
-          // Pro user - create application directly
-          console.log("Pro user detected - creating application directly");
-          await createApplication(vendorProfile.id);
-        }
-      } else {
-        // Free event - create application directly
-        console.log("Free event - creating application directly");
-        await createApplication(vendorProfile.id);
-      }
+      // Create application directly (no payment on application)
+      console.log("Creating application without immediate payment...");
+      await createApplication(vendorProfile.id);
     } catch (error: any) {
       console.error("ERROR in handleApply:", error);
       toast.error(error.message || "Failed to submit application");
@@ -208,7 +184,7 @@ export const VendorApplicationDialog = ({
               <p className="text-sm font-medium">Vendor Table Fee</p>
               <p className="text-2xl font-bold">${vendorTablePrice}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Payment will be processed after submitting your application
+                No payment is collected now. If accepted, you'll receive a payment request.
               </p>
             </div>
           )}
