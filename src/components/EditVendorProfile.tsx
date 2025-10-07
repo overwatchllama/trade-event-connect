@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { X, Plus } from 'lucide-react';
@@ -50,8 +51,6 @@ const EditVendorProfile = ({ vendor, open, onOpenChange, onUpdate }: EditVendorP
   const [formData, setFormData] = useState<VendorProfile>(vendor);
   const [newSpecialty, setNewSpecialty] = useState('');
   const [loading, setLoading] = useState(false);
-  const [newSocialPlatform, setNewSocialPlatform] = useState('');
-  const [newSocialUrl, setNewSocialUrl] = useState('');
 
   useEffect(() => {
     // Convert legacy social media fields to social_links format
@@ -141,28 +140,28 @@ const EditVendorProfile = ({ vendor, open, onOpenChange, onUpdate }: EditVendorP
     }));
   };
 
-  const addSocialLink = () => {
-    if (newSocialPlatform.trim() && newSocialUrl.trim()) {
-      const existingLinks = formData.social_links || [];
-      const newLink: SocialLink = {
-        platform: newSocialPlatform.trim(),
-        url: newSocialUrl.trim()
-      };
-      
+  const addSocialMediaLink = () => {
+    setFormData(prev => ({
+      ...prev,
+      social_links: [...(prev.social_links || []), { platform: '', url: '' }]
+    }));
+  };
+
+  const removeSocialMediaLink = (index: number) => {
+    if ((formData.social_links?.length || 0) > 1) {
       setFormData(prev => ({
         ...prev,
-        social_links: [...existingLinks, newLink]
+        social_links: prev.social_links?.filter((_, i) => i !== index) || []
       }));
-      
-      setNewSocialPlatform('');
-      setNewSocialUrl('');
     }
   };
 
-  const removeSocialLink = (index: number) => {
+  const updateSocialMediaLink = (index: number, field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      social_links: prev.social_links?.filter((_, i) => i !== index) || []
+      social_links: prev.social_links?.map((link, i) => 
+        i === index ? { ...link, [field]: value } : link
+      ) || []
     }));
   };
 
@@ -274,59 +273,64 @@ const EditVendorProfile = ({ vendor, open, onOpenChange, onUpdate }: EditVendorP
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Social Media</h3>
             
-            {/* Add new social media link */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label htmlFor="social_platform">Platform</Label>
-                <Input
-                  id="social_platform"
-                  value={newSocialPlatform}
-                  onChange={(e) => setNewSocialPlatform(e.target.value)}
-                  placeholder="e.g., Instagram, TikTok, YouTube"
-                />
-              </div>
-              <div>
-                <Label htmlFor="social_url">URL</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="social_url"
-                    value={newSocialUrl}
-                    onChange={(e) => setNewSocialUrl(e.target.value)}
-                    placeholder="https://..."
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSocialLink())}
-                  />
-                  <Button type="button" onClick={addSocialLink} size="sm">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Display existing social media links */}
-            {formData.social_links && formData.social_links.length > 0 && (
-              <div className="space-y-2">
-                <Label>Current Social Media Links</Label>
-                <div className="space-y-2">
-                  {formData.social_links.map((link, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
-                      <div className="flex-1">
-                        <span className="font-medium text-sm">{link.platform}:</span>
-                        <span className="text-sm text-muted-foreground ml-2">{link.url}</span>
-                      </div>
+            <div className="space-y-2">
+              <Label>Social Media Links (Optional)</Label>
+              <div className="space-y-3">
+                {(formData.social_links || [{ platform: '', url: '' }]).map((link, index) => (
+                  <div key={index} className="flex gap-2 items-end">
+                    <div className="flex-1 space-y-2">
+                      <Label className="text-xs">Platform</Label>
+                      <Select 
+                        value={link.platform} 
+                        onValueChange={(value) => updateSocialMediaLink(index, 'platform', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select platform" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="instagram">Instagram</SelectItem>
+                          <SelectItem value="x">X (Twitter)</SelectItem>
+                          <SelectItem value="tiktok">TikTok</SelectItem>
+                          <SelectItem value="facebook">Facebook</SelectItem>
+                          <SelectItem value="linktree">Linktree</SelectItem>
+                          <SelectItem value="website">Website</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Label className="text-xs">URL</Label>
+                      <Input
+                        type="url"
+                        placeholder="https://..."
+                        value={link.url}
+                        onChange={(e) => updateSocialMediaLink(index, 'url', e.target.value)}
+                      />
+                    </div>
+                    {(formData.social_links?.length || 0) > 1 && (
                       <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        onClick={() => removeSocialLink(index)}
-                        className="text-destructive hover:text-destructive"
+                        size="icon"
+                        onClick={() => removeSocialMediaLink(index)}
                       >
                         <X className="w-4 h-4" />
                       </Button>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addSocialMediaLink}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Social Media Link
+                </Button>
               </div>
-            )}
+            </div>
           </div>
 
           {/* Vendor Types */}
