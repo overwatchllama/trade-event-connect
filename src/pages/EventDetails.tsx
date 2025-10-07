@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MapPin, Calendar, Users, Tag, Settings, Store } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Users, Tag, Settings, Store, Mail, Phone, Instagram, Twitter, Facebook, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
@@ -38,6 +38,7 @@ const EventDetails = () => {
   const [organizerEmail, setOrganizerEmail] = useState<string | null>(null);
   const [manageVendorsOpen, setManageVendorsOpen] = useState(false);
   const [manageSponsorsOpen, setManageSponsorsOpen] = useState(false);
+  const [socialMediaLinks, setSocialMediaLinks] = useState<any[]>([]);
 
   const isVendorPro = subscribed && 
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
@@ -80,6 +81,16 @@ const EventDetails = () => {
 
         if (!vendorError && count !== null) {
           setVendorCount(count);
+        }
+
+        // Fetch social media links
+        const { data: socialData, error: socialError } = await supabase
+          .from('event_social_media')
+          .select('*')
+          .eq('event_id', id);
+
+        if (!socialError && socialData) {
+          setSocialMediaLinks(socialData);
         }
       } catch (error) {
         console.error('Error fetching event:', error);
@@ -272,6 +283,92 @@ const EventDetails = () => {
                       <p className="text-muted-foreground whitespace-pre-wrap">
                         {event.description}
                       </p>
+                    </div>
+                  </>
+                )}
+
+                {(event.contact_email || event.contact_phone || socialMediaLinks.length > 0) && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Contact & Social Media</h3>
+                      <div className="space-y-3">
+                        {event.contact_email && (
+                          <div className="flex items-center gap-3">
+                            <Mail className="w-5 h-5 text-muted-foreground" />
+                            <a 
+                              href={`mailto:${event.contact_email}`}
+                              className="text-primary hover:underline"
+                            >
+                              {event.contact_email}
+                            </a>
+                            {event.preferred_contact_method === 'email' && (
+                              <Badge variant="secondary" className="text-xs">Preferred</Badge>
+                            )}
+                          </div>
+                        )}
+                        
+                        {event.contact_phone && (
+                          <div className="flex items-center gap-3">
+                            <Phone className="w-5 h-5 text-muted-foreground" />
+                            <a 
+                              href={`tel:${event.contact_phone}`}
+                              className="text-primary hover:underline"
+                            >
+                              {event.contact_phone}
+                            </a>
+                            {event.preferred_contact_method === 'phone' && (
+                              <Badge variant="secondary" className="text-xs">Preferred</Badge>
+                            )}
+                          </div>
+                        )}
+
+                        {socialMediaLinks.length > 0 && (
+                          <div className="pt-2">
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Follow us on social media
+                              {event.preferred_contact_method === 'social_media' && ' (Preferred contact method)'}:
+                            </p>
+                            <div className="flex flex-wrap gap-3">
+                              {socialMediaLinks.map((link) => {
+                                const getSocialIcon = (platform: string) => {
+                                  switch (platform.toLowerCase()) {
+                                    case 'instagram':
+                                      return <Instagram className="w-5 h-5" />;
+                                    case 'x':
+                                      return <Twitter className="w-5 h-5" />;
+                                    case 'facebook':
+                                      return <Facebook className="w-5 h-5" />;
+                                    case 'tiktok':
+                                      return <ExternalLink className="w-5 h-5" />;
+                                    default:
+                                      return <ExternalLink className="w-5 h-5" />;
+                                  }
+                                };
+
+                                return (
+                                  <Button
+                                    key={link.id}
+                                    variant="outline"
+                                    size="sm"
+                                    asChild
+                                  >
+                                    <a
+                                      href={link.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-2"
+                                    >
+                                      {getSocialIcon(link.platform)}
+                                      <span className="capitalize">{link.platform}</span>
+                                    </a>
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </>
                 )}
