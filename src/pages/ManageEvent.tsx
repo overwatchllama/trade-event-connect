@@ -168,11 +168,11 @@ const ManageEvent = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {event.flyer_url && (
-                  <div className="aspect-video rounded-lg overflow-hidden border border-border">
+                  <div className="aspect-[9/16] rounded-lg overflow-hidden border border-border max-w-md mx-auto bg-muted">
                     <img
                       src={event.flyer_url}
                       alt="Current flyer"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   </div>
                 )}

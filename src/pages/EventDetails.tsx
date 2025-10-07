@@ -228,11 +228,11 @@ const EventDetails = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {event.flyer_url && (
-                  <div className="aspect-video rounded-lg overflow-hidden">
+                  <div className="aspect-[9/16] rounded-lg overflow-hidden max-w-md mx-auto bg-muted">
                     <img
                       src={event.flyer_url}
                       alt={event.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   </div>
                 )}
