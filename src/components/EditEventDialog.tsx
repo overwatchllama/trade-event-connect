@@ -57,12 +57,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
     totalTables: '',
     contactEmail: '',
     contactPhone: '',
-    preferredContactMethod: '',
-    socialInstagram: '',
-    socialX: '',
-    socialTiktok: '',
-    socialLinktree: '',
-    socialFacebook: ''
+    preferredContactMethod: ''
   });
 
   const [isMultiDay, setIsMultiDay] = useState(false);
@@ -71,6 +66,9 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
   ]);
   const [sponsorTiers, setSponsorTiers] = useState([
     { tier: '', cost: '' }
+  ]);
+  const [socialMediaLinks, setSocialMediaLinks] = useState([
+    { platform: '', url: '' }
   ]);
   const [flyerFile, setFlyerFile] = useState<File | null>(null);
   const [flyerPreview, setFlyerPreview] = useState<string | null>(null);
@@ -107,12 +105,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
         totalTables: event.total_tables?.toString() || '',
         contactEmail: event.contact_email || '',
         contactPhone: event.contact_phone || '',
-        preferredContactMethod: event.preferred_contact_method || '',
-        socialInstagram: event.social_instagram || '',
-        socialX: event.social_x || '',
-        socialTiktok: event.social_tiktok || '',
-        socialLinktree: event.social_linktree || '',
-        socialFacebook: event.social_facebook || ''
+        preferredContactMethod: event.preferred_contact_method || ''
       });
 
       setSelectedCardTypes(event.card_types || []);
@@ -131,6 +124,21 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
         }
       } else {
         setSponsorTiers([{ tier: '', cost: '' }]);
+      }
+
+      // Fetch social media links
+      const { data: socialMedia, error: socialError } = await supabase
+        .from('event_social_media')
+        .select('*')
+        .eq('event_id', eventId);
+
+      if (!socialError && socialMedia && socialMedia.length > 0) {
+        setSocialMediaLinks(socialMedia.map(sm => ({
+          platform: sm.platform,
+          url: sm.url
+        })));
+      } else {
+        setSocialMediaLinks([{ platform: '', url: '' }]);
       }
 
       // Fetch event days
@@ -210,6 +218,22 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
     ));
   };
 
+  const addSocialMediaLink = () => {
+    setSocialMediaLinks(prev => [...prev, { platform: '', url: '' }]);
+  };
+
+  const removeSocialMediaLink = (index: number) => {
+    if (socialMediaLinks.length > 1) {
+      setSocialMediaLinks(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateSocialMediaLink = (index: number, field: string, value: string) => {
+    setSocialMediaLinks(prev => prev.map((link, i) => 
+      i === index ? { ...link, [field]: value } : link
+    ));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
@@ -269,16 +293,35 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
             : null,
           contact_email: formData.contactEmail || null,
           contact_phone: formData.contactPhone || null,
-          preferred_contact_method: formData.preferredContactMethod || null,
-          social_instagram: formData.socialInstagram || null,
-          social_x: formData.socialX || null,
-          social_tiktok: formData.socialTiktok || null,
-          social_linktree: formData.socialLinktree || null,
-          social_facebook: formData.socialFacebook || null
+          preferred_contact_method: formData.preferredContactMethod || null
         })
         .eq('id', eventId);
 
       if (error) throw error;
+
+      // Delete and re-insert social media links
+      await supabase
+        .from('event_social_media')
+        .delete()
+        .eq('event_id', eventId);
+
+      if (socialMediaLinks.some(link => link.platform && link.url)) {
+        const socialMediaData = socialMediaLinks
+          .filter(link => link.platform && link.url)
+          .map(link => ({
+            event_id: eventId,
+            platform: link.platform,
+            url: link.url
+          }));
+
+        const { error: socialError } = await supabase
+          .from('event_social_media')
+          .insert(socialMediaData);
+
+        if (socialError) {
+          console.error('Error updating social media links:', socialError);
+        }
+      }
 
       // Delete existing event days and insert new ones
       await supabase
@@ -696,51 +739,62 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
               </Select>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="socialInstagram">Instagram</Label>
-                <Input
-                  id="socialInstagram"
-                  placeholder="@eventname"
-                  value={formData.socialInstagram}
-                  onChange={(e) => handleInputChange('socialInstagram', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="socialX">X (Twitter)</Label>
-                <Input
-                  id="socialX"
-                  placeholder="@eventname"
-                  value={formData.socialX}
-                  onChange={(e) => handleInputChange('socialX', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="socialTiktok">TikTok</Label>
-                <Input
-                  id="socialTiktok"
-                  placeholder="@eventname"
-                  value={formData.socialTiktok}
-                  onChange={(e) => handleInputChange('socialTiktok', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="socialFacebook">Facebook</Label>
-                <Input
-                  id="socialFacebook"
-                  placeholder="eventname"
-                  value={formData.socialFacebook}
-                  onChange={(e) => handleInputChange('socialFacebook', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="socialLinktree">Linktree</Label>
-                <Input
-                  id="socialLinktree"
-                  placeholder="linktr.ee/eventname"
-                  value={formData.socialLinktree}
-                  onChange={(e) => handleInputChange('socialLinktree', e.target.value)}
-                />
+            <div className="space-y-2">
+              <Label>Social Media Links (Optional)</Label>
+              <div className="space-y-3">
+                {socialMediaLinks.map((link, index) => (
+                  <div key={index} className="flex gap-2 items-end">
+                    <div className="flex-1 space-y-2">
+                      <Label className="text-xs">Platform</Label>
+                      <Select 
+                        value={link.platform} 
+                        onValueChange={(value) => updateSocialMediaLink(index, 'platform', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select platform" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="instagram">Instagram</SelectItem>
+                          <SelectItem value="x">X (Twitter)</SelectItem>
+                          <SelectItem value="tiktok">TikTok</SelectItem>
+                          <SelectItem value="facebook">Facebook</SelectItem>
+                          <SelectItem value="linktree">Linktree</SelectItem>
+                          <SelectItem value="website">Website</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Label className="text-xs">URL</Label>
+                      <Input
+                        type="url"
+                        placeholder="https://..."
+                        value={link.url}
+                        onChange={(e) => updateSocialMediaLink(index, 'url', e.target.value)}
+                      />
+                    </div>
+                    {socialMediaLinks.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeSocialMediaLink(index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addSocialMediaLink}
+                  className="w-full"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Social Media Link
+                </Button>
               </div>
             </div>
           </div>

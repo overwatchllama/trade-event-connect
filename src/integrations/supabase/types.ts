@@ -295,6 +295,41 @@ export type Database = {
           },
         ]
       }
+      event_social_media: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          platform: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          platform: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          platform?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_social_media_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_sponsors: {
         Row: {
           amount: number | null
@@ -361,11 +396,6 @@ export type Database = {
           organizer_id: string
           organizer_name: string
           preferred_contact_method: string | null
-          social_facebook: string | null
-          social_instagram: string | null
-          social_linktree: string | null
-          social_tiktok: string | null
-          social_x: string | null
           sponsor_tiers: Json | null
           state: string
           tables_available: number | null
@@ -397,11 +427,6 @@ export type Database = {
           organizer_id: string
           organizer_name: string
           preferred_contact_method?: string | null
-          social_facebook?: string | null
-          social_instagram?: string | null
-          social_linktree?: string | null
-          social_tiktok?: string | null
-          social_x?: string | null
           sponsor_tiers?: Json | null
           state: string
           tables_available?: number | null
@@ -433,11 +458,6 @@ export type Database = {
           organizer_id?: string
           organizer_name?: string
           preferred_contact_method?: string | null
-          social_facebook?: string | null
-          social_instagram?: string | null
-          social_linktree?: string | null
-          social_tiktok?: string | null
-          social_x?: string | null
           sponsor_tiers?: Json | null
           state?: string
           tables_available?: number | null
