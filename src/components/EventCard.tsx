@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Clock, Crown, Settings, UserCheck, Store } from "lucide-react";
+import { MapPin, Calendar, Clock, Crown, Settings, UserCheck, Store, Share2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -59,6 +59,17 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
 
   const isShowEvent = event.event_type === 'show';
+
+  const handleShareEvent = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const eventUrl = `${window.location.origin}/event/${event.id}`;
+    try {
+      await navigator.clipboard.writeText(eventUrl);
+      toast.success('Event link copied to clipboard!');
+    } catch (err) {
+      toast.error('Failed to copy link. Please try again.');
+    }
+  };
 
   // Check if organizer is a vendor
   useEffect(() => {
@@ -133,9 +144,19 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false }: EventCa
               </Badge>
             )}
           </div>
-          <Badge variant="secondary" className="bg-background/90 text-foreground">
-            ${event.price}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 bg-background/90 hover:bg-background"
+              onClick={handleShareEvent}
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
+            <Badge variant="secondary" className="bg-background/90 text-foreground">
+              ${event.price}
+            </Badge>
+          </div>
         </div>
 
         <div className="p-6">
