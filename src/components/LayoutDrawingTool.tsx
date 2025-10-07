@@ -321,9 +321,9 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
               variant={activeTool === "room" ? "default" : "outline"}
               size="sm"
               onClick={() => handleToolClick("room")}
+              title="Room"
             >
-              <Home className="h-4 w-4 mr-2" />
-              Room
+              <Home className="h-4 w-4" />
             </Button>
             <Button
               variant={activeTool === "wall" ? "default" : "outline"}
