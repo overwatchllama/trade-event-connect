@@ -25,36 +25,22 @@ const SubscriptionTiers = () => {
   const navigate = useNavigate();
   const [isYearly, setIsYearly] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
-  const [accountType, setAccountType] = useState<'event_host' | 'vendor' | 'collector'>('event_host');
+  const [accountType, setAccountType] = useState<'event_host' | 'vendor' | 'collector'>('collector');
 
   const tiers: SubscriptionTier[] = [
     {
-      id: 'event_pro',
-      name: 'Event Pro',
-      icon: Calendar,
-      description: 'Perfect for event organizers',
-      monthlyPrice: 30,
-      yearlyPrice: 330,
+      id: 'collector_free',
+      name: 'Collector Free',
+      icon: Users,
+      description: 'For casual collectors',
+      monthlyPrice: 0,
+      yearlyPrice: 0,
       features: [
-        'Advanced event analytics',
-        'Priority support',
-        'Custom branding options',
-        'Vendor management tools'
-      ]
-    },
-    {
-      id: 'vendor_pro',
-      name: 'Vendor Pro', 
-      icon: Store,
-      description: 'Ideal for professional vendors',
-      monthlyPrice: 20,
-      yearlyPrice: 220,
-      features: [
-        'Enhanced vendor profile',
-        'Inventory management',
-        'Sales analytics',
-        'Pre-verified booking profile',
-        'Customer relationship tools'
+        'Browse all events',
+        'Follow up to 5 vendors',
+        'Rate events & vendors',
+        'Basic notifications',
+        'Standard search'
       ]
     },
     {
@@ -65,12 +51,81 @@ const SubscriptionTiers = () => {
       monthlyPrice: 5,
       yearlyPrice: 55,
       features: [
-        'Advanced collection tracking',
-        'Price alerts',
-        'Market insights',
-        'Premium search filters',
-        'Collection valuation tools'
+        'Early event access',
+        'Follow unlimited vendors',
+        'Priority notifications',
+        'Advanced search filters',
+        'Exclusive deals',
+        'Save favorite events',
+        'Community badges'
+      ],
+      popular: true
+    },
+    {
+      id: 'vendor_free',
+      name: 'Vendor Free',
+      icon: Store,
+      description: 'Start selling at events',
+      monthlyPrice: 0,
+      yearlyPrice: 0,
+      features: [
+        'Browse available events',
+        'Book tables (with fees)',
+        'Basic vendor profile',
+        'Connect 2 social links',
+        'Standard ratings'
       ]
+    },
+    {
+      id: 'vendor_pro',
+      name: 'Vendor Pro', 
+      icon: Store,
+      description: 'Ideal for professional vendors',
+      monthlyPrice: 20,
+      yearlyPrice: 220,
+      features: [
+        'Priority event access',
+        'Waived booking fees',
+        'Premium vendor profile',
+        'Unlimited social links',
+        'Featured in searches',
+        'Advanced analytics',
+        'Custom branding'
+      ],
+      popular: true
+    },
+    {
+      id: 'event_free',
+      name: 'Event Host Free',
+      icon: Calendar,
+      description: 'Start hosting events',
+      monthlyPrice: 20,
+      yearlyPrice: 240,
+      features: [
+        'List events for $20',
+        'Basic vendor management',
+        'Standard table pricing',
+        'Basic event page',
+        '$1 platform fee per table'
+      ]
+    },
+    {
+      id: 'event_pro',
+      name: 'Event Host Pro',
+      icon: Calendar,
+      description: 'Perfect for event organizers',
+      monthlyPrice: 30,
+      yearlyPrice: 330,
+      features: [
+        'List unlimited events',
+        'Advanced vendor management',
+        'Custom table pricing & layouts',
+        'Premium event pages',
+        'No platform fees',
+        'Priority support',
+        'Analytics dashboard'
+      ],
+      popular: true
     }
   ];
 
@@ -130,12 +185,12 @@ const SubscriptionTiers = () => {
           {/* Account Type Selector */}
           <div className="flex items-center justify-center gap-2 mb-8">
             <Button
-              variant={accountType === 'event_host' ? 'default' : 'outline'}
-              onClick={() => setAccountType('event_host')}
+              variant={accountType === 'collector' ? 'default' : 'outline'}
+              onClick={() => setAccountType('collector')}
               className="min-w-[120px]"
             >
-              <Calendar className="w-4 h-4 mr-2" />
-              Event Host
+              <Users className="w-4 h-4 mr-2" />
+              Collector
             </Button>
             <Button
               variant={accountType === 'vendor' ? 'default' : 'outline'}
@@ -146,12 +201,12 @@ const SubscriptionTiers = () => {
               Vendor
             </Button>
             <Button
-              variant={accountType === 'collector' ? 'default' : 'outline'}
-              onClick={() => setAccountType('collector')}
+              variant={accountType === 'event_host' ? 'default' : 'outline'}
+              onClick={() => setAccountType('event_host')}
               className="min-w-[120px]"
             >
-              <Users className="w-4 h-4 mr-2" />
-              Collector
+              <Calendar className="w-4 h-4 mr-2" />
+              Event Host
             </Button>
           </div>
           
@@ -174,12 +229,12 @@ const SubscriptionTiers = () => {
         </div>
 
         <div className="flex justify-center">
-          <div className="grid md:grid-cols-1 gap-8 max-w-md w-full">
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl w-full">
           {tiers.filter(tier => {
-            if (accountType === 'event_host') return tier.id === 'event_pro';
-            if (accountType === 'vendor') return tier.id === 'vendor_pro';
-            if (accountType === 'collector') return tier.id === 'collector_pro';
-            return true;
+            if (accountType === 'event_host') return tier.id.startsWith('event_');
+            if (accountType === 'vendor') return tier.id.startsWith('vendor_');
+            if (accountType === 'collector') return tier.id.startsWith('collector_');
+            return false;
           }).map((tier) => {
             const Icon = tier.icon;
             const price = getPrice(tier);
@@ -235,9 +290,9 @@ const SubscriptionTiers = () => {
                   size="lg" 
                   className="w-full"
                   onClick={() => handleSubscribe(tier)}
-                  disabled={loading === tier.id}
+                  disabled={loading === tier.id || tier.monthlyPrice === 0}
                 >
-                  {loading === tier.id ? 'Processing...' : `Subscribe to ${tier.name}`}
+                  {tier.monthlyPrice === 0 ? 'Get Started Free' : loading === tier.id ? 'Processing...' : `Subscribe to ${tier.name}`}
                 </Button>
               </Card>
             );
