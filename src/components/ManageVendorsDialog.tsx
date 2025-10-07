@@ -164,6 +164,29 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
     }
   };
 
+  const sendInvoice = async (application: VendorApplication) => {
+    try {
+      const { error } = await supabase.functions.invoke('send-vendor-invoice', {
+        body: {
+          vendorEmail: application.vendor.business_email,
+          vendorName: application.vendor.business_name,
+          eventTitle: eventTitle,
+          tableCount: application.approved_tables || application.requested_tables,
+          pricePerTable: application.event_table_price || 0,
+          totalAmount: (application.event_table_price || 0) * (application.approved_tables || application.requested_tables),
+          applicationId: application.id,
+        }
+      });
+
+      if (error) throw error;
+      
+      toast.success('Invoice sent successfully!');
+    } catch (error) {
+      console.error('Error sending invoice:', error);
+      toast.error('Failed to send invoice');
+    }
+  };
+
   const updateApprovedTables = async (applicationId: string, tables: number) => {
     try {
       const { error } = await supabase
@@ -242,6 +265,16 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
 
   const filterApplications = (status: string) => {
     if (status === 'all') return applications;
+    if (status === 'payment_due') {
+      return applications.filter(app => 
+        app.application_status === 'approved' && app.payment_status === 'unpaid'
+      );
+    }
+    if (status === 'approved_paid') {
+      return applications.filter(app => 
+        app.application_status === 'approved' && app.payment_status === 'paid'
+      );
+    }
     return applications.filter(app => app.application_status === status);
   };
 
@@ -377,6 +410,16 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
         
         {application.application_status === 'approved' && (
           <div className="flex gap-2 flex-wrap">
+            {application.payment_status === 'unpaid' && (
+              <Button
+                size="sm"
+                variant="default"
+                onClick={() => sendInvoice(application)}
+              >
+                <DollarSign className="w-3 h-3 mr-1" />
+                Send Invoice
+              </Button>
+            )}
             <div className="space-y-1">
               <Label className="text-xs">Tables</Label>
               <Select
@@ -441,7 +484,7 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
         </DialogHeader>
 
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="all">All ({applications.length})</TabsTrigger>
             <TabsTrigger value="pending">
               Pending ({filterApplications('pending').length})
@@ -449,8 +492,11 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
             <TabsTrigger value="waitlist">
               Waitlist ({filterApplications('waitlist').length})
             </TabsTrigger>
-            <TabsTrigger value="approved">
-              Approved ({filterApplications('approved').length})
+            <TabsTrigger value="payment_due">
+              Payment Due ({filterApplications('payment_due').length})
+            </TabsTrigger>
+            <TabsTrigger value="approved_paid">
+              Approved - Paid ({filterApplications('approved_paid').length})
             </TabsTrigger>
             <TabsTrigger value="rejected">
               Rejected ({filterApplications('rejected').length})
@@ -487,14 +533,28 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
             )}
           </TabsContent>
 
-          <TabsContent value="approved" className="space-y-4">
-            {filterApplications('approved').length === 0 ? (
+          <TabsContent value="payment_due" className="space-y-4">
+            {filterApplications('payment_due').length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No approved applications
+                No pending payments
               </div>
             ) : (
               <div className="space-y-4">
-                {filterApplications('approved').map((application) => (
+                {filterApplications('payment_due').map((application) => (
+                  <VendorApplicationCard key={application.id} application={application} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="approved_paid" className="space-y-4">
+            {filterApplications('approved_paid').length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No paid vendors yet
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filterApplications('approved_paid').map((application) => (
                   <VendorApplicationCard key={application.id} application={application} />
                 ))}
               </div>
