@@ -655,6 +655,8 @@ export type Database = {
       }
       sponsors: {
         Row: {
+          banner_url: string | null
+          company_address: string | null
           company_description: string | null
           company_name: string
           contact_email: string | null
@@ -662,11 +664,21 @@ export type Database = {
           created_at: string
           id: string
           logo_url: string | null
+          rating: number | null
+          social_facebook: string | null
+          social_instagram: string | null
+          social_linkedin: string | null
+          social_twitter: string | null
+          specialties: string[] | null
+          total_reviews: number | null
           updated_at: string
           user_id: string
+          verified: boolean | null
           website_url: string | null
         }
         Insert: {
+          banner_url?: string | null
+          company_address?: string | null
           company_description?: string | null
           company_name: string
           contact_email?: string | null
@@ -674,11 +686,21 @@ export type Database = {
           created_at?: string
           id?: string
           logo_url?: string | null
+          rating?: number | null
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin?: string | null
+          social_twitter?: string | null
+          specialties?: string[] | null
+          total_reviews?: number | null
           updated_at?: string
           user_id: string
+          verified?: boolean | null
           website_url?: string | null
         }
         Update: {
+          banner_url?: string | null
+          company_address?: string | null
           company_description?: string | null
           company_name?: string
           contact_email?: string | null
@@ -686,8 +708,16 @@ export type Database = {
           created_at?: string
           id?: string
           logo_url?: string | null
+          rating?: number | null
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linkedin?: string | null
+          social_twitter?: string | null
+          specialties?: string[] | null
+          total_reviews?: number | null
           updated_at?: string
           user_id?: string
+          verified?: boolean | null
           website_url?: string | null
         }
         Relationships: []
