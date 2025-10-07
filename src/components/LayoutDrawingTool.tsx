@@ -53,6 +53,35 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       backgroundColor: "#ffffff",
     });
 
+    // Keep rooms at the back even when selected or moved
+    canvas.on('selection:created', (e) => {
+      const obj = e.selected?.[0] as any;
+      if (obj && obj.objectType === 'room') {
+        canvas.sendObjectToBack(obj);
+      }
+    });
+
+    canvas.on('selection:updated', (e) => {
+      const obj = e.selected?.[0] as any;
+      if (obj && obj.objectType === 'room') {
+        canvas.sendObjectToBack(obj);
+      }
+    });
+
+    canvas.on('object:moving', (e) => {
+      const obj = e.target as any;
+      if (obj && obj.objectType === 'room') {
+        canvas.sendObjectToBack(obj);
+      }
+    });
+
+    canvas.on('object:modified', (e) => {
+      const obj = e.target as any;
+      if (obj && obj.objectType === 'room') {
+        canvas.sendObjectToBack(obj);
+      }
+    });
+
     // Load initial layout if provided
     if (initialLayout) {
       canvas.loadFromJSON(initialLayout, () => {
