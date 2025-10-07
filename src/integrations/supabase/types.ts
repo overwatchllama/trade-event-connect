@@ -345,6 +345,7 @@ export type Database = {
           address: string
           card_types: string[]
           city: string
+          contact_email: string | null
           created_at: string
           date: string
           description: string | null
@@ -358,6 +359,11 @@ export type Database = {
           max_attendees: number | null
           organizer_id: string
           organizer_name: string
+          social_facebook: string | null
+          social_instagram: string | null
+          social_linktree: string | null
+          social_tiktok: string | null
+          social_x: string | null
           sponsor_tiers: Json | null
           state: string
           tables_available: number | null
@@ -373,6 +379,7 @@ export type Database = {
           address: string
           card_types?: string[]
           city: string
+          contact_email?: string | null
           created_at?: string
           date: string
           description?: string | null
@@ -386,6 +393,11 @@ export type Database = {
           max_attendees?: number | null
           organizer_id: string
           organizer_name: string
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linktree?: string | null
+          social_tiktok?: string | null
+          social_x?: string | null
           sponsor_tiers?: Json | null
           state: string
           tables_available?: number | null
@@ -401,6 +413,7 @@ export type Database = {
           address?: string
           card_types?: string[]
           city?: string
+          contact_email?: string | null
           created_at?: string
           date?: string
           description?: string | null
@@ -414,6 +427,11 @@ export type Database = {
           max_attendees?: number | null
           organizer_id?: string
           organizer_name?: string
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_linktree?: string | null
+          social_tiktok?: string | null
+          social_x?: string | null
           sponsor_tiers?: Json | null
           state?: string
           tables_available?: number | null

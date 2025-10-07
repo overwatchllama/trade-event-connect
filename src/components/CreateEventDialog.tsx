@@ -52,7 +52,13 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
     maxAttendees: '',
     entryFee: '',
     vendorTablePrice: '',
-    totalTables: ''
+    totalTables: '',
+    contactEmail: '',
+    socialInstagram: '',
+    socialX: '',
+    socialTiktok: '',
+    socialLinktree: '',
+    socialFacebook: ''
   });
 
   const [isMultiDay, setIsMultiDay] = useState(false);
@@ -189,7 +195,13 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
           flyer_url: flyerUrl,
           sponsor_tiers: sponsorTiers.some(t => t.tier && t.cost) 
             ? JSON.stringify(sponsorTiers.filter(t => t.tier && t.cost)) 
-            : null
+            : null,
+          contact_email: formData.contactEmail || null,
+          social_instagram: formData.socialInstagram || null,
+          social_x: formData.socialX || null,
+          social_tiktok: formData.socialTiktok || null,
+          social_linktree: formData.socialLinktree || null,
+          social_facebook: formData.socialFacebook || null
         })
         .select()
         .single();
@@ -234,7 +246,13 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
         maxAttendees: '',
         entryFee: '',
         vendorTablePrice: '',
-        totalTables: ''
+        totalTables: '',
+        contactEmail: '',
+        socialInstagram: '',
+        socialX: '',
+        socialTiktok: '',
+        socialLinktree: '',
+        socialFacebook: ''
       });
       setSelectedCardTypes([]);
       setIsMultiDay(false);
@@ -585,6 +603,70 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
                   <Plus className="w-4 h-4 mr-1" />
                   Add Sponsor Tier
                 </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact & Social Media */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Contact & Social Media</h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="contactEmail">Contact Email</Label>
+              <Input
+                id="contactEmail"
+                type="email"
+                placeholder="event@example.com"
+                value={formData.contactEmail}
+                onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="socialInstagram">Instagram</Label>
+                <Input
+                  id="socialInstagram"
+                  placeholder="@eventname"
+                  value={formData.socialInstagram}
+                  onChange={(e) => handleInputChange('socialInstagram', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="socialX">X (Twitter)</Label>
+                <Input
+                  id="socialX"
+                  placeholder="@eventname"
+                  value={formData.socialX}
+                  onChange={(e) => handleInputChange('socialX', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="socialTiktok">TikTok</Label>
+                <Input
+                  id="socialTiktok"
+                  placeholder="@eventname"
+                  value={formData.socialTiktok}
+                  onChange={(e) => handleInputChange('socialTiktok', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="socialFacebook">Facebook</Label>
+                <Input
+                  id="socialFacebook"
+                  placeholder="eventname"
+                  value={formData.socialFacebook}
+                  onChange={(e) => handleInputChange('socialFacebook', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="socialLinktree">Linktree</Label>
+                <Input
+                  id="socialLinktree"
+                  placeholder="linktr.ee/eventname"
+                  value={formData.socialLinktree}
+                  onChange={(e) => handleInputChange('socialLinktree', e.target.value)}
+                />
               </div>
             </div>
           </div>
