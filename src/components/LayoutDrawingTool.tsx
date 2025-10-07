@@ -17,9 +17,32 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
   const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
   const [activeTool, setActiveTool] = useState<"select" | "room" | "wall" | "restroom" | "table" | "door" | "counter" | "stage" | "food" | "dining">("select");
   const [saving, setSaving] = useState(false);
+  const tableCountRef = useRef(0);
 
   const SNAP_THRESHOLD = 10;
   const WALL_THICKNESS = 3;
+
+  const getNextTableNumber = () => {
+    if (!fabricCanvas) return 1;
+    
+    // Count existing tables
+    const objects = fabricCanvas.getObjects();
+    let maxTableNum = 0;
+    
+    objects.forEach((obj: any) => {
+      if (obj.type === 'group') {
+        const textObj = obj._objects?.find((o: any) => o.type === 'text');
+        if (textObj && textObj.text && textObj.text.startsWith('Table ')) {
+          const num = parseInt(textObj.text.replace('Table ', ''));
+          if (!isNaN(num) && num > maxTableNum) {
+            maxTableNum = num;
+          }
+        }
+      }
+    });
+    
+    return maxTableNum + 1;
+  };
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -153,6 +176,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       fabricCanvas.add(group);
       fabricCanvas.setActiveObject(group);
     } else if (tool === "table") {
+      const tableNumber = getNextTableNumber();
       const rect = new Rect({
         width: 80,
         height: 50,
@@ -162,7 +186,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
         originX: 'center',
         originY: 'center',
       });
-      const group = createLabeledObject(rect, "Table");
+      const group = createLabeledObject(rect, `Table ${tableNumber}`);
       fabricCanvas.add(group);
       fabricCanvas.setActiveObject(group);
     } else if (tool === "door") {
