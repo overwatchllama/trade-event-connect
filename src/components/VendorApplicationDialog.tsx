@@ -61,14 +61,24 @@ export const VendorApplicationDialog = ({
   };
 
   const handleApply = async () => {
+    console.log("=== VENDOR APPLICATION START ===");
+    console.log("User:", user?.id);
+    console.log("Event ID:", eventId);
+    console.log("Vendor Table Price:", vendorTablePrice);
+
     if (!user) {
+      console.log("No user found - redirecting to auth");
       toast.error("Please sign in to apply");
       navigate("/auth");
       return;
     }
 
     // Check if user has vendor role
-    if (!hasRole('vendor')) {
+    const isVendor = hasRole('vendor');
+    console.log("Has vendor role:", isVendor);
+    
+    if (!isVendor) {
+      console.log("User does not have vendor role - redirecting to profile");
       toast.error("You need the vendor role to apply. Please request it from your profile.");
       navigate("/profile");
       return;
@@ -78,9 +88,12 @@ export const VendorApplicationDialog = ({
 
     try {
       // Check if user has a vendor profile
+      console.log("Checking vendor profile...");
       const vendorProfile = await checkVendorProfile();
+      console.log("Vendor profile:", vendorProfile);
 
       if (!vendorProfile) {
+        console.log("No vendor profile found - redirecting to create profile");
         toast.error("You need a vendor profile to apply. Please create one first.");
         navigate("/my-vendor-profile");
         onOpenChange(false);
@@ -88,6 +101,7 @@ export const VendorApplicationDialog = ({
       }
 
       // Check if already applied
+      console.log("Checking for existing application...");
       const { data: existingApplication, error: checkError } = await supabase
         .from("vendor_applications")
         .select("id")
@@ -95,9 +109,12 @@ export const VendorApplicationDialog = ({
         .eq("event_id", eventId)
         .maybeSingle();
 
+      console.log("Existing application check:", { existingApplication, checkError });
+
       if (checkError) throw checkError;
 
       if (existingApplication) {
+        console.log("User has already applied to this event");
         toast.error("You have already applied to this event");
         onOpenChange(false);
         return;
@@ -105,6 +122,7 @@ export const VendorApplicationDialog = ({
 
       // If there's a fee, redirect to payment
       if (vendorTablePrice > 0) {
+        console.log("Event has vendor table fee - invoking payment function");
         const { data, error } = await supabase.functions.invoke("vendor-registration-payment", {
           body: {
             eventId,
@@ -112,28 +130,35 @@ export const VendorApplicationDialog = ({
           },
         });
 
+        console.log("Payment function response:", { data, error });
+
         if (error) throw error;
 
         if (data.requiresPayment && data.checkoutUrl) {
+          console.log("Redirecting to checkout:", data.checkoutUrl);
           window.location.href = data.checkoutUrl;
         } else if (data.message) {
           // Pro user - create application directly
+          console.log("Pro user detected - creating application directly");
           await createApplication(vendorProfile.id);
         }
       } else {
         // Free event - create application directly
+        console.log("Free event - creating application directly");
         await createApplication(vendorProfile.id);
       }
     } catch (error: any) {
-      console.error("Error applying:", error);
+      console.error("ERROR in handleApply:", error);
       toast.error(error.message || "Failed to submit application");
     } finally {
       setLoading(false);
+      console.log("=== VENDOR APPLICATION END ===");
     }
   };
 
   const createApplication = async (vendorId: string) => {
-    const { error } = await supabase.from("vendor_applications").insert({
+    console.log("=== CREATE APPLICATION ===");
+    console.log("Creating application with data:", {
       vendor_id: vendorId,
       user_id: user!.id,
       event_id: eventId,
@@ -142,8 +167,23 @@ export const VendorApplicationDialog = ({
       payment_status: vendorTablePrice > 0 ? "unpaid" : "paid",
     });
 
-    if (error) throw error;
+    const { data, error } = await supabase.from("vendor_applications").insert({
+      vendor_id: vendorId,
+      user_id: user!.id,
+      event_id: eventId,
+      notes: notes || null,
+      application_status: "pending",
+      payment_status: vendorTablePrice > 0 ? "unpaid" : "paid",
+    }).select();
 
+    console.log("Insert result:", { data, error });
+
+    if (error) {
+      console.error("Insert error:", error);
+      throw error;
+    }
+
+    console.log("Application created successfully!");
     toast.success("Application submitted successfully!");
     onOpenChange(false);
     setNotes("");
