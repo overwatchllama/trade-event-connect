@@ -47,7 +47,7 @@ const Hero = () => {
               <h1 className="text-4xl md:text-5xl xl:text-6xl font-bold text-foreground leading-tight">
                 The Ultimate
                 <span className="bg-gradient-primary bg-clip-text text-transparent"> Trading Card</span>
-                <br />Event Marketplace
+                <br />Events Page
               </h1>
               <p className="text-xl text-muted-foreground max-w-xl">
                 Connect event organizers, vendors, and collectors in one powerful platform. 
