@@ -283,19 +283,6 @@ const EventDetails = () => {
                   <EventVendors eventId={event.id} maxDisplay={10} />
                 </div>
 
-                {event.layout_json && (
-                  <>
-                    <Separator />
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Floor Plan Layout</h3>
-                      <LayoutDrawingTool
-                        initialLayout={event.layout_json}
-                        readOnly={true}
-                      />
-                    </div>
-                  </>
-                )}
-
                 <Separator />
                 <EventSponsors eventId={event.id} />
               </CardContent>
