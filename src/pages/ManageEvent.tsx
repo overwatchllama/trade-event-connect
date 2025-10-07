@@ -15,6 +15,7 @@ import { ManageEventSponsors } from '@/components/ManageEventSponsors';
 import ManageVendorsDialog from '@/components/ManageVendorsDialog';
 import ManageSponsorsDialog from '@/components/ManageSponsorsDialog';
 import { EventFileManager } from '@/components/EventFileManager';
+import EventDayDialog from '@/components/EventDayDialog';
 
 const ManageEvent = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +29,7 @@ const ManageEvent = () => {
   const [flyerFile, setFlyerFile] = useState<File | null>(null);
   const [vendorsDialogOpen, setVendorsDialogOpen] = useState(false);
   const [sponsorsDialogOpen, setSponsorsDialogOpen] = useState(false);
+  const [eventDayDialogOpen, setEventDayDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -235,9 +237,15 @@ const ManageEvent = () => {
                   Review and manage vendor applications for your event.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex gap-3">
                 <Button onClick={() => setVendorsDialogOpen(true)}>
                   Manage Vendor Applications
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setEventDayDialogOpen(true)}
+                >
+                  Event Day Check-in
                 </Button>
               </CardContent>
             </Card>
@@ -276,6 +284,14 @@ const ManageEvent = () => {
         <ManageSponsorsDialog
           open={sponsorsDialogOpen}
           onOpenChange={setSponsorsDialogOpen}
+          eventId={event.id}
+          eventTitle={event.title}
+        />
+
+        {/* Event Day Dialog */}
+        <EventDayDialog
+          open={eventDayDialogOpen}
+          onOpenChange={setEventDayDialogOpen}
           eventId={event.id}
           eventTitle={event.title}
         />

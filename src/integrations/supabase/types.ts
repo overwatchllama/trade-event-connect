@@ -904,6 +904,8 @@ export type Database = {
           application_status: Database["public"]["Enums"]["vendor_application_status"]
           approved_date: string | null
           approved_tables: number | null
+          checked_in: boolean | null
+          checked_in_at: string | null
           created_at: string
           event_id: string
           id: string
@@ -922,6 +924,8 @@ export type Database = {
           application_status?: Database["public"]["Enums"]["vendor_application_status"]
           approved_date?: string | null
           approved_tables?: number | null
+          checked_in?: boolean | null
+          checked_in_at?: string | null
           created_at?: string
           event_id: string
           id?: string
@@ -940,6 +944,8 @@ export type Database = {
           application_status?: Database["public"]["Enums"]["vendor_application_status"]
           approved_date?: string | null
           approved_tables?: number | null
+          checked_in?: boolean | null
+          checked_in_at?: string | null
           created_at?: string
           event_id?: string
           id?: string
