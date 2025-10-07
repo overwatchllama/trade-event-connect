@@ -53,39 +53,6 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       backgroundColor: "#ffffff",
     });
 
-    // Enable snapping
-    canvas.on('object:moving', (e) => {
-      const obj = e.target;
-      if (!obj) return;
-
-      const snapThreshold = SNAP_THRESHOLD;
-      const objects = canvas.getObjects();
-
-      objects.forEach((target) => {
-        if (target === obj) return;
-
-        const objBounds = obj.getBoundingRect();
-        const targetBounds = target.getBoundingRect();
-
-        // Snap left to right
-        if (Math.abs(objBounds.left + objBounds.width - targetBounds.left) < snapThreshold) {
-          obj.set({ left: obj.left! + (targetBounds.left - (objBounds.left + objBounds.width)) });
-        }
-        // Snap right to left
-        if (Math.abs(objBounds.left - (targetBounds.left + targetBounds.width)) < snapThreshold) {
-          obj.set({ left: obj.left! + ((targetBounds.left + targetBounds.width) - objBounds.left) });
-        }
-        // Snap top to bottom
-        if (Math.abs(objBounds.top + objBounds.height - targetBounds.top) < snapThreshold) {
-          obj.set({ top: obj.top! + (targetBounds.top - (objBounds.top + objBounds.height)) });
-        }
-        // Snap bottom to top
-        if (Math.abs(objBounds.top - (targetBounds.top + targetBounds.height)) < snapThreshold) {
-          obj.set({ top: obj.top! + ((targetBounds.top + targetBounds.height) - objBounds.top) });
-        }
-      });
-    });
-
     // Load initial layout if provided
     if (initialLayout) {
       canvas.loadFromJSON(initialLayout, () => {
