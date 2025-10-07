@@ -463,11 +463,11 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
         </Card>
       )}
 
-      <Card className="p-4">
+      <div className={readOnly ? "" : "p-4"}>
         <div className="border border-border rounded-lg overflow-hidden bg-white">
           <canvas ref={canvasRef} />
         </div>
-      </Card>
+      </div>
     </div>
   );
 };
