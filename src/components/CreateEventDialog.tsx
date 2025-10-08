@@ -408,16 +408,6 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
               <Label htmlFor="multi-day">Multi-day event</Label>
             </div>
 
-            {/* No online ticket sales toggle */}
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="no-online-tickets"
-                checked={noOnlineTicketSales}
-                onCheckedChange={setNoOnlineTicketSales}
-              />
-              <Label htmlFor="no-online-tickets">No online ticket sales</Label>
-            </div>
-
             {/* Event Days */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -684,6 +674,16 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
                   onChange={(e) => handleInputChange('entryFee', e.target.value)}
                 />
               </div>
+            </div>
+
+            {/* No online ticket sales toggle */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="no-online-tickets"
+                checked={noOnlineTicketSales}
+                onCheckedChange={setNoOnlineTicketSales}
+              />
+              <Label htmlFor="no-online-tickets">No online ticket sales</Label>
             </div>
 
             <div className="space-y-2">
