@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Upload, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,6 +28,8 @@ const ManageEvent = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [flyerFile, setFlyerFile] = useState<File | null>(null);
+  const [vendorNotes, setVendorNotes] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
   const [vendorsDialogOpen, setVendorsDialogOpen] = useState(false);
   const [sponsorsDialogOpen, setSponsorsDialogOpen] = useState(false);
   const [eventDayDialogOpen, setEventDayDialogOpen] = useState(false);
@@ -57,6 +60,7 @@ const ManageEvent = () => {
       }
 
       setEvent(data);
+      setVendorNotes(data.vendor_notes || '');
     } catch (error) {
       console.error('Error fetching event:', error);
       toast.error('Failed to load event');
@@ -117,6 +121,28 @@ const ManageEvent = () => {
     setEvent({ ...event, layout_json: layoutJson });
   };
 
+  const handleSaveVendorNotes = async () => {
+    if (!event) return;
+
+    setSavingNotes(true);
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ vendor_notes: vendorNotes })
+        .eq('id', event.id);
+
+      if (error) throw error;
+
+      setEvent({ ...event, vendor_notes: vendorNotes });
+      toast.success('Vendor notes saved successfully!');
+    } catch (error) {
+      console.error('Error saving vendor notes:', error);
+      toast.error('Failed to save vendor notes');
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -154,9 +180,10 @@ const ManageEvent = () => {
         </div>
 
         <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
             <TabsTrigger value="flyer">Event Flyer</TabsTrigger>
             <TabsTrigger value="layout">Floor Plan</TabsTrigger>
+            <TabsTrigger value="vendor-notes">Vendor Notes</TabsTrigger>
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
             <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
@@ -225,6 +252,43 @@ const ManageEvent = () => {
                   initialLayout={event.layout_json}
                   onSave={handleSaveLayout}
                 />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="vendor-notes" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Event-Wide Vendor Instructions</CardTitle>
+                <CardDescription>
+                  Add important notes that all vendors will see when viewing this event. Include details like start times, loading bay information, setup instructions, etc.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="vendorNotes">Vendor Instructions</Label>
+                  <Textarea
+                    id="vendorNotes"
+                    placeholder="Example: Vendor load-in begins at 7:00 AM via the west entrance. All vendors must be set up by 9:00 AM. Loading bay is located at the rear of the building."
+                    value={vendorNotes}
+                    onChange={(e) => setVendorNotes(e.target.value)}
+                    rows={8}
+                    className="min-h-[200px]"
+                  />
+                </div>
+                <Button
+                  onClick={handleSaveVendorNotes}
+                  disabled={savingNotes}
+                >
+                  {savingNotes ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Vendor Instructions'
+                  )}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

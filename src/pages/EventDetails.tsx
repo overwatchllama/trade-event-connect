@@ -547,6 +547,18 @@ const EventDetails = () => {
                     </div>
                   )}
 
+                  {event.vendor_notes && (
+                    <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                        <Store className="w-4 h-4" />
+                        Important Vendor Information
+                      </h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {event.vendor_notes}
+                      </p>
+                    </div>
+                  )}
+
                   <Button
                     className="w-full"
                     variant="outline"

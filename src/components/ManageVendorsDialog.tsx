@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, XCircle, Clock, DollarSign, User, Star, Calendar, History, Mail, Bell } from "lucide-react";
+import { CheckCircle, XCircle, Clock, DollarSign, User, Star, Calendar, History, Mail, Bell, Upload, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -38,6 +38,7 @@ interface VendorApplication {
   requested_tables: number;
   approved_tables?: number;
   notes?: string;
+  file_url?: string;
   vendor: {
     id: string;
     business_name: string;
@@ -61,6 +62,7 @@ interface ManageVendorsDialogProps {
 const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: ManageVendorsDialogProps) => {
   const [applications, setApplications] = useState<VendorApplication[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<{ [key: string]: boolean }>({});
 
   const fetchApplications = async () => {
     setLoading(true);
@@ -264,24 +266,49 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
     try {
       const { error } = await supabase
         .from('vendor_applications')
-        .update({
-          notes: notes || null
-        })
+        .update({ notes })
         .eq('id', applicationId);
 
       if (error) throw error;
-      
-      // Update local state instead of fetching all applications
-      setApplications(prev => prev.map(app => 
-        app.id === applicationId 
-          ? { ...app, notes: notes || null }
-          : app
-      ));
-      
-      toast.success('Notes updated');
+
+      toast.success('Notes updated successfully');
+      fetchApplications();
     } catch (error) {
       console.error('Error updating notes:', error);
       toast.error('Failed to update notes');
+    }
+  };
+
+  const handleFileUpload = async (applicationId: string, file: File) => {
+    setUploadingFiles(prev => ({ ...prev, [applicationId]: true }));
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${eventId}/${applicationId}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('event-files')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('event-files')
+        .getPublicUrl(fileName);
+
+      const { error: updateError } = await supabase
+        .from('vendor_applications')
+        .update({ file_url: publicUrl })
+        .eq('id', applicationId);
+
+      if (updateError) throw updateError;
+
+      toast.success('File uploaded successfully');
+      fetchApplications();
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error('Failed to upload file');
+    } finally {
+      setUploadingFiles(prev => ({ ...prev, [applicationId]: false }));
     }
   };
 
@@ -573,6 +600,40 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
                 rows={2}
                 className="text-sm"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-medium flex items-center gap-2">
+                <Upload className="w-3 h-3" />
+                Upload Payment Receipt / Documents
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(application.id, file);
+                  }}
+                  disabled={uploadingFiles[application.id]}
+                  className="flex-1 text-sm"
+                />
+                {application.file_url && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => window.open(application.file_url, '_blank')}
+                    title="View uploaded file"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+              {uploadingFiles[application.id] && (
+                <p className="text-xs text-muted-foreground">Uploading file...</p>
+              )}
+              {application.file_url && !uploadingFiles[application.id] && (
+                <p className="text-xs text-green-600">✓ File uploaded</p>
+              )}
             </div>
           </div>
         )}

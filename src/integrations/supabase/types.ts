@@ -408,6 +408,7 @@ export type Database = {
           title: string
           total_tables: number | null
           updated_at: string
+          vendor_notes: string | null
           vendor_table_price: number | null
           venue: string
           venue_id: string | null
@@ -442,6 +443,7 @@ export type Database = {
           title: string
           total_tables?: number | null
           updated_at?: string
+          vendor_notes?: string | null
           vendor_table_price?: number | null
           venue: string
           venue_id?: string | null
@@ -476,6 +478,7 @@ export type Database = {
           title?: string
           total_tables?: number | null
           updated_at?: string
+          vendor_notes?: string | null
           vendor_table_price?: number | null
           venue?: string
           venue_id?: string | null
@@ -920,6 +923,7 @@ export type Database = {
           checked_in_at: string | null
           created_at: string
           event_id: string
+          file_url: string | null
           id: string
           notes: string | null
           payment_date: string | null
@@ -940,6 +944,7 @@ export type Database = {
           checked_in_at?: string | null
           created_at?: string
           event_id: string
+          file_url?: string | null
           id?: string
           notes?: string | null
           payment_date?: string | null
@@ -960,6 +965,7 @@ export type Database = {
           checked_in_at?: string | null
           created_at?: string
           event_id?: string
+          file_url?: string | null
           id?: string
           notes?: string | null
           payment_date?: string | null
