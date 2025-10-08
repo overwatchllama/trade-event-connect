@@ -69,6 +69,8 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
   const [sponsorTiers, setSponsorTiers] = useState([
     { tier: '', cost: '' }
   ]);
+  const [sponsorTierSlots, setSponsorTierSlots] = useState('');
+  const [unlimitedSponsorSlots, setUnlimitedSponsorSlots] = useState(false);
   const [socialMediaLinks, setSocialMediaLinks] = useState([
     { platform: '', url: '' }
   ]);
@@ -118,6 +120,8 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
       setNoOnlineTicketSales(event.no_online_ticket_sales || false);
       setFlyerPreview(event.flyer_url || null);
       setFloorPlanPreview(event.floor_plan_url || null);
+      setSponsorTierSlots(event.sponsor_tier_slots?.toString() || '');
+      setUnlimitedSponsorSlots(event.sponsor_tier_slots === null && event.sponsor_tiers !== null);
 
       // Parse sponsor tiers from JSON
       if (event.sponsor_tiers) {
@@ -342,6 +346,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
           sponsor_tiers: sponsorTiers.some(t => t.tier && t.cost)
             ? JSON.stringify(sponsorTiers.filter(t => t.tier && t.cost)) 
             : null,
+          sponsor_tier_slots: unlimitedSponsorSlots ? null : (sponsorTierSlots ? parseInt(sponsorTierSlots) : null),
           contact_email: formData.contactEmail || null,
           contact_phone: formData.contactPhone || null,
           preferred_contact_method: formData.preferredContactMethod || null
@@ -819,6 +824,34 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                   Add Sponsor Tier
                 </Button>
               </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label htmlFor="sponsorTierSlots">Number of Sponsor Tier Slots</Label>
+              <div className="flex items-center gap-4">
+                <Input
+                  id="sponsorTierSlots"
+                  type="number"
+                  placeholder="e.g., 5"
+                  value={sponsorTierSlots}
+                  onChange={(e) => setSponsorTierSlots(e.target.value)}
+                  disabled={unlimitedSponsorSlots}
+                  className="flex-1"
+                />
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="unlimited-sponsors"
+                    checked={unlimitedSponsorSlots}
+                    onCheckedChange={setUnlimitedSponsorSlots}
+                  />
+                  <Label htmlFor="unlimited-sponsors" className="cursor-pointer">
+                    Unlimited
+                  </Label>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Limit how many sponsors can apply to each tier
+              </p>
             </div>
           </div>
 

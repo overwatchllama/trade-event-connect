@@ -402,6 +402,7 @@ export type Database = {
           organizer_id: string
           organizer_name: string
           preferred_contact_method: string | null
+          sponsor_tier_slots: number | null
           sponsor_tiers: Json | null
           state: string
           tables_available: number | null
@@ -437,6 +438,7 @@ export type Database = {
           organizer_id: string
           organizer_name: string
           preferred_contact_method?: string | null
+          sponsor_tier_slots?: number | null
           sponsor_tiers?: Json | null
           state: string
           tables_available?: number | null
@@ -472,6 +474,7 @@ export type Database = {
           organizer_id?: string
           organizer_name?: string
           preferred_contact_method?: string | null
+          sponsor_tier_slots?: number | null
           sponsor_tiers?: Json | null
           state?: string
           tables_available?: number | null
