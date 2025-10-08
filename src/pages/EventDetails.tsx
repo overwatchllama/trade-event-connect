@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { format, parseISO } from 'date-fns';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -474,7 +475,7 @@ const EventDetails = () => {
                     {eventDays.map((day) => (
                       <div key={day.id} className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">
-                          Day {day.day_number}
+                          {format(parseISO(day.day_date), 'EEEE, MMM d')}
                         </span>
                         <span className="text-lg font-bold">
                           ${day.ticket_cost || 0}
