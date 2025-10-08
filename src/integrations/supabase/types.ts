@@ -926,7 +926,7 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["payment_status"]
           requested_tables: number
           stripe_payment_intent_id: string | null
-          table_number: number | null
+          table_number: string | null
           updated_at: string
           user_id: string
           vendor_id: string
@@ -946,7 +946,7 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"]
           requested_tables?: number
           stripe_payment_intent_id?: string | null
-          table_number?: number | null
+          table_number?: string | null
           updated_at?: string
           user_id: string
           vendor_id: string
@@ -966,7 +966,7 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"]
           requested_tables?: number
           stripe_payment_intent_id?: string | null
-          table_number?: number | null
+          table_number?: string | null
           updated_at?: string
           user_id?: string
           vendor_id?: string

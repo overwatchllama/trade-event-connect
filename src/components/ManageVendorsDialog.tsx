@@ -34,7 +34,7 @@ interface VendorApplication {
   application_date: string;
   approved_date?: string;
   payment_date?: string;
-  table_number?: number;
+  table_number?: string;
   requested_tables: number;
   approved_tables?: number;
   notes?: string;
@@ -210,12 +210,11 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
 
   const updateTableNumber = async (applicationId: string, tableNumber: string) => {
     try {
-      const tableNum = tableNumber ? parseInt(tableNumber) : null;
+      const tableNum = tableNumber.trim() || null;
+      
       const { error } = await supabase
         .from('vendor_applications')
-        .update({
-          table_number: tableNum
-        })
+        .update({ table_number: tableNum })
         .eq('id', applicationId);
 
       if (error) throw error;
@@ -496,14 +495,14 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
                 <Label className="text-xs">Table Number</Label>
                 <Input
                   type="text"
-                  placeholder="e.g., 12, A5"
+                  placeholder="e.g., 12, 13, A5"
                   defaultValue={application.table_number || ''}
                   onBlur={(e) => {
-                    if (e.target.value !== (application.table_number?.toString() || '')) {
+                    if (e.target.value !== (application.table_number || '')) {
                       updateTableNumber(application.id, e.target.value);
                     }
                   }}
-                  className="w-28"
+                  className="flex-1 min-w-[120px]"
                 />
               </div>
               <div className="space-y-1">

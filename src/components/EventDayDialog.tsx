@@ -18,7 +18,7 @@ interface VendorApplication {
   vendor_id: string;
   user_id: string;
   payment_status: 'unpaid' | 'paid' | 'refunded';
-  table_number?: number;
+  table_number?: string;
   approved_tables?: number;
   requested_tables: number;
   checked_in: boolean;

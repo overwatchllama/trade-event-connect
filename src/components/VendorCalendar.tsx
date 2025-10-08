@@ -20,7 +20,7 @@ interface VendorEvent {
   vendor_table_price: number;
   application_status: 'pending' | 'approved' | 'rejected';
   payment_status: 'paid' | 'unpaid' | 'refunded';
-  table_number?: number;
+  table_number?: string;
   application_date: string;
   notes?: string;
 }
