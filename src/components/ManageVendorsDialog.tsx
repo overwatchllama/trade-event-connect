@@ -220,8 +220,14 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
 
       if (error) throw error;
       
+      // Update local state instead of fetching all applications
+      setApplications(prev => prev.map(app => 
+        app.id === applicationId 
+          ? { ...app, table_number: tableNum }
+          : app
+      ));
+      
       toast.success('Table number updated');
-      fetchApplications(); // Refresh the list
     } catch (error) {
       console.error('Error updating table number:', error);
       toast.error('Failed to update table number');
@@ -239,8 +245,14 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
 
       if (error) throw error;
       
+      // Update local state instead of fetching all applications
+      setApplications(prev => prev.map(app => 
+        app.id === applicationId 
+          ? { ...app, notes: notes || null }
+          : app
+      ));
+      
       toast.success('Notes updated');
-      fetchApplications(); // Refresh the list
     } catch (error) {
       console.error('Error updating notes:', error);
       toast.error('Failed to update notes');
@@ -485,9 +497,12 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
                 <Input
                   type="text"
                   placeholder="e.g., 12, A5"
-                  value={application.table_number || ''}
-                  onChange={(e) => updateTableNumber(application.id, e.target.value)}
-                  onBlur={(e) => updateTableNumber(application.id, e.target.value)}
+                  defaultValue={application.table_number || ''}
+                  onBlur={(e) => {
+                    if (e.target.value !== (application.table_number?.toString() || '')) {
+                      updateTableNumber(application.id, e.target.value);
+                    }
+                  }}
                   className="w-28"
                 />
               </div>
@@ -513,15 +528,12 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
               <Label className="text-xs font-medium">Notes for Vendor (Table Assignment, etc.)</Label>
               <Textarea
                 placeholder="e.g., Assigned to Table A12. Please arrive by 8 AM for setup."
-                value={application.notes || ''}
-                onChange={(e) => setApplications(prev => 
-                  prev.map(app => 
-                    app.id === application.id 
-                      ? { ...app, notes: e.target.value }
-                      : app
-                  )
-                )}
-                onBlur={(e) => updateNotes(application.id, e.target.value)}
+                defaultValue={application.notes || ''}
+                onBlur={(e) => {
+                  if (e.target.value !== (application.notes || '')) {
+                    updateNotes(application.id, e.target.value);
+                  }
+                }}
                 rows={2}
                 className="text-sm"
               />
