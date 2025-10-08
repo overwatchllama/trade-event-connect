@@ -67,10 +67,8 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
     { date: '', startTime: '', endTime: '', dayNumber: 1, ticketCost: '' }
   ]);
   const [sponsorTiers, setSponsorTiers] = useState([
-    { tier: '', cost: '' }
+    { tier: '', cost: '', slots: '', unlimitedSlots: false }
   ]);
-  const [sponsorTierSlots, setSponsorTierSlots] = useState('');
-  const [unlimitedSponsorSlots, setUnlimitedSponsorSlots] = useState(false);
   const [noSponsors, setNoSponsors] = useState(false);
   const [socialMediaLinks, setSocialMediaLinks] = useState([
     { platform: '', url: '' }
@@ -122,8 +120,6 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
       setNoSponsors(event.no_sponsors || false);
       setFlyerPreview(event.flyer_url || null);
       setFloorPlanPreview(event.floor_plan_url || null);
-      setSponsorTierSlots(event.sponsor_tier_slots?.toString() || '');
-      setUnlimitedSponsorSlots(event.sponsor_tier_slots === null && event.sponsor_tiers !== null);
 
       // Parse sponsor tiers from JSON
       if (event.sponsor_tiers) {
@@ -131,12 +127,22 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
           const tiers = typeof event.sponsor_tiers === 'string' 
             ? JSON.parse(event.sponsor_tiers) 
             : event.sponsor_tiers;
-          setSponsorTiers(tiers.length > 0 ? tiers : [{ tier: '', cost: '' }]);
+          if (Array.isArray(tiers) && tiers.length > 0) {
+            setSponsorTiers(tiers.map((t: any) => ({
+              tier: t.tier || '',
+              cost: t.cost?.toString() || '',
+              slots: t.slots?.toString() || '',
+              unlimitedSlots: t.slots === null || t.slots === undefined
+            })));
+          } else {
+            setSponsorTiers([{ tier: '', cost: '', slots: '', unlimitedSlots: false }]);
+          }
         } catch (e) {
-          setSponsorTiers([{ tier: '', cost: '' }]);
+          console.error('Error parsing sponsor tiers:', e);
+          setSponsorTiers([{ tier: '', cost: '', slots: '', unlimitedSlots: false }]);
         }
       } else {
-        setSponsorTiers([{ tier: '', cost: '' }]);
+        setSponsorTiers([{ tier: '', cost: '', slots: '', unlimitedSlots: false }]);
       }
 
       // Fetch social media links
@@ -233,7 +239,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
   };
 
   const addSponsorTier = () => {
-    setSponsorTiers(prev => [...prev, { tier: '', cost: '' }]);
+    setSponsorTiers(prev => [...prev, { tier: '', cost: '', slots: '', unlimitedSlots: false }]);
   };
 
   const removeSponsorTier = (index: number) => {
@@ -242,7 +248,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
     }
   };
 
-  const updateSponsorTier = (index: number, field: string, value: string) => {
+  const updateSponsorTier = (index: number, field: string, value: string | boolean) => {
     setSponsorTiers(prev => prev.map((tier, i) => 
       i === index ? { ...tier, [field]: value } : tier
     ));
@@ -347,9 +353,16 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
           flyer_url: flyerUrl,
           floor_plan_url: floorPlanUrl,
           sponsor_tiers: sponsorTiers.some(t => t.tier && t.cost)
-            ? JSON.stringify(sponsorTiers.filter(t => t.tier && t.cost)) 
+            ? JSON.stringify(sponsorTiers
+                .filter(t => t.tier && t.cost)
+                .map(t => ({
+                  tier: t.tier,
+                  cost: t.cost,
+                  slots: t.unlimitedSlots ? null : (t.slots ? parseInt(t.slots) : null)
+                }))
+              )
             : null,
-          sponsor_tier_slots: unlimitedSponsorSlots ? null : (sponsorTierSlots ? parseInt(sponsorTierSlots) : null),
+          sponsor_tier_slots: null,
           contact_email: formData.contactEmail || null,
           contact_phone: formData.contactPhone || null,
           preferred_contact_method: formData.preferredContactMethod || null
@@ -784,36 +797,65 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
 
             <div className="space-y-2">
               <Label htmlFor="sponsorTiers">Sponsor Tiers (Optional)</Label>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {sponsorTiers.map((tier, index) => (
-                  <div key={index} className="flex gap-2 items-end">
-                    <div className="flex-1 space-y-2">
-                      <Label className="text-xs">Tier Name</Label>
-                      <Input
-                        placeholder="e.g., Platinum"
-                        value={tier.tier}
-                        onChange={(e) => updateSponsorTier(index, 'tier', e.target.value)}
-                      />
+                  <div key={index} className="border rounded-lg p-4 space-y-3">
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1 space-y-2">
+                        <Label className="text-xs">Tier Name</Label>
+                        <Input
+                          placeholder="e.g., Platinum"
+                          value={tier.tier}
+                          onChange={(e) => updateSponsorTier(index, 'tier', e.target.value)}
+                          disabled={noSponsors}
+                        />
+                      </div>
+                      <div className="w-32 space-y-2">
+                        <Label className="text-xs">Cost ($)</Label>
+                        <Input
+                          type="number"
+                          placeholder="5000"
+                          value={tier.cost}
+                          onChange={(e) => updateSponsorTier(index, 'cost', e.target.value)}
+                          disabled={noSponsors}
+                        />
+                      </div>
+                      {sponsorTiers.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeSponsorTier(index)}
+                          disabled={noSponsors}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
-                    <div className="w-32 space-y-2">
-                      <Label className="text-xs">Cost ($)</Label>
-                      <Input
-                        type="number"
-                        placeholder="5000"
-                        value={tier.cost}
-                        onChange={(e) => updateSponsorTier(index, 'cost', e.target.value)}
-                      />
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <Label className="text-xs">Available Slots</Label>
+                        <Input
+                          type="number"
+                          placeholder="e.g., 5"
+                          value={tier.slots}
+                          onChange={(e) => updateSponsorTier(index, 'slots', e.target.value)}
+                          disabled={tier.unlimitedSlots || noSponsors}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2 pt-5">
+                        <Switch
+                          id={`unlimited-${index}`}
+                          checked={tier.unlimitedSlots}
+                          onCheckedChange={(checked) => updateSponsorTier(index, 'unlimitedSlots', checked)}
+                          disabled={noSponsors}
+                        />
+                        <Label htmlFor={`unlimited-${index}`} className="cursor-pointer text-xs">
+                          Unlimited
+                        </Label>
+                      </div>
                     </div>
-                    {sponsorTiers.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeSponsorTier(index)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    )}
                   </div>
                 ))}
                 <Button
@@ -822,6 +864,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                   size="sm"
                   onClick={addSponsorTier}
                   className="w-full"
+                  disabled={noSponsors}
                 >
                   <Plus className="w-4 h-4 mr-1" />
                   Add Sponsor Tier
@@ -837,35 +880,6 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                 onCheckedChange={setNoSponsors}
               />
               <Label htmlFor="no-sponsors">No sponsors</Label>
-            </div>
-
-            <div className="space-y-3">
-              <Label htmlFor="sponsorTierSlots">Number of Sponsor Tier Slots</Label>
-              <div className="flex items-center gap-4">
-                <Input
-                  id="sponsorTierSlots"
-                  type="number"
-                  placeholder="e.g., 5"
-                  value={sponsorTierSlots}
-                  onChange={(e) => setSponsorTierSlots(e.target.value)}
-                  disabled={unlimitedSponsorSlots || noSponsors}
-                  className="flex-1"
-                />
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="unlimited-sponsors"
-                    checked={unlimitedSponsorSlots}
-                    onCheckedChange={setUnlimitedSponsorSlots}
-                    disabled={noSponsors}
-                  />
-                  <Label htmlFor="unlimited-sponsors" className="cursor-pointer">
-                    Unlimited
-                  </Label>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Limit how many sponsors can apply to each tier
-              </p>
             </div>
           </div>
 
