@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, XCircle, Clock, DollarSign, User, Star, Calendar, History } from "lucide-react";
+import { CheckCircle, XCircle, Clock, DollarSign, User, Star, Calendar, History, Mail, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -168,6 +168,33 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
 
   const sendInvoice = async (application: VendorApplication) => {
     try {
+      const tableCount = application.approved_tables || application.requested_tables;
+      const pricePerTable = application.event_table_price || 0;
+      const totalAmount = pricePerTable * tableCount;
+
+      // Create an in-app notification for the vendor
+      const { error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: application.user_id,
+          title: 'Invoice from ' + eventTitle,
+          message: `You have an invoice for ${tableCount} table${tableCount > 1 ? 's' : ''} at $${pricePerTable} each. Total: $${totalAmount}. Please make payment to secure your spot.`,
+          type: 'invoice',
+          reference_id: application.id,
+          reference_type: 'vendor_application',
+        });
+
+      if (error) throw error;
+      
+      toast.success('Invoice sent to vendor in-app!');
+    } catch (error) {
+      console.error('Error sending invoice:', error);
+      toast.error('Failed to send invoice');
+    }
+  };
+
+  const sendEmailInvoice = async (application: VendorApplication) => {
+    try {
       const { error } = await supabase.functions.invoke('send-vendor-invoice', {
         body: {
           vendorEmail: application.vendor.business_email,
@@ -182,10 +209,10 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
 
       if (error) throw error;
       
-      toast.success('Invoice sent successfully!');
+      toast.success('Invoice email sent successfully!');
     } catch (error) {
-      console.error('Error sending invoice:', error);
-      toast.error('Failed to send invoice');
+      console.error('Error sending invoice email:', error);
+      toast.error('Failed to send invoice email');
     }
   };
 
@@ -464,14 +491,24 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
           <div className="space-y-4">
             <div className="flex gap-2 flex-wrap items-end">
               {application.payment_status === 'unpaid' && (
-                <Button
-                  size="sm"
-                  variant="default"
-                  onClick={() => sendInvoice(application)}
-                >
-                  <DollarSign className="w-3 h-3 mr-1" />
-                  Send Invoice
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => sendInvoice(application)}
+                  >
+                    <Bell className="w-3 h-3 mr-1" />
+                    Send Invoice
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => sendEmailInvoice(application)}
+                  >
+                    <Mail className="w-3 h-3 mr-1" />
+                    Email Invoice
+                  </Button>
+                </>
               )}
               <div className="space-y-1">
                 <Label className="text-xs">Tables</Label>
