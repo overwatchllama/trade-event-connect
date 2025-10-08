@@ -65,7 +65,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
     { date: '', startTime: '', endTime: '', dayNumber: 1, ticketCost: '' }
   ]);
   const [sponsorTiers, setSponsorTiers] = useState([
-    { tier: '', cost: '', slots: '', unlimitedSlots: false }
+    { tier: '', cost: '', slots: '', unlimitedSlots: false, description: '' }
   ]);
   const [noSponsors, setNoSponsors] = useState(false);
   const [socialMediaLinks, setSocialMediaLinks] = useState([
@@ -133,7 +133,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
   };
 
   const addSponsorTier = () => {
-    setSponsorTiers(prev => [...prev, { tier: '', cost: '', slots: '', unlimitedSlots: false }]);
+    setSponsorTiers(prev => [...prev, { tier: '', cost: '', slots: '', unlimitedSlots: false, description: '' }]);
   };
 
   const removeSponsorTier = (index: number) => {
@@ -264,7 +264,8 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
                 .map(t => ({
                   tier: t.tier,
                   cost: t.cost,
-                  slots: t.unlimitedSlots ? null : (t.slots ? parseInt(t.slots) : null)
+                  slots: t.unlimitedSlots ? null : (t.slots ? parseInt(t.slots) : null),
+                  description: t.description || ''
                 }))
               )
             : null,
@@ -346,7 +347,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
       setIsMultiDay(false);
       setNoOnlineTicketSales(false);
       setEventDays([{ date: '', startTime: '', endTime: '', dayNumber: 1, ticketCost: '' }]);
-      setSponsorTiers([{ tier: '', cost: '', slots: '', unlimitedSlots: false }]);
+      setSponsorTiers([{ tier: '', cost: '', slots: '', unlimitedSlots: false, description: '' }]);
       setNoSponsors(false);
       setSocialMediaLinks([{ platform: '', url: '' }]);
       setFlyerFile(null);
@@ -761,6 +762,15 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
                           <X className="w-4 h-4" />
                         </Button>
                       )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Benefits Description</Label>
+                      <Input
+                        placeholder="e.g., Logo on website, social media shoutouts, booth space"
+                        value={tier.description}
+                        onChange={(e) => updateSponsorTier(index, 'description', e.target.value)}
+                        disabled={noSponsors}
+                      />
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="flex-1">

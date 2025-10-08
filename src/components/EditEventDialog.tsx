@@ -67,7 +67,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
     { date: '', startTime: '', endTime: '', dayNumber: 1, ticketCost: '' }
   ]);
   const [sponsorTiers, setSponsorTiers] = useState([
-    { tier: '', cost: '', slots: '', unlimitedSlots: false }
+    { tier: '', cost: '', slots: '', unlimitedSlots: false, description: '' }
   ]);
   const [noSponsors, setNoSponsors] = useState(false);
   const [socialMediaLinks, setSocialMediaLinks] = useState([
@@ -132,17 +132,18 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
               tier: t.tier || '',
               cost: t.cost?.toString() || '',
               slots: t.slots?.toString() || '',
-              unlimitedSlots: t.slots === null || t.slots === undefined
+              unlimitedSlots: t.slots === null || t.slots === undefined,
+              description: t.description || ''
             })));
           } else {
-            setSponsorTiers([{ tier: '', cost: '', slots: '', unlimitedSlots: false }]);
+            setSponsorTiers([{ tier: '', cost: '', slots: '', unlimitedSlots: false, description: '' }]);
           }
         } catch (e) {
           console.error('Error parsing sponsor tiers:', e);
-          setSponsorTiers([{ tier: '', cost: '', slots: '', unlimitedSlots: false }]);
+          setSponsorTiers([{ tier: '', cost: '', slots: '', unlimitedSlots: false, description: '' }]);
         }
       } else {
-        setSponsorTiers([{ tier: '', cost: '', slots: '', unlimitedSlots: false }]);
+        setSponsorTiers([{ tier: '', cost: '', slots: '', unlimitedSlots: false, description: '' }]);
       }
 
       // Fetch social media links
@@ -239,7 +240,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
   };
 
   const addSponsorTier = () => {
-    setSponsorTiers(prev => [...prev, { tier: '', cost: '', slots: '', unlimitedSlots: false }]);
+    setSponsorTiers(prev => [...prev, { tier: '', cost: '', slots: '', unlimitedSlots: false, description: '' }]);
   };
 
   const removeSponsorTier = (index: number) => {
@@ -358,7 +359,8 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                 .map(t => ({
                   tier: t.tier,
                   cost: t.cost,
-                  slots: t.unlimitedSlots ? null : (t.slots ? parseInt(t.slots) : null)
+                  slots: t.unlimitedSlots ? null : (t.slots ? parseInt(t.slots) : null),
+                  description: t.description || ''
                 }))
               )
             : null,
@@ -831,6 +833,15 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                           <X className="w-4 h-4" />
                         </Button>
                       )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Benefits Description</Label>
+                      <Input
+                        placeholder="e.g., Logo on website, social media shoutouts, booth space"
+                        value={tier.description}
+                        onChange={(e) => updateSponsorTier(index, 'description', e.target.value)}
+                        disabled={noSponsors}
+                      />
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="flex-1">
