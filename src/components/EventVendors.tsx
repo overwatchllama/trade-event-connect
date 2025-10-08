@@ -95,7 +95,7 @@ const EventVendors = ({ eventId, maxDisplay = 3 }: EventVendorsProps) => {
       </div>
       
       <div className="flex flex-wrap gap-2">
-        {vendors.map((vendor) => (
+      {vendors.map((vendor) => (
           <div
             key={vendor.id}
             onClick={() => handleVendorClick(vendor.id)}
@@ -129,22 +129,6 @@ const EventVendors = ({ eventId, maxDisplay = 3 }: EventVendorsProps) => {
           </div>
         ))}
       </div>
-
-      {vendors.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {/* Show vendor types instead of specialties for better context */}
-          {vendors[0].vendor_types?.slice(0, 2).map((type, index) => (
-            <Badge key={index} variant="outline" className="text-xs">
-              {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-            </Badge>
-          ))}
-          {vendors[0].vendor_types && vendors[0].vendor_types.length > 2 && (
-            <Badge variant="outline" className="text-xs">
-              +{vendors[0].vendor_types.length - 2}
-            </Badge>
-          )}
-        </div>
-      )}
     </div>
   );
 };
