@@ -1,40 +1,76 @@
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import SubscriptionTiers from "@/components/SubscriptionTiers";
+import SimplifiedEventCard from "@/components/SimplifiedEventCard";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Star, TrendingUp, Users, Calendar, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
-  const featuredEvents = [
-    {
-      title: "Pokemon Regional Championship",
-      location: "Los Angeles, CA",
-      date: "March 15",
-      attendees: 156,
-      rating: 4.8,
-      cardTypes: ["Pokemon", "TCG"]
-    },
-    {
-      title: "MTG Commander Night", 
-      location: "San Francisco, CA",
-      date: "March 18",
-      attendees: 48,
-      rating: 4.9,
-      cardTypes: ["MTG", "Commander"]
-    },
-    {
-      title: "Sports Card Expo",
-      location: "San Diego, CA", 
-      date: "March 20",
-      attendees: 89,
-      rating: 4.7,
-      cardTypes: ["Sports", "Baseball"]
-    }
-  ];
+  const [popularEvents, setPopularEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPopularEvents = async () => {
+      try {
+        const { data: eventsData } = await supabase
+          .from('events')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(6);
+
+        if (eventsData) {
+          // Get event days for each event
+          const eventIds = eventsData.map(e => e.id);
+          const { data: eventDaysData } = await supabase
+            .from('event_days')
+            .select('event_id, day_date')
+            .in('event_id', eventIds)
+            .order('day_number', { ascending: true });
+
+          const eventDaysMap = new Map<string, any[]>();
+          eventDaysData?.forEach(day => {
+            const days = eventDaysMap.get(day.event_id) || [];
+            days.push(day);
+            eventDaysMap.set(day.event_id, days);
+          });
+
+          const transformedEvents = eventsData.map(event => {
+            const days = eventDaysMap.get(event.id) || [];
+            let dateStr = event.date;
+            
+            if (event.is_multi_day && days.length > 0) {
+              const firstDay = days[0];
+              const lastDay = days[days.length - 1];
+              dateStr = `${new Date(firstDay.day_date).toLocaleDateString()} - ${new Date(lastDay.day_date).toLocaleDateString()}`;
+            } else if (days.length > 0) {
+              dateStr = new Date(days[0].day_date).toLocaleDateString();
+            }
+
+            return {
+              id: event.id,
+              title: event.title,
+              date: dateStr,
+              city: event.city,
+              state: event.state,
+              cardTypes: event.card_types || [],
+              flyerUrl: event.flyer_url
+            };
+          });
+
+          setPopularEvents(transformedEvents);
+        }
+      } catch (error) {
+        console.error('Error fetching popular events:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPopularEvents();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,53 +83,26 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Featured Events This Week
+              Popular Events
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Don't miss these popular trading card events happening near you.
+              Discover trending trading card events happening near you.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
-            {featuredEvents.map((event, index) => (
-              <Card key={index} className="p-6 hover:shadow-lg-custom transition-shadow">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-start">
-                    <Badge variant="outline" className="text-primary">
-                      {event.cardTypes[0]}
-                    </Badge>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Star className="w-4 h-4 text-warning fill-warning mr-1" />
-                      {event.rating}
-                    </div>
-                  </div>
-                  
-                  <h3 className="text-xl font-bold text-card-foreground">
-                    {event.title}
-                  </h3>
-                  
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center">
-                      <MapPin className="w-4 h-4 mr-2" />
-                      {event.location}
-                    </div>
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      {event.date}
-                    </div>
-                    <div className="flex items-center">
-                      <Users className="w-4 h-4 mr-2" />
-                      {event.attendees} attendees
-                    </div>
-                  </div>
-                  
-                  <Button variant="outline" className="w-full" onClick={() => navigate('/events')}>
-                    View Event
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
+          {loading ? (
+            <div className="text-center py-8">Loading events...</div>
+          ) : popularEvents.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No events available yet. Check back soon!
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+              {popularEvents.map((event) => (
+                <SimplifiedEventCard key={event.id} event={event} />
+              ))}
+            </div>
+          )}
 
           <div className="text-center">
             <Button variant="hero" size="lg" onClick={() => navigate('/events')}>

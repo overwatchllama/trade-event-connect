@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import EventCard from "@/components/EventCard";
+import SimplifiedEventCard from "@/components/SimplifiedEventCard";
 import EventsCalendar from "@/components/EventsCalendar";
 import CreateEventDialog from "@/components/CreateEventDialog";
 import { VenuesList } from "@/components/VenuesList";
@@ -14,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, MapPin, Calendar, Plus, Edit, Settings } from "lucide-react";
+import { Search, Filter, MapPin, Calendar, Plus, Edit, Settings, LayoutGrid, List } from "lucide-react";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +33,7 @@ const Events = () => {
   const [selectedEventType, setSelectedEventType] = useState("all");
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [allEvents, setAllEvents] = useState<any[]>([]);
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [vendingEvents, setVendingEvents] = useState<any[]>([]);
@@ -512,61 +514,80 @@ const Events = () => {
           </div>
 
           {/* Search and Filters */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <div className="space-y-4 mb-6">
+            {/* Main Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Search events by name, location, or organizer..."
+                placeholder="Search for Events"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-12 h-12 text-lg"
               />
             </div>
-            
-            <Select value={selectedEventType} onValueChange={setSelectedEventType}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Event Type" />
-              </SelectTrigger>
-              <SelectContent>
-                {eventTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type === "all" ? "All Events" : type === "play" ? "Play Events" : "Show Events"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
-            <Select value={selectedCardType} onValueChange={setSelectedCardType}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="Card Type" />
-              </SelectTrigger>
-              <SelectContent>
-                {cardTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type === "all" ? "All Card Types" : type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Quick Filters and View Toggle */}
+            <div className="flex flex-wrap gap-2 items-center justify-between">
+              <div className="flex flex-wrap gap-2">
+                <Select value={selectedEventType} onValueChange={setSelectedEventType}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Event Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eventTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type === "all" ? "All Events" : type === "play" ? "Play" : "Show"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <MultiSelect
-                  options={stateOptions}
-                  selected={selectedStates}
-                  onChange={setSelectedStates}
-                  placeholder="Select states..."
-                  className="w-full"
-                />
+                <div className="w-48">
+                  <MultiSelect
+                    options={stateOptions}
+                    selected={selectedStates}
+                    onChange={setSelectedStates}
+                    placeholder="All States"
+                    className="w-full"
+                  />
+                </div>
+
+                <Select value={selectedCardType} onValueChange={setSelectedCardType}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Tags" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cardTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type === "all" ? "All Tags" : type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Button variant="outline" onClick={() => setShowAdvancedSearch(true)}>
-                Advanced
-              </Button>
-            </div>
 
-            <Button variant="outline" size="icon">
-              <Filter className="w-4 h-4" />
-            </Button>
+              {/* View Mode Toggle */}
+              <div className="flex gap-1 border rounded-md p-1">
+                <Button
+                  variant={viewMode === "grid" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("grid")}
+                  className="gap-1"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  Grid
+                </Button>
+                <Button
+                  variant={viewMode === "list" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("list")}
+                  className="gap-1"
+                >
+                  <List className="w-4 h-4" />
+                  List
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Active Filters */}
@@ -624,7 +645,7 @@ const Events = () => {
 
             {/* Events Tab - Browse all events */}
             <TabsContent value="events" className="mt-6">
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className={viewMode === "grid" ? "grid md:grid-cols-2 xl:grid-cols-3 gap-6" : "space-y-4"}>
                 {loading ? (
                   <div className="col-span-full text-center py-8">Loading events...</div>
                 ) : filteredAllEvents.length === 0 ? (
@@ -632,9 +653,13 @@ const Events = () => {
                     No events found matching your filters.
                   </div>
                 ) : (
-                  filteredAllEvents.map((event) => (
-                    <EventCard key={event.id} event={event} userType="collector" isMyEvent={false} />
-                  ))
+                  filteredAllEvents.map((event) => 
+                    viewMode === "grid" ? (
+                      <SimplifiedEventCard key={event.id} event={event} />
+                    ) : (
+                      <EventCard key={event.id} event={event} userType="collector" isMyEvent={false} />
+                    )
+                  )
                 )}
               </div>
             </TabsContent>
@@ -720,7 +745,7 @@ const Events = () => {
           </Tabs>
         ) : (
           /* No role tabs - show all events */
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className={viewMode === "grid" ? "grid md:grid-cols-2 xl:grid-cols-3 gap-6" : "space-y-4"}>
             {loading ? (
               <div className="col-span-full text-center py-8">Loading events...</div>
             ) : filteredAllEvents.length === 0 ? (
@@ -728,9 +753,13 @@ const Events = () => {
                 No events found matching your filters.
               </div>
             ) : (
-              filteredAllEvents.map((event) => (
-                <EventCard key={event.id} event={event} userType="collector" isMyEvent={false} />
-              ))
+              filteredAllEvents.map((event) => 
+                viewMode === "grid" ? (
+                  <SimplifiedEventCard key={event.id} event={event} />
+                ) : (
+                  <EventCard key={event.id} event={event} userType="collector" isMyEvent={false} />
+                )
+              )
             )}
           </div>
         )}
