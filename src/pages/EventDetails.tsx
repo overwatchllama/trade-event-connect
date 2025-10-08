@@ -269,6 +269,24 @@ const EventDetails = () => {
                   </div>
                 )}
 
+                {event.floor_plan_url && (
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold">Floor Plan</h3>
+                    <a 
+                      href={event.floor_plan_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block aspect-video rounded-lg overflow-hidden bg-muted hover:opacity-90 transition-opacity cursor-pointer"
+                    >
+                      <img
+                        src={event.floor_plan_url}
+                        alt="Event floor plan"
+                        className="w-full h-full object-contain"
+                      />
+                    </a>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />
