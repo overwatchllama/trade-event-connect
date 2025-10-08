@@ -59,6 +59,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
   });
 
   const [isMultiDay, setIsMultiDay] = useState(false);
+  const [noOnlineTicketSales, setNoOnlineTicketSales] = useState(false);
   const [eventDays, setEventDays] = useState([
     { date: '', startTime: '', endTime: '', dayNumber: 1 }
   ]);
@@ -249,6 +250,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
           organizer_id: user.id,
           organizer_name: organizer_name,
           is_multi_day: isMultiDay,
+          no_online_ticket_sales: noOnlineTicketSales,
           flyer_url: flyerUrl,
           floor_plan_url: floorPlanUrl,
           sponsor_tiers: sponsorTiers.some(t => t.tier && t.cost)
@@ -327,6 +329,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
       });
       setSelectedCardTypes([]);
       setIsMultiDay(false);
+      setNoOnlineTicketSales(false);
       setEventDays([{ date: '', startTime: '', endTime: '', dayNumber: 1 }]);
       setSponsorTiers([{ tier: '', cost: '' }]);
       setSocialMediaLinks([{ platform: '', url: '' }]);
@@ -393,6 +396,16 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
                 onCheckedChange={setIsMultiDay}
               />
               <Label htmlFor="multi-day">Multi-day event</Label>
+            </div>
+
+            {/* No online ticket sales toggle */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="no-online-tickets"
+                checked={noOnlineTicketSales}
+                onCheckedChange={setNoOnlineTicketSales}
+              />
+              <Label htmlFor="no-online-tickets">No online ticket sales</Label>
             </div>
 
             {/* Event Days */}

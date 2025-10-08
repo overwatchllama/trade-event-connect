@@ -61,6 +61,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
   });
 
   const [isMultiDay, setIsMultiDay] = useState(false);
+  const [noOnlineTicketSales, setNoOnlineTicketSales] = useState(false);
   const [eventDays, setEventDays] = useState([
     { date: '', startTime: '', endTime: '', dayNumber: 1 }
   ]);
@@ -110,6 +111,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
 
       setSelectedCardTypes(event.card_types || []);
       setIsMultiDay(event.is_multi_day || false);
+      setNoOnlineTicketSales(event.no_online_ticket_sales || false);
       setFlyerPreview(event.flyer_url || null);
 
       // Parse sponsor tiers from JSON
@@ -287,6 +289,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
           vendor_table_price: formData.vendorTablePrice ? parseFloat(formData.vendorTablePrice) : null,
           total_tables: formData.totalTables ? parseInt(formData.totalTables) : null,
           is_multi_day: isMultiDay,
+          no_online_ticket_sales: noOnlineTicketSales,
           flyer_url: flyerUrl,
           sponsor_tiers: sponsorTiers.some(t => t.tier && t.cost) 
             ? JSON.stringify(sponsorTiers.filter(t => t.tier && t.cost)) 
@@ -409,6 +412,16 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                 onCheckedChange={setIsMultiDay}
               />
               <Label htmlFor="multi-day">Multi-day event</Label>
+            </div>
+
+            {/* No online ticket sales toggle */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="no-online-tickets"
+                checked={noOnlineTicketSales}
+                onCheckedChange={setNoOnlineTicketSales}
+              />
+              <Label htmlFor="no-online-tickets">No online ticket sales</Label>
             </div>
 
             {/* Event Days */}
