@@ -76,7 +76,6 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <Hero />
-      <SubscriptionTiers />
       
       {/* Featured Events Section */}
       <section className="py-20 bg-background">
@@ -111,6 +110,8 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      <SubscriptionTiers />
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-primary text-primary-foreground">
