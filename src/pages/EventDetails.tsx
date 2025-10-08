@@ -105,12 +105,18 @@ const EventDetails = () => {
   }, [id, user]);
 
   const handleShareEvent = async () => {
-    const eventUrl = `${window.location.origin}/events/${id}`;
+    const eventUrl = `${window.location.origin}/event/${id}`;
+    const shareUrl = `https://gsjwamfnoezhwlhkqzdn.supabase.co/functions/v1/event-share?id=${id}&redirect=${encodeURIComponent(eventUrl)}`;
     try {
-      await navigator.clipboard.writeText(eventUrl);
-      toast.success('Event link copied to clipboard!');
+      if (navigator.share) {
+        await navigator.share({ title: event?.title || 'Event', url: shareUrl });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Share link copied to clipboard!');
+      }
     } catch (err) {
-      toast.error('Failed to copy link. Please try again.');
+      toast.error('Failed to share. Link copied to clipboard.');
+      try { await navigator.clipboard.writeText(shareUrl); } catch {}
     }
   };
 
