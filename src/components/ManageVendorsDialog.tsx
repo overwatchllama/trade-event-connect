@@ -168,6 +168,26 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
     }
   };
 
+  const refundPayment = async (applicationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('vendor_applications')
+        .update({
+          payment_status: 'refunded',
+          payment_date: null
+        })
+        .eq('id', applicationId);
+
+      if (error) throw error;
+
+      toast.success('Payment refunded successfully');
+      fetchApplications();
+    } catch (error) {
+      console.error('Error refunding payment:', error);
+      toast.error('Failed to refund payment');
+    }
+  };
+
   const sendInvoice = async (application: VendorApplication) => {
     try {
       const tableCount = application.approved_tables || application.requested_tables;
@@ -571,19 +591,35 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Payment</Label>
-                <Select
-                  value={application.payment_status}
-                  onValueChange={(value) => updatePaymentStatus(application.id, value as any)}
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unpaid">Unpaid</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                    <SelectItem value="refunded">Refunded</SelectItem>
-                  </SelectContent>
-                </Select>
+                {application.payment_status === 'paid' ? (
+                  <div className="flex gap-2 items-center">
+                    <Badge className="bg-green-100 text-green-800">
+                      <DollarSign className="w-3 h-3 mr-1" />
+                      Paid
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => refundPayment(application.id)}
+                    >
+                      Refund
+                    </Button>
+                  </div>
+                ) : (
+                  <Select
+                    value={application.payment_status}
+                    onValueChange={(value) => updatePaymentStatus(application.id, value as any)}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unpaid">Unpaid</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="refunded">Refunded</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
 
