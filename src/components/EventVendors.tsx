@@ -46,7 +46,8 @@ const EventVendors = ({ eventId, maxDisplay = 3 }: EventVendorsProps) => {
             )
           `)
           .eq('event_id', eventId)
-          .eq('application_status', 'approved');
+          .eq('application_status', 'approved')
+          .eq('payment_status', 'paid');
 
         if (appError) throw appError;
 

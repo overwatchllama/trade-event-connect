@@ -81,7 +81,8 @@ const EventDetails = () => {
           .from('vendor_applications')
           .select('*', { count: 'exact', head: true })
           .eq('event_id', id)
-          .eq('application_status', 'approved');
+          .eq('application_status', 'approved')
+          .eq('payment_status', 'paid');
 
         if (!vendorError && count !== null) {
           setVendorCount(count);
