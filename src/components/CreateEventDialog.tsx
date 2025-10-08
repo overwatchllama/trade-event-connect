@@ -69,6 +69,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
   ]);
   const [sponsorTierSlots, setSponsorTierSlots] = useState('');
   const [unlimitedSponsorSlots, setUnlimitedSponsorSlots] = useState(false);
+  const [noSponsors, setNoSponsors] = useState(false);
   const [socialMediaLinks, setSocialMediaLinks] = useState([
     { platform: '', url: '' }
   ]);
@@ -256,6 +257,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
           organizer_name: organizer_name,
           is_multi_day: isMultiDay,
           no_online_ticket_sales: noOnlineTicketSales,
+          no_sponsors: noSponsors,
           flyer_url: flyerUrl,
           floor_plan_url: floorPlanUrl,
           sponsor_tiers: sponsorTiers.some(t => t.tier && t.cost)
@@ -766,6 +768,16 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
               </div>
             </div>
 
+            {/* No sponsors toggle */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="no-sponsors"
+                checked={noSponsors}
+                onCheckedChange={setNoSponsors}
+              />
+              <Label htmlFor="no-sponsors">No sponsors</Label>
+            </div>
+
             <div className="space-y-3">
               <Label htmlFor="sponsorTierSlots">Number of Sponsor Tier Slots</Label>
               <div className="flex items-center gap-4">
@@ -775,7 +787,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
                   placeholder="e.g., 5"
                   value={sponsorTierSlots}
                   onChange={(e) => setSponsorTierSlots(e.target.value)}
-                  disabled={unlimitedSponsorSlots}
+                  disabled={unlimitedSponsorSlots || noSponsors}
                   className="flex-1"
                 />
                 <div className="flex items-center space-x-2">
@@ -783,6 +795,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
                     id="unlimited-sponsors"
                     checked={unlimitedSponsorSlots}
                     onCheckedChange={setUnlimitedSponsorSlots}
+                    disabled={noSponsors}
                   />
                   <Label htmlFor="unlimited-sponsors" className="cursor-pointer">
                     Unlimited

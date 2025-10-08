@@ -71,6 +71,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
   ]);
   const [sponsorTierSlots, setSponsorTierSlots] = useState('');
   const [unlimitedSponsorSlots, setUnlimitedSponsorSlots] = useState(false);
+  const [noSponsors, setNoSponsors] = useState(false);
   const [socialMediaLinks, setSocialMediaLinks] = useState([
     { platform: '', url: '' }
   ]);
@@ -118,6 +119,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
       setSelectedCardTypes(event.card_types || []);
       setIsMultiDay(event.is_multi_day || false);
       setNoOnlineTicketSales(event.no_online_ticket_sales || false);
+      setNoSponsors(event.no_sponsors || false);
       setFlyerPreview(event.flyer_url || null);
       setFloorPlanPreview(event.floor_plan_url || null);
       setSponsorTierSlots(event.sponsor_tier_slots?.toString() || '');
@@ -341,6 +343,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
           total_tables: formData.totalTables ? parseInt(formData.totalTables) : null,
           is_multi_day: isMultiDay,
           no_online_ticket_sales: noOnlineTicketSales,
+          no_sponsors: noSponsors,
           flyer_url: flyerUrl,
           floor_plan_url: floorPlanUrl,
           sponsor_tiers: sponsorTiers.some(t => t.tier && t.cost)
@@ -826,6 +829,16 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
               </div>
             </div>
 
+            {/* No sponsors toggle */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="no-sponsors"
+                checked={noSponsors}
+                onCheckedChange={setNoSponsors}
+              />
+              <Label htmlFor="no-sponsors">No sponsors</Label>
+            </div>
+
             <div className="space-y-3">
               <Label htmlFor="sponsorTierSlots">Number of Sponsor Tier Slots</Label>
               <div className="flex items-center gap-4">
@@ -835,7 +848,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                   placeholder="e.g., 5"
                   value={sponsorTierSlots}
                   onChange={(e) => setSponsorTierSlots(e.target.value)}
-                  disabled={unlimitedSponsorSlots}
+                  disabled={unlimitedSponsorSlots || noSponsors}
                   className="flex-1"
                 />
                 <div className="flex items-center space-x-2">
@@ -843,6 +856,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                     id="unlimited-sponsors"
                     checked={unlimitedSponsorSlots}
                     onCheckedChange={setUnlimitedSponsorSlots}
+                    disabled={noSponsors}
                   />
                   <Label htmlFor="unlimited-sponsors" className="cursor-pointer">
                     Unlimited
