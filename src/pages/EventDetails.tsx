@@ -42,6 +42,7 @@ const EventDetails = () => {
   const [manageSponsorsOpen, setManageSponsorsOpen] = useState(false);
   const [socialMediaLinks, setSocialMediaLinks] = useState<any[]>([]);
   const [eventDays, setEventDays] = useState<any[]>([]);
+  const [hasApplied, setHasApplied] = useState(false);
 
   const isVendorPro = subscribed &&
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
@@ -107,6 +108,18 @@ const EventDetails = () => {
           if (!daysError && daysData) {
             setEventDays(daysData);
           }
+        }
+
+        // Check if user has already applied as vendor
+        if (user) {
+          const { data: applicationData } = await supabase
+            .from('vendor_applications')
+            .select('id')
+            .eq('event_id', id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          setHasApplied(!!applicationData);
         }
       } catch (error) {
         console.error('Error fetching event:', error);
@@ -537,9 +550,10 @@ const EventDetails = () => {
                     className="w-full"
                     variant="outline"
                     onClick={() => setVendorDialogOpen(true)}
+                    disabled={hasApplied}
                   >
                     <Store className="mr-2 h-4 w-4" />
-                    Apply to be a Vendor
+                    {hasApplied ? 'Application Submitted' : 'Apply to be a Vendor'}
                   </Button>
                 </CardContent>
               </Card>
