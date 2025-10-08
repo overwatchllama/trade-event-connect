@@ -510,9 +510,9 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Organizer Notes</Label>
+              <Label className="text-xs font-medium">Notes for Vendor (Table Assignment, etc.)</Label>
               <Textarea
-                placeholder="Add notes about this vendor (table assignment, special requests, etc.)"
+                placeholder="e.g., Assigned to Table A12. Please arrive by 8 AM for setup."
                 value={application.notes || ''}
                 onChange={(e) => setApplications(prev => 
                   prev.map(app => 

@@ -22,6 +22,7 @@ interface VendorEvent {
   payment_status: 'paid' | 'unpaid' | 'refunded';
   table_number?: number;
   application_date: string;
+  notes?: string;
 }
 
 interface VendorCalendarProps {
@@ -83,6 +84,7 @@ const VendorCalendar = ({ vendorId }: VendorCalendarProps) => {
             payment_status: app.payment_status,
             table_number: app.table_number,
             application_date: app.application_date,
+            notes: app.notes,
           };
         })
         .filter(Boolean) as VendorEvent[];
@@ -278,6 +280,13 @@ const VendorCalendar = ({ vendorId }: VendorCalendarProps) => {
                       </div>
                     )}
                   </div>
+
+                  {event.notes && (
+                    <div className="p-3 bg-primary/5 border border-primary/20 rounded-md">
+                      <p className="text-sm font-medium text-primary mb-1">Organizer Notes:</p>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{event.notes}</p>
+                    </div>
+                  )}
 
                   <div className="flex gap-2 pt-2">
                     <Button variant="outline" size="sm" asChild>
