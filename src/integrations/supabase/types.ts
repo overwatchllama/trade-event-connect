@@ -207,6 +207,7 @@ export type Database = {
           event_id: string
           id: string
           start_time: string
+          ticket_cost: number | null
           updated_at: string
         }
         Insert: {
@@ -217,6 +218,7 @@ export type Database = {
           event_id: string
           id?: string
           start_time: string
+          ticket_cost?: number | null
           updated_at?: string
         }
         Update: {
@@ -227,6 +229,7 @@ export type Database = {
           event_id?: string
           id?: string
           start_time?: string
+          ticket_cost?: number | null
           updated_at?: string
         }
         Relationships: [

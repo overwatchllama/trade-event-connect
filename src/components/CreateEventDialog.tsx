@@ -61,7 +61,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
   const [isMultiDay, setIsMultiDay] = useState(false);
   const [noOnlineTicketSales, setNoOnlineTicketSales] = useState(false);
   const [eventDays, setEventDays] = useState([
-    { date: '', startTime: '', endTime: '', dayNumber: 1 }
+    { date: '', startTime: '', endTime: '', dayNumber: 1, ticketCost: '' }
   ]);
   const [sponsorTiers, setSponsorTiers] = useState([
     { tier: '', cost: '' }
@@ -113,7 +113,8 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
       date: '', 
       startTime: '', 
       endTime: '', 
-      dayNumber: prev.length + 1 
+      dayNumber: prev.length + 1,
+      ticketCost: ''
     }]);
   };
 
@@ -291,7 +292,8 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
           day_number: index + 1,
           day_date: day.date,
           start_time: day.startTime,
-          end_time: day.endTime
+          end_time: day.endTime,
+          ticket_cost: day.ticketCost ? parseFloat(day.ticketCost) : null
         }));
 
         const { error: daysError } = await supabase
@@ -330,7 +332,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
       setSelectedCardTypes([]);
       setIsMultiDay(false);
       setNoOnlineTicketSales(false);
-      setEventDays([{ date: '', startTime: '', endTime: '', dayNumber: 1 }]);
+      setEventDays([{ date: '', startTime: '', endTime: '', dayNumber: 1, ticketCost: '' }]);
       setSponsorTiers([{ tier: '', cost: '' }]);
       setSocialMediaLinks([{ platform: '', url: '' }]);
       setFlyerFile(null);
@@ -467,6 +469,23 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
                       />
                     </div>
                   </div>
+                  {isMultiDay && (
+                    <div className="space-y-2">
+                      <Label>Ticket Cost for This Day (Optional)</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={day.ticketCost}
+                          onChange={(e) => updateEventDay(index, 'ticketCost', e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

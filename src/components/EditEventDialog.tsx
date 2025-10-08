@@ -63,7 +63,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
   const [isMultiDay, setIsMultiDay] = useState(false);
   const [noOnlineTicketSales, setNoOnlineTicketSales] = useState(false);
   const [eventDays, setEventDays] = useState([
-    { date: '', startTime: '', endTime: '', dayNumber: 1 }
+    { date: '', startTime: '', endTime: '', dayNumber: 1, ticketCost: '' }
   ]);
   const [sponsorTiers, setSponsorTiers] = useState([
     { tier: '', cost: '' }
@@ -155,7 +155,8 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
           date: day.day_date,
           startTime: day.start_time,
           endTime: day.end_time,
-          dayNumber: day.day_number
+          dayNumber: day.day_number,
+          ticketCost: day.ticket_cost?.toString() || ''
         })));
       }
     } catch (error) {
@@ -188,7 +189,8 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
       date: '', 
       startTime: '', 
       endTime: '', 
-      dayNumber: prev.length + 1 
+      dayNumber: prev.length + 1,
+      ticketCost: ''
     }]);
   };
 
@@ -337,7 +339,8 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
         day_number: index + 1,
         day_date: day.date,
         start_time: day.startTime,
-        end_time: day.endTime
+        end_time: day.endTime,
+        ticket_cost: day.ticketCost ? parseFloat(day.ticketCost) : null
       }));
 
       const { error: daysError } = await supabase
@@ -483,6 +486,23 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                       />
                     </div>
                   </div>
+                  {isMultiDay && (
+                    <div className="space-y-2">
+                      <Label>Ticket Cost for This Day (Optional)</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={day.ticketCost}
+                          onChange={(e) => updateEventDay(index, 'ticketCost', e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
