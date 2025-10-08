@@ -73,6 +73,8 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
   ]);
   const [flyerFile, setFlyerFile] = useState<File | null>(null);
   const [flyerPreview, setFlyerPreview] = useState<string | null>(null);
+  const [floorPlanFile, setFloorPlanFile] = useState<File | null>(null);
+  const [floorPlanPreview, setFloorPlanPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && eventId) {
@@ -113,6 +115,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
       setIsMultiDay(event.is_multi_day || false);
       setNoOnlineTicketSales(event.no_online_ticket_sales || false);
       setFlyerPreview(event.flyer_url || null);
+      setFloorPlanPreview(event.floor_plan_url || null);
 
       // Parse sponsor tiers from JSON
       if (event.sponsor_tiers) {
@@ -184,6 +187,21 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
     setFlyerPreview(null);
   };
 
+  const handleFloorPlanUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFloorPlanFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setFloorPlanPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeFloorPlanPreview = () => {
+    setFloorPlanFile(null);
+    setFloorPlanPreview(null);
+  };
+
   const addEventDay = () => {
     setEventDays(prev => [...prev, { 
       date: '', 
@@ -248,6 +266,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
     setLoading(true);
     try {
       let flyerUrl = flyerPreview;
+      let floorPlanUrl = floorPlanPreview;
       
       // Upload new flyer if provided
       if (flyerFile) {
@@ -272,6 +291,29 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
         flyerUrl = urlData.publicUrl;
       }
 
+      // Upload new floor plan if provided
+      if (floorPlanFile) {
+        const fileExt = floorPlanFile.name.split('.').pop();
+        const fileName = `floor-plan-${Math.random()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('event-flyers')
+          .upload(filePath, floorPlanFile);
+
+        if (uploadError) {
+          console.error('Error uploading floor plan:', uploadError);
+          toast.error('Failed to upload floor plan');
+          return;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('event-flyers')
+          .getPublicUrl(filePath);
+        
+        floorPlanUrl = urlData.publicUrl;
+      }
+
       // Update event in database
       const { error } = await supabase
         .from('events')
@@ -293,7 +335,8 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
           is_multi_day: isMultiDay,
           no_online_ticket_sales: noOnlineTicketSales,
           flyer_url: flyerUrl,
-          sponsor_tiers: sponsorTiers.some(t => t.tier && t.cost) 
+          floor_plan_url: floorPlanUrl,
+          sponsor_tiers: sponsorTiers.some(t => t.tier && t.cost)
             ? JSON.stringify(sponsorTiers.filter(t => t.tier && t.cost)) 
             : null,
           contact_email: formData.contactEmail || null,
@@ -537,6 +580,42 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                     type="file"
                     accept="image/*"
                     onChange={handleFlyerUpload}
+                    className="max-w-xs"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Floor Plan Upload */}
+            <div className="space-y-4">
+              <Label className="text-sm font-medium">Floor Plan (Optional)</Label>
+              {floorPlanPreview ? (
+                <div className="relative">
+                  <img 
+                    src={floorPlanPreview} 
+                    alt="Floor plan preview" 
+                    className="w-full max-h-64 object-contain border rounded-lg"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={removeFloorPlanPreview}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                  <div className="text-sm text-muted-foreground mb-2">
+                    Upload a floor plan for your event
+                  </div>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFloorPlanUpload}
                     className="max-w-xs"
                   />
                 </div>
