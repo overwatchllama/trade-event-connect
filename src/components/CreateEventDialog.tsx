@@ -61,6 +61,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
 
   const [isMultiDay, setIsMultiDay] = useState(false);
   const [noOnlineTicketSales, setNoOnlineTicketSales] = useState(false);
+  const [noOnlineTableSales, setNoOnlineTableSales] = useState(false);
   const [eventDays, setEventDays] = useState([
     { date: '', startTime: '', endTime: '', dayNumber: 1, ticketCost: '' }
   ]);
@@ -255,6 +256,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
           organizer_name: organizer_name,
           is_multi_day: isMultiDay,
           no_online_ticket_sales: noOnlineTicketSales,
+          no_online_table_sales: noOnlineTableSales,
           no_sponsors: noSponsors,
           flyer_url: flyerUrl,
           floor_plan_url: floorPlanUrl,
@@ -346,6 +348,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
       setSelectedCardTypes([]);
       setIsMultiDay(false);
       setNoOnlineTicketSales(false);
+      setNoOnlineTableSales(false);
       setEventDays([{ date: '', startTime: '', endTime: '', dayNumber: 1, ticketCost: '' }]);
       setSponsorTiers([{ tier: '', cost: '', slots: '', unlimitedSlots: false, description: '' }]);
       setNoSponsors(false);
@@ -724,6 +727,16 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
                   onChange={(e) => handleInputChange('vendorTablePrice', e.target.value)}
                 />
               </div>
+            </div>
+
+            {/* No online table sales toggle */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="no-online-tables"
+                checked={noOnlineTableSales}
+                onCheckedChange={setNoOnlineTableSales}
+              />
+              <Label htmlFor="no-online-tables">No online vendor table sales</Label>
             </div>
 
             <div className="space-y-2">

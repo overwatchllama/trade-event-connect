@@ -398,6 +398,7 @@ export type Database = {
           is_multi_day: boolean
           layout_json: Json | null
           max_attendees: number | null
+          no_online_table_sales: boolean | null
           no_online_ticket_sales: boolean | null
           no_sponsors: boolean | null
           organizer_id: string
@@ -435,6 +436,7 @@ export type Database = {
           is_multi_day?: boolean
           layout_json?: Json | null
           max_attendees?: number | null
+          no_online_table_sales?: boolean | null
           no_online_ticket_sales?: boolean | null
           no_sponsors?: boolean | null
           organizer_id: string
@@ -472,6 +474,7 @@ export type Database = {
           is_multi_day?: boolean
           layout_json?: Json | null
           max_attendees?: number | null
+          no_online_table_sales?: boolean | null
           no_online_ticket_sales?: boolean | null
           no_sponsors?: boolean | null
           organizer_id?: string

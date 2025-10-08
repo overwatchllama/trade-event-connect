@@ -63,6 +63,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
 
   const [isMultiDay, setIsMultiDay] = useState(false);
   const [noOnlineTicketSales, setNoOnlineTicketSales] = useState(false);
+  const [noOnlineTableSales, setNoOnlineTableSales] = useState(false);
   const [eventDays, setEventDays] = useState([
     { date: '', startTime: '', endTime: '', dayNumber: 1, ticketCost: '' }
   ]);
@@ -117,6 +118,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
       setSelectedCardTypes(event.card_types || []);
       setIsMultiDay(event.is_multi_day || false);
       setNoOnlineTicketSales(event.no_online_ticket_sales || false);
+      setNoOnlineTableSales(event.no_online_table_sales || false);
       setNoSponsors(event.no_sponsors || false);
       setFlyerPreview(event.flyer_url || null);
       setFloorPlanPreview(event.floor_plan_url || null);
@@ -350,6 +352,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
           total_tables: formData.totalTables ? parseInt(formData.totalTables) : null,
           is_multi_day: isMultiDay,
           no_online_ticket_sales: noOnlineTicketSales,
+          no_online_table_sales: noOnlineTableSales,
           no_sponsors: noSponsors,
           flyer_url: flyerUrl,
           floor_plan_url: floorPlanUrl,
@@ -795,6 +798,16 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                   onChange={(e) => handleInputChange('vendorTablePrice', e.target.value)}
                 />
               </div>
+            </div>
+
+            {/* No online table sales toggle */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="no-online-tables"
+                checked={noOnlineTableSales}
+                onCheckedChange={setNoOnlineTableSales}
+              />
+              <Label htmlFor="no-online-tables">No online vendor table sales</Label>
             </div>
 
             <div className="space-y-2">
