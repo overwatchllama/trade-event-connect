@@ -51,6 +51,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
     eventType: '',
     maxAttendees: '',
     entryFee: '',
+    agePricingInfo: '',
     vendorTablePrice: '',
     totalTables: '',
     contactEmail: '',
@@ -245,6 +246,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
           card_types: selectedCardTypes,
           max_attendees: formData.maxAttendees ? parseInt(formData.maxAttendees) : null,
           entry_fee: formData.entryFee ? parseFloat(formData.entryFee) : null,
+          age_pricing_info: formData.agePricingInfo || null,
           vendor_table_price: formData.vendorTablePrice ? parseFloat(formData.vendorTablePrice) : null,
           total_tables: formData.totalTables ? parseInt(formData.totalTables) : null,
           tables_available: formData.totalTables ? parseInt(formData.totalTables) : null,
@@ -323,6 +325,7 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
         eventType: '',
         maxAttendees: '',
         entryFee: '',
+        agePricingInfo: '',
         vendorTablePrice: '',
         totalTables: '',
         contactEmail: '',
@@ -676,6 +679,16 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
                   onChange={(e) => handleInputChange('entryFee', e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="agePricingInfo">Age-Related Pricing (Optional)</Label>
+              <Input
+                id="agePricingInfo"
+                placeholder="e.g., Free admission for kids under 12"
+                value={formData.agePricingInfo}
+                onChange={(e) => handleInputChange('agePricingInfo', e.target.value)}
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

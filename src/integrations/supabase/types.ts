@@ -381,6 +381,7 @@ export type Database = {
       events: {
         Row: {
           address: string
+          age_pricing_info: string | null
           card_types: string[]
           city: string
           contact_email: string | null
@@ -414,6 +415,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          age_pricing_info?: string | null
           card_types?: string[]
           city: string
           contact_email?: string | null
@@ -447,6 +449,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          age_pricing_info?: string | null
           card_types?: string[]
           city?: string
           contact_email?: string | null

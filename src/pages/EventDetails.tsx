@@ -492,6 +492,12 @@ const EventDetails = () => {
                   </div>
                 )}
 
+                {event.age_pricing_info && (
+                  <div className="pt-2 border-t">
+                    <p className="text-sm text-muted-foreground">{event.age_pricing_info}</p>
+                  </div>
+                )}
+
                 {!event.no_online_ticket_sales && (
                   <Button
                     className="w-full"

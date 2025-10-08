@@ -53,6 +53,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
     eventType: '',
     maxAttendees: '',
     entryFee: '',
+    agePricingInfo: '',
     vendorTablePrice: '',
     totalTables: '',
     contactEmail: '',
@@ -104,6 +105,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
         eventType: event.event_type || '',
         maxAttendees: event.max_attendees?.toString() || '',
         entryFee: event.entry_fee?.toString() || '',
+        agePricingInfo: event.age_pricing_info || '',
         vendorTablePrice: event.vendor_table_price?.toString() || '',
         totalTables: event.total_tables?.toString() || '',
         contactEmail: event.contact_email || '',
@@ -330,6 +332,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
           card_types: selectedCardTypes,
           max_attendees: formData.maxAttendees ? parseInt(formData.maxAttendees) : null,
           entry_fee: formData.entryFee ? parseFloat(formData.entryFee) : null,
+          age_pricing_info: formData.agePricingInfo || null,
           vendor_table_price: formData.vendorTablePrice ? parseFloat(formData.vendorTablePrice) : null,
           total_tables: formData.totalTables ? parseInt(formData.totalTables) : null,
           is_multi_day: isMultiDay,
@@ -736,6 +739,16 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                   onChange={(e) => handleInputChange('entryFee', e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="agePricingInfo">Age-Related Pricing (Optional)</Label>
+              <Input
+                id="agePricingInfo"
+                placeholder="e.g., Free admission for kids under 12"
+                value={formData.agePricingInfo}
+                onChange={(e) => handleInputChange('agePricingInfo', e.target.value)}
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
