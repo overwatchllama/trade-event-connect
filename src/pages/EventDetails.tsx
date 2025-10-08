@@ -40,8 +40,9 @@ const EventDetails = () => {
   const [manageVendorsOpen, setManageVendorsOpen] = useState(false);
   const [manageSponsorsOpen, setManageSponsorsOpen] = useState(false);
   const [socialMediaLinks, setSocialMediaLinks] = useState<any[]>([]);
+  const [eventDays, setEventDays] = useState<any[]>([]);
 
-  const isVendorPro = subscribed && 
+  const isVendorPro = subscribed &&
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
   const canSeeVendorInfo = hasRole('vendor') || isVendorPro;
   const canSeeSponsorInfo = hasRole('sponsor');
@@ -92,6 +93,19 @@ const EventDetails = () => {
 
         if (!socialError && socialData) {
           setSocialMediaLinks(socialData);
+        }
+
+        // Fetch event days for pricing
+        if (data.is_multi_day) {
+          const { data: daysData, error: daysError } = await supabase
+            .from('event_days')
+            .select('*')
+            .eq('event_id', id)
+            .order('day_number');
+
+          if (!daysError && daysData) {
+            setEventDays(daysData);
+          }
         }
       } catch (error) {
         console.error('Error fetching event:', error);
@@ -455,21 +469,38 @@ const EventDetails = () => {
                 <CardTitle>Ticket Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Entry Fee</span>
-                  <span className="text-2xl font-bold">
-                    ${event.entry_fee || 0}
-                  </span>
-                </div>
+                {event.is_multi_day && eventDays.length > 0 ? (
+                  <div className="space-y-3">
+                    {eventDays.map((day) => (
+                      <div key={day.id} className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          Day {day.day_number}
+                        </span>
+                        <span className="text-lg font-bold">
+                          ${day.ticket_cost || 0}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Entry Fee</span>
+                    <span className="text-2xl font-bold">
+                      ${event.entry_fee || 0}
+                    </span>
+                  </div>
+                )}
 
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={handleBuyTicket}
-                  disabled={purchasing}
-                >
-                  {purchasing ? 'Processing...' : 'Buy Ticket'}
-                </Button>
+                {!event.no_online_ticket_sales && (
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={handleBuyTicket}
+                    disabled={purchasing}
+                  >
+                    {purchasing ? 'Processing...' : 'Buy Ticket'}
+                  </Button>
+                )}
 
                 <div className="text-center">
                   <SubscriptionButton
