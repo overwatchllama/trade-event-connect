@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -185,6 +186,22 @@ const EventDetails = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>{event.title} - CC Events</title>
+        <meta name="description" content={event.description || `Join us for ${event.title} at ${event.venue_name || 'this exciting event'}`} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={event.title} />
+        <meta property="og:description" content={event.description || `Join us for ${event.title} at ${event.venue_name || 'this exciting event'}`} />
+        {event.flyer_url && <meta property="og:image" content={event.flyer_url} />}
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={event.title} />
+        <meta name="twitter:description" content={event.description || `Join us for ${event.title} at ${event.venue_name || 'this exciting event'}`} />
+        {event.flyer_url && <meta name="twitter:image" content={event.flyer_url} />}
+      </Helmet>
       <Header />
       
       <div className="container mx-auto px-4 py-8">
