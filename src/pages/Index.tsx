@@ -6,11 +6,20 @@ import SimplifiedEventCard from "@/components/SimplifiedEventCard";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const Index = () => {
   const navigate = useNavigate();
   const [popularEvents, setPopularEvents] = useState<any[]>([]);
+  const [filteredEvents, setFilteredEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedState, setSelectedState] = useState<string>("all");
 
   useEffect(() => {
     const fetchPopularEvents = async () => {
@@ -61,6 +70,7 @@ const Index = () => {
           });
 
           setPopularEvents(transformedEvents);
+          setFilteredEvents(transformedEvents);
         }
       } catch (error) {
         console.error('Error fetching popular events:', error);
@@ -72,6 +82,14 @@ const Index = () => {
     fetchPopularEvents();
   }, []);
 
+  useEffect(() => {
+    if (selectedState === "all") {
+      setFilteredEvents(popularEvents);
+    } else {
+      setFilteredEvents(popularEvents.filter(event => event.state === selectedState));
+    }
+  }, [selectedState, popularEvents]);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -80,7 +98,7 @@ const Index = () => {
       {/* Featured Events Section */}
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
+          <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               Popular Events
             </h2>
@@ -89,25 +107,37 @@ const Index = () => {
             </p>
           </div>
 
-          {loading ? (
-            <div className="text-center py-8">Loading events...</div>
-          ) : popularEvents.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No events available yet. Check back soon!
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-              {popularEvents.map((event) => (
-                <SimplifiedEventCard key={event.id} event={event} />
-              ))}
-            </div>
-          )}
-
-          <div className="text-center">
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-8">
+            <Select value={selectedState} onValueChange={setSelectedState}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filter by State" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All States</SelectItem>
+                {Array.from(new Set(popularEvents.map(e => e.state))).sort().map(state => (
+                  <SelectItem key={state} value={state}>{state}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
             <Button variant="hero" size="lg" onClick={() => navigate('/events')}>
               Browse All Events
             </Button>
           </div>
+
+          {loading ? (
+            <div className="text-center py-8">Loading events...</div>
+          ) : filteredEvents.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {selectedState === "all" ? "No events available yet. Check back soon!" : `No events found in ${selectedState}.`}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredEvents.map((event) => (
+                <SimplifiedEventCard key={event.id} event={event} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
