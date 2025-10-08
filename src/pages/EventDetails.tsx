@@ -472,16 +472,14 @@ const EventDetails = () => {
                     </div>
                   )}
 
-                  {!isOrganizer && (
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      onClick={() => setVendorDialogOpen(true)}
-                    >
-                      <Store className="mr-2 h-4 w-4" />
-                      Apply to be a Vendor
-                    </Button>
-                  )}
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => setVendorDialogOpen(true)}
+                  >
+                    <Store className="mr-2 h-4 w-4" />
+                    Apply to be a Vendor
+                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -496,16 +494,14 @@ const EventDetails = () => {
                     Support this event and get your brand in front of the community.
                   </p>
 
-                  {!isOrganizer && (
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      onClick={() => setSponsorDialogOpen(true)}
-                    >
-                      <Store className="mr-2 h-4 w-4" />
-                      Apply to be a Sponsor
-                    </Button>
-                  )}
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => setSponsorDialogOpen(true)}
+                  >
+                    <Store className="mr-2 h-4 w-4" />
+                    Apply to be a Sponsor
+                  </Button>
                 </CardContent>
               </Card>
             )}
