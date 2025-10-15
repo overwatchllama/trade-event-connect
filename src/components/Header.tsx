@@ -92,11 +92,11 @@ const Header = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/subscription')}>
                     <Settings className="mr-2 h-4 w-4" />
-                    Plans
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/subscriptions')}>
-                    <Bell className="mr-2 h-4 w-4" />
                     My Subscriptions
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/following')}>
+                    <Bell className="mr-2 h-4 w-4" />
+                    My Following
                   </DropdownMenuItem>
                   {hasVendorRole && (
                     <DropdownMenuItem onClick={() => navigate('/my-vendor-profile')}>

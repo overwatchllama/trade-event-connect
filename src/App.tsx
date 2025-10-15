@@ -14,7 +14,7 @@ import VendorProfile from "./pages/VendorProfile";
 import MyCollection from "./pages/MyCollection";
 import Subscription from "./pages/Subscription";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
-import Subscriptions from "./pages/Subscriptions";
+import Following from "./pages/Following";
 import Admin from "./pages/Admin";
 import EventDetails from "./pages/EventDetails";
 import LayoutTool from "./pages/LayoutTool";
@@ -40,9 +40,9 @@ const App = () => (
           <Route path="/vendors" element={<Vendors />} />
           <Route path="/vendor/:id" element={<VendorProfile />} />
           <Route path="/my-vendor-profile" element={<VendorProfile />} />
-          <Route path="/subscriptions" element={
+          <Route path="/following" element={
             <ProtectedRoute>
-              <Subscriptions />
+              <Following />
             </ProtectedRoute>
           } />
           <Route path="/subscription" element={<Subscription />} />
