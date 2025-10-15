@@ -37,6 +37,30 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Check for test subscriptions first (don't query Stripe for test customers)
+    const { data: existingSub } = await supabaseClient
+      .from('subscribers')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (existingSub?.stripe_customer_id?.startsWith('test_customer_')) {
+      logStep("Test subscription found", { 
+        tier: existingSub.subscription_tier,
+        subscribed: existingSub.subscribed 
+      });
+      
+      return new Response(JSON.stringify({
+        subscribed: existingSub.subscribed,
+        subscription_tier: existingSub.subscription_tier,
+        subscription_end: existingSub.subscription_end,
+        billing_period: existingSub.billing_period
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
