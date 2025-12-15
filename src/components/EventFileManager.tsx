@@ -49,6 +49,20 @@ export const EventFileManager = ({ eventId }: EventFileManagerProps) => {
   const handleFileUpload = async () => {
     if (!selectedFile || !user) return;
 
+    // File validation
+    const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+    if (!ALLOWED_TYPES.includes(selectedFile.type)) {
+      toast.error('Invalid file type. Only JPEG, PNG, WebP, and PDF files are allowed.');
+      return;
+    }
+
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      toast.error('File too large. Maximum size is 5MB.');
+      return;
+    }
+
     setUploading(true);
 
     try {

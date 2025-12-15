@@ -188,6 +188,22 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
       
       // Upload flyer if provided
       if (flyerFile) {
+        // File validation
+        const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+        if (!ALLOWED_TYPES.includes(flyerFile.type)) {
+          toast.error('Invalid flyer file type. Only JPEG, PNG, and WebP images are allowed.');
+          setLoading(false);
+          return;
+        }
+
+        if (flyerFile.size > MAX_FILE_SIZE) {
+          toast.error('Flyer file too large. Maximum size is 5MB.');
+          setLoading(false);
+          return;
+        }
+
         const fileExt = flyerFile.name.split('.').pop();
         const fileName = `${Math.random()}.${fileExt}`;
         const filePath = `${user.id}/${fileName}`;
@@ -211,6 +227,22 @@ const CreateEventDialog = ({ open, onOpenChange }: CreateEventDialogProps) => {
 
       // Upload floor plan if provided
       if (floorPlanFile) {
+        // File validation
+        const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB for floor plans
+
+        if (!ALLOWED_TYPES.includes(floorPlanFile.type)) {
+          toast.error('Invalid floor plan file type. Only JPEG, PNG, WebP, and PDF files are allowed.');
+          setLoading(false);
+          return;
+        }
+
+        if (floorPlanFile.size > MAX_FILE_SIZE) {
+          toast.error('Floor plan file too large. Maximum size is 10MB.');
+          setLoading(false);
+          return;
+        }
+
         const fileExt = floorPlanFile.name.split('.').pop();
         const fileName = `floor-plan-${Math.random()}.${fileExt}`;
         const filePath = `${user.id}/${fileName}`;

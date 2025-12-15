@@ -43,21 +43,10 @@ export const useAdmin = () => {
   const addUserRole = async (userId: string, role: 'user' | 'vendor' | 'organizer' | 'venue' | 'admin') => {
     if (!isAdmin) throw new Error('Unauthorized');
 
-    const { error } = await supabase
-      .from('user_roles')
-      .insert({ user_id: userId, role });
-
-    if (!error) {
-      // Log the admin action
-      await supabase
-        .from('admin_actions')
-        .insert({
-          admin_id: user!.id,
-          target_user_id: userId,
-          action: 'role_added',
-          details: { role }
-        });
-    }
+    const { data, error } = await supabase.rpc('admin_add_user_role', {
+      target_user_id: userId,
+      user_role: role
+    });
 
     return { error };
   };
@@ -65,23 +54,10 @@ export const useAdmin = () => {
   const removeUserRole = async (userId: string, role: 'user' | 'vendor' | 'organizer' | 'venue' | 'admin') => {
     if (!isAdmin) throw new Error('Unauthorized');
 
-    const { error } = await supabase
-      .from('user_roles')
-      .delete()
-      .eq('user_id', userId)
-      .eq('role', role);
-
-    if (!error) {
-      // Log the admin action
-      await supabase
-        .from('admin_actions')
-        .insert({
-          admin_id: user!.id,
-          target_user_id: userId,
-          action: 'role_removed',
-          details: { role }
-        });
-    }
+    const { data, error } = await supabase.rpc('admin_remove_user_role', {
+      target_user_id: userId,
+      user_role: role
+    });
 
     return { error };
   };
@@ -89,27 +65,10 @@ export const useAdmin = () => {
   const blockUser = async (userId: string, reason: string) => {
     if (!isAdmin) throw new Error('Unauthorized');
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        status: 'blocked',
-        blocked_at: new Date().toISOString(),
-        blocked_by: user!.id,
-        block_reason: reason
-      })
-      .eq('id', userId);
-
-    if (!error) {
-      // Log the admin action
-      await supabase
-        .from('admin_actions')
-        .insert({
-          admin_id: user!.id,
-          target_user_id: userId,
-          action: 'user_blocked',
-          details: { reason }
-        });
-    }
+    const { data, error } = await supabase.rpc('admin_block_user', {
+      target_user_id: userId,
+      block_reason: reason
+    });
 
     return { error };
   };
@@ -117,27 +76,9 @@ export const useAdmin = () => {
   const unblockUser = async (userId: string) => {
     if (!isAdmin) throw new Error('Unauthorized');
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        status: 'active',
-        blocked_at: null,
-        blocked_by: null,
-        block_reason: null
-      })
-      .eq('id', userId);
-
-    if (!error) {
-      // Log the admin action
-      await supabase
-        .from('admin_actions')
-        .insert({
-          admin_id: user!.id,
-          target_user_id: userId,
-          action: 'user_unblocked',
-          details: {}
-        });
-    }
+    const { data, error } = await supabase.rpc('admin_unblock_user', {
+      target_user_id: userId
+    });
 
     return { error };
   };
@@ -145,13 +86,11 @@ export const useAdmin = () => {
   const approveRoleRequest = async (requestId: string, approved: boolean, adminNotes?: string) => {
     if (!isAdmin) throw new Error('Unauthorized');
 
-    const { error } = await supabase
-      .from('role_requests')
-      .update({
-        status: approved ? 'approved' : 'rejected',
-        admin_notes: adminNotes || null
-      })
-      .eq('id', requestId);
+    const { data, error } = await supabase.rpc('admin_approve_role_request', {
+      request_id: requestId,
+      is_approved: approved,
+      admin_notes: adminNotes || null
+    });
 
     return { error };
   };
