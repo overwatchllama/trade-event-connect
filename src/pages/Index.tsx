@@ -13,11 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Database } from "@/integrations/supabase/types";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [popularEvents, setPopularEvents] = useState<any[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<any[]>([]);
+  const [popularEvents, setPopularEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
+  const [filteredEvents, setFilteredEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedState, setSelectedState] = useState<string>("all");
 

@@ -17,37 +17,13 @@ import { useVendorProfile } from '@/hooks/useVendorProfile';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { Search, Store, Mail, MapPin, Star, Users, Edit } from 'lucide-react';
 import { toast } from 'sonner';
+import { Database } from '@/integrations/supabase/types';
 
-interface VendorProfile {
-  id: string;
-  user_id: string;
-  business_name: string;
-  business_description: string | null;
-  business_address: string | null;
-  business_phone: string | null;
-  business_email: string | null;
-  website_url: string | null;
-  avatar_url: string | null;
-  banner_url: string | null;
-  social_instagram: string | null;
-  social_twitter: string | null;
-  social_facebook: string | null;
-  social_linkedin: string | null;
-  social_links: any[] | null;
-  specialties: string[] | null;
-  vendor_types: string[] | null;
-  rating: number | null;
-  total_reviews: number | null;
-  verified: boolean | null;
-  created_at: string;
-  profiles: {
-    id: string;
-    full_name: string | null;
-    email: string;
-    avatar_url: string | null;
-    role: string;
-    location_state: string | null;
-  };
+type VendorRow = Database['public']['Tables']['vendors']['Row'];
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+
+interface VendorProfile extends VendorRow {
+  profiles: Pick<ProfileRow, 'id' | 'full_name' | 'email' | 'avatar_url' | 'role' | 'location_state'>;
 }
 
 const Vendors = () => {

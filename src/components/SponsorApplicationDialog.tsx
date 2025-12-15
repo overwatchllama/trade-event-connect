@@ -121,9 +121,10 @@ export const SponsorApplicationDialog = ({
       setSponsorshipLevel("standard");
       setAmount("");
       setBenefits("");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error applying:", error);
-      toast.error(error.message || "Failed to submit sponsorship application");
+      const errorMessage = error instanceof Error ? error.message : "Failed to submit sponsorship application";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

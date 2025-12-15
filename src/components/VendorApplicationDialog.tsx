@@ -125,9 +125,10 @@ export const VendorApplicationDialog = ({
       // Create application directly (no payment on application)
       console.log("Creating application without immediate payment...");
       await createApplication(vendorProfile.id);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("ERROR in handleApply:", error);
-      toast.error(error.message || "Failed to submit application");
+      const errorMessage = error instanceof Error ? error.message : "Failed to submit application";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
       console.log("=== VENDOR APPLICATION END ===");

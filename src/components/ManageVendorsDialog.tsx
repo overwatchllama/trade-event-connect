@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle, XCircle, Clock, DollarSign, User, Star, Calendar, History, Mail, Bell, Upload, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 
 interface VendorApplication {
@@ -608,7 +609,7 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
                 ) : (
                   <Select
                     value={application.payment_status}
-                    onValueChange={(value) => updatePaymentStatus(application.id, value as any)}
+                    onValueChange={(value) => updatePaymentStatus(application.id, value as Database['public']['Enums']['payment_status'])}
                   >
                     <SelectTrigger className="w-32">
                       <SelectValue />

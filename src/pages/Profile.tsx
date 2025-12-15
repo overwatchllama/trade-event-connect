@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SelfManageRoles } from '@/components/SelfManageRoles';
 import { ManageVenue } from '@/components/ManageVenue';
 import EventCard from '@/components/EventCard';
+import { Database } from '@/integrations/supabase/types';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Full name must be at least 2 characters'),
@@ -50,12 +51,12 @@ type ProfileForm = z.infer<typeof profileSchema>;
 
 const Profile = () => {
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
-  const [roleRequests, setRoleRequests] = useState<any[]>([]);
+  const [profile, setProfile] = useState<Database['public']['Tables']['profiles']['Row'] | null>(null);
+  const [roleRequests, setRoleRequests] = useState<Database['public']['Tables']['role_requests']['Row'][]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialMediaLink[]>([]);
   const [userRoles, setUserRoles] = useState<string[]>([]);
-  const [vendingEvents, setVendingEvents] = useState<any[]>([]);
-  const [sponsoringEvents, setSponsoringEvents] = useState<any[]>([]);
+  const [vendingEvents, setVendingEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
+  const [sponsoringEvents, setSponsoringEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
   const { user, requestRole } = useAuth();
   const { subscription_tier, subscribed } = useSubscription();
   const navigate = useNavigate();
@@ -321,10 +322,11 @@ const Profile = () => {
         title: 'Profile Updated',
         description: 'Your profile has been successfully updated.',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
       toast({
         title: 'Update Failed',
-        description: error.message,
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

@@ -179,14 +179,15 @@ const handler = async (req: Request): Promise<Response> => {
         },
       }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[SEND-ANNOUNCEMENT] Error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
     return new Response(
       JSON.stringify({
-        error: error.message || "Internal server error",
+        error: errorMessage,
       }),
       {
-        status: error.message === "Unauthorized" || error.message === "Unauthorized - Admin access required" ? 403 : 500,
+        status: errorMessage === "Unauthorized" || errorMessage === "Unauthorized - Admin access required" ? 403 : 500,
         headers: {
           "Content-Type": "application/json",
           ...corsHeaders,

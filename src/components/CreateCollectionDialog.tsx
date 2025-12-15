@@ -120,10 +120,11 @@ export const CreateCollectionDialog: React.FC<CreateCollectionDialogProps> = ({
       
       // Notify parent to refresh
       onCollectionCreated();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create collection';
       toast({
         title: 'Creation Failed',
-        description: error.message,
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
