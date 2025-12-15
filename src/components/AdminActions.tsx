@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,7 +11,7 @@ import { Search, Activity, Shield, Ban, CheckCircle, UserCheck } from 'lucide-re
 interface AdminAction {
   id: string;
   action: string;
-  details: any;
+  details: Database['public']['Tables']['admin_actions']['Row']['details'];
   created_at: string;
   admin: {
     full_name: string;
@@ -81,7 +82,7 @@ export const AdminActions = () => {
     }
   };
 
-  const formatActionText = (action: string, details: any) => {
+  const formatActionText = (action: string, details: Database['public']['Tables']['admin_actions']['Row']['details']) => {
     switch (action) {
       case 'user_blocked':
         return `Blocked user${details?.reason ? ` (${details.reason})` : ''}`;

@@ -22,6 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 
 const Events = () => {
@@ -34,10 +35,10 @@ const Events = () => {
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [allEvents, setAllEvents] = useState<any[]>([]);
-  const [myEvents, setMyEvents] = useState<any[]>([]);
-  const [vendingEvents, setVendingEvents] = useState<any[]>([]);
-  const [sponsoringEvents, setSponsoringEvents] = useState<any[]>([]);
+  const [allEvents, setAllEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
+  const [myEvents, setMyEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
+  const [vendingEvents, setVendingEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
+  const [sponsoringEvents, setSponsoringEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { profile } = useProfile();

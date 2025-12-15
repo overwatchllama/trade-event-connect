@@ -85,9 +85,9 @@ export const ManageEventSponsors = ({ eventId }: ManageEventSponsorsProps) => {
       setAddDialogOpen(false);
       resetForm();
       fetchData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error adding sponsor:", error);
-      if (error.code === "23505") {
+      if (error && typeof error === 'object' && 'code' in error && error.code === "23505") {
         toast.error("This sponsor is already added to the event");
       } else {
         toast.error("Failed to add sponsor");

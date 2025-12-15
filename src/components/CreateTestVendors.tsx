@@ -127,10 +127,11 @@ export const CreateTestVendors: React.FC = () => {
       });
 
       setCurrentIndex(prev => prev + 1);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create vendor';
       toast({
         title: 'Creation Failed',
-        description: error.message,
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

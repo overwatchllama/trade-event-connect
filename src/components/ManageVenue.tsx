@@ -137,11 +137,12 @@ export const ManageVenue = () => {
       }
 
       await fetchVenue();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving venue:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save venue';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to save venue',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

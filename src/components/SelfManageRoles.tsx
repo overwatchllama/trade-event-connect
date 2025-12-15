@@ -114,7 +114,7 @@ export const SelfManageRoles = () => {
       }
 
       await fetchRoles();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error toggling role:', error);
       toast({
         title: 'Error',

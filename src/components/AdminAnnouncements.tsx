@@ -94,11 +94,12 @@ export const AdminAnnouncements = () => {
       setMessage('');
       setSelectedRoles([]);
       setSendToAll(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error sending announcement:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send announcement';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to send announcement',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

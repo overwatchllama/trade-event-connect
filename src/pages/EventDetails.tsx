@@ -22,6 +22,11 @@ import { EventSponsors } from '@/components/EventSponsors';
 import EditEventDialog from '@/components/EditEventDialog';
 import ManageVendorsDialog from '@/components/ManageVendorsDialog';
 import ManageSponsorsDialog from '@/components/ManageSponsorsDialog';
+import { Database } from '@/integrations/supabase/types';
+
+type Event = Database['public']['Tables']['events']['Row'];
+type SocialMediaLink = Database['public']['Tables']['social_media_links']['Row'];
+type EventDay = Database['public']['Tables']['event_days']['Row'];
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,7 +34,7 @@ const EventDetails = () => {
   const { user } = useAuth();
   const { hasRole } = useUserRoles();
   const { subscribed, subscription_tier } = useSubscription();
-  const [event, setEvent] = useState<any>(null);
+  const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [isOrganizer, setIsOrganizer] = useState(false);
@@ -40,8 +45,8 @@ const EventDetails = () => {
   const [organizerEmail, setOrganizerEmail] = useState<string | null>(null);
   const [manageVendorsOpen, setManageVendorsOpen] = useState(false);
   const [manageSponsorsOpen, setManageSponsorsOpen] = useState(false);
-  const [socialMediaLinks, setSocialMediaLinks] = useState<any[]>([]);
-  const [eventDays, setEventDays] = useState<any[]>([]);
+  const [socialMediaLinks, setSocialMediaLinks] = useState<SocialMediaLink[]>([]);
+  const [eventDays, setEventDays] = useState<EventDay[]>([]);
   const [hasApplied, setHasApplied] = useState(false);
 
   const isVendorPro = subscribed &&
@@ -180,7 +185,7 @@ const EventDetails = () => {
       if (data.url) {
         window.location.href = data.url;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Purchase error:', error);
       toast.error('Failed to process ticket purchase');
     } finally {

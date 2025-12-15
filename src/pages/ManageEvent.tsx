@@ -17,6 +17,9 @@ import ManageVendorsDialog from '@/components/ManageVendorsDialog';
 import ManageSponsorsDialog from '@/components/ManageSponsorsDialog';
 import { EventFileManager } from '@/components/EventFileManager';
 import EventDayDialog from '@/components/EventDayDialog';
+import { Database } from '@/integrations/supabase/types';
+
+type Event = Database['public']['Tables']['events']['Row'];
 
 const ManageEvent = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +27,7 @@ const ManageEvent = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'flyer';
-  const [event, setEvent] = useState<any>(null);
+  const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [flyerFile, setFlyerFile] = useState<File | null>(null);
@@ -108,7 +111,7 @@ const ManageEvent = () => {
     }
   };
 
-  const handleSaveLayout = async (layoutJson: any) => {
+  const handleSaveLayout = async (layoutJson: Database['public']['Tables']['events']['Row']['layout_json']) => {
     if (!event) return;
 
     const { error } = await supabase

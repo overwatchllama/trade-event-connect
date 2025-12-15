@@ -114,10 +114,11 @@ const handler = async (req: Request): Promise<Response> => {
         ...corsHeaders,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in send-vendor-invoice function:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
