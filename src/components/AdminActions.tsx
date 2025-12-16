@@ -83,13 +83,14 @@ export const AdminActions = () => {
   };
 
   const formatActionText = (action: string, details: Database['public']['Tables']['admin_actions']['Row']['details']) => {
+    const detailsObj = details as Record<string, unknown> | null;
     switch (action) {
       case 'user_blocked':
-        return `Blocked user${details?.reason ? ` (${details.reason})` : ''}`;
+        return `Blocked user${detailsObj?.reason ? ` (${detailsObj.reason})` : ''}`;
       case 'user_unblocked':
         return 'Unblocked user';
       case 'role_change':
-        return `Changed role to ${details?.new_role || 'unknown'}`;
+        return `Changed role to ${detailsObj?.new_role || 'unknown'}`;
       default:
         return action.replace('_', ' ');
     }

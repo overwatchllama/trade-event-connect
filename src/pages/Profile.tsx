@@ -55,8 +55,8 @@ const Profile = () => {
   const [roleRequests, setRoleRequests] = useState<Database['public']['Tables']['role_requests']['Row'][]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialMediaLink[]>([]);
   const [userRoles, setUserRoles] = useState<string[]>([]);
-  const [vendingEvents, setVendingEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
-  const [sponsoringEvents, setSponsoringEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
+  const [vendingEvents, setVendingEvents] = useState<any[]>([]);
+  const [sponsoringEvents, setSponsoringEvents] = useState<any[]>([]);
   const { user, requestRole } = useAuth();
   const { subscription_tier, subscribed } = useSubscription();
   const navigate = useNavigate();

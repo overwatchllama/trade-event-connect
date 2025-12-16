@@ -25,7 +25,7 @@ import ManageSponsorsDialog from '@/components/ManageSponsorsDialog';
 import { Database } from '@/integrations/supabase/types';
 
 type Event = Database['public']['Tables']['events']['Row'];
-type SocialMediaLink = Database['public']['Tables']['social_media_links']['Row'];
+type SocialMediaLink = Database['public']['Tables']['event_social_media']['Row'];
 type EventDay = Database['public']['Tables']['event_days']['Row'];
 
 const EventDetails = () => {
@@ -228,18 +228,18 @@ const EventDetails = () => {
     <div className="min-h-screen bg-background">
       <Helmet>
         <title>{event.title} - CC Events</title>
-        <meta name="description" content={event.description || `Join us for ${event.title} at ${event.venue_name || 'this exciting event'}`} />
+        <meta name="description" content={event.description || `Join us for ${event.title} at ${event.venue || 'this exciting event'}`} />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:title" content={event.title} />
-        <meta property="og:description" content={event.description || `Join us for ${event.title} at ${event.venue_name || 'this exciting event'}`} />
+        <meta property="og:description" content={event.description || `Join us for ${event.title} at ${event.venue || 'this exciting event'}`} />
         {event.flyer_url && <meta property="og:image" content={event.flyer_url} />}
         
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={event.title} />
-        <meta name="twitter:description" content={event.description || `Join us for ${event.title} at ${event.venue_name || 'this exciting event'}`} />
+        <meta name="twitter:description" content={event.description || `Join us for ${event.title} at ${event.venue || 'this exciting event'}`} />
         {event.flyer_url && <meta name="twitter:image" content={event.flyer_url} />}
       </Helmet>
       <Header />

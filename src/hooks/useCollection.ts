@@ -5,8 +5,6 @@ import { toast } from './use-toast';
 
 export type CardCategory = 'pokemon' | 'mtg' | 'yugioh' | 'sports' | 'lorcana' | 'onepiece' | 'other';
 export type CardCondition = 'mint' | 'near_mint' | 'excellent' | 'good' | 'light_play' | 'moderate_play' | 'heavy_play' | 'damaged';
-export type CardVariant = 'normal' | 'holo' | 'reverse_holo' | 'first_edition' | 'unlimited' | 'shadowless' | 'stamped' | 'prerelease' | 'promo' | 'full_art' | 'secret_rare' | 'rainbow_rare' | 'gold' | 'silver' | 'extended_art' | 'showcase' | 'borderless' | 'foil' | 'etched' | 'gilded';
-export type GradingCompany = 'psa' | 'bgs' | 'cgc' | 'sgc' | 'ace' | 'none';
 
 export interface Collection {
   id: string;
@@ -22,7 +20,6 @@ export interface CollectionItem {
   id: string;
   collection_id: string;
   user_id: string;
-  tcg_card_id: string | null;
   name: string;
   set_name: string | null;
   card_number: string | null;
@@ -35,82 +32,20 @@ export interface CollectionItem {
   notes: string | null;
   image_url: string | null;
   acquired_date: string | null;
-  variant: CardVariant;
-  is_graded: boolean;
-  grading_company: GradingCompany;
-  grade_score: number | null;
-  cert_number: string | null;
-  is_first_edition: boolean;
-  is_shadowless: boolean;
-  language: string;
-  is_signed: boolean;
-  tags: string[] | null;
-  location: string | null;
-  for_trade: boolean;
-  metadata: Record<string, any> | null;
   created_at: string;
   updated_at: string;
-}
-
-export interface Wishlist {
-  id: string;
-  user_id: string;
-  tcg_card_id: string | null;
-  name: string | null;
-  set_name: string | null;
-  card_number: string | null;
-  variant: CardVariant;
-  desired_condition: CardCondition | null;
-  max_price: number | null;
-  priority: number;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TcgSet {
-  id: string;
-  external_id: string | null;
-  game: CardCategory;
-  name: string;
-  code: string | null;
-  series: string | null;
-  release_date: string | null;
-  total_cards: number | null;
-  printed_total: number | null;
-  logo_url: string | null;
-  symbol_url: string | null;
-  description: string | null;
-  metadata: Record<string, any> | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface SetCompletion {
-  id: string;
-  user_id: string;
-  tcg_set_id: string;
-  total_cards: number;
-  owned_cards: number;
-  completion_percentage: number;
-  total_value: number;
-  last_updated: string;
 }
 
 export const useCollection = () => {
   const { user } = useAuth();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [items, setItems] = useState<CollectionItem[]>([]);
-  const [wishlists, setWishlists] = useState<Wishlist[]>([]);
-  const [sets, setSets] = useState<TcgSet[]>([]);
-  const [setCompletions, setSetCompletions] = useState<SetCompletion[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       fetchCollections();
       fetchItems();
-      fetchWishlists();
     }
   }, [user]);
 
@@ -145,7 +80,29 @@ export const useCollection = () => {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      setItems(data || []);
+      
+      // Map database fields to our interface
+      const mappedItems: CollectionItem[] = (data || []).map(item => ({
+        id: item.id,
+        collection_id: item.collection_id,
+        user_id: item.user_id,
+        name: item.name,
+        set_name: item.set_name,
+        card_number: item.card_number,
+        rarity: item.rarity,
+        condition: item.condition,
+        quantity: item.quantity,
+        purchase_price: item.purchase_price,
+        current_market_price: item.current_market_price,
+        estimated_value: item.estimated_value,
+        notes: item.notes,
+        image_url: item.image_url,
+        acquired_date: item.acquired_date,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+      }));
+      
+      setItems(mappedItems);
     } catch (error) {
       console.error('Error fetching items:', error);
       toast({
@@ -155,70 +112,6 @@ export const useCollection = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchWishlists = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('wishlists')
-        .select('*')
-        .order('priority', { ascending: false });
-
-      if (error) throw error;
-      setWishlists(data || []);
-    } catch (error) {
-      console.error('Error fetching wishlists:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load wishlists.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const fetchSets = async (game?: CardCategory) => {
-    try {
-      let query = supabase.from('tcg_sets').select('*');
-
-      if (game) {
-        query = query.eq('game', game);
-      }
-
-      const { data, error } = await query.order('release_date', { ascending: false });
-
-      if (error) throw error;
-      setSets(data || []);
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching sets:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load TCG sets.',
-        variant: 'destructive',
-      });
-      return [];
-    }
-  };
-
-  const fetchSetCompletions = async (game?: CardCategory) => {
-    try {
-      let query = supabase
-        .from('set_completion')
-        .select('*, tcg_sets!inner(*)');
-
-      if (game) {
-        query = query.eq('tcg_sets.game', game);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setSetCompletions(data || []);
-      return data || [];
-    } catch (error) {
-      console.error('Error fetching set completions:', error);
-      return [];
     }
   };
 
@@ -254,10 +147,26 @@ export const useCollection = () => {
   const addItem = async (item: Partial<CollectionItem>) => {
     try {
       if (!user) throw new Error('User not authenticated');
+      if (!item.collection_id) throw new Error('Collection ID is required');
 
       const { data, error } = await supabase
         .from('collection_items')
-        .insert([{ ...item, user_id: user.id }])
+        .insert([{ 
+          name: item.name || '',
+          collection_id: item.collection_id,
+          user_id: user.id,
+          set_name: item.set_name,
+          card_number: item.card_number,
+          rarity: item.rarity,
+          condition: item.condition || 'near_mint',
+          quantity: item.quantity || 1,
+          purchase_price: item.purchase_price,
+          current_market_price: item.current_market_price,
+          estimated_value: item.estimated_value,
+          notes: item.notes,
+          image_url: item.image_url,
+          acquired_date: item.acquired_date,
+        }])
         .select()
         .single();
 
@@ -333,95 +242,15 @@ export const useCollection = () => {
     }
   };
 
-  const addToWishlist = async (wishlistItem: Partial<Wishlist>) => {
-    try {
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('wishlists')
-        .insert([{ ...wishlistItem, user_id: user.id }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      await fetchWishlists();
-      toast({
-        title: 'Success',
-        description: 'Added to wishlist.',
-      });
-      return data;
-    } catch (error) {
-      console.error('Error adding to wishlist:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to add to wishlist.',
-        variant: 'destructive',
-      });
-      throw error;
-    }
-  };
-
-  const removeFromWishlist = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('wishlists')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      await fetchWishlists();
-      toast({
-        title: 'Success',
-        description: 'Removed from wishlist.',
-      });
-    } catch (error) {
-      console.error('Error removing from wishlist:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to remove from wishlist.',
-        variant: 'destructive',
-      });
-      throw error;
-    }
-  };
-
-  const updateSetCompletion = async (setId: string) => {
-    try {
-      if (!user) throw new Error('User not authenticated');
-
-      const { error } = await supabase.rpc('update_set_completion', {
-        p_user_id: user.id,
-        p_tcg_set_id: setId,
-      });
-
-      if (error) throw error;
-
-      await fetchSetCompletions();
-    } catch (error) {
-      console.error('Error updating set completion:', error);
-    }
-  };
-
   return {
     collections,
     items,
-    wishlists,
-    sets,
-    setCompletions,
     loading,
     fetchCollections,
     fetchItems,
-    fetchWishlists,
-    fetchSets,
-    fetchSetCompletions,
     createCollection,
     addItem,
     updateItem,
     deleteItem,
-    addToWishlist,
-    removeFromWishlist,
-    updateSetCompletion,
   };
 };

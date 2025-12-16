@@ -35,7 +35,6 @@ const EnhancedCollection = () => {
   const {
     collections,
     items,
-    wishlists,
     loading,
     fetchCollections,
     fetchItems,
@@ -48,7 +47,6 @@ const EnhancedCollection = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [conditionFilter, setConditionFilter] = useState('all');
   const [rarityFilter, setRarityFilter] = useState('all');
-  const [variantFilter, setVariantFilter] = useState('all');
 
   useEffect(() => {
     if (user) {
@@ -63,10 +61,9 @@ const EnhancedCollection = () => {
                          item.set_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCondition = conditionFilter === 'all' || item.condition === conditionFilter;
     const matchesRarity = rarityFilter === 'all' || item.rarity === rarityFilter;
-    const matchesVariant = variantFilter === 'all' || item.variant === variantFilter;
     const matchesCollection = selectedCollection === 'all' || item.collection_id === selectedCollection;
 
-    return matchesSearch && matchesCondition && matchesRarity && matchesVariant && matchesCollection;
+    return matchesSearch && matchesCondition && matchesRarity && matchesCollection;
   });
 
   // Calculate stats
@@ -74,7 +71,6 @@ const EnhancedCollection = () => {
 
   // Get unique values for filters
   const uniqueRarities = [...new Set(items.map(item => item.rarity).filter(Boolean))];
-  const uniqueVariants = [...new Set(items.map(item => item.variant))];
 
   const handleExport = () => {
     try {
@@ -302,20 +298,6 @@ const EnhancedCollection = () => {
                   </SelectContent>
                 </Select>
 
-                <Select value="variantFilter" onValueChange={setVariantFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Variant" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Variants</SelectItem>
-                    {uniqueVariants.map((variant) => (
-                      <SelectItem key={variant} value={variant}>
-                        {formatVariant(variant)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
                 <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
                   <Button
                     variant={viewMode === 'grid' ? 'default' : 'ghost'}
@@ -380,20 +362,7 @@ const EnhancedCollection = () => {
                           <Badge variant="secondary" className="text-xs">
                             {item.quantity}
                           </Badge>
-                          {item.is_graded && (
-                            <Badge className="text-xs bg-amber-500 text-white">
-                              <Award className="h-3 w-3 mr-1" />
-                              {item.grade_score}
-                            </Badge>
-                          )}
                         </div>
-                        {item.for_trade && (
-                          <div className="absolute top-2 left-2">
-                            <Badge className="text-xs bg-blue-500 text-white">
-                              For Trade
-                            </Badge>
-                          </div>
-                        )}
                       </div>
 
                       <div className="space-y-1">
@@ -441,17 +410,6 @@ const EnhancedCollection = () => {
                               <h4 className="font-medium text-slate-900 dark:text-white">
                                 {item.name}
                               </h4>
-                              {item.is_graded && (
-                                <Badge className="text-xs bg-amber-500 text-white">
-                                  <Award className="h-3 w-3 mr-1" />
-                                  {item.grading_company.toUpperCase()} {item.grade_score}
-                                </Badge>
-                              )}
-                              {item.variant !== 'normal' && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {formatVariant(item.variant)}
-                                </Badge>
-                              )}
                             </div>
                             <div className="flex items-center space-x-4 text-sm text-slate-600 dark:text-slate-400">
                               {item.set_name && <span>{item.set_name}</span>}
