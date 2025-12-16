@@ -555,6 +555,26 @@ const Events = () => {
   const filteredAllEvents = sortEvents(getFilteredEvents(allEvents));
   const filteredMyEvents = sortEvents(getFilteredEvents(myEvents));
 
+  // Calculate event counts for badges (without thisWeekOnly filter to show accurate counts)
+  const getBaseFilteredEvents = (eventsToFilter: any[]) => {
+    return eventsToFilter.filter((event) => {
+      const matchesSearch = searchQuery === "" || 
+        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.organizer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.city.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCardType = selectedCardType === "all" || 
+        event.cardTypes.some((type: string) => type.toLowerCase().includes(selectedCardType.toLowerCase()));
+      const matchesStates = selectedStates.length === 0 || selectedStates.includes(event.state);
+      const matchesEventType = selectedEventType === "all" || event.event_type === selectedEventType;
+      return matchesSearch && matchesCardType && matchesStates && matchesEventType;
+    });
+  };
+
+  const baseFilteredEvents = getBaseFilteredEvents(allEvents);
+  const upcomingCount = baseFilteredEvents.filter(e => !isEventPast(e)).length;
+  const pastCount = baseFilteredEvents.filter(e => isEventPast(e)).length;
+  const thisWeekCount = baseFilteredEvents.filter(e => !isEventPast(e) && isEventThisWeek(e)).length;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -603,26 +623,31 @@ const Events = () => {
                 {/* Upcoming/Past Tabs */}
                 <div className="flex gap-1 border rounded-md p-1">
                   <Button
-                    variant={eventTimeFilter === "upcoming" ? "default" : "ghost"}
+                    variant={eventTimeFilter === "upcoming" && !thisWeekOnly ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => setEventTimeFilter("upcoming")}
+                    onClick={() => { setEventTimeFilter("upcoming"); setThisWeekOnly(false); }}
+                    className="gap-1.5"
                   >
                     Upcoming
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">{upcomingCount}</Badge>
                   </Button>
                   <Button
                     variant={eventTimeFilter === "past" ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => setEventTimeFilter("past")}
+                    onClick={() => { setEventTimeFilter("past"); setThisWeekOnly(false); }}
+                    className="gap-1.5"
                   >
                     Past
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">{pastCount}</Badge>
                   </Button>
                   <Button
                     variant={thisWeekOnly ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => setThisWeekOnly(!thisWeekOnly)}
-                    disabled={eventTimeFilter === "past"}
+                    onClick={() => { setThisWeekOnly(!thisWeekOnly); setEventTimeFilter("upcoming"); }}
+                    className="gap-1.5"
                   >
                     This Week
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">{thisWeekCount}</Badge>
                   </Button>
                 </div>
 
