@@ -37,6 +37,7 @@ const Events = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [eventTimeFilter, setEventTimeFilter] = useState<"upcoming" | "past">("upcoming");
   const [sortBy, setSortBy] = useState<"date" | "location" | "popularity">("date");
+  const [thisWeekOnly, setThisWeekOnly] = useState(false);
   const [allEvents, setAllEvents] = useState<any[]>([]);
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [vendingEvents, setVendingEvents] = useState<any[]>([]);
@@ -485,6 +486,23 @@ const Events = () => {
     return eventDate < today;
   };
 
+  // Check if event is within this week (next 7 days)
+  const isEventThisWeek = (event: any): boolean => {
+    const dateStr = event.date;
+    const dateParts = dateStr.split(' - ');
+    const firstDateStr = dateParts[0];
+    const eventDate = new Date(firstDateStr);
+    if (isNaN(eventDate.getTime())) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekFromNow = new Date(today);
+    weekFromNow.setDate(weekFromNow.getDate() + 7);
+    weekFromNow.setHours(23, 59, 59, 999);
+    
+    return eventDate >= today && eventDate <= weekFromNow;
+  };
+
   // Filter events based on selected filters
   const getFilteredEvents = (eventsToFilter: any[]) => {
     return eventsToFilter.filter((event) => {
@@ -505,7 +523,10 @@ const Events = () => {
       const isPast = isEventPast(event);
       const matchesTimeFilter = eventTimeFilter === "past" ? isPast : !isPast;
       
-      return matchesSearch && matchesCardType && matchesStates && matchesEventType && matchesTimeFilter;
+      // Filter by this week if enabled
+      const matchesThisWeek = !thisWeekOnly || isEventThisWeek(event);
+      
+      return matchesSearch && matchesCardType && matchesStates && matchesEventType && matchesTimeFilter && matchesThisWeek;
     });
   };
 
@@ -594,6 +615,14 @@ const Events = () => {
                     onClick={() => setEventTimeFilter("past")}
                   >
                     Past
+                  </Button>
+                  <Button
+                    variant={thisWeekOnly ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setThisWeekOnly(!thisWeekOnly)}
+                    disabled={eventTimeFilter === "past"}
+                  >
+                    This Week
                   </Button>
                 </div>
 
