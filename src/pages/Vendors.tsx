@@ -8,14 +8,17 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import Header from '@/components/Header';
 import { VendorGridCard } from '@/components/VendorGridCard';
 import EditVendorProfile from '@/components/EditVendorProfile';
+import { InviteVendorToEventDialog } from '@/components/InviteVendorToEventDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useVendorProfile } from '@/hooks/useVendorProfile';
 import { useUserRoles } from '@/hooks/useUserRoles';
-import { Search, Store, Mail, MapPin, Star, Users, Edit } from 'lucide-react';
+import { useSubscriptions } from '@/hooks/useSubscriptions';
+import { Search, Store, Mail, MapPin, Star, Users, Edit, Heart, Send, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Database } from '@/integrations/supabase/types';
 
@@ -29,7 +32,8 @@ interface VendorProfile extends VendorRow {
 const Vendors = () => {
   const { user } = useAuth();
   const { hasVendorRole } = useVendorProfile();
-  const { isVendor } = useUserRoles();
+  const { isVendor, isOrganizer } = useUserRoles();
+  const { isSubscribed, subscribe, unsubscribe, getFavoriteVendorIds, refetch: refetchSubscriptions } = useSubscriptions();
   const [vendors, setVendors] = useState<VendorProfile[]>([]);
   const [myVendorProfile, setMyVendorProfile] = useState<VendorProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +42,11 @@ const Vendors = () => {
   const [selectedVendorType, setSelectedVendorType] = useState<string>('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [addingRole, setAddingRole] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [selectedVendorForInvite, setSelectedVendorForInvite] = useState<VendorProfile | null>(null);
+  const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([]);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [favoriteVendorIds, setFavoriteVendorIds] = useState<string[]>([]);
 
   // US States list
   const usStates = [
@@ -54,6 +63,12 @@ const Vendors = () => {
   useEffect(() => {
     fetchVendors();
   }, [user, isVendor]);
+
+  useEffect(() => {
+    if (user) {
+      setFavoriteVendorIds(getFavoriteVendorIds());
+    }
+  }, [user, getFavoriteVendorIds]);
 
   const fetchVendors = async () => {
     try {
@@ -101,6 +116,60 @@ const Vendors = () => {
       toast.error('Failed to load vendors. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleFavorite = async (vendorId: string) => {
+    if (!user) {
+      toast.error('Please sign in to favorite vendors');
+      return;
+    }
+
+    const isFav = favoriteVendorIds.includes(vendorId);
+    
+    try {
+      if (isFav) {
+        await unsubscribe('favorite_vendor', vendorId);
+        setFavoriteVendorIds(prev => prev.filter(id => id !== vendorId));
+      } else {
+        await subscribe('favorite_vendor', vendorId);
+        setFavoriteVendorIds(prev => [...prev, vendorId]);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
+  };
+
+  const handleInviteVendor = (vendor: VendorProfile) => {
+    setSelectedVendorForInvite(vendor);
+    setInviteDialogOpen(true);
+  };
+
+  const handleBulkInvite = () => {
+    setSelectedVendorForInvite(null);
+    setInviteDialogOpen(true);
+  };
+
+  const handleSelectVendor = (vendorId: string, selected: boolean) => {
+    if (selected) {
+      setSelectedVendorIds(prev => [...prev, vendorId]);
+    } else {
+      setSelectedVendorIds(prev => prev.filter(id => id !== vendorId));
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedVendorIds.length === filteredVendors.length) {
+      setSelectedVendorIds([]);
+    } else {
+      setSelectedVendorIds(filteredVendors.map(v => v.id));
+    }
+  };
+
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode);
+    if (selectionMode) {
+      setSelectedVendorIds([]);
     }
   };
 
@@ -199,6 +268,14 @@ const Vendors = () => {
     return matchesSearch && matchesState && matchesVendorType;
   });
 
+  // Get favorite vendors
+  const favoriteVendors = vendors.filter(vendor => favoriteVendorIds.includes(vendor.id));
+
+  // Get selected vendors for bulk invite
+  const selectedVendorsForInvite = selectedVendorForInvite 
+    ? [{ id: selectedVendorForInvite.id, business_name: selectedVendorForInvite.business_name, user_id: selectedVendorForInvite.user_id }]
+    : vendors.filter(v => selectedVendorIds.includes(v.id)).map(v => ({ id: v.id, business_name: v.business_name, user_id: v.user_id }));
+
   // Get unique vendor types for filter
   const availableVendorTypes = Array.from(new Set(
     vendors
@@ -248,9 +325,13 @@ const Vendors = () => {
         {/* Conditional tabs for vendors vs search bar for non-vendors */}
         {user && hasVendorRole ? (
           <Tabs defaultValue="others" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="profile">My Vendor Profile</TabsTrigger>
               <TabsTrigger value="others">Other Vendors</TabsTrigger>
+              <TabsTrigger value="favorites" className="gap-2">
+                <Heart className="w-4 h-4" />
+                Favorites ({favoriteVendors.length})
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="profile">
               {/* My Vendor Profile Tab */}
@@ -398,6 +479,35 @@ const Vendors = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Organizer Actions */}
+              {isOrganizer && (
+                <div className="mb-4 flex items-center gap-4 flex-wrap">
+                  <Button
+                    variant={selectionMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={toggleSelectionMode}
+                  >
+                    {selectionMode ? <X className="w-4 h-4 mr-2" /> : <Users className="w-4 h-4 mr-2" />}
+                    {selectionMode ? 'Cancel Selection' : 'Select Multiple'}
+                  </Button>
+                  {selectionMode && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                        {selectedVendorIds.length === filteredVendors.length ? 'Deselect All' : 'Select All'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={selectedVendorIds.length === 0}
+                        onClick={handleBulkInvite}
+                      >
+                        <Send className="w-4 h-4 mr-2" />
+                        Invite Selected ({selectedVendorIds.length})
+                      </Button>
+                    </>
+                  )}
+                </div>
+              )}
               
               {/* Other Vendors Grid */}
               {loading ? (
@@ -446,6 +556,39 @@ const Vendors = () => {
                       getInitials={getInitials}
                       currentUserId={user?.id}
                       onEditClick={() => setEditDialogOpen(true)}
+                      isFavorite={favoriteVendorIds.includes(vendor.id)}
+                      onToggleFavorite={handleToggleFavorite}
+                      isOrganizer={isOrganizer}
+                      onInviteClick={handleInviteVendor}
+                      selectable={selectionMode}
+                      isSelected={selectedVendorIds.includes(vendor.id)}
+                      onSelectChange={handleSelectVendor}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+            
+            {/* Favorites Tab */}
+            <TabsContent value="favorites">
+              {favoriteVendors.length === 0 ? (
+                <div className="text-center py-12">
+                  <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">No Favorite Vendors</h3>
+                  <p className="text-muted-foreground">Click the heart icon on vendor cards to add them to your favorites.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {favoriteVendors.map((vendor) => (
+                    <VendorGridCard 
+                      key={vendor.id} 
+                      vendor={vendor} 
+                      getInitials={getInitials}
+                      currentUserId={user?.id}
+                      isFavorite={true}
+                      onToggleFavorite={handleToggleFavorite}
+                      isOrganizer={isOrganizer}
+                      onInviteClick={handleInviteVendor}
                     />
                   ))}
                 </div>
@@ -544,6 +687,10 @@ const Vendors = () => {
                   getInitials={getInitials}
                   currentUserId={user?.id}
                   onEditClick={() => setEditDialogOpen(true)}
+                  isFavorite={favoriteVendorIds.includes(vendor.id)}
+                  onToggleFavorite={handleToggleFavorite}
+                  isOrganizer={isOrganizer}
+                  onInviteClick={handleInviteVendor}
                 />
               ))}
             </div>
@@ -561,6 +708,14 @@ const Vendors = () => {
           onUpdate={(vendor) => handleProfileUpdate(vendor as any)}
         />
       )}
+
+      {/* Invite Vendor Dialog */}
+      <InviteVendorToEventDialog
+        open={inviteDialogOpen}
+        onOpenChange={setInviteDialogOpen}
+        vendors={selectedVendorsForInvite}
+        preSelectedVendor={selectedVendorForInvite}
+      />
     </div>
   );
 };

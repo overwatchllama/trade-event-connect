@@ -3,8 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Mail, MapPin, Star } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Mail, MapPin, Star, Heart, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface VendorProfile {
   id: string;
@@ -42,9 +44,28 @@ interface VendorGridCardProps {
   getInitials: (name: string | null) => string;
   currentUserId?: string;
   onEditClick?: () => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (vendorId: string) => void;
+  isOrganizer?: boolean;
+  onInviteClick?: (vendor: VendorProfile) => void;
+  selectable?: boolean;
+  isSelected?: boolean;
+  onSelectChange?: (vendorId: string, selected: boolean) => void;
 }
 
-export const VendorGridCard = ({ vendor, getInitials, currentUserId, onEditClick }: VendorGridCardProps) => {
+export const VendorGridCard = ({ 
+  vendor, 
+  getInitials, 
+  currentUserId, 
+  onEditClick,
+  isFavorite = false,
+  onToggleFavorite,
+  isOrganizer = false,
+  onInviteClick,
+  selectable = false,
+  isSelected = false,
+  onSelectChange
+}: VendorGridCardProps) => {
   const formatVendorType = (type: string) => {
     return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
@@ -56,11 +77,24 @@ export const VendorGridCard = ({ vendor, getInitials, currentUserId, onEditClick
     type.toLowerCase().includes('shop')
   );
 
+  const isOwnProfile = currentUserId === vendor.user_id;
+
   return (
-    <Card className="hover:shadow-lg-custom transition-shadow">
+    <Card className={cn(
+      "hover:shadow-lg-custom transition-shadow relative",
+      isSelected && "ring-2 ring-primary"
+    )}>
+      {selectable && (
+        <div className="absolute top-3 left-3 z-10">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(checked) => onSelectChange?.(vendor.id, checked as boolean)}
+          />
+        </div>
+      )}
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+          <div className={cn("flex items-center space-x-4", selectable && "ml-6")}>
             <Avatar className="h-12 w-12">
               <AvatarImage src={vendor.avatar_url || vendor.profiles?.avatar_url || ''} />
               <AvatarFallback className="bg-vendor text-vendor-foreground">
@@ -77,9 +111,24 @@ export const VendorGridCard = ({ vendor, getInitials, currentUserId, onEditClick
               </div>
             </div>
           </div>
-          <Badge variant="secondary" className="bg-vendor/10 text-vendor border-vendor/20">
-            Vendor
-          </Badge>
+          <div className="flex items-center gap-2">
+            {!isOwnProfile && onToggleFavorite && (
+              <Button
+                variant={isFavorite ? "default" : "outline"}
+                size="icon"
+                className={cn(
+                  "h-8 w-8",
+                  isFavorite && "bg-red-500 hover:bg-red-600 text-white"
+                )}
+                onClick={() => onToggleFavorite(vendor.id)}
+              >
+                <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
+              </Button>
+            )}
+            <Badge variant="secondary" className="bg-vendor/10 text-vendor border-vendor/20">
+              Vendor
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -130,7 +179,7 @@ export const VendorGridCard = ({ vendor, getInitials, currentUserId, onEditClick
               View Profile
             </Link>
           </Button>
-          {currentUserId === vendor.user_id ? (
+          {isOwnProfile ? (
             <Button 
               variant="outline" 
               size="sm"
@@ -139,13 +188,25 @@ export const VendorGridCard = ({ vendor, getInitials, currentUserId, onEditClick
               Edit Profile
             </Button>
           ) : (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => toast.info('Contact feature coming soon!')}
-            >
-              Contact
-            </Button>
+            <>
+              {isOrganizer && onInviteClick && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => onInviteClick(vendor)}
+                >
+                  <Send className="w-4 h-4 mr-1" />
+                  Invite
+                </Button>
+              )}
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => toast.info('Contact feature coming soon!')}
+              >
+                Contact
+              </Button>
+            </>
           )}
         </div>
       </CardContent>
