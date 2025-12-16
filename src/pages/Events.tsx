@@ -36,6 +36,7 @@ const Events = () => {
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [eventTimeFilter, setEventTimeFilter] = useState<"upcoming" | "past">("upcoming");
+  const [sortBy, setSortBy] = useState<"date" | "location" | "popularity">("date");
   const [allEvents, setAllEvents] = useState<any[]>([]);
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [vendingEvents, setVendingEvents] = useState<any[]>([]);
@@ -508,8 +509,30 @@ const Events = () => {
     });
   };
 
-  const filteredAllEvents = getFilteredEvents(allEvents);
-  const filteredMyEvents = getFilteredEvents(myEvents);
+  // Sort events based on selected sort option
+  const sortEvents = (eventsToSort: any[]) => {
+    return [...eventsToSort].sort((a, b) => {
+      if (sortBy === "date") {
+        const dateA = new Date(a.date.split(' - ')[0]);
+        const dateB = new Date(b.date.split(' - ')[0]);
+        return eventTimeFilter === "upcoming" 
+          ? dateA.getTime() - dateB.getTime() 
+          : dateB.getTime() - dateA.getTime();
+      } else if (sortBy === "location") {
+        const locA = `${a.state}, ${a.city}`.toLowerCase();
+        const locB = `${b.state}, ${b.city}`.toLowerCase();
+        return locA.localeCompare(locB);
+      } else if (sortBy === "popularity") {
+        const popA = (a.max_attendees || 0);
+        const popB = (b.max_attendees || 0);
+        return popB - popA;
+      }
+      return 0;
+    });
+  };
+
+  const filteredAllEvents = sortEvents(getFilteredEvents(allEvents));
+  const filteredMyEvents = sortEvents(getFilteredEvents(myEvents));
 
   return (
     <div className="min-h-screen bg-background">
@@ -607,6 +630,17 @@ const Events = () => {
                         {type === "all" ? "All Tags" : type}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={sortBy} onValueChange={(value: "date" | "location" | "popularity") => setSortBy(value)}>
+                  <SelectTrigger className="w-36">
+                    <SelectValue placeholder="Sort By" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">Sort by Date</SelectItem>
+                    <SelectItem value="location">Sort by Location</SelectItem>
+                    <SelectItem value="popularity">Sort by Popularity</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
