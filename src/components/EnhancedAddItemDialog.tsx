@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Search, Star, Award } from 'lucide-react';
 import { CardSearchDialog } from './CardSearchDialog';
+import { CardImageUpload, type CardImage } from './CardImageUpload';
 import type { PokemonCard } from '@/services/pokemonTcgApi';
 import type { ScryfallCard } from '@/services/scryfallApi';
 import type { CardCategory } from '@/hooks/useCollection';
@@ -98,6 +99,8 @@ export const EnhancedAddItemDialog = ({ collectionId, game, onItemAdded, trigger
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [addMethod, setAddMethod] = useState<'manual' | 'search'>('search');
+  const [cardImages, setCardImages] = useState<CardImage[]>([]);
+  const [savedItemId, setSavedItemId] = useState<string | null>(null);
 
   const form = useForm<EnhancedAddItemForm>({
     resolver: zodResolver(enhancedAddItemSchema),
@@ -169,7 +172,7 @@ export const EnhancedAddItemDialog = ({ collectionId, game, onItemAdded, trigger
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { error } = await supabase.from('collection_items').insert({
+      const { data: insertedData, error } = await supabase.from('collection_items').insert({
         collection_id: collectionId,
         user_id: user.id,
         name: data.name,
@@ -194,17 +197,31 @@ export const EnhancedAddItemDialog = ({ collectionId, game, onItemAdded, trigger
         location: data.location || null,
         for_trade: data.for_trade,
         image_url: data.image_url || null,
-      });
+      }).select().single();
 
       if (error) throw error;
 
+      // Save item ID for image uploads
+      if (insertedData) {
+        setSavedItemId(insertedData.id);
+      }
+
       toast({
         title: 'Item Added',
-        description: 'Your collection item has been added successfully.',
+        description: data.is_graded
+          ? 'Card added! You can now upload images of your graded card.'
+          : 'Your collection item has been added successfully.',
       });
 
       form.reset();
-      setOpen(false);
+      setCardImages([]);
+
+      // Don't close dialog if graded card - allow image upload
+      if (!data.is_graded) {
+        setOpen(false);
+        setSavedItemId(null);
+      }
+
       onItemAdded();
     } catch (error) {
       console.error('Error adding item:', error);
@@ -631,13 +648,30 @@ export const EnhancedAddItemDialog = ({ collectionId, game, onItemAdded, trigger
                   />
                 </div>
 
+                {/* Image Upload Section - Shows after card is saved for graded cards */}
+                {savedItemId && isGraded && (
+                  <div className="space-y-4 border-t pt-4">
+                    <CardImageUpload
+                      collectionItemId={savedItemId}
+                      images={cardImages}
+                      onImagesChange={setCardImages}
+                    />
+                  </div>
+                )}
+
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                    Cancel
+                  <Button type="button" variant="outline" onClick={() => {
+                    setOpen(false);
+                    setSavedItemId(null);
+                    setCardImages([]);
+                  }}>
+                    {savedItemId ? 'Done' : 'Cancel'}
                   </Button>
-                  <Button type="submit" disabled={loading}>
-                    {loading ? 'Adding...' : 'Add to Collection'}
-                  </Button>
+                  {!savedItemId && (
+                    <Button type="submit" disabled={loading}>
+                      {loading ? 'Adding...' : 'Add to Collection'}
+                    </Button>
+                  )}
                 </DialogFooter>
               </form>
             </Form>

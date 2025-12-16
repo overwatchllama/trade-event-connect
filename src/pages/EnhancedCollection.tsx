@@ -10,6 +10,7 @@ import Header from '@/components/Header';
 import { CreateCollectionDialog } from '@/components/CreateCollectionDialog';
 import { EnhancedAddItemDialog } from '@/components/EnhancedAddItemDialog';
 import { WishlistDialog } from '@/components/WishlistDialog';
+import { GradedCardsGallery } from '@/components/GradedCardsGallery';
 import { useAuth } from '@/hooks/useAuth';
 import { useCollection, type CardCategory } from '@/hooks/useCollection';
 import { toast } from '@/hooks/use-toast';
@@ -154,6 +155,7 @@ const EnhancedCollection = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <GradedCardsGallery />
             <WishlistDialog game={selectedGame} />
             <Button variant="outline" size="sm" onClick={handleExport} disabled={filteredItems.length === 0}>
               <Download className="h-4 w-4 mr-2" />
