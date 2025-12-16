@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import Header from "@/components/Header";
 import EventCard from "@/components/EventCard";
 import SimplifiedEventCard from "@/components/SimplifiedEventCard";
@@ -15,7 +16,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, MapPin, Calendar, Plus, Edit, Settings, LayoutGrid, List } from "lucide-react";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Search, Filter, MapPin, Calendar, Plus, Edit, Settings, LayoutGrid, List, CalendarRange, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,6 +42,7 @@ const Events = () => {
   const [eventTimeFilter, setEventTimeFilter] = useState<"upcoming" | "past">("upcoming");
   const [sortBy, setSortBy] = useState<"date" | "location" | "popularity">("date");
   const [thisWeekOnly, setThisWeekOnly] = useState(false);
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [allEvents, setAllEvents] = useState<any[]>([]);
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [vendingEvents, setVendingEvents] = useState<any[]>([]);
@@ -503,6 +508,36 @@ const Events = () => {
     return eventDate >= today && eventDate <= weekFromNow;
   };
 
+  // Check if event falls within date range
+  const isEventInDateRange = (event: any): boolean => {
+    if (!dateRange.from && !dateRange.to) return true;
+    
+    const dateStr = event.date;
+    const dateParts = dateStr.split(' - ');
+    const firstDateStr = dateParts[0];
+    const eventDate = new Date(firstDateStr);
+    if (isNaN(eventDate.getTime())) return true;
+    
+    eventDate.setHours(0, 0, 0, 0);
+    
+    if (dateRange.from && dateRange.to) {
+      const from = new Date(dateRange.from);
+      from.setHours(0, 0, 0, 0);
+      const to = new Date(dateRange.to);
+      to.setHours(23, 59, 59, 999);
+      return eventDate >= from && eventDate <= to;
+    } else if (dateRange.from) {
+      const from = new Date(dateRange.from);
+      from.setHours(0, 0, 0, 0);
+      return eventDate >= from;
+    } else if (dateRange.to) {
+      const to = new Date(dateRange.to);
+      to.setHours(23, 59, 59, 999);
+      return eventDate <= to;
+    }
+    return true;
+  };
+
   // Filter events based on selected filters
   const getFilteredEvents = (eventsToFilter: any[]) => {
     return eventsToFilter.filter((event) => {
@@ -519,14 +554,18 @@ const Events = () => {
       
       const matchesEventType = selectedEventType === "all" || event.event_type === selectedEventType;
       
-      // Filter by upcoming/past
+      // Filter by upcoming/past (only if no date range is set)
       const isPast = isEventPast(event);
-      const matchesTimeFilter = eventTimeFilter === "past" ? isPast : !isPast;
+      const hasDateRange = dateRange.from || dateRange.to;
+      const matchesTimeFilter = hasDateRange ? true : (eventTimeFilter === "past" ? isPast : !isPast);
       
-      // Filter by this week if enabled
-      const matchesThisWeek = !thisWeekOnly || isEventThisWeek(event);
+      // Filter by this week if enabled (disabled when date range is set)
+      const matchesThisWeek = hasDateRange ? true : (!thisWeekOnly || isEventThisWeek(event));
       
-      return matchesSearch && matchesCardType && matchesStates && matchesEventType && matchesTimeFilter && matchesThisWeek;
+      // Filter by date range
+      const matchesDateRange = isEventInDateRange(event);
+      
+      return matchesSearch && matchesCardType && matchesStates && matchesEventType && matchesTimeFilter && matchesThisWeek && matchesDateRange;
     });
   };
 
@@ -623,27 +662,27 @@ const Events = () => {
                 {/* Upcoming/Past Tabs */}
                 <div className="flex gap-1 border rounded-md p-1">
                   <Button
-                    variant={eventTimeFilter === "upcoming" && !thisWeekOnly ? "default" : "ghost"}
+                    variant={eventTimeFilter === "upcoming" && !thisWeekOnly && !dateRange.from && !dateRange.to ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => { setEventTimeFilter("upcoming"); setThisWeekOnly(false); }}
+                    onClick={() => { setEventTimeFilter("upcoming"); setThisWeekOnly(false); setDateRange({ from: undefined, to: undefined }); }}
                     className="gap-1.5"
                   >
                     Upcoming
                     <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">{upcomingCount}</Badge>
                   </Button>
                   <Button
-                    variant={eventTimeFilter === "past" ? "default" : "ghost"}
+                    variant={eventTimeFilter === "past" && !dateRange.from && !dateRange.to ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => { setEventTimeFilter("past"); setThisWeekOnly(false); }}
+                    onClick={() => { setEventTimeFilter("past"); setThisWeekOnly(false); setDateRange({ from: undefined, to: undefined }); }}
                     className="gap-1.5"
                   >
                     Past
                     <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">{pastCount}</Badge>
                   </Button>
                   <Button
-                    variant={thisWeekOnly ? "default" : "ghost"}
+                    variant={thisWeekOnly && !dateRange.from && !dateRange.to ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => { setThisWeekOnly(!thisWeekOnly); setEventTimeFilter("upcoming"); }}
+                    onClick={() => { setThisWeekOnly(!thisWeekOnly); setEventTimeFilter("upcoming"); setDateRange({ from: undefined, to: undefined }); }}
                     className="gap-1.5"
                   >
                     This Week
@@ -697,6 +736,57 @@ const Events = () => {
                     <SelectItem value="popularity">Sort by Popularity</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* Date Range Picker */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={dateRange.from || dateRange.to ? "default" : "outline"}
+                      size="sm"
+                      className={cn(
+                        "gap-2 h-9",
+                        !(dateRange.from || dateRange.to) && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarRange className="w-4 h-4" />
+                      {dateRange.from ? (
+                        dateRange.to ? (
+                          <>
+                            {format(dateRange.from, "MMM d")} - {format(dateRange.to, "MMM d")}
+                          </>
+                        ) : (
+                          format(dateRange.from, "MMM d, yyyy")
+                        )
+                      ) : (
+                        "Date Range"
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      initialFocus
+                      mode="range"
+                      defaultMonth={dateRange.from}
+                      selected={dateRange}
+                      onSelect={(range) => setDateRange({ from: range?.from, to: range?.to })}
+                      numberOfMonths={2}
+                      className="pointer-events-auto"
+                    />
+                    {(dateRange.from || dateRange.to) && (
+                      <div className="p-3 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setDateRange({ from: undefined, to: undefined })}
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Clear Date Range
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* View Mode Toggle */}
@@ -744,6 +834,18 @@ const Events = () => {
                   {stateOptions.find(option => option.value === state)?.label || state}
                 </Badge>
               ))
+            )}
+            {(dateRange.from || dateRange.to) && (
+              <Badge variant="secondary" className="gap-2 cursor-pointer" onClick={() => setDateRange({ from: undefined, to: undefined })}>
+                <CalendarRange className="w-3 h-3" />
+                {dateRange.from && dateRange.to 
+                  ? `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d")}`
+                  : dateRange.from 
+                    ? `From ${format(dateRange.from, "MMM d")}`
+                    : `Until ${format(dateRange.to!, "MMM d")}`
+                }
+                <X className="w-3 h-3" />
+              </Badge>
             )}
           </div>
         </div>
