@@ -35,6 +35,7 @@ const Events = () => {
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [eventTimeFilter, setEventTimeFilter] = useState<"upcoming" | "past">("upcoming");
   const [allEvents, setAllEvents] = useState<any[]>([]);
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [vendingEvents, setVendingEvents] = useState<any[]>([]);
@@ -462,6 +463,27 @@ const Events = () => {
   const cardTypes = ["all", "Pokemon", "MTG", "Sports", "One Piece", "Yu-Gi-Oh"];
   const eventTypes = ["all", "play", "show"];
 
+  // Helper to check if event is in the past
+  const isEventPast = (event: any): boolean => {
+    const dateStr = event.date;
+    // Handle date ranges like "12/15/2024 - 12/17/2024"
+    const dateParts = dateStr.split(' - ');
+    const lastDateStr = dateParts[dateParts.length - 1];
+    
+    // Try to parse the date
+    const eventDate = new Date(lastDateStr);
+    if (isNaN(eventDate.getTime())) {
+      // If parsing fails, try alternative formats
+      return false;
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    eventDate.setHours(23, 59, 59, 999);
+    
+    return eventDate < today;
+  };
+
   // Filter events based on selected filters
   const getFilteredEvents = (eventsToFilter: any[]) => {
     return eventsToFilter.filter((event) => {
@@ -478,7 +500,11 @@ const Events = () => {
       
       const matchesEventType = selectedEventType === "all" || event.event_type === selectedEventType;
       
-      return matchesSearch && matchesCardType && matchesStates && matchesEventType;
+      // Filter by upcoming/past
+      const isPast = isEventPast(event);
+      const matchesTimeFilter = eventTimeFilter === "past" ? isPast : !isPast;
+      
+      return matchesSearch && matchesCardType && matchesStates && matchesEventType && matchesTimeFilter;
     });
   };
 
@@ -530,6 +556,24 @@ const Events = () => {
             {/* Quick Filters and View Toggle */}
             <div className="flex flex-wrap gap-2 items-center justify-between">
               <div className="flex flex-wrap gap-2">
+                {/* Upcoming/Past Tabs */}
+                <div className="flex gap-1 border rounded-md p-1">
+                  <Button
+                    variant={eventTimeFilter === "upcoming" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setEventTimeFilter("upcoming")}
+                  >
+                    Upcoming
+                  </Button>
+                  <Button
+                    variant={eventTimeFilter === "past" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setEventTimeFilter("past")}
+                  >
+                    Past
+                  </Button>
+                </div>
+
                 <Select value={selectedEventType} onValueChange={setSelectedEventType}>
                   <SelectTrigger className="w-32">
                     <SelectValue placeholder="Event Type" />
