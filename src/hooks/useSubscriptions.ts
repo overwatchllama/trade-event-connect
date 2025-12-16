@@ -3,10 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
+export type SubscriptionType = 'vendor' | 'event' | 'favorite_vendor';
+
 export interface Subscription {
   id: string;
   user_id: string;
-  subscription_type: 'vendor' | 'event';
+  subscription_type: SubscriptionType;
   target_id: string;
   subscribed_at: string;
   created_at: string;
@@ -43,7 +45,7 @@ export const useSubscriptions = () => {
   };
 
   // Subscribe to a vendor or event
-  const subscribe = async (type: 'vendor' | 'event', targetId: string) => {
+  const subscribe = async (type: SubscriptionType, targetId: string) => {
     if (!user) {
       toast.error('Please sign in to subscribe');
       return false;
@@ -66,7 +68,8 @@ export const useSubscriptions = () => {
         throw error;
       }
 
-      toast.success(`Successfully subscribed to ${type}!`);
+      const typeLabel = type === 'favorite_vendor' ? 'vendor' : type;
+      toast.success(`Successfully subscribed to ${typeLabel}!`);
       await fetchSubscriptions(); // Refresh subscriptions
       return true;
     } catch (error) {
@@ -77,7 +80,7 @@ export const useSubscriptions = () => {
   };
 
   // Unsubscribe from a vendor or event
-  const unsubscribe = async (type: 'vendor' | 'event', targetId: string) => {
+  const unsubscribe = async (type: SubscriptionType, targetId: string) => {
     if (!user) return false;
 
     try {
@@ -90,7 +93,8 @@ export const useSubscriptions = () => {
 
       if (error) throw error;
 
-      toast.success(`Successfully unsubscribed from ${type}!`);
+      const typeLabel = type === 'favorite_vendor' ? 'vendor' : type;
+      toast.success(`Successfully unsubscribed from ${typeLabel}!`);
       await fetchSubscriptions(); // Refresh subscriptions
       return true;
     } catch (error) {
@@ -101,15 +105,22 @@ export const useSubscriptions = () => {
   };
 
   // Check if user is subscribed to a specific target
-  const isSubscribed = (type: 'vendor' | 'event', targetId: string): boolean => {
+  const isSubscribed = (type: SubscriptionType, targetId: string): boolean => {
     return subscriptions.some(
       sub => sub.subscription_type === type && sub.target_id === targetId
     );
   };
 
   // Get subscriptions by type
-  const getSubscriptionsByType = (type: 'vendor' | 'event'): Subscription[] => {
+  const getSubscriptionsByType = (type: SubscriptionType): Subscription[] => {
     return subscriptions.filter(sub => sub.subscription_type === type);
+  };
+
+  // Get favorite vendors
+  const getFavoriteVendorIds = (): string[] => {
+    return subscriptions
+      .filter(sub => sub.subscription_type === 'favorite_vendor')
+      .map(sub => sub.target_id);
   };
 
   useEffect(() => {
@@ -123,6 +134,7 @@ export const useSubscriptions = () => {
     unsubscribe,
     isSubscribed,
     getSubscriptionsByType,
+    getFavoriteVendorIds,
     refetch: fetchSubscriptions
   };
 };
