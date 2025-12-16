@@ -1220,10 +1220,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: { user_id?: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { user_id?: string }; Returns: boolean }
     }
     Enums: {
       approval_status: "pending" | "approved" | "rejected"

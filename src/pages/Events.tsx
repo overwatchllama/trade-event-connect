@@ -35,10 +35,10 @@ const Events = () => {
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [allEvents, setAllEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
-  const [myEvents, setMyEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
-  const [vendingEvents, setVendingEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
-  const [sponsoringEvents, setSponsoringEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
+  const [allEvents, setAllEvents] = useState<any[]>([]);
+  const [myEvents, setMyEvents] = useState<any[]>([]);
+  const [vendingEvents, setVendingEvents] = useState<any[]>([]);
+  const [sponsoringEvents, setSponsoringEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { profile } = useProfile();

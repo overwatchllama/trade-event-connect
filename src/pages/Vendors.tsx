@@ -555,10 +555,10 @@ const Vendors = () => {
       {/* Edit Profile Dialog */}
       {myVendorProfile && (
         <EditVendorProfile
-          vendor={myVendorProfile}
+          vendor={myVendorProfile as any}
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
-          onUpdate={handleProfileUpdate}
+          onUpdate={(vendor) => handleProfileUpdate(vendor as any)}
         />
       )}
     </div>
