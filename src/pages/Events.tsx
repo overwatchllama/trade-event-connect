@@ -814,40 +814,71 @@ const Events = () => {
           </div>
 
           {/* Active Filters */}
-          <div className="flex gap-2 mb-6 flex-wrap">
-            {selectedEventType !== "all" && (
-              <Badge variant="secondary" className="gap-2">
-                <Filter className="w-3 h-3" />
-                {selectedEventType === "play" ? "Play Events" : "Collect Events"}
-              </Badge>
-            )}
-            {selectedCardType !== "all" && (
-              <Badge variant="secondary" className="gap-2">
-                <Calendar className="w-3 h-3" />
-                {selectedCardType}
-              </Badge>
-            )}
-            {selectedStates.length > 0 && (
-              selectedStates.map((state) => (
-                <Badge key={state} variant="secondary" className="gap-2">
-                  <MapPin className="w-3 h-3" />
-                  {stateOptions.find(option => option.value === state)?.label || state}
+          {(selectedEventType !== "all" || selectedCardType !== "all" || selectedStates.length > 0 || dateRange.from || dateRange.to || searchQuery || thisWeekOnly) && (
+            <div className="flex gap-2 mb-6 flex-wrap items-center">
+              {selectedEventType !== "all" && (
+                <Badge variant="secondary" className="gap-2">
+                  <Filter className="w-3 h-3" />
+                  {selectedEventType === "play" ? "Play Events" : "Collect Events"}
                 </Badge>
-              ))
-            )}
-            {(dateRange.from || dateRange.to) && (
-              <Badge variant="secondary" className="gap-2 cursor-pointer" onClick={() => setDateRange({ from: undefined, to: undefined })}>
-                <CalendarRange className="w-3 h-3" />
-                {dateRange.from && dateRange.to 
-                  ? `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d")}`
-                  : dateRange.from 
-                    ? `From ${format(dateRange.from, "MMM d")}`
-                    : `Until ${format(dateRange.to!, "MMM d")}`
-                }
+              )}
+              {selectedCardType !== "all" && (
+                <Badge variant="secondary" className="gap-2">
+                  <Calendar className="w-3 h-3" />
+                  {selectedCardType}
+                </Badge>
+              )}
+              {selectedStates.length > 0 && (
+                selectedStates.map((state) => (
+                  <Badge key={state} variant="secondary" className="gap-2">
+                    <MapPin className="w-3 h-3" />
+                    {stateOptions.find(option => option.value === state)?.label || state}
+                  </Badge>
+                ))
+              )}
+              {(dateRange.from || dateRange.to) && (
+                <Badge variant="secondary" className="gap-2 cursor-pointer" onClick={() => setDateRange({ from: undefined, to: undefined })}>
+                  <CalendarRange className="w-3 h-3" />
+                  {dateRange.from && dateRange.to 
+                    ? `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d")}`
+                    : dateRange.from 
+                      ? `From ${format(dateRange.from, "MMM d")}`
+                      : `Until ${format(dateRange.to!, "MMM d")}`
+                  }
+                  <X className="w-3 h-3" />
+                </Badge>
+              )}
+              {searchQuery && (
+                <Badge variant="secondary" className="gap-2">
+                  <Search className="w-3 h-3" />
+                  "{searchQuery}"
+                </Badge>
+              )}
+              {thisWeekOnly && (
+                <Badge variant="secondary" className="gap-2">
+                  <Calendar className="w-3 h-3" />
+                  This Week
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground gap-1"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedCardType("all");
+                  setSelectedStates([]);
+                  setSelectedEventType("all");
+                  setThisWeekOnly(false);
+                  setDateRange({ from: undefined, to: undefined });
+                  setEventTimeFilter("upcoming");
+                }}
+              >
                 <X className="w-3 h-3" />
-              </Badge>
-            )}
-          </div>
+                Clear All
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Role-based tabs */}
