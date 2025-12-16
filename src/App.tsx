@@ -11,7 +11,7 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Vendors from "./pages/Vendors";
 import VendorProfile from "./pages/VendorProfile";
-import MyCollection from "./pages/MyCollection";
+import EnhancedCollection from "./pages/EnhancedCollection";
 import Subscription from "./pages/Subscription";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import Following from "./pages/Following";
@@ -49,7 +49,7 @@ const App = () => (
           <Route path="/subscription-success" element={<SubscriptionSuccess />} />
           <Route path="/my-collection" element={
             <ProtectedRoute>
-              <MyCollection />
+              <EnhancedCollection />
             </ProtectedRoute>
           } />
           <Route path="/admin" element={
