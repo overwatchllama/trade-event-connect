@@ -62,19 +62,22 @@ export const useSubscriptions = () => {
 
       if (error) {
         if (error.code === '23505') { // Unique constraint violation
-          toast.error(`Already subscribed to this ${type}`);
+          toast.error(`Already in favorites`);
           return false;
         }
-        throw error;
+        console.error('Supabase error:', error);
+        toast.error(`Failed to add to favorites: ${error.message}`);
+        return false;
       }
 
       const typeLabel = type === 'favorite_vendor' ? 'vendor' : type;
       toast.success(`Successfully subscribed to ${typeLabel}!`);
       await fetchSubscriptions(); // Refresh subscriptions
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error subscribing:', error);
-      toast.error(`Failed to subscribe to ${type}`);
+      const errorMessage = error?.message || error?.details || 'Unknown error';
+      toast.error(`Failed to subscribe: ${errorMessage}`);
       return false;
     }
   };
