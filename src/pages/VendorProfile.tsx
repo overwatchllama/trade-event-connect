@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Header from '@/components/Header';
 import EditVendorProfile from '@/components/EditVendorProfile';
 import VendorCalendar from '@/components/VendorCalendar';
+import EmployeeManagement from '@/components/vendor/EmployeeManagement';
 import { FavoriteVendorButton } from '@/components/FavoriteVendorButton';
 import { useSubscriptions } from '@/hooks/useSubscriptions';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,7 +33,8 @@ import {
   Linkedin,
   Upload,
   CalendarDays,
-  Share2
+  Share2,
+  Users
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -273,12 +275,18 @@ const VendorProfile = () => {
         {/* Profile Content */}
         <div className="pt-16">
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className={`grid w-full ${isOwner ? 'grid-cols-3' : 'grid-cols-2'}`}>
               <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="calendar" className="flex items-center gap-2">
                 <CalendarDays className="w-4 h-4" />
                 Event Calendar
               </TabsTrigger>
+              {isOwner && (
+                <TabsTrigger value="team" className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Team
+                </TabsTrigger>
+              )}
             </TabsList>
             
             <TabsContent value="profile">
@@ -491,6 +499,14 @@ const VendorProfile = () => {
                 <VendorCalendar vendorId={vendor.id} />
               </div>
             </TabsContent>
+
+            {isOwner && (
+              <TabsContent value="team">
+                <div className="mt-6">
+                  <EmployeeManagement vendorId={vendor.id} />
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </main>
