@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -40,7 +41,15 @@ export const ProtectedRoute = ({ children, requireAuth = true }: ProtectedRouteP
   }
 
   if (requireAuth && !user) {
-    return null; // Will redirect via useEffect
+    // Show redirecting state instead of null
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Redirecting to sign in...</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
