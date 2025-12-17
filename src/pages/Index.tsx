@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import PersonalCalendar from "@/components/PersonalCalendar";
 import SubscriptionTiers from "@/components/SubscriptionTiers";
 import SimplifiedEventCard from "@/components/SimplifiedEventCard";
 import { Button } from "@/components/ui/button";
@@ -113,6 +114,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <Hero />
+      <PersonalCalendar />
       
       {/* Featured Events Section - only show if there are upcoming events */}
       {!loading && popularEvents.length > 0 && (
