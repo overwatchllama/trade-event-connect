@@ -395,8 +395,11 @@ export const useEmployeeHours = (employeeId: string | null) => {
     }
   };
 
-  const getTotalHours = () => {
+  const getTotalHours = (approvedOnly: boolean = false) => {
     return hours.reduce((total, h) => {
+      // Skip unapproved hours if approvedOnly is true
+      if (approvedOnly && !h.approved_at) return total;
+      
       if (h.entry_type === 'manual' && h.manual_hours) {
         return total + h.manual_hours;
       }
@@ -408,6 +411,45 @@ export const useEmployeeHours = (employeeId: string | null) => {
     }, 0);
   };
 
+  const approveHours = async (hoursId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('vendor_employee_hours')
+        .update({ 
+          approved_by: user.id,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', hoursId);
+
+      if (error) throw error;
+
+      await fetchHours();
+      toast.success('Hours approved');
+    } catch (error) {
+      console.error('Error approving hours:', error);
+      toast.error('Failed to approve hours');
+    }
+  };
+
+  const rejectHours = async (hoursId: string) => {
+    try {
+      const { error } = await supabase
+        .from('vendor_employee_hours')
+        .delete()
+        .eq('id', hoursId);
+
+      if (error) throw error;
+
+      await fetchHours();
+      toast.success('Hours entry rejected and removed');
+    } catch (error) {
+      console.error('Error rejecting hours:', error);
+      toast.error('Failed to reject hours');
+    }
+  };
+
   return {
     hours,
     loading,
@@ -416,6 +458,8 @@ export const useEmployeeHours = (employeeId: string | null) => {
     clockOut,
     addManualHours,
     getTotalHours,
-    fetchHours
+    fetchHours,
+    approveHours,
+    rejectHours
   };
 };

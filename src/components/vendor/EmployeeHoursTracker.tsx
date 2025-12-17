@@ -8,16 +8,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useEmployeeHours } from '@/hooks/useVendorEmployees';
-import { Clock, Play, Square, Plus, Calendar } from 'lucide-react';
+import { Clock, Play, Square, Plus, Calendar, Check, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { format, differenceInMinutes } from 'date-fns';
 
 interface EmployeeHoursTrackerProps {
   employeeId: string;
   events?: { id: string; title: string }[];
+  isManager?: boolean;
 }
 
-const EmployeeHoursTracker = ({ employeeId, events = [] }: EmployeeHoursTrackerProps) => {
-  const { hours, loading, activeClockIn, clockIn, clockOut, addManualHours, getTotalHours } = useEmployeeHours(employeeId);
+const EmployeeHoursTracker = ({ employeeId, events = [], isManager = false }: EmployeeHoursTrackerProps) => {
+  const { hours, loading, activeClockIn, clockIn, clockOut, addManualHours, getTotalHours, approveHours, rejectHours } = useEmployeeHours(employeeId);
   const [isManualDialogOpen, setIsManualDialogOpen] = useState(false);
   const [manualHours, setManualHours] = useState('');
   const [manualEventId, setManualEventId] = useState<string>('');
@@ -50,6 +51,8 @@ const EmployeeHoursTracker = ({ employeeId, events = [] }: EmployeeHoursTrackerP
   };
 
   const totalHours = getTotalHours();
+  const approvedHours = getTotalHours(true);
+  const pendingHours = totalHours - approvedHours;
 
   if (loading) {
     return (
@@ -73,98 +76,112 @@ const EmployeeHoursTracker = ({ employeeId, events = [] }: EmployeeHoursTrackerP
               <Clock className="h-5 w-5" />
               Hours Tracker
             </CardTitle>
-            <CardDescription>
-              Total: {totalHours.toFixed(1)} hours
+            <CardDescription className="space-y-1">
+              <div>Total: {totalHours.toFixed(1)} hours</div>
+              <div className="flex gap-3 text-xs">
+                <span className="text-green-600 flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" />
+                  Approved: {approvedHours.toFixed(1)}h
+                </span>
+                {pendingHours > 0 && (
+                  <span className="text-yellow-600 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Pending: {pendingHours.toFixed(1)}h
+                  </span>
+                )}
+              </div>
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            {activeClockIn ? (
-              <Button variant="destructive" onClick={clockOut}>
-                <Square className="h-4 w-4 mr-2" />
-                Clock Out
-              </Button>
-            ) : (
-              <div className="flex items-center gap-2">
-                {events.length > 0 && (
-                  <Select value={clockInEventId} onValueChange={setClockInEventId}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select event (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">No event</SelectItem>
-                      {events.map((event) => (
-                        <SelectItem key={event.id} value={event.id}>{event.title}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                <Button onClick={handleClockIn}>
-                  <Play className="h-4 w-4 mr-2" />
-                  Clock In
+          {!isManager && (
+            <div className="flex items-center gap-2">
+              {activeClockIn ? (
+                <Button variant="destructive" onClick={clockOut}>
+                  <Square className="h-4 w-4 mr-2" />
+                  Clock Out
                 </Button>
-              </div>
-            )}
-            <Dialog open={isManualDialogOpen} onOpenChange={setIsManualDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Hours
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Manual Hours</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Hours Worked</Label>
-                    <Input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      placeholder="e.g., 4.5"
-                      value={manualHours}
-                      onChange={(e) => setManualHours(e.target.value)}
-                    />
-                  </div>
+              ) : (
+                <div className="flex items-center gap-2">
                   {events.length > 0 && (
-                    <div className="space-y-2">
-                      <Label>Event (Optional)</Label>
-                      <Select value={manualEventId} onValueChange={setManualEventId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select event" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">No event</SelectItem>
-                          {events.map((event) => (
-                            <SelectItem key={event.id} value={event.id}>{event.title}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <Select value={clockInEventId} onValueChange={setClockInEventId}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select event (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No event</SelectItem>
+                        {events.map((event) => (
+                          <SelectItem key={event.id} value={event.id}>{event.title}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
-                  <div className="space-y-2">
-                    <Label>Notes (Optional)</Label>
-                    <Textarea
-                      placeholder="What did you work on?"
-                      value={manualNotes}
-                      onChange={(e) => setManualNotes(e.target.value)}
-                    />
-                  </div>
+                  <Button onClick={handleClockIn}>
+                    <Play className="h-4 w-4 mr-2" />
+                    Clock In
+                  </Button>
                 </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsManualDialogOpen(false)}>Cancel</Button>
-                  <Button onClick={handleAddManualHours} disabled={!manualHours || parseFloat(manualHours) <= 0}>
+              )}
+              <Dialog open={isManualDialogOpen} onOpenChange={setIsManualDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
                     Add Hours
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Manual Hours</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>Hours Worked</Label>
+                      <Input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        placeholder="e.g., 4.5"
+                        value={manualHours}
+                        onChange={(e) => setManualHours(e.target.value)}
+                      />
+                    </div>
+                    {events.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Event (Optional)</Label>
+                        <Select value={manualEventId} onValueChange={setManualEventId}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select event" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">No event</SelectItem>
+                            {events.map((event) => (
+                              <SelectItem key={event.id} value={event.id}>{event.title}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <Label>Notes (Optional)</Label>
+                      <Textarea
+                        placeholder="What did you work on?"
+                        value={manualNotes}
+                        onChange={(e) => setManualNotes(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsManualDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleAddManualHours} disabled={!manualHours || parseFloat(manualHours) <= 0}>
+                      Add Hours
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
-        {activeClockIn && (
+        {!isManager && activeClockIn && (
           <div className="mb-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -183,11 +200,11 @@ const EmployeeHoursTracker = ({ employeeId, events = [] }: EmployeeHoursTrackerP
           <div className="text-center py-8 text-muted-foreground">
             <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
             <p>No hours logged yet</p>
-            <p className="text-sm">Clock in or add manual hours to get started</p>
+            {!isManager && <p className="text-sm">Clock in or add manual hours to get started</p>}
           </div>
         ) : (
           <div className="space-y-2">
-            {hours.slice(0, 10).map((entry) => (
+            {hours.slice(0, 20).map((entry) => (
               <div key={entry.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
                   {entry.entry_type === 'clock' ? (
@@ -196,7 +213,7 @@ const EmployeeHoursTracker = ({ employeeId, events = [] }: EmployeeHoursTrackerP
                     <Plus className="h-4 w-4 text-muted-foreground" />
                   )}
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {entry.entry_type === 'clock' ? (
                         <span className="text-sm">
                           {format(new Date(entry.clock_in!), 'MMM d')} • {format(new Date(entry.clock_in!), 'h:mm a')}
@@ -213,20 +230,43 @@ const EmployeeHoursTracker = ({ employeeId, events = [] }: EmployeeHoursTrackerP
                           {entry.event.title}
                         </Badge>
                       )}
+                      {entry.approved_at ? (
+                        <Badge variant="default" className="text-xs bg-green-600">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Approved
+                        </Badge>
+                      ) : entry.clock_out || entry.entry_type === 'manual' ? (
+                        <Badge variant="secondary" className="text-xs">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          Pending Approval
+                        </Badge>
+                      ) : null}
                     </div>
                     {entry.notes && (
                       <p className="text-xs text-muted-foreground mt-1">{entry.notes}</p>
                     )}
                   </div>
                 </div>
-                <div className="text-right">
-                  {entry.entry_type === 'clock' && entry.clock_in && entry.clock_out ? (
-                    <span className="font-mono font-medium">{formatDuration(entry.clock_in, entry.clock_out)}</span>
-                  ) : entry.entry_type === 'manual' && entry.manual_hours ? (
-                    <span className="font-mono font-medium">{entry.manual_hours}h</span>
-                  ) : entry.entry_type === 'clock' && !entry.clock_out ? (
-                    <Badge variant="secondary">In progress</Badge>
-                  ) : null}
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    {entry.entry_type === 'clock' && entry.clock_in && entry.clock_out ? (
+                      <span className="font-mono font-medium">{formatDuration(entry.clock_in, entry.clock_out)}</span>
+                    ) : entry.entry_type === 'manual' && entry.manual_hours ? (
+                      <span className="font-mono font-medium">{entry.manual_hours}h</span>
+                    ) : entry.entry_type === 'clock' && !entry.clock_out ? (
+                      <Badge variant="secondary">In progress</Badge>
+                    ) : null}
+                  </div>
+                  {isManager && !entry.approved_at && (entry.clock_out || entry.entry_type === 'manual') && (
+                    <div className="flex gap-1 ml-2">
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => approveHours(entry.id)}>
+                        <Check className="h-4 w-4 text-green-600" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => rejectHours(entry.id)}>
+                        <X className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
