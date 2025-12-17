@@ -42,8 +42,8 @@ const Hero = () => {
           <div className="space-y-4 animate-fade-in">
             <h1 className="text-5xl md:text-6xl xl:text-7xl font-bold text-foreground leading-tight">
               The Ultimate
-              <span className="bg-gradient-primary bg-clip-text text-transparent"> Trading Card</span>
-              <br />Events Page
+              <span className="bg-gradient-primary bg-clip-text text-transparent"> Collector</span>
+              <br />Experience
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
               Connect event organizers, vendors, and collectors in one powerful platform. 

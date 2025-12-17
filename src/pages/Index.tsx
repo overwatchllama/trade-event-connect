@@ -47,16 +47,22 @@ const Index = () => {
             eventDaysMap.set(day.event_id, days);
           });
 
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
           const transformedEvents = eventsData.map(event => {
             const days = eventDaysMap.get(event.id) || [];
             let dateStr = event.date;
+            let lastEventDate: Date | null = null;
             
             if (event.is_multi_day && days.length > 0) {
               const firstDay = days[0];
               const lastDay = days[days.length - 1];
               dateStr = `${new Date(firstDay.day_date).toLocaleDateString()} - ${new Date(lastDay.day_date).toLocaleDateString()}`;
+              lastEventDate = new Date(lastDay.day_date);
             } else if (days.length > 0) {
               dateStr = new Date(days[0].day_date).toLocaleDateString();
+              lastEventDate = new Date(days[0].day_date);
             }
 
             return {
@@ -66,8 +72,15 @@ const Index = () => {
               city: event.city,
               state: event.state,
               cardTypes: event.card_types || [],
-              flyerUrl: event.flyer_url
+              flyerUrl: event.flyer_url,
+              lastEventDate
             };
+          }).filter(event => {
+            // Only show upcoming events (events that haven't ended yet)
+            if (event.lastEventDate) {
+              return event.lastEventDate >= today;
+            }
+            return true; // Keep events without date info
           });
 
           setPopularEvents(transformedEvents);
