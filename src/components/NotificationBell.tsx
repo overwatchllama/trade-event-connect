@@ -31,6 +31,9 @@ export const NotificationBell = () => {
     } else if (notification.reference_type === 'vendor_application' && notification.type === 'invoice') {
       // For vendors with invoice - go to profile
       navigate('/profile');
+    } else if (notification.type === 'favorite_vendor_event' && notification.reference_id) {
+      // For users following vendors - go to event details
+      navigate(`/event/${notification.reference_id}`);
     }
   };
 
@@ -43,6 +46,8 @@ export const NotificationBell = () => {
         return '🔄';
       case 'invoice':
         return '💰';
+      case 'favorite_vendor_event':
+        return '⭐';
       default:
         return '🔔';
     }
