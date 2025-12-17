@@ -12,6 +12,7 @@ import { useVendorEmployees, EmployeeRole, VendorEmployee } from '@/hooks/useVen
 import { Users, UserPlus, Copy, Trash2, Clock, Calendar, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import EmployeeHoursTracker from './EmployeeHoursTracker';
 
 const ROLE_LABELS: Record<EmployeeRole, string> = {
   event_manager: 'Event Manager',
@@ -42,6 +43,7 @@ const EmployeeManagement = ({ vendorId }: EmployeeManagementProps) => {
   const [newInviteRole, setNewInviteRole] = useState<EmployeeRole>('event_staff');
   const [newInviteCode, setNewInviteCode] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedEmployeeForHours, setSelectedEmployeeForHours] = useState<VendorEmployee | null>(null);
 
   const activeEmployees = employees.filter(e => e.status === 'active' && e.user_id);
   const pendingInvites = employees.filter(e => e.status === 'pending' && !e.user_id && e.invite_code);
@@ -156,8 +158,12 @@ const EmployeeManagement = ({ vendorId }: EmployeeManagementProps) => {
             <TabsTrigger value="active">
               Active ({activeEmployees.length})
             </TabsTrigger>
+            <TabsTrigger value="hours">
+              <Clock className="h-4 w-4 mr-1" />
+              Team Hours
+            </TabsTrigger>
             <TabsTrigger value="pending">
-              Pending Invites ({pendingInvites.length})
+              Pending ({pendingInvites.length})
             </TabsTrigger>
             <TabsTrigger value="inactive">
               Inactive ({inactiveEmployees.length})
@@ -182,6 +188,60 @@ const EmployeeManagement = ({ vendorId }: EmployeeManagementProps) => {
                     onRemove={removeEmployee}
                   />
                 ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="hours">
+            {activeEmployees.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No active employees</p>
+                <p className="text-sm">Add employees to track their hours</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="md:col-span-1 space-y-2">
+                    <Label className="text-sm font-medium">Select Employee</Label>
+                    {activeEmployees.map((employee) => (
+                      <button
+                        key={employee.id}
+                        onClick={() => setSelectedEmployeeForHours(employee)}
+                        className={`w-full flex items-center gap-2 p-3 rounded-lg border text-left transition-colors ${
+                          selectedEmployeeForHours?.id === employee.id
+                            ? 'border-primary bg-primary/5'
+                            : 'hover:bg-muted'
+                        }`}
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={employee.profile?.avatar_url || ''} />
+                          <AvatarFallback className="text-xs">
+                            {employee.profile?.full_name?.charAt(0) || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {employee.profile?.full_name || employee.profile?.email || 'Unknown'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{ROLE_LABELS[employee.role]}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="md:col-span-3">
+                    {selectedEmployeeForHours ? (
+                      <EmployeeHoursTracker
+                        employeeId={selectedEmployeeForHours.id}
+                        isManager={true}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-64 border rounded-lg text-muted-foreground">
+                        Select an employee to view and approve their hours
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </TabsContent>
