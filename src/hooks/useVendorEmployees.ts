@@ -450,6 +450,47 @@ export const useEmployeeHours = (employeeId: string | null) => {
     }
   };
 
+  const bulkApproveHours = async (hoursIds: string[]) => {
+    if (!user || hoursIds.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from('vendor_employee_hours')
+        .update({ 
+          approved_by: user.id,
+          approved_at: new Date().toISOString()
+        })
+        .in('id', hoursIds);
+
+      if (error) throw error;
+
+      await fetchHours();
+      toast.success(`${hoursIds.length} hours entries approved`);
+    } catch (error) {
+      console.error('Error bulk approving hours:', error);
+      toast.error('Failed to approve hours');
+    }
+  };
+
+  const bulkRejectHours = async (hoursIds: string[]) => {
+    if (hoursIds.length === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from('vendor_employee_hours')
+        .delete()
+        .in('id', hoursIds);
+
+      if (error) throw error;
+
+      await fetchHours();
+      toast.success(`${hoursIds.length} hours entries rejected`);
+    } catch (error) {
+      console.error('Error bulk rejecting hours:', error);
+      toast.error('Failed to reject hours');
+    }
+  };
+
   return {
     hours,
     loading,
@@ -460,6 +501,8 @@ export const useEmployeeHours = (employeeId: string | null) => {
     getTotalHours,
     fetchHours,
     approveHours,
-    rejectHours
+    rejectHours,
+    bulkApproveHours,
+    bulkRejectHours
   };
 };
