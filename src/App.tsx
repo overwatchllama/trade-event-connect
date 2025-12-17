@@ -21,6 +21,7 @@ import EventDetails from "./pages/EventDetails";
 import LayoutTool from "./pages/LayoutTool";
 import ManageEvent from "./pages/ManageEvent";
 import SponsorProfile from "./pages/SponsorProfile";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +63,11 @@ const App = () => (
             <Route path="/layout-tool" element={<LayoutTool />} />
             <Route path="/event/:id/manage" element={<ManageEvent />} />
             <Route path="/my-sponsor-profile" element={<SponsorProfile />} />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
