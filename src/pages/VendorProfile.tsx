@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Header from '@/components/Header';
 import EditVendorProfile from '@/components/EditVendorProfile';
 import VendorCalendar from '@/components/VendorCalendar';
-import { SubscriptionButton } from '@/components/SubscriptionButton';
+import { FavoriteVendorButton } from '@/components/FavoriteVendorButton';
+import { useSubscriptions } from '@/hooks/useSubscriptions';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useVendorProfile } from '@/hooks/useVendorProfile';
@@ -63,11 +64,14 @@ const VendorProfile = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { vendorProfile: currentUserVendor } = useVendorProfile();
+  const { isSubscribed, subscribe, unsubscribe, refetch: refetchSubscriptions } = useSubscriptions();
   const [vendor, setVendor] = useState<VendorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [uploading, setUploading] = useState<'avatar' | 'banner' | null>(null);
+  
+  const isFavorite = vendor ? isSubscribed('favorite_vendor', vendor.id) : false;
 
   useEffect(() => {
     if (id) {
@@ -311,11 +315,12 @@ const VendorProfile = () => {
                   <Share2 className="w-4 h-4 mr-2" />
                   Share
                 </Button>
-                {!isOwner && (
-                  <SubscriptionButton
-                    type="vendor"
-                    targetId={vendor.id}
-                    variant="outline"
+                {!isOwner && vendor && (
+                  <FavoriteVendorButton
+                    vendorId={vendor.id}
+                    isFavorite={isFavorite}
+                    onToggle={refetchSubscriptions}
+                    showText={true}
                   />
                 )}
                 

@@ -33,7 +33,7 @@ const Vendors = () => {
   const { user } = useAuth();
   const { hasVendorRole } = useVendorProfile();
   const { isVendor, isOrganizer } = useUserRoles();
-  const { isSubscribed, subscribe, unsubscribe, getFavoriteVendorIds, refetch: refetchSubscriptions } = useSubscriptions();
+  const { isSubscribed, subscribe, unsubscribe, getFavoriteVendorIds, refetch: refetchSubscriptions, loading: subscriptionsLoading } = useSubscriptions();
   const [vendors, setVendors] = useState<VendorProfile[]>([]);
   const [myVendorProfile, setMyVendorProfile] = useState<VendorProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,7 +46,9 @@ const Vendors = () => {
   const [selectedVendorForInvite, setSelectedVendorForInvite] = useState<VendorProfile | null>(null);
   const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
-  const [favoriteVendorIds, setFavoriteVendorIds] = useState<string[]>([]);
+
+  // Get favorite vendor IDs directly from subscriptions
+  const favoriteVendorIds = getFavoriteVendorIds();
 
   // US States list
   const usStates = [
@@ -63,12 +65,6 @@ const Vendors = () => {
   useEffect(() => {
     fetchVendors();
   }, [user, isVendor]);
-
-  useEffect(() => {
-    if (user) {
-      setFavoriteVendorIds(getFavoriteVendorIds());
-    }
-  }, [user, getFavoriteVendorIds]);
 
   const fetchVendors = async () => {
     try {
@@ -130,11 +126,10 @@ const Vendors = () => {
     try {
       if (isFav) {
         await unsubscribe('favorite_vendor', vendorId);
-        setFavoriteVendorIds(prev => prev.filter(id => id !== vendorId));
       } else {
         await subscribe('favorite_vendor', vendorId);
-        setFavoriteVendorIds(prev => [...prev, vendorId]);
       }
+      // Subscriptions will auto-refresh via useSubscriptions hook
     } catch (error) {
       console.error('Error toggling favorite:', error);
     }
