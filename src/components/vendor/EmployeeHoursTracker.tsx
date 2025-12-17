@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useEmployeeHours } from '@/hooks/useVendorEmployees';
-import { Clock, Play, Square, Plus, Calendar, Check, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { Clock, Play, Square, Plus, Calendar, Check, X, CheckCircle, AlertCircle, CheckCheck } from 'lucide-react';
 import { format, differenceInMinutes } from 'date-fns';
 
 interface EmployeeHoursTrackerProps {
@@ -18,12 +19,19 @@ interface EmployeeHoursTrackerProps {
 }
 
 const EmployeeHoursTracker = ({ employeeId, events = [], isManager = false }: EmployeeHoursTrackerProps) => {
-  const { hours, loading, activeClockIn, clockIn, clockOut, addManualHours, getTotalHours, approveHours, rejectHours } = useEmployeeHours(employeeId);
+  const { hours, loading, activeClockIn, clockIn, clockOut, addManualHours, getTotalHours, approveHours, rejectHours, bulkApproveHours, bulkRejectHours } = useEmployeeHours(employeeId);
   const [isManualDialogOpen, setIsManualDialogOpen] = useState(false);
   const [manualHours, setManualHours] = useState('');
   const [manualEventId, setManualEventId] = useState<string>('');
   const [manualNotes, setManualNotes] = useState('');
   const [clockInEventId, setClockInEventId] = useState<string>('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Get pending entries that can be approved
+  const pendingEntries = useMemo(() => 
+    hours.filter(h => !h.approved_at && (h.clock_out || h.entry_type === 'manual')),
+    [hours]
+  );
 
   const handleClockIn = async () => {
     await clockIn(clockInEventId || undefined);
@@ -50,9 +58,37 @@ const EmployeeHoursTracker = ({ employeeId, events = [], isManager = false }: Em
     return `${hrs}h ${mins}m`;
   };
 
+  const toggleSelection = (id: string) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedIds(newSet);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === pendingEntries.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(pendingEntries.map(e => e.id)));
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    await bulkApproveHours(Array.from(selectedIds));
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkReject = async () => {
+    await bulkRejectHours(Array.from(selectedIds));
+    setSelectedIds(new Set());
+  };
+
   const totalHours = getTotalHours();
   const approvedHours = getTotalHours(true);
-  const pendingHours = totalHours - approvedHours;
+  const pendingHoursValue = totalHours - approvedHours;
 
   if (loading) {
     return (
@@ -83,10 +119,10 @@ const EmployeeHoursTracker = ({ employeeId, events = [], isManager = false }: Em
                   <CheckCircle className="h-3 w-3" />
                   Approved: {approvedHours.toFixed(1)}h
                 </span>
-                {pendingHours > 0 && (
+                {pendingHoursValue > 0 && (
                   <span className="text-yellow-600 flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
-                    Pending: {pendingHours.toFixed(1)}h
+                    Pending: {pendingHoursValue.toFixed(1)}h
                   </span>
                 )}
               </div>
@@ -196,6 +232,35 @@ const EmployeeHoursTracker = ({ employeeId, events = [], isManager = false }: Em
           </div>
         )}
 
+        {/* Bulk actions for manager */}
+        {isManager && pendingEntries.length > 0 && (
+          <div className="mb-4 p-3 bg-muted/50 border rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                checked={selectedIds.size === pendingEntries.length && pendingEntries.length > 0}
+                onCheckedChange={toggleSelectAll}
+              />
+              <span className="text-sm text-muted-foreground">
+                {selectedIds.size === 0 
+                  ? `${pendingEntries.length} pending entries` 
+                  : `${selectedIds.size} selected`}
+              </span>
+            </div>
+            {selectedIds.size > 0 && (
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={handleBulkApprove}>
+                  <CheckCheck className="h-4 w-4 mr-1 text-green-600" />
+                  Approve ({selectedIds.size})
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleBulkReject}>
+                  <X className="h-4 w-4 mr-1 text-destructive" />
+                  Reject ({selectedIds.size})
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
         {hours.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -204,72 +269,81 @@ const EmployeeHoursTracker = ({ employeeId, events = [], isManager = false }: Em
           </div>
         ) : (
           <div className="space-y-2">
-            {hours.slice(0, 20).map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  {entry.entry_type === 'clock' ? (
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Plus className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {entry.entry_type === 'clock' ? (
-                        <span className="text-sm">
-                          {format(new Date(entry.clock_in!), 'MMM d')} • {format(new Date(entry.clock_in!), 'h:mm a')}
-                          {entry.clock_out && ` - ${format(new Date(entry.clock_out), 'h:mm a')}`}
-                        </span>
-                      ) : (
-                        <span className="text-sm">
-                          {format(new Date(entry.created_at), 'MMM d')} • Manual entry
-                        </span>
+            {hours.slice(0, 20).map((entry) => {
+              const isPending = !entry.approved_at && (entry.clock_out || entry.entry_type === 'manual');
+              return (
+                <div key={entry.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {isManager && isPending && (
+                      <Checkbox
+                        checked={selectedIds.has(entry.id)}
+                        onCheckedChange={() => toggleSelection(entry.id)}
+                      />
+                    )}
+                    {entry.entry_type === 'clock' ? (
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Plus className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {entry.entry_type === 'clock' ? (
+                          <span className="text-sm">
+                            {format(new Date(entry.clock_in!), 'MMM d')} • {format(new Date(entry.clock_in!), 'h:mm a')}
+                            {entry.clock_out && ` - ${format(new Date(entry.clock_out), 'h:mm a')}`}
+                          </span>
+                        ) : (
+                          <span className="text-sm">
+                            {format(new Date(entry.created_at), 'MMM d')} • Manual entry
+                          </span>
+                        )}
+                        {entry.event && (
+                          <Badge variant="outline" className="text-xs">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {entry.event.title}
+                          </Badge>
+                        )}
+                        {entry.approved_at ? (
+                          <Badge variant="default" className="text-xs bg-green-600">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Approved
+                          </Badge>
+                        ) : isPending ? (
+                          <Badge variant="secondary" className="text-xs">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Pending Approval
+                          </Badge>
+                        ) : null}
+                      </div>
+                      {entry.notes && (
+                        <p className="text-xs text-muted-foreground mt-1">{entry.notes}</p>
                       )}
-                      {entry.event && (
-                        <Badge variant="outline" className="text-xs">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          {entry.event.title}
-                        </Badge>
-                      )}
-                      {entry.approved_at ? (
-                        <Badge variant="default" className="text-xs bg-green-600">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Approved
-                        </Badge>
-                      ) : entry.clock_out || entry.entry_type === 'manual' ? (
-                        <Badge variant="secondary" className="text-xs">
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          Pending Approval
-                        </Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      {entry.entry_type === 'clock' && entry.clock_in && entry.clock_out ? (
+                        <span className="font-mono font-medium">{formatDuration(entry.clock_in, entry.clock_out)}</span>
+                      ) : entry.entry_type === 'manual' && entry.manual_hours ? (
+                        <span className="font-mono font-medium">{entry.manual_hours}h</span>
+                      ) : entry.entry_type === 'clock' && !entry.clock_out ? (
+                        <Badge variant="secondary">In progress</Badge>
                       ) : null}
                     </div>
-                    {entry.notes && (
-                      <p className="text-xs text-muted-foreground mt-1">{entry.notes}</p>
+                    {isManager && isPending && (
+                      <div className="flex gap-1 ml-2">
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => approveHours(entry.id)}>
+                          <Check className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => rejectHours(entry.id)}>
+                          <X className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="text-right">
-                    {entry.entry_type === 'clock' && entry.clock_in && entry.clock_out ? (
-                      <span className="font-mono font-medium">{formatDuration(entry.clock_in, entry.clock_out)}</span>
-                    ) : entry.entry_type === 'manual' && entry.manual_hours ? (
-                      <span className="font-mono font-medium">{entry.manual_hours}h</span>
-                    ) : entry.entry_type === 'clock' && !entry.clock_out ? (
-                      <Badge variant="secondary">In progress</Badge>
-                    ) : null}
-                  </div>
-                  {isManager && !entry.approved_at && (entry.clock_out || entry.entry_type === 'manual') && (
-                    <div className="flex gap-1 ml-2">
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => approveHours(entry.id)}>
-                        <Check className="h-4 w-4 text-green-600" />
-                      </Button>
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => rejectHours(entry.id)}>
-                        <X className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>
