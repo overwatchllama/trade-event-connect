@@ -81,6 +81,11 @@ const Index = () => {
               return event.lastEventDate >= today;
             }
             return true; // Keep events without date info
+          }).sort((a, b) => {
+            // Sort by date, soonest first
+            if (!a.lastEventDate) return 1;
+            if (!b.lastEventDate) return -1;
+            return a.lastEventDate.getTime() - b.lastEventDate.getTime();
           });
 
           setPopularEvents(transformedEvents);
