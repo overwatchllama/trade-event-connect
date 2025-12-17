@@ -22,6 +22,7 @@ import LayoutTool from "./pages/LayoutTool";
 import ManageEvent from "./pages/ManageEvent";
 import SponsorProfile from "./pages/SponsorProfile";
 import Settings from "./pages/Settings";
+import EmployeeDashboard from "./pages/EmployeeDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,11 @@ const App = () => (
             <Route path="/settings" element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="/employee-dashboard" element={
+              <ProtectedRoute>
+                <EmployeeDashboard />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

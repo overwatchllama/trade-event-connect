@@ -1003,6 +1003,158 @@ export type Database = {
           },
         ]
       }
+      vendor_employee_events: {
+        Row: {
+          assigned_by: string
+          created_at: string
+          employee_id: string
+          event_id: string
+          id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_by: string
+          created_at?: string
+          employee_id: string
+          event_id: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string
+          created_at?: string
+          employee_id?: string
+          event_id?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_employee_events_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_employee_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_employee_hours: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          clock_in: string | null
+          clock_out: string | null
+          created_at: string
+          employee_id: string
+          entry_type: string
+          event_id: string | null
+          id: string
+          manual_hours: number | null
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          employee_id: string
+          entry_type?: string
+          event_id?: string | null
+          id?: string
+          manual_hours?: number | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          employee_id?: string
+          entry_type?: string
+          event_id?: string | null
+          id?: string
+          manual_hours?: number | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_employee_hours_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_employee_hours_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_employees: {
+        Row: {
+          created_at: string
+          hired_at: string | null
+          id: string
+          invite_code: string | null
+          invite_expires_at: string | null
+          role: Database["public"]["Enums"]["vendor_employee_role"]
+          status: string
+          updated_at: string
+          user_id: string | null
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          hired_at?: string | null
+          id?: string
+          invite_code?: string | null
+          invite_expires_at?: string | null
+          role?: Database["public"]["Enums"]["vendor_employee_role"]
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          hired_at?: string | null
+          id?: string
+          invite_code?: string | null
+          invite_expires_at?: string | null
+          role?: Database["public"]["Enums"]["vendor_employee_role"]
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_employees_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendors: {
         Row: {
           avatar_url: string | null
@@ -1221,6 +1373,14 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { user_id?: string }; Returns: boolean }
+      is_vendor_manager: {
+        Args: { _user_id?: string; _vendor_id: string }
+        Returns: boolean
+      }
+      is_vendor_owner: {
+        Args: { _user_id?: string; _vendor_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       approval_status: "pending" | "approved" | "rejected"
@@ -1257,6 +1417,14 @@ export type Database = {
         | "approved"
         | "rejected"
         | "waitlist"
+      vendor_employee_role:
+        | "event_manager"
+        | "warehouse_manager"
+        | "retail_manager"
+        | "orders_manager"
+        | "warehouse_staff"
+        | "retail_staff"
+        | "event_staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1421,6 +1589,15 @@ export const Constants = {
         "approved",
         "rejected",
         "waitlist",
+      ],
+      vendor_employee_role: [
+        "event_manager",
+        "warehouse_manager",
+        "retail_manager",
+        "orders_manager",
+        "warehouse_staff",
+        "retail_staff",
+        "event_staff",
       ],
     },
   },
