@@ -114,51 +114,51 @@ const Index = () => {
       <Header />
       <Hero />
       
-      {/* Featured Events Section */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Popular Events
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Discover trending trading card events happening near you.
-            </p>
-          </div>
+      {/* Featured Events Section - only show if there are upcoming events */}
+      {!loading && popularEvents.length > 0 && (
+        <section className="py-20 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Popular Events
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Discover trending trading card events happening near you.
+              </p>
+            </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-8">
-            <Select value={selectedState} onValueChange={setSelectedState}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filter by State" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All States</SelectItem>
-                {Array.from(new Set(popularEvents.map(e => e.state))).sort().map(state => (
-                  <SelectItem key={state} value={state}>{state}</SelectItem>
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-8">
+              <Select value={selectedState} onValueChange={setSelectedState}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filter by State" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All States</SelectItem>
+                  {Array.from(new Set(popularEvents.map(e => e.state))).sort().map(state => (
+                    <SelectItem key={state} value={state}>{state}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Button variant="hero" size="lg" onClick={() => navigate('/events')}>
+                Browse All Events
+              </Button>
+            </div>
+
+            {filteredEvents.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No events found in {selectedState}.
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredEvents.map((event) => (
+                  <SimplifiedEventCard key={event.id} event={event} />
                 ))}
-              </SelectContent>
-            </Select>
-            
-            <Button variant="hero" size="lg" onClick={() => navigate('/events')}>
-              Browse All Events
-            </Button>
+              </div>
+            )}
           </div>
-
-          {loading ? (
-            <div className="text-center py-8">Loading events...</div>
-          ) : filteredEvents.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {selectedState === "all" ? "No events available yet. Check back soon!" : `No events found in ${selectedState}.`}
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEvents.map((event) => (
-                <SimplifiedEventCard key={event.id} event={event} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+        </section>
+      )}
 
       <SubscriptionTiers />
 
