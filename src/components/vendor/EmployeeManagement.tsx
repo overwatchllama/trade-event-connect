@@ -5,15 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVendorEmployees, EmployeeRole, VendorEmployee } from '@/hooks/useVendorEmployees';
-import { Users, UserPlus, Copy, Trash2, Clock, Calendar, Shield } from 'lucide-react';
+import { Users, UserPlus, Copy, Trash2, Clock, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import EmployeeHoursTracker from './EmployeeHoursTracker';
-
+import PayrollSummaryReport from './PayrollSummaryReport';
 const ROLE_LABELS: Record<EmployeeRole, string> = {
   event_manager: 'Event Manager',
   warehouse_manager: 'Warehouse Manager',
@@ -162,6 +161,10 @@ const EmployeeManagement = ({ vendorId }: EmployeeManagementProps) => {
               <Clock className="h-4 w-4 mr-1" />
               Team Hours
             </TabsTrigger>
+            <TabsTrigger value="payroll">
+              <FileSpreadsheet className="h-4 w-4 mr-1" />
+              Payroll
+            </TabsTrigger>
             <TabsTrigger value="pending">
               Pending ({pendingInvites.length})
             </TabsTrigger>
@@ -244,6 +247,10 @@ const EmployeeManagement = ({ vendorId }: EmployeeManagementProps) => {
                 </div>
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="payroll">
+            <PayrollSummaryReport vendorId={vendorId} />
           </TabsContent>
 
           <TabsContent value="pending">
