@@ -280,10 +280,6 @@ const PersonalCalendar = () => {
   }
 
   const totalEvents = favoriteVendorEvents.length + followingEvents.length + vendingEvents.length;
-  
-  if (totalEvents === 0) {
-    return null;
-  }
 
   return (
     <section className="py-12 bg-muted/30">
