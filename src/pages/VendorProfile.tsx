@@ -30,7 +30,8 @@ import {
   Facebook,
   Linkedin,
   Upload,
-  CalendarDays
+  CalendarDays,
+  Share2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -140,6 +141,26 @@ const VendorProfile = () => {
   };
 
   const isOwner = user?.id === vendor?.user_id;
+
+  const handleShareVendor = async () => {
+    if (!vendor) return;
+    const vendorUrl = `${window.location.origin}/vendor/${vendor.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: vendor.business_name, url: vendorUrl });
+      } else {
+        await navigator.clipboard.writeText(vendorUrl);
+        toast.success('Vendor link copied to clipboard!');
+      }
+    } catch (err) {
+      try { 
+        await navigator.clipboard.writeText(vendorUrl); 
+        toast.success('Vendor link copied to clipboard!');
+      } catch {
+        toast.error('Failed to share');
+      }
+    }
+  };
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -286,6 +307,10 @@ const VendorProfile = () => {
               </div>
               
               <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleShareVendor}>
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share
+                </Button>
                 {!isOwner && (
                   <SubscriptionButton
                     type="vendor"
