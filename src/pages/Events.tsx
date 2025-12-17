@@ -33,9 +33,9 @@ const Events = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCardType, setSelectedCardType] = useState("all");
+  const [selectedCardTypes, setSelectedCardTypes] = useState<string[]>([]);
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
-  const [selectedEventType, setSelectedEventType] = useState("all");
+  const [selectedEventType, setSelectedEventType] = useState("both");
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -468,8 +468,17 @@ const Events = () => {
     }
   }, [location.state]);
 
-  const cardTypes = ["all", "Pokemon", "MTG", "Sports", "One Piece", "Yu-Gi-Oh"];
-  const eventTypes = ["all", "play", "show"];
+  // Card type options for multi-select
+  const cardTypeOptions: Option[] = [
+    { label: "Pokemon", value: "pokemon" },
+    { label: "MTG", value: "mtg" },
+    { label: "Sports", value: "sports" },
+    { label: "One Piece", value: "onepiece" },
+    { label: "Yu-Gi-Oh", value: "yugioh" },
+    { label: "Lorcana", value: "lorcana" },
+  ];
+
+  const eventTypes = ["both", "play", "show"];
 
   // Helper to check if event is in the past
   const isEventPast = (event: any): boolean => {
@@ -563,13 +572,15 @@ const Events = () => {
         event.organizer.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.city.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesCardType = selectedCardType === "all" || 
-        event.cardTypes.some((type: string) => type.toLowerCase().includes(selectedCardType.toLowerCase()));
+      const matchesCardType = selectedCardTypes.length === 0 || 
+        event.cardTypes.some((type: string) => 
+          selectedCardTypes.some(selected => type.toLowerCase().includes(selected.toLowerCase()))
+        );
       
       const matchesStates = selectedStates.length === 0 || 
         selectedStates.includes(event.state);
       
-      const matchesEventType = selectedEventType === "all" || event.event_type === selectedEventType;
+      const matchesEventType = selectedEventType === "both" || event.event_type === selectedEventType;
       
       // Filter by upcoming/past (only if no date range is set)
       const isPast = isEventPast(event);
@@ -619,10 +630,12 @@ const Events = () => {
         event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.organizer.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.city.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCardType = selectedCardType === "all" || 
-        event.cardTypes.some((type: string) => type.toLowerCase().includes(selectedCardType.toLowerCase()));
+      const matchesCardType = selectedCardTypes.length === 0 || 
+        event.cardTypes.some((type: string) => 
+          selectedCardTypes.some(selected => type.toLowerCase().includes(selected.toLowerCase()))
+        );
       const matchesStates = selectedStates.length === 0 || selectedStates.includes(event.state);
-      const matchesEventType = selectedEventType === "all" || event.event_type === selectedEventType;
+      const matchesEventType = selectedEventType === "both" || event.event_type === selectedEventType;
       return matchesSearch && matchesCardType && matchesStates && matchesEventType;
     });
   };
@@ -725,7 +738,7 @@ const Events = () => {
                   <SelectContent>
                     {eventTypes.map((type) => (
                       <SelectItem key={type} value={type}>
-                        {type === "all" ? "All Events" : type === "play" ? "Play" : "Show"}
+                        {type === "both" ? "Both" : type === "play" ? "Play" : "Show"}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -741,18 +754,15 @@ const Events = () => {
                   />
                 </div>
 
-                <Select value={selectedCardType} onValueChange={setSelectedCardType}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Tags" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cardTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type === "all" ? "All Tags" : type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="w-48">
+                  <MultiSelect
+                    options={cardTypeOptions}
+                    selected={selectedCardTypes}
+                    onChange={setSelectedCardTypes}
+                    placeholder="Card Type"
+                    className="w-full"
+                  />
+                </div>
 
                 <Select value={sortBy} onValueChange={(value: "date" | "location" | "popularity") => setSortBy(value)}>
                   <SelectTrigger className="w-36">
@@ -842,19 +852,21 @@ const Events = () => {
           </div>
 
           {/* Active Filters */}
-          {(selectedEventType !== "all" || selectedCardType !== "all" || selectedStates.length > 0 || dateRange.from || dateRange.to || searchQuery || thisWeekOnly || thisMonthOnly) && (
+          {(selectedEventType !== "both" || selectedCardTypes.length > 0 || selectedStates.length > 0 || dateRange.from || dateRange.to || searchQuery || thisWeekOnly || thisMonthOnly) && (
             <div className="flex gap-2 mb-6 flex-wrap items-center">
-              {selectedEventType !== "all" && (
+              {selectedEventType !== "both" && (
                 <Badge variant="secondary" className="gap-2">
                   <Filter className="w-3 h-3" />
-                  {selectedEventType === "play" ? "Play Events" : "Collect Events"}
+                  {selectedEventType === "play" ? "Play Events" : "Show Events"}
                 </Badge>
               )}
-              {selectedCardType !== "all" && (
-                <Badge variant="secondary" className="gap-2">
-                  <Calendar className="w-3 h-3" />
-                  {selectedCardType}
-                </Badge>
+              {selectedCardTypes.length > 0 && (
+                selectedCardTypes.map((cardType) => (
+                  <Badge key={cardType} variant="secondary" className="gap-2">
+                    <Calendar className="w-3 h-3" />
+                    {cardTypeOptions.find(option => option.value === cardType)?.label || cardType}
+                  </Badge>
+                ))
               )}
               {selectedStates.length > 0 && (
                 selectedStates.map((state) => (
@@ -900,9 +912,9 @@ const Events = () => {
                 className="text-muted-foreground hover:text-foreground gap-1"
                 onClick={() => {
                   setSearchQuery("");
-                  setSelectedCardType("all");
+                  setSelectedCardTypes([]);
                   setSelectedStates([]);
-                  setSelectedEventType("all");
+                  setSelectedEventType("both");
                   setThisWeekOnly(false);
                   setThisMonthOnly(false);
                   setDateRange({ from: undefined, to: undefined });
