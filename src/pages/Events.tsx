@@ -38,6 +38,7 @@ const Events = () => {
   const [selectedEventType, setSelectedEventType] = useState("both");
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [copyFromEventId, setCopyFromEventId] = useState<string | undefined>(undefined);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [eventTimeFilter, setEventTimeFilter] = useState<"upcoming" | "past">("upcoming");
   const [sortBy, setSortBy] = useState<"date" | "location" | "popularity">("date");
@@ -995,7 +996,15 @@ const Events = () => {
                   ) : (
                     filteredMyEvents.map((event) => (
                       <div key={`my-${event.id}`} className="relative">
-                        <EventCard event={event} userType="organizer" isMyEvent={true} />
+                        <EventCard 
+                          event={event} 
+                          userType="organizer" 
+                          isMyEvent={true} 
+                          onCopyEvent={(eventId) => {
+                            setCopyFromEventId(eventId);
+                            setShowCreateEvent(true);
+                          }}
+                        />
                         <Button
                           variant="outline"
                           size="sm"
@@ -1088,7 +1097,11 @@ const Events = () => {
       {/* Create Event Dialog */}
       <CreateEventDialog 
         open={showCreateEvent} 
-        onOpenChange={setShowCreateEvent}
+        onOpenChange={(open) => {
+          setShowCreateEvent(open);
+          if (!open) setCopyFromEventId(undefined);
+        }}
+        copyFromEventId={copyFromEventId}
       />
     </div>
   );
