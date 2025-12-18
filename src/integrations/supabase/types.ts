@@ -412,6 +412,7 @@ export type Database = {
           total_tables: number | null
           updated_at: string
           vendor_notes: string | null
+          vendor_start_time: string | null
           vendor_table_price: number | null
           venue: string
           venue_id: string | null
@@ -450,6 +451,7 @@ export type Database = {
           total_tables?: number | null
           updated_at?: string
           vendor_notes?: string | null
+          vendor_start_time?: string | null
           vendor_table_price?: number | null
           venue: string
           venue_id?: string | null
@@ -488,6 +490,7 @@ export type Database = {
           total_tables?: number | null
           updated_at?: string
           vendor_notes?: string | null
+          vendor_start_time?: string | null
           vendor_table_price?: number | null
           venue?: string
           venue_id?: string | null
@@ -539,6 +542,45 @@ export type Database = {
           type?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      organizer_saved_locations: {
+        Row: {
+          address: string
+          city: string
+          created_at: string
+          id: string
+          name: string
+          organizer_id: string
+          state: string
+          updated_at: string
+          venue: string
+          zip_code: string
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string
+          id?: string
+          name: string
+          organizer_id: string
+          state: string
+          updated_at?: string
+          venue: string
+          zip_code: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string
+          id?: string
+          name?: string
+          organizer_id?: string
+          state?: string
+          updated_at?: string
+          venue?: string
+          zip_code?: string
         }
         Relationships: []
       }
