@@ -18,7 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Search, Filter, MapPin, Calendar, Plus, Edit, Settings, LayoutGrid, List, CalendarRange, X } from "lucide-react";
+import { Search, Filter, MapPin, Calendar, Plus, Edit, Settings, LayoutGrid, List, CalendarRange, X, Copy } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useProfile } from "@/hooks/useProfile";
@@ -983,10 +984,39 @@ const Events = () => {
               <TabsContent value="manage-events" className="mt-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold text-foreground">My Events</h2>
-                  <Button variant="default" className="gap-2" onClick={() => setShowCreateEvent(true)}>
-                    <Plus className="w-4 h-4" />
-                    Create Event
-                  </Button>
+                  <div className="flex gap-2">
+                    {myEvents.length > 0 && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="gap-2">
+                            <Copy className="w-4 h-4" />
+                            Copy Event
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-64 max-h-80 overflow-y-auto">
+                          <DropdownMenuLabel>Select event to copy</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {myEvents.map((event) => (
+                            <DropdownMenuItem
+                              key={event.id}
+                              onClick={() => {
+                                setCopyFromEventId(event.id);
+                                setShowCreateEvent(true);
+                              }}
+                              className="flex flex-col items-start gap-1"
+                            >
+                              <span className="font-medium truncate w-full">{event.title}</span>
+                              <span className="text-xs text-muted-foreground">{event.date}</span>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                    <Button variant="default" className="gap-2" onClick={() => setShowCreateEvent(true)}>
+                      <Plus className="w-4 h-4" />
+                      Create Event
+                    </Button>
+                  </div>
                 </div>
                 <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredMyEvents.length === 0 ? (
