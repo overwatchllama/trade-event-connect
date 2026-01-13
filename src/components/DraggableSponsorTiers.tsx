@@ -28,6 +28,7 @@ const DraggableSponsorTiers = ({
 }: DraggableSponsorTiersProps) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
   const dragNode = useRef<HTMLDivElement | null>(null);
 
   const addSponsorTier = () => {
@@ -59,6 +60,7 @@ const DraggableSponsorTiers = ({
     e.currentTarget.classList.remove('opacity-50');
     setDraggedIndex(null);
     setDragOverIndex(null);
+    setDropPosition(null);
     dragNode.current = null;
   };
 
@@ -67,12 +69,17 @@ const DraggableSponsorTiers = ({
     e.dataTransfer.dropEffect = 'move';
     
     if (draggedIndex !== null && draggedIndex !== index) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      const position = e.clientY < midY ? 'before' : 'after';
       setDragOverIndex(index);
+      setDropPosition(position);
     }
   };
 
   const handleDragLeave = () => {
     setDragOverIndex(null);
+    setDropPosition(null);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropIndex: number) => {
@@ -80,17 +87,26 @@ const DraggableSponsorTiers = ({
     
     if (draggedIndex === null || draggedIndex === dropIndex) {
       setDragOverIndex(null);
+      setDropPosition(null);
       return;
     }
 
     setSponsorTiers(prev => {
       const updated = [...prev];
       const [draggedItem] = updated.splice(draggedIndex, 1);
-      updated.splice(dropIndex, 0, draggedItem);
+      // Adjust drop index based on position and whether we're moving up or down
+      let adjustedIndex = dropIndex;
+      if (dropPosition === 'after') {
+        adjustedIndex = draggedIndex < dropIndex ? dropIndex : dropIndex + 1;
+      } else {
+        adjustedIndex = draggedIndex < dropIndex ? dropIndex - 1 : dropIndex;
+      }
+      updated.splice(adjustedIndex, 0, draggedItem);
       return updated;
     });
 
     setDragOverIndex(null);
+    setDropPosition(null);
     setDraggedIndex(null);
   };
 
@@ -99,38 +115,40 @@ const DraggableSponsorTiers = ({
       <Label className="text-xs">Sponsor Tiers (Optional)</Label>
       <div className="space-y-2">
         {sponsorTiers.map((tier, index) => (
-          <div
-            key={index}
-            draggable={!noSponsors && sponsorTiers.length > 1}
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDragEnd={handleDragEnd}
-            onDragOver={(e) => handleDragOver(e, index)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, index)}
-            className={`border rounded p-2 space-y-2 bg-background
-              transition-all duration-300 ease-out
-              ${dragOverIndex === index 
-                ? 'border-primary border-2 border-dashed scale-[1.02] shadow-lg translate-y-1 bg-primary/5' 
-                : 'border-border'
-              }
-              ${draggedIndex === index 
-                ? 'opacity-60 scale-95 shadow-xl rotate-1 cursor-grabbing' 
-                : ''
-              }
-              ${draggedIndex !== null && draggedIndex !== index && dragOverIndex !== index
-                ? 'opacity-80'
-                : ''
-              }
-              ${!noSponsors && sponsorTiers.length > 1 ? 'hover:shadow-md hover:border-primary/50' : ''}
-            `}
-            style={{
-              transform: dragOverIndex === index 
-                ? 'translateY(4px) scale(1.02)' 
-                : draggedIndex === index 
+          <div key={`wrapper-${index}`} className="relative">
+            {/* Drop indicator line - before */}
+            {dragOverIndex === index && dropPosition === 'before' && draggedIndex !== index && (
+              <div className="absolute -top-1 left-0 right-0 z-10 flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-primary border-2 border-primary shadow-lg" />
+                <div className="flex-1 h-0.5 bg-primary rounded-full shadow-lg" />
+                <div className="w-3 h-3 rounded-full bg-primary border-2 border-primary shadow-lg" />
+              </div>
+            )}
+            <div
+              draggable={!noSponsors && sponsorTiers.length > 1}
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, index)}
+              className={`border rounded p-2 space-y-2 bg-background
+                transition-all duration-300 ease-out
+                ${draggedIndex === index 
+                  ? 'opacity-60 scale-95 shadow-xl rotate-1 cursor-grabbing border-muted' 
+                  : 'border-border'
+                }
+                ${draggedIndex !== null && draggedIndex !== index
+                  ? 'opacity-90'
+                  : ''
+                }
+                ${!noSponsors && sponsorTiers.length > 1 ? 'hover:shadow-md hover:border-primary/50' : ''}
+              `}
+              style={{
+                transform: draggedIndex === index 
                   ? 'scale(0.95) rotate(1deg)' 
                   : 'translateY(0) scale(1)',
-            }}
-          >
+              }}
+            >
             <div className="flex gap-2 items-end">
               {!noSponsors && sponsorTiers.length > 1 && (
                 <div className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground self-center pb-1">
@@ -192,7 +210,17 @@ const DraggableSponsorTiers = ({
                 />
                 <Label htmlFor={`${idPrefix}unlimited-${index}`} className="text-xs">Unlimited</Label>
               </div>
+              </div>
             </div>
+            
+            {/* Drop indicator line - after */}
+            {dragOverIndex === index && dropPosition === 'after' && draggedIndex !== index && (
+              <div className="absolute -bottom-1 left-0 right-0 z-10 flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-primary border-2 border-primary shadow-lg" />
+                <div className="flex-1 h-0.5 bg-primary rounded-full shadow-lg" />
+                <div className="w-3 h-3 rounded-full bg-primary border-2 border-primary shadow-lg" />
+              </div>
+            )}
           </div>
         ))}
         <Button 

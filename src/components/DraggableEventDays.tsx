@@ -21,6 +21,7 @@ interface DraggableEventDaysProps {
 const DraggableEventDays = ({ eventDays, setEventDays, isMultiDay }: DraggableEventDaysProps) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
   const dragNode = useRef<HTMLDivElement | null>(null);
 
   const addEventDay = () => {
@@ -61,6 +62,7 @@ const DraggableEventDays = ({ eventDays, setEventDays, isMultiDay }: DraggableEv
     e.currentTarget.classList.remove('opacity-50');
     setDraggedIndex(null);
     setDragOverIndex(null);
+    setDropPosition(null);
     dragNode.current = null;
   };
 
@@ -69,12 +71,17 @@ const DraggableEventDays = ({ eventDays, setEventDays, isMultiDay }: DraggableEv
     e.dataTransfer.dropEffect = 'move';
     
     if (draggedIndex !== null && draggedIndex !== index) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      const position = e.clientY < midY ? 'before' : 'after';
       setDragOverIndex(index);
+      setDropPosition(position);
     }
   };
 
   const handleDragLeave = () => {
     setDragOverIndex(null);
+    setDropPosition(null);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropIndex: number) => {
@@ -82,18 +89,27 @@ const DraggableEventDays = ({ eventDays, setEventDays, isMultiDay }: DraggableEv
     
     if (draggedIndex === null || draggedIndex === dropIndex) {
       setDragOverIndex(null);
+      setDropPosition(null);
       return;
     }
 
     setEventDays(prev => {
       const updated = [...prev];
       const [draggedItem] = updated.splice(draggedIndex, 1);
-      updated.splice(dropIndex, 0, draggedItem);
+      // Adjust drop index based on position and whether we're moving up or down
+      let adjustedIndex = dropIndex;
+      if (dropPosition === 'after') {
+        adjustedIndex = draggedIndex < dropIndex ? dropIndex : dropIndex + 1;
+      } else {
+        adjustedIndex = draggedIndex < dropIndex ? dropIndex - 1 : dropIndex;
+      }
+      updated.splice(adjustedIndex, 0, draggedItem);
       // Renumber days after reorder
       return updated.map((day, i) => ({ ...day, dayNumber: i + 1 }));
     });
 
     setDragOverIndex(null);
+    setDropPosition(null);
     setDraggedIndex(null);
   };
 
@@ -108,40 +124,42 @@ const DraggableEventDays = ({ eventDays, setEventDays, isMultiDay }: DraggableEv
         )}
       </div>
       
-      <div className="space-y-2">
+      <div className="space-y-2 relative">
         {eventDays.map((day, index) => (
-          <div
-            key={index}
-            draggable={isMultiDay && eventDays.length > 1}
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDragEnd={handleDragEnd}
-            onDragOver={(e) => handleDragOver(e, index)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, index)}
-            className={`p-3 border rounded-lg space-y-2 bg-background
-              transition-all duration-300 ease-out
-              ${dragOverIndex === index 
-                ? 'border-primary border-2 border-dashed scale-[1.02] shadow-lg translate-y-1 bg-primary/5' 
-                : 'border-border'
-              }
-              ${draggedIndex === index 
-                ? 'opacity-60 scale-95 shadow-xl rotate-1 cursor-grabbing' 
-                : ''
-              }
-              ${draggedIndex !== null && draggedIndex !== index && dragOverIndex !== index
-                ? 'opacity-80'
-                : ''
-              }
-              ${isMultiDay && eventDays.length > 1 ? 'hover:shadow-md hover:border-primary/50' : ''}
-            `}
-            style={{
-              transform: dragOverIndex === index 
-                ? 'translateY(4px) scale(1.02)' 
-                : draggedIndex === index 
+          <div key={`wrapper-${index}`} className="relative">
+            {/* Drop indicator line - before */}
+            {dragOverIndex === index && dropPosition === 'before' && draggedIndex !== index && (
+              <div className="absolute -top-1 left-0 right-0 z-10 flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-primary border-2 border-primary shadow-lg" />
+                <div className="flex-1 h-0.5 bg-primary rounded-full shadow-lg" />
+                <div className="w-3 h-3 rounded-full bg-primary border-2 border-primary shadow-lg" />
+              </div>
+            )}
+            <div
+              draggable={isMultiDay && eventDays.length > 1}
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, index)}
+              className={`p-3 border rounded-lg space-y-2 bg-background
+                transition-all duration-300 ease-out
+                ${draggedIndex === index 
+                  ? 'opacity-60 scale-95 shadow-xl rotate-1 cursor-grabbing border-muted' 
+                  : 'border-border'
+                }
+                ${draggedIndex !== null && draggedIndex !== index
+                  ? 'opacity-90'
+                  : ''
+                }
+                ${isMultiDay && eventDays.length > 1 ? 'hover:shadow-md hover:border-primary/50' : ''}
+              `}
+              style={{
+                transform: draggedIndex === index 
                   ? 'scale(0.95) rotate(1deg)' 
                   : 'translateY(0) scale(1)',
-            }}
-          >
+              }}
+            >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {isMultiDay && eventDays.length > 1 && (
@@ -198,6 +216,16 @@ const DraggableEventDays = ({ eventDays, setEventDays, isMultiDay }: DraggableEv
                   value={day.ticketCost} 
                   onChange={(e) => updateEventDay(index, 'ticketCost', e.target.value)} 
                 />
+              </div>
+              )}
+            </div>
+            
+            {/* Drop indicator line - after */}
+            {dragOverIndex === index && dropPosition === 'after' && draggedIndex !== index && (
+              <div className="absolute -bottom-1 left-0 right-0 z-10 flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-primary border-2 border-primary shadow-lg" />
+                <div className="flex-1 h-0.5 bg-primary rounded-full shadow-lg" />
+                <div className="w-3 h-3 rounded-full bg-primary border-2 border-primary shadow-lg" />
               </div>
             )}
           </div>
