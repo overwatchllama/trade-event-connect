@@ -118,9 +118,29 @@ const DraggableEventDays = ({ eventDays, setEventDays, isMultiDay }: DraggableEv
             onDragOver={(e) => handleDragOver(e, index)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, index)}
-            className={`p-3 border rounded-lg space-y-2 transition-all duration-200 bg-background ${
-              dragOverIndex === index ? 'border-primary border-2 border-dashed' : ''
-            } ${draggedIndex === index ? 'opacity-50' : ''}`}
+            className={`p-3 border rounded-lg space-y-2 bg-background
+              transition-all duration-300 ease-out
+              ${dragOverIndex === index 
+                ? 'border-primary border-2 border-dashed scale-[1.02] shadow-lg translate-y-1 bg-primary/5' 
+                : 'border-border'
+              }
+              ${draggedIndex === index 
+                ? 'opacity-60 scale-95 shadow-xl rotate-1 cursor-grabbing' 
+                : ''
+              }
+              ${draggedIndex !== null && draggedIndex !== index && dragOverIndex !== index
+                ? 'opacity-80'
+                : ''
+              }
+              ${isMultiDay && eventDays.length > 1 ? 'hover:shadow-md hover:border-primary/50' : ''}
+            `}
+            style={{
+              transform: dragOverIndex === index 
+                ? 'translateY(4px) scale(1.02)' 
+                : draggedIndex === index 
+                  ? 'scale(0.95) rotate(1deg)' 
+                  : 'translateY(0) scale(1)',
+            }}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
