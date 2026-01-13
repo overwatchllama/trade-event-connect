@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Calendar, MapPin, Users, DollarSign, Clock, Upload, X, Plus, ChevronDown, ChevronRight, Copy, Save, Trash2 } from 'lucide-react';
 import DraggableEventDays from './DraggableEventDays';
+import DraggableSponsorTiers from './DraggableSponsorTiers';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -326,21 +327,7 @@ const CreateEventDialog = ({ open, onOpenChange, copyFromEventId }: CreateEventD
 
   // Event day functions moved to DraggableEventDays component
 
-  const addSponsorTier = () => {
-    setSponsorTiers(prev => [...prev, { tier: '', cost: '', slots: '', unlimitedSlots: false, description: '' }]);
-  };
-
-  const removeSponsorTier = (index: number) => {
-    if (sponsorTiers.length > 1) {
-      setSponsorTiers(prev => prev.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateSponsorTier = (index: number, field: string, value: string | boolean) => {
-    setSponsorTiers(prev => prev.map((tier, i) => 
-      i === index ? { ...tier, [field]: value } : tier
-    ));
-  };
+  // Sponsor tier functions moved to DraggableSponsorTiers component
 
   const addSocialMediaLink = () => {
     setSocialMediaLinks(prev => [...prev, { platform: '', url: '' }]);
@@ -836,42 +823,13 @@ const CreateEventDialog = ({ open, onOpenChange, copyFromEventId }: CreateEventD
                 <Textarea placeholder="Special instructions for vendors (e.g., loading dock location, setup rules)" value={formData.vendorNotes} onChange={(e) => handleInputChange('vendorNotes', e.target.value)} rows={2} />
               </div>
 
-              {/* Sponsor Tiers */}
-              <div className="space-y-2">
-                <Label className="text-xs">Sponsor Tiers (Optional)</Label>
-                <div className="space-y-2">
-                  {sponsorTiers.map((tier, index) => (
-                    <div key={index} className="border rounded p-2 space-y-2">
-                      <div className="flex gap-2 items-end">
-                        <div className="flex-1 space-y-1">
-                          <Label className="text-xs">Tier Name</Label>
-                          <Input placeholder="e.g., Platinum" value={tier.tier} onChange={(e) => updateSponsorTier(index, 'tier', e.target.value)} disabled={noSponsors} />
-                        </div>
-                        <div className="w-24 space-y-1">
-                          <Label className="text-xs">Cost ($)</Label>
-                          <Input type="number" placeholder="5000" value={tier.cost} onChange={(e) => updateSponsorTier(index, 'cost', e.target.value)} disabled={noSponsors} />
-                        </div>
-                        {sponsorTiers.length > 1 && (
-                          <Button type="button" variant="ghost" size="icon" onClick={() => removeSponsorTier(index)} disabled={noSponsors}>
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                      <Input placeholder="Benefits description" value={tier.description} onChange={(e) => updateSponsorTier(index, 'description', e.target.value)} disabled={noSponsors} />
-                      <div className="flex items-center gap-3">
-                        <Input type="number" placeholder="Slots" value={tier.slots} onChange={(e) => updateSponsorTier(index, 'slots', e.target.value)} disabled={tier.unlimitedSlots || noSponsors} className="w-24" />
-                        <div className="flex items-center space-x-2">
-                          <Switch id={`unlimited-${index}`} checked={tier.unlimitedSlots} onCheckedChange={(checked) => updateSponsorTier(index, 'unlimitedSlots', checked)} disabled={noSponsors} />
-                          <Label htmlFor={`unlimited-${index}`} className="text-xs">Unlimited</Label>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <Button type="button" variant="outline" size="sm" onClick={addSponsorTier} className="w-full" disabled={noSponsors}>
-                    <Plus className="w-4 h-4 mr-1" /> Add Sponsor Tier
-                  </Button>
-                </div>
-              </div>
+              {/* Sponsor Tiers - Draggable */}
+              <DraggableSponsorTiers 
+                sponsorTiers={sponsorTiers} 
+                setSponsorTiers={setSponsorTiers} 
+                noSponsors={noSponsors}
+                idPrefix="create-"
+              />
 
               <div className="flex items-center space-x-2">
                 <Switch id="no-sponsors" checked={noSponsors} onCheckedChange={setNoSponsors} />
