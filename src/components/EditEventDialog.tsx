@@ -9,6 +9,7 @@ import { MultiSelect, Option } from '@/components/ui/multi-select';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Calendar, MapPin, Users, DollarSign, Clock, Upload, X, Plus, ChevronDown, ChevronRight, Save, Trash2 } from 'lucide-react';
+import DraggableEventDays from './DraggableEventDays';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -365,27 +366,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
     setFloorPlanPreview(null);
   };
 
-  const addEventDay = () => {
-    setEventDays(prev => [...prev, { 
-      date: '', 
-      startTime: '', 
-      endTime: '', 
-      dayNumber: prev.length + 1,
-      ticketCost: ''
-    }]);
-  };
-
-  const removeEventDay = (index: number) => {
-    if (eventDays.length > 1) {
-      setEventDays(prev => prev.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateEventDay = (index: number, field: string, value: string) => {
-    setEventDays(prev => prev.map((day, i) => 
-      i === index ? { ...day, [field]: value } : day
-    ));
-  };
+  // Event day functions moved to DraggableEventDays component
 
   const addSponsorTier = () => {
     setSponsorTiers(prev => [...prev, { tier: '', cost: '', slots: '', unlimitedSlots: false, description: '' }]);
@@ -660,51 +641,12 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                 <Label htmlFor="multi-day">Multi-day event</Label>
               </div>
 
-              {/* Event Days */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Event Schedule</Label>
-                  {isMultiDay && (
-                    <Button type="button" variant="outline" size="sm" onClick={addEventDay}>
-                      <Plus className="w-4 h-4 mr-1" /> Add Day
-                    </Button>
-                  )}
-                </div>
-                
-                {eventDays.map((day, index) => (
-                  <div key={index} className="p-3 border rounded-lg space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-sm">{isMultiDay ? `Day ${index + 1}` : 'Event Day'}</h4>
-                      {isMultiDay && eventDays.length > 1 && (
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeEventDay(index)}>
-                          <X className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Date</Label>
-                        <Input type="date" value={day.date} onChange={(e) => updateEventDay(index, 'date', e.target.value)} required />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Start Time</Label>
-                        <Input type="time" value={day.startTime} onChange={(e) => updateEventDay(index, 'startTime', e.target.value)} required />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">End Time</Label>
-                        <Input type="time" value={day.endTime} onChange={(e) => updateEventDay(index, 'endTime', e.target.value)} required />
-                      </div>
-                    </div>
-                    {isMultiDay && (
-                      <div className="space-y-1">
-                        <Label className="text-xs">Day Ticket Cost ($)</Label>
-                        <Input type="number" step="0.01" min="0" placeholder="0.00" value={day.ticketCost} onChange={(e) => updateEventDay(index, 'ticketCost', e.target.value)} />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              {/* Event Days - Draggable */}
+              <DraggableEventDays 
+                eventDays={eventDays} 
+                setEventDays={setEventDays} 
+                isMultiDay={isMultiDay} 
+              />
 
               {/* Minimized File Uploads */}
               <div className="grid grid-cols-2 gap-3">
