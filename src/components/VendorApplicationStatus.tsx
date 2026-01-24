@@ -143,13 +143,18 @@ export const VendorApplicationStatus = ({ eventId, eventTitle, vendorTablePrice 
   const handlePayInvoice = async () => {
     if (!application) return;
 
+    const tableCount = application.approved_tables || application.requested_tables;
+    const tableFee = (vendorTablePrice || 0) * tableCount;
+
     setPaymentProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('vendor-registration-payment', {
         body: {
           eventId: eventId,
           eventTitle: eventTitle,
-          applicationId: application.id
+          applicationId: application.id,
+          tableFee: tableFee,
+          tableCount: tableCount
         }
       });
 
@@ -315,16 +320,39 @@ export const VendorApplicationStatus = ({ eventId, eventTitle, vendorTablePrice 
         )}
 
         {/* Payment Button */}
-        {canPayInvoice() && (
-          <Button 
-            className="w-full" 
-            onClick={handlePayInvoice}
-            disabled={paymentProcessing}
-          >
-            <CreditCard className="w-4 h-4 mr-2" />
-            {paymentProcessing ? "Processing..." : `Pay Invoice ($${(vendorTablePrice || 0) * (application.approved_tables || application.requested_tables)})`}
-          </Button>
-        )}
+        {canPayInvoice() && (() => {
+          const tableCount = application.approved_tables || application.requested_tables;
+          const tableFee = (vendorTablePrice || 0) * tableCount;
+          const platformFee = 5;
+          const total = tableFee + platformFee;
+          
+          return (
+            <div className="space-y-2">
+              <div className="text-sm space-y-1 p-3 bg-muted rounded-md">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Vendor Table Fee ({tableCount} table{tableCount > 1 ? 's' : ''}):</span>
+                  <span className="font-medium">${tableFee.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Platform Service Fee:</span>
+                  <span className="font-medium">${platformFee.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between border-t pt-1 mt-1">
+                  <span className="font-medium">Total:</span>
+                  <span className="font-bold">${total.toFixed(2)}</span>
+                </div>
+              </div>
+              <Button 
+                className="w-full" 
+                onClick={handlePayInvoice}
+                disabled={paymentProcessing}
+              >
+                <CreditCard className="w-4 h-4 mr-2" />
+                {paymentProcessing ? "Processing..." : `Pay Invoice ($${total.toFixed(2)})`}
+              </Button>
+            </div>
+          );
+        })()}
 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-2">
