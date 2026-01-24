@@ -50,11 +50,11 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Parse request body
-    const { eventId, eventTitle } = await req.json();
+    const { eventId, eventTitle, applicationId, tableFee, tableCount } = await req.json();
     if (!eventId || !eventTitle) {
       throw new Error("eventId and eventTitle are required");
     }
-    logStep("Request parsed", { eventId, eventTitle });
+    logStep("Request parsed", { eventId, eventTitle, applicationId, tableFee, tableCount });
 
     // Check if user has an active pro subscription
     const { data: subscription, error: subError } = await supabaseService
@@ -107,39 +107,68 @@ serve(async (req) => {
     }
     logStep("Stripe customer check", { customerId });
 
-    // Create checkout session for $5 vendor registration fee
+    // Build line items - vendor table fee + platform fee
+    const lineItems = [];
+    
+    // Add vendor table fee if there's one
+    const vendorTableFee = tableFee || 0;
+    if (vendorTableFee > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: { 
+            name: `Vendor Table Fee - ${eventTitle}`,
+            description: `${tableCount || 1} table(s) at $${(vendorTableFee / (tableCount || 1)).toFixed(2)} each`
+          },
+          unit_amount: Math.round(vendorTableFee * 100), // Convert to cents
+        },
+        quantity: 1,
+      });
+    }
+    
+    // Add platform fee ($5)
+    const platformFee = 500; // $5.00 in cents
+    lineItems.push({
+      price_data: {
+        currency: "usd",
+        product_data: { 
+          name: "Platform Service Fee",
+          description: "One-time vendor registration processing fee"
+        },
+        unit_amount: platformFee,
+      },
+      quantity: 1,
+    });
+
+    logStep("Line items created", { vendorTableFee, platformFee, lineItemsCount: lineItems.length });
+
+    // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: { 
-              name: `Vendor Registration - ${eventTitle}`,
-              description: "One-time vendor table registration fee"
-            },
-            unit_amount: 500, // $5.00 in cents
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       mode: "payment",
       success_url: `${req.headers.get("origin")}/events?registration=success&event=${eventId}`,
       cancel_url: `${req.headers.get("origin")}/events?registration=cancelled&event=${eventId}`,
       metadata: {
         eventId: eventId,
         userId: user.id,
-        registrationType: 'vendor'
+        applicationId: applicationId || '',
+        registrationType: 'vendor',
+        vendorTableFee: vendorTableFee.toString(),
+        platformFee: (platformFee / 100).toString()
       }
     });
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
+    const totalAmount = (vendorTableFee * 100) + platformFee;
     return new Response(JSON.stringify({ 
       url: session.url,
       isPro: false,
-      amount: 500
+      amount: totalAmount,
+      vendorTableFee: vendorTableFee,
+      platformFee: platformFee / 100
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
