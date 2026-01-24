@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 export const NotificationBell = () => {
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead } = useNotifications();
@@ -20,11 +21,35 @@ export const NotificationBell = () => {
 
     // Navigate based on notification type and reference
     if (notification.reference_type === 'vendor_application' && notification.type === 'vendor_application') {
-      // For organizers - go to manage event
-      navigate(`/event/${notification.reference_id}/manage`);
+      // For organizers - reference_id is vendor_application id, need to get event_id
+      try {
+        const { data: application } = await supabase
+          .from('vendor_applications')
+          .select('event_id')
+          .eq('id', notification.reference_id)
+          .single();
+        
+        if (application?.event_id) {
+          navigate(`/event/${application.event_id}/manage`);
+        }
+      } catch (error) {
+        console.error('Error fetching vendor application:', error);
+      }
     } else if (notification.reference_type === 'sponsor_application' && notification.type === 'sponsor_application') {
-      // For organizers - go to manage event
-      navigate(`/event/${notification.reference_id}/manage`);
+      // For organizers - reference_id is sponsor_application id, need to get event_id
+      try {
+        const { data: application } = await supabase
+          .from('sponsor_applications')
+          .select('event_id')
+          .eq('id', notification.reference_id)
+          .single();
+        
+        if (application?.event_id) {
+          navigate(`/event/${application.event_id}/manage`);
+        }
+      } catch (error) {
+        console.error('Error fetching sponsor application:', error);
+      }
     } else if (notification.reference_type === 'vendor_application' && notification.type === 'status_change') {
       // For vendors - go to profile to see applications
       navigate('/profile');
