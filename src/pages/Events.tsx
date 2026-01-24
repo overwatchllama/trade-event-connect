@@ -10,6 +10,7 @@ import { VenuesList } from "@/components/VenuesList";
 import { EventSponsors } from "@/components/EventSponsors";
 import { VendorsList } from "@/components/VendorsList";
 import { SponsorsList } from "@/components/SponsorsList";
+import { VendorApplicationsList } from "@/components/VendorApplicationsList";
 import { MultiSelect, Option } from "@/components/ui/multi-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Search, Filter, MapPin, Calendar, Plus, Edit, Settings, LayoutGrid, List, CalendarRange, X, Copy } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Search, Filter, MapPin, Calendar, Plus, Edit, Settings, LayoutGrid, List, CalendarRange, X, Copy, ClipboardList } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import AdvancedSearch from "@/components/AdvancedSearch";
@@ -52,6 +54,7 @@ const Events = () => {
   const [vendingEvents, setVendingEvents] = useState<any[]>([]);
   const [sponsoringEvents, setSponsoringEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showApplicationsDialog, setShowApplicationsDialog] = useState(false);
   const { user } = useAuth();
   const { profile } = useProfile();
   const { hasRole, isOrganizer, isVendor, isSponsor } = useUserRoles();
@@ -686,6 +689,17 @@ const Events = () => {
                   {showMyEventsOnly ? "Show All Events" : "Manage Events"}
                 </Button>
               )}
+              {isVendor && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setShowApplicationsDialog(true)}
+                >
+                  <ClipboardList className="w-4 h-4" />
+                  My Applications
+                </Button>
+              )}
             </div>
           </div>
 
@@ -1153,6 +1167,16 @@ const Events = () => {
         }}
         copyFromEventId={copyFromEventId}
       />
+
+      {/* Vendor Applications Dialog */}
+      <Dialog open={showApplicationsDialog} onOpenChange={setShowApplicationsDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>My Vendor Applications</DialogTitle>
+          </DialogHeader>
+          <VendorApplicationsList />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
