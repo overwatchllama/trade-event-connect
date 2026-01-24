@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, XCircle, Clock, DollarSign, User, Star, Calendar, History, Mail, Bell, Upload, ExternalLink } from "lucide-react";
+import { CheckCircle, XCircle, Clock, DollarSign, User, Star, Calendar, History, Mail, Bell, Upload, ExternalLink, Printer, Ban, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
@@ -187,6 +187,112 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
       console.error('Error refunding payment:', error);
       toast.error('Failed to refund payment');
     }
+  };
+
+  const cancelWithRefund = async (applicationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('vendor_applications')
+        .update({
+          application_status: 'rejected',
+          payment_status: 'refunded',
+          payment_date: null,
+          notes: 'Cancelled by organizer with refund'
+        })
+        .eq('id', applicationId);
+
+      if (error) throw error;
+
+      toast.success('Vendor cancelled and refunded');
+      fetchApplications();
+    } catch (error) {
+      console.error('Error cancelling with refund:', error);
+      toast.error('Failed to cancel vendor');
+    }
+  };
+
+  const cancelWithoutRefund = async (applicationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('vendor_applications')
+        .update({
+          application_status: 'rejected',
+          notes: 'Cancelled by organizer without refund'
+        })
+        .eq('id', applicationId);
+
+      if (error) throw error;
+
+      toast.success('Vendor cancelled (no refund)');
+      fetchApplications();
+    } catch (error) {
+      console.error('Error cancelling vendor:', error);
+      toast.error('Failed to cancel vendor');
+    }
+  };
+
+  const printBadge = (application: VendorApplication) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow pop-ups to print badges');
+      return;
+    }
+
+    const tableCount = application.approved_tables || application.requested_tables;
+    const tableNumbers = application.table_number || 'TBD';
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Vendor Badge - ${application.vendor.business_name}</title>
+        <style>
+          @page { size: 4in 3in; margin: 0; }
+          body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+          }
+          .badge {
+            border: 3px solid #333;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            width: 100%;
+            max-width: 350px;
+          }
+          .event-title { font-size: 14px; color: #666; margin-bottom: 8px; }
+          .vendor-name { font-size: 24px; font-weight: bold; margin-bottom: 12px; }
+          .label { font-size: 12px; color: #888; text-transform: uppercase; margin-top: 12px; }
+          .value { font-size: 18px; font-weight: 600; }
+          .table-section { margin-top: 16px; padding-top: 16px; border-top: 1px dashed #ccc; }
+        </style>
+      </head>
+      <body>
+        <div class="badge">
+          <div class="event-title">${eventTitle}</div>
+          <div class="vendor-name">${application.vendor.business_name}</div>
+          <div class="table-section">
+            <div class="label">Table Assignment</div>
+            <div class="value">${tableNumbers}</div>
+            <div class="label" style="margin-top: 8px;">Tables</div>
+            <div class="value">${tableCount}</div>
+          </div>
+          <div style="margin-top: 16px; font-size: 10px; color: #999;">VENDOR</div>
+        </div>
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const sendInvoice = async (application: VendorApplication) => {
@@ -593,18 +699,11 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
               <div className="space-y-1">
                 <Label className="text-xs">Payment</Label>
                 {application.payment_status === 'paid' ? (
-                  <div className="flex gap-2 items-center">
+                  <div className="flex gap-2 items-center flex-wrap">
                     <Badge className="bg-green-100 text-green-800">
                       <DollarSign className="w-3 h-3 mr-1" />
                       Paid
                     </Badge>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => refundPayment(application.id)}
-                    >
-                      Refund
-                    </Button>
                   </div>
                 ) : (
                   <Select
@@ -672,6 +771,37 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
                 <p className="text-xs text-green-600">✓ File uploaded</p>
               )}
             </div>
+
+            {/* Paid Vendor Actions */}
+            {application.payment_status === 'paid' && (
+              <div className="flex gap-2 flex-wrap pt-2 border-t">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => printBadge(application)}
+                >
+                  <Printer className="w-3 h-3 mr-1" />
+                  Print Badge
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => cancelWithRefund(application.id)}
+                >
+                  <RotateCcw className="w-3 h-3 mr-1" />
+                  Cancel with Refund
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  onClick={() => cancelWithoutRefund(application.id)}
+                >
+                  <Ban className="w-3 h-3 mr-1" />
+                  Cancel (No Refund)
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
