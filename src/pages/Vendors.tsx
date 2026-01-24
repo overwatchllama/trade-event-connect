@@ -18,7 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useVendorProfile } from '@/hooks/useVendorProfile';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useSubscriptions } from '@/hooks/useSubscriptions';
-import { Search, Store, Mail, MapPin, Star, Users, Edit, Heart, Send, X } from 'lucide-react';
+import { Search, Store, Mail, MapPin, Star, Users, Edit, Heart, Send, X, Calendar, Ban, CheckCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Database } from '@/integrations/supabase/types';
 
@@ -46,6 +46,11 @@ const Vendors = () => {
   const [selectedVendorForInvite, setSelectedVendorForInvite] = useState<VendorProfile | null>(null);
   const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
+  const [eventVendors, setEventVendors] = useState<{
+    approved: { vendor: VendorProfile; eventTitle: string; status: string }[];
+    pending: { vendor: VendorProfile; eventTitle: string }[];
+    rejected: { vendor: VendorProfile; eventTitle: string }[];
+  }>({ approved: [], pending: [], rejected: [] });
 
   // Get favorite vendor IDs directly from subscriptions
   const favoriteVendorIds = getFavoriteVendorIds();
@@ -64,7 +69,10 @@ const Vendors = () => {
 
   useEffect(() => {
     fetchVendors();
-  }, [user, isVendor]);
+    if (isOrganizer && user) {
+      fetchEventVendors();
+    }
+  }, [user, isVendor, isOrganizer]);
 
   const fetchVendors = async () => {
     try {
@@ -112,6 +120,110 @@ const Vendors = () => {
       toast.error('Failed to load vendors. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEventVendors = async () => {
+    if (!user) return;
+
+    try {
+      // Get all events organized by this user
+      const { data: myEvents, error: eventsError } = await supabase
+        .from('events')
+        .select('id, title')
+        .eq('organizer_id', user.id);
+
+      if (eventsError) throw eventsError;
+      if (!myEvents || myEvents.length === 0) {
+        setEventVendors({ approved: [], pending: [], rejected: [] });
+        return;
+      }
+
+      const eventIds = myEvents.map(e => e.id);
+
+      // Get all vendor applications for these events
+      const { data: applications, error: appsError } = await supabase
+        .from('vendor_applications')
+        .select(`
+          id,
+          event_id,
+          vendor_id,
+          application_status,
+          payment_status
+        `)
+        .in('event_id', eventIds);
+
+      if (appsError) throw appsError;
+
+      // Get vendor IDs from applications
+      const vendorIds = [...new Set(applications?.map(a => a.vendor_id) || [])];
+      
+      if (vendorIds.length === 0) {
+        setEventVendors({ approved: [], pending: [], rejected: [] });
+        return;
+      }
+
+      // Fetch vendor details
+      const { data: vendorData, error: vendorError } = await supabase
+        .from('vendors')
+        .select('*')
+        .in('id', vendorIds);
+
+      if (vendorError) throw vendorError;
+
+      // Fetch profiles for vendors
+      const userIds = vendorData?.map(v => v.user_id) || [];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url, role, location_state')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create vendor profile map
+      const vendorProfileMap = new Map<string, VendorProfile>();
+      vendorData?.forEach(vendor => {
+        const profile = profilesData?.find(p => p.id === vendor.user_id);
+        if (profile) {
+          vendorProfileMap.set(vendor.id, {
+            ...vendor,
+            social_links: Array.isArray(vendor.social_links) ? vendor.social_links : [],
+            profiles: profile
+          });
+        }
+      });
+
+      // Create event title map
+      const eventTitleMap = new Map<string, string>();
+      myEvents.forEach(e => eventTitleMap.set(e.id, e.title));
+
+      // Categorize applications
+      const approved: { vendor: VendorProfile; eventTitle: string; status: string }[] = [];
+      const pending: { vendor: VendorProfile; eventTitle: string }[] = [];
+      const rejected: { vendor: VendorProfile; eventTitle: string }[] = [];
+
+      applications?.forEach(app => {
+        const vendor = vendorProfileMap.get(app.vendor_id);
+        const eventTitle = eventTitleMap.get(app.event_id) || 'Unknown Event';
+        
+        if (!vendor) return;
+
+        if (app.application_status === 'approved') {
+          approved.push({ 
+            vendor, 
+            eventTitle, 
+            status: app.payment_status === 'paid' ? 'Paid' : 'Unpaid' 
+          });
+        } else if (app.application_status === 'pending' || app.application_status === 'waitlist') {
+          pending.push({ vendor, eventTitle });
+        } else if (app.application_status === 'rejected') {
+          rejected.push({ vendor, eventTitle });
+        }
+      });
+
+      setEventVendors({ approved, pending, rejected });
+    } catch (error) {
+      console.error('Error fetching event vendors:', error);
     }
   };
 
@@ -322,10 +434,20 @@ const Vendors = () => {
 
         {/* Conditional tabs based on user type */}
         {user ? (
-          <Tabs defaultValue={hasVendorRole ? "others" : "all"} className="w-full">
-            <TabsList className={`grid w-full ${hasVendorRole ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <Tabs defaultValue={hasVendorRole ? "others" : (isOrganizer ? "event-vendors" : "all")} className="w-full">
+            <TabsList className={`grid w-full ${
+              hasVendorRole && isOrganizer ? 'grid-cols-4' : 
+              hasVendorRole || isOrganizer ? 'grid-cols-3' : 
+              'grid-cols-2'
+            }`}>
               {hasVendorRole && (
                 <TabsTrigger value="profile">My Vendor Profile</TabsTrigger>
+              )}
+              {isOrganizer && (
+                <TabsTrigger value="event-vendors" className="gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Event Vendors
+                </TabsTrigger>
               )}
               <TabsTrigger value={hasVendorRole ? "others" : "all"}>
                 {hasVendorRole ? "Other Vendors" : "All Vendors"}
@@ -602,6 +724,126 @@ const Vendors = () => {
                 </div>
               )}
             </TabsContent>
+
+            {/* Event Vendors Tab - Organizers Only */}
+            {isOrganizer && (
+              <TabsContent value="event-vendors">
+                <div className="space-y-8">
+                  {/* Approved/Paid Vendors */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      Approved Vendors ({eventVendors.approved.length})
+                    </h3>
+                    {eventVendors.approved.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">No approved vendors for your events yet.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {eventVendors.approved.map(({ vendor, eventTitle, status }, idx) => (
+                          <Card key={`approved-${vendor.id}-${idx}`} className="relative">
+                            <Badge 
+                              className={`absolute top-2 right-2 ${
+                                status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                              }`}
+                            >
+                              {status}
+                            </Badge>
+                            <CardHeader className="pb-2">
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarImage src={vendor.avatar_url || vendor.profiles?.avatar_url || ''} />
+                                  <AvatarFallback>{getInitials(vendor.business_name)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <Link to={`/vendor/${vendor.id}`} className="font-semibold hover:underline">
+                                    {vendor.business_name}
+                                  </Link>
+                                  <p className="text-xs text-muted-foreground">{eventTitle}</p>
+                                </div>
+                              </div>
+                            </CardHeader>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pending Vendors */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-yellow-600" />
+                      Pending Applications ({eventVendors.pending.length})
+                    </h3>
+                    {eventVendors.pending.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">No pending vendor applications.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {eventVendors.pending.map(({ vendor, eventTitle }, idx) => (
+                          <Card key={`pending-${vendor.id}-${idx}`}>
+                            <CardHeader className="pb-2">
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarImage src={vendor.avatar_url || vendor.profiles?.avatar_url || ''} />
+                                  <AvatarFallback>{getInitials(vendor.business_name)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <Link to={`/vendor/${vendor.id}`} className="font-semibold hover:underline">
+                                    {vendor.business_name}
+                                  </Link>
+                                  <p className="text-xs text-muted-foreground">{eventTitle}</p>
+                                </div>
+                              </div>
+                            </CardHeader>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Rejected/Banned Vendors */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Ban className="w-5 h-5 text-red-600" />
+                      Rejected/Cancelled ({eventVendors.rejected.length})
+                    </h3>
+                    {eventVendors.rejected.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">No rejected vendors.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {eventVendors.rejected.map(({ vendor, eventTitle }, idx) => (
+                          <Card key={`rejected-${vendor.id}-${idx}`} className="opacity-75">
+                            <CardHeader className="pb-2">
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarImage src={vendor.avatar_url || vendor.profiles?.avatar_url || ''} />
+                                  <AvatarFallback>{getInitials(vendor.business_name)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <Link to={`/vendor/${vendor.id}`} className="font-semibold hover:underline">
+                                    {vendor.business_name}
+                                  </Link>
+                                  <p className="text-xs text-muted-foreground">{eventTitle}</p>
+                                </div>
+                              </div>
+                            </CardHeader>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {eventVendors.approved.length === 0 && eventVendors.pending.length === 0 && eventVendors.rejected.length === 0 && (
+                    <div className="text-center py-12">
+                      <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-foreground mb-2">No Event Vendors Yet</h3>
+                      <p className="text-muted-foreground">
+                        Vendors who apply to your events will appear here.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
         ) : (
           /* Search and Filters for non-logged-in users */
