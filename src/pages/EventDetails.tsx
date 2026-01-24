@@ -22,6 +22,7 @@ import { EventSponsors } from '@/components/EventSponsors';
 import EditEventDialog from '@/components/EditEventDialog';
 import ManageVendorsDialog from '@/components/ManageVendorsDialog';
 import ManageSponsorsDialog from '@/components/ManageSponsorsDialog';
+import { VendorApplicationStatus } from '@/components/VendorApplicationStatus';
 import { Database } from '@/integrations/supabase/types';
 
 type Event = Database['public']['Tables']['events']['Row'];
@@ -564,17 +565,27 @@ const EventDetails = () => {
                     </div>
                   )}
 
-                  <Button
-                    className="w-full"
-                    variant="outline"
-                    onClick={() => setVendorDialogOpen(true)}
-                    disabled={hasApplied}
-                  >
-                    <Store className="mr-2 h-4 w-4" />
-                    {hasApplied ? 'Application Submitted' : 'Apply to be a Vendor'}
-                  </Button>
+                  {!hasApplied && (
+                    <Button
+                      className="w-full"
+                      variant="outline"
+                      onClick={() => setVendorDialogOpen(true)}
+                    >
+                      <Store className="mr-2 h-4 w-4" />
+                      Apply to be a Vendor
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
+            )}
+
+            {/* Vendor Application Status - Show if vendor has applied */}
+            {hasApplied && canSeeVendorInfo && (
+              <VendorApplicationStatus 
+                eventId={event.id} 
+                eventTitle={event.title}
+                vendorTablePrice={event.vendor_table_price}
+              />
             )}
 
             {canSeeSponsorInfo && (
