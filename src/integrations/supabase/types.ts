@@ -586,8 +586,12 @@ export type Database = {
       }
       organizer_vendor_notes: {
         Row: {
+          blacklist_reason: string | null
           created_at: string
+          custom_list: string | null
           id: string
+          is_blacklisted: boolean | null
+          is_favorite: boolean | null
           organizer_id: string
           private_notes: string | null
           private_rating: number | null
@@ -595,8 +599,12 @@ export type Database = {
           vendor_id: string
         }
         Insert: {
+          blacklist_reason?: string | null
           created_at?: string
+          custom_list?: string | null
           id?: string
+          is_blacklisted?: boolean | null
+          is_favorite?: boolean | null
           organizer_id: string
           private_notes?: string | null
           private_rating?: number | null
@@ -604,8 +612,12 @@ export type Database = {
           vendor_id: string
         }
         Update: {
+          blacklist_reason?: string | null
           created_at?: string
+          custom_list?: string | null
           id?: string
+          is_blacklisted?: boolean | null
+          is_favorite?: boolean | null
           organizer_id?: string
           private_notes?: string | null
           private_rating?: number | null
