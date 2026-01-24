@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { User, Mail, ArrowLeft, Save, Building, MapPin, Users, Plus, Trash2, UserCog, Settings, Calendar } from 'lucide-react';
+import { User, Mail, ArrowLeft, Save, Building, MapPin, Users, Plus, Trash2, UserCog, Settings, Calendar, FileText } from 'lucide-react';
 import Header from '@/components/Header';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SelfManageRoles } from '@/components/SelfManageRoles';
 import { ManageVenue } from '@/components/ManageVenue';
+import { VendorApplicationsList } from '@/components/VendorApplicationsList';
 import EventCard from '@/components/EventCard';
 import { Database } from '@/integrations/supabase/types';
 
@@ -407,15 +408,29 @@ const Profile = () => {
           <Tabs defaultValue="personal" className="space-y-6">
             <TabsList className={`grid w-full ${
               userRoles.includes('venue') 
-                ? (vendingEvents.length > 0 || sponsoringEvents.length > 0) 
-                  ? 'grid-cols-6' 
-                  : 'grid-cols-4'
-                : (vendingEvents.length > 0 || sponsoringEvents.length > 0)
-                  ? 'grid-cols-5'
-                  : 'grid-cols-3'
+                ? userRoles.includes('vendor')
+                  ? (vendingEvents.length > 0 || sponsoringEvents.length > 0) 
+                    ? 'grid-cols-7' 
+                    : 'grid-cols-5'
+                  : (vendingEvents.length > 0 || sponsoringEvents.length > 0) 
+                    ? 'grid-cols-6' 
+                    : 'grid-cols-4'
+                : userRoles.includes('vendor')
+                  ? (vendingEvents.length > 0 || sponsoringEvents.length > 0)
+                    ? 'grid-cols-6'
+                    : 'grid-cols-4'
+                  : (vendingEvents.length > 0 || sponsoringEvents.length > 0)
+                    ? 'grid-cols-5'
+                    : 'grid-cols-3'
             }`}>
               <TabsTrigger value="personal">Personal Info</TabsTrigger>
               <TabsTrigger value="roles">Roles</TabsTrigger>
+              {userRoles.includes('vendor') && (
+                <TabsTrigger value="applications">
+                  <FileText className="w-4 h-4 mr-2" />
+                  My Applications
+                </TabsTrigger>
+              )}
               {userRoles.includes('venue') && (
                 <TabsTrigger value="venue">My Venue</TabsTrigger>
               )}
@@ -744,6 +759,12 @@ const Profile = () => {
             <TabsContent value="roles" className="space-y-6">
               <SelfManageRoles />
             </TabsContent>
+
+            {userRoles.includes('vendor') && (
+              <TabsContent value="applications" className="space-y-6">
+                <VendorApplicationsList />
+              </TabsContent>
+            )}
 
             {userRoles.includes('venue') && (
               <TabsContent value="venue" className="space-y-6">
