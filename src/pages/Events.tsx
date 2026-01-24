@@ -11,6 +11,7 @@ import { EventSponsors } from "@/components/EventSponsors";
 import { VendorsList } from "@/components/VendorsList";
 import { SponsorsList } from "@/components/SponsorsList";
 import { VendorApplicationsList } from "@/components/VendorApplicationsList";
+import { VenueApplicationsList } from "@/components/VenueApplicationsList";
 import { MultiSelect, Option } from "@/components/ui/multi-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,9 +56,10 @@ const Events = () => {
   const [sponsoringEvents, setSponsoringEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showApplicationsDialog, setShowApplicationsDialog] = useState(false);
+  const [showVenueApplicationsDialog, setShowVenueApplicationsDialog] = useState(false);
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { hasRole, isOrganizer, isVendor, isSponsor } = useUserRoles();
+  const { hasRole, isOrganizer, isVendor, isSponsor, isVenue } = useUserRoles();
   const { subscription_tier, subscribed } = useSubscription();
 
   const isEventUser = subscribed && (subscription_tier === "event_pro" || subscription_tier === "Event Pro");
@@ -700,6 +702,17 @@ const Events = () => {
                   My Applications
                 </Button>
               )}
+              {isVenue && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setShowVenueApplicationsDialog(true)}
+                >
+                  <ClipboardList className="w-4 h-4" />
+                  Venue Applications
+                </Button>
+              )}
             </div>
           </div>
 
@@ -1175,6 +1188,16 @@ const Events = () => {
             <DialogTitle>My Vendor Applications</DialogTitle>
           </DialogHeader>
           <VendorApplicationsList />
+        </DialogContent>
+      </Dialog>
+
+      {/* Venue Applications Dialog */}
+      <Dialog open={showVenueApplicationsDialog} onOpenChange={setShowVenueApplicationsDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Venue Event Applications</DialogTitle>
+          </DialogHeader>
+          <VenueApplicationsList />
         </DialogContent>
       </Dialog>
     </div>
