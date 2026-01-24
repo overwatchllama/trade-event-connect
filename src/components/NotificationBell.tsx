@@ -50,12 +50,42 @@ export const NotificationBell = () => {
       } catch (error) {
         console.error('Error fetching sponsor application:', error);
       }
-    } else if (notification.reference_type === 'vendor_application' && notification.type === 'status_change') {
-      // For vendors - go to profile to see applications
-      navigate('/profile');
+    } else if (notification.reference_type === 'vendor_application' && (notification.type === 'status_change' || notification.type === 'approval')) {
+      // For vendors - application approved, go to event to pay
+      try {
+        const { data: application } = await supabase
+          .from('vendor_applications')
+          .select('event_id')
+          .eq('id', notification.reference_id)
+          .single();
+        
+        if (application?.event_id) {
+          navigate(`/event/${application.event_id}`);
+        } else {
+          navigate('/profile');
+        }
+      } catch (error) {
+        console.error('Error fetching vendor application:', error);
+        navigate('/profile');
+      }
     } else if (notification.reference_type === 'vendor_application' && notification.type === 'invoice') {
-      // For vendors with invoice - go to profile
-      navigate('/profile');
+      // For vendors with invoice - go to event to pay
+      try {
+        const { data: application } = await supabase
+          .from('vendor_applications')
+          .select('event_id')
+          .eq('id', notification.reference_id)
+          .single();
+        
+        if (application?.event_id) {
+          navigate(`/event/${application.event_id}`);
+        } else {
+          navigate('/profile');
+        }
+      } catch (error) {
+        console.error('Error fetching vendor application:', error);
+        navigate('/profile');
+      }
     } else if (notification.type === 'favorite_vendor_event' && notification.reference_id) {
       // For users following vendors - go to event details
       navigate(`/event/${notification.reference_id}`);
