@@ -985,6 +985,9 @@ export type Database = {
           updated_at: string
           user_id: string
           vendor_id: string
+          vendor_request: string | null
+          vendor_request_at: string | null
+          vendor_request_reason: string | null
         }
         Insert: {
           application_date?: string
@@ -1006,6 +1009,9 @@ export type Database = {
           updated_at?: string
           user_id: string
           vendor_id: string
+          vendor_request?: string | null
+          vendor_request_at?: string | null
+          vendor_request_reason?: string | null
         }
         Update: {
           application_date?: string
@@ -1027,6 +1033,9 @@ export type Database = {
           updated_at?: string
           user_id?: string
           vendor_id?: string
+          vendor_request?: string | null
+          vendor_request_at?: string | null
+          vendor_request_reason?: string | null
         }
         Relationships: [
           {
