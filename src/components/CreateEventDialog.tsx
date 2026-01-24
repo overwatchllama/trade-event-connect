@@ -611,6 +611,12 @@ const CreateEventDialog = ({ open, onOpenChange, copyFromEventId }: CreateEventD
                 isMultiDay={isMultiDay} 
               />
 
+              {/* Vendor Start Time - placed near show times */}
+              <div className="space-y-1">
+                <Label className="text-xs">Vendor Start Time</Label>
+                <Input type="time" value={formData.vendorStartTime} onChange={(e) => handleInputChange('vendorStartTime', e.target.value)} placeholder="When vendors can start setup" />
+              </div>
+
               {/* Minimized File Uploads */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -811,13 +817,7 @@ const CreateEventDialog = ({ open, onOpenChange, copyFromEventId }: CreateEventD
                 <Label htmlFor="no-online-tables" className="text-sm">No online vendor table sales</Label>
               </div>
 
-              {/* Vendor Start Time and Notes */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Vendor Start Time</Label>
-                  <Input type="time" value={formData.vendorStartTime} onChange={(e) => handleInputChange('vendorStartTime', e.target.value)} placeholder="When vendors can start setup" />
-                </div>
-              </div>
+              {/* Vendor Notes */}
               <div className="space-y-1">
                 <Label className="text-xs">Vendor Notes</Label>
                 <Textarea placeholder="Special instructions for vendors (e.g., loading dock location, setup rules)" value={formData.vendorNotes} onChange={(e) => handleInputChange('vendorNotes', e.target.value)} rows={2} />
