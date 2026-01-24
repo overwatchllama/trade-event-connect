@@ -18,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { DollarSign, XCircle, RotateCcw, Clock, AlertTriangle, CheckCircle, CreditCard } from "lucide-react";
+import { DollarSign, XCircle, RotateCcw, Clock, AlertTriangle, CheckCircle, CreditCard, Eye, EyeOff } from "lucide-react";
 
 interface VendorApplication {
   id: string;
@@ -34,6 +34,7 @@ interface VendorApplication {
   vendor_request: string | null;
   vendor_request_at: string | null;
   vendor_request_reason: string | null;
+  hide_from_calendar: boolean | null;
 }
 
 interface VendorApplicationStatusProps {
@@ -91,7 +92,8 @@ export const VendorApplicationStatus = ({ eventId, eventTitle, vendorTablePrice 
           notes,
           vendor_request,
           vendor_request_at,
-          vendor_request_reason
+          vendor_request_reason,
+          hide_from_calendar
         `)
         .eq("vendor_id", vendorData.id)
         .eq("event_id", eventId)
@@ -138,6 +140,38 @@ export const VendorApplicationStatus = ({ eventId, eventTitle, vendorTablePrice 
       setActionType(null);
       setActionReason("");
     }
+  };
+
+  const toggleCalendarVisibility = async () => {
+    if (!application) return;
+
+    setProcessing(true);
+    try {
+      const newValue = !application.hide_from_calendar;
+      const { error } = await supabase
+        .from("vendor_applications")
+        .update({ hide_from_calendar: newValue })
+        .eq("id", application.id);
+
+      if (error) throw error;
+
+      toast.success(newValue ? "Event hidden from your calendar" : "Event visible on your calendar");
+      fetchApplication();
+    } catch (error) {
+      console.error("Error toggling calendar visibility:", error);
+      toast.error("Failed to update calendar visibility");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const canCancelPaid = () => {
+    return (
+      application &&
+      !application.vendor_request &&
+      application.application_status === "approved" &&
+      application.payment_status === "paid"
+    );
   };
 
   const handlePayInvoice = async () => {
@@ -477,6 +511,69 @@ export const VendorApplicationStatus = ({ eventId, eventTitle, vendorTablePrice 
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+          )}
+
+          {/* Paid Vendor Actions */}
+          {canCancelPaid() && (
+            <>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActionType("cancel")}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Cancel Attendance
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Cancel Your Attendance?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will notify the event organizer that you wish to cancel. Your payment will remain until you request a refund separately.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <Textarea
+                    placeholder="Reason for cancellation (recommended)"
+                    value={actionReason}
+                    onChange={(e) => setActionReason(e.target.value)}
+                    className="mt-2"
+                  />
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => {
+                      setActionType(null);
+                      setActionReason("");
+                    }}>Keep Attending</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleAction}
+                      disabled={processing}
+                    >
+                      {processing ? "Processing..." : "Cancel Attendance"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleCalendarVisibility}
+                disabled={processing}
+              >
+                {application?.hide_from_calendar ? (
+                  <>
+                    <Eye className="w-4 h-4 mr-2" />
+                    Show on Calendar
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="w-4 h-4 mr-2" />
+                    Hide from Calendar
+                  </>
+                )}
+              </Button>
+            </>
           )}
         </div>
       </CardContent>

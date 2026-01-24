@@ -975,6 +975,7 @@ export type Database = {
           created_at: string
           event_id: string
           file_url: string | null
+          hide_from_calendar: boolean | null
           id: string
           notes: string | null
           payment_date: string | null
@@ -999,6 +1000,7 @@ export type Database = {
           created_at?: string
           event_id: string
           file_url?: string | null
+          hide_from_calendar?: boolean | null
           id?: string
           notes?: string | null
           payment_date?: string | null
@@ -1023,6 +1025,7 @@ export type Database = {
           created_at?: string
           event_id?: string
           file_url?: string | null
+          hide_from_calendar?: boolean | null
           id?: string
           notes?: string | null
           payment_date?: string | null
