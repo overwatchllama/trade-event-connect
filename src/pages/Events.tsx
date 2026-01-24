@@ -663,7 +663,7 @@ const Events = () => {
                 Find Pokemon, MTG, sports cards, and other trading card events near you.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 items-end">
               {canCreateEvents && (
                 <Button
                   onClick={() => setShowCreateEvent(true)}
@@ -672,6 +672,20 @@ const Events = () => {
                 >
                   <Plus className="w-4 h-4" />
                   Create Event
+                </Button>
+              )}
+              {myEvents.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => {
+                    const myEventsTab = document.querySelector('[value="my-events"]') as HTMLElement;
+                    if (myEventsTab) myEventsTab.click();
+                  }}
+                >
+                  <Settings className="w-4 h-4" />
+                  Manage Events ({myEvents.length})
                 </Button>
               )}
             </div>
