@@ -45,6 +45,7 @@ const Events = () => {
   const [sortBy, setSortBy] = useState<"date" | "location" | "popularity">("date");
   const [thisWeekOnly, setThisWeekOnly] = useState(false);
   const [thisMonthOnly, setThisMonthOnly] = useState(false);
+  const [showMyEventsOnly, setShowMyEventsOnly] = useState(false);
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [allEvents, setAllEvents] = useState<any[]>([]);
   const [myEvents, setMyEvents] = useState<any[]>([]);
@@ -622,7 +623,7 @@ const Events = () => {
     });
   };
 
-  const filteredAllEvents = sortEvents(getFilteredEvents(allEvents));
+  const filteredAllEvents = sortEvents(getFilteredEvents(showMyEventsOnly ? myEvents : allEvents));
   const filteredMyEvents = sortEvents(getFilteredEvents(myEvents));
 
   // Calculate event counts for badges (without thisWeekOnly filter to show accurate counts)
@@ -676,16 +677,13 @@ const Events = () => {
               )}
               {myEvents.length > 0 && (
                 <Button
-                  variant="outline"
+                  variant={showMyEventsOnly ? "default" : "outline"}
                   size="sm"
                   className="gap-2"
-                  onClick={() => {
-                    const myEventsTab = document.querySelector('[value="my-events"]') as HTMLElement;
-                    if (myEventsTab) myEventsTab.click();
-                  }}
+                  onClick={() => setShowMyEventsOnly(!showMyEventsOnly)}
                 >
                   <Settings className="w-4 h-4" />
-                  Manage Events ({myEvents.length})
+                  {showMyEventsOnly ? "Show All Events" : "Manage Events"}
                 </Button>
               )}
             </div>
@@ -868,8 +866,15 @@ const Events = () => {
           </div>
 
           {/* Active Filters */}
-          {(selectedEventType !== "both" || selectedCardTypes.length > 0 || selectedStates.length > 0 || dateRange.from || dateRange.to || searchQuery || thisWeekOnly || thisMonthOnly) && (
+          {(selectedEventType !== "both" || selectedCardTypes.length > 0 || selectedStates.length > 0 || dateRange.from || dateRange.to || searchQuery || thisWeekOnly || thisMonthOnly || showMyEventsOnly) && (
             <div className="flex gap-2 mb-6 flex-wrap items-center">
+              {showMyEventsOnly && (
+                <Badge variant="default" className="gap-2 cursor-pointer" onClick={() => setShowMyEventsOnly(false)}>
+                  <Settings className="w-3 h-3" />
+                  My Events Only
+                  <X className="w-3 h-3" />
+                </Badge>
+              )}
               {selectedEventType !== "both" && (
                 <Badge variant="secondary" className="gap-2">
                   <Filter className="w-3 h-3" />
@@ -933,6 +938,7 @@ const Events = () => {
                   setSelectedEventType("both");
                   setThisWeekOnly(false);
                   setThisMonthOnly(false);
+                  setShowMyEventsOnly(false);
                   setDateRange({ from: undefined, to: undefined });
                   setEventTimeFilter("upcoming");
                 }}
