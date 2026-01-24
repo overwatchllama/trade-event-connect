@@ -13,12 +13,13 @@ import Header from '@/components/Header';
 import { VendorGridCard } from '@/components/VendorGridCard';
 import EditVendorProfile from '@/components/EditVendorProfile';
 import { InviteVendorToEventDialog } from '@/components/InviteVendorToEventDialog';
+import { OrganizerVendorNotes } from '@/components/OrganizerVendorNotes';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useVendorProfile } from '@/hooks/useVendorProfile';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useSubscriptions } from '@/hooks/useSubscriptions';
-import { Search, Store, Mail, MapPin, Star, Users, Edit, Heart, Send, X, Calendar, Ban, CheckCircle, Clock } from 'lucide-react';
+import { Search, Store, Mail, MapPin, Star, Users, Edit, Heart, Send, X, Calendar, Ban, CheckCircle, Clock, Settings2, List } from 'lucide-react';
 import { toast } from 'sonner';
 import { Database } from '@/integrations/supabase/types';
 
@@ -51,7 +52,14 @@ const Vendors = () => {
     pending: { vendor: VendorProfile; eventTitle: string }[];
     rejected: { vendor: VendorProfile; eventTitle: string }[];
   }>({ approved: [], pending: [], rejected: [] });
-
+  const [vendorNotesDialogOpen, setVendorNotesDialogOpen] = useState(false);
+  const [selectedVendorForNotes, setSelectedVendorForNotes] = useState<{ id: string; name: string } | null>(null);
+  const [organizerNotes, setOrganizerNotes] = useState<Map<string, {
+    is_favorite: boolean;
+    is_blacklisted: boolean;
+    private_rating: number | null;
+    custom_list: string | null;
+  }>>(new Map());
   // Get favorite vendor IDs directly from subscriptions
   const favoriteVendorIds = getFavoriteVendorIds();
 
@@ -71,8 +79,80 @@ const Vendors = () => {
     fetchVendors();
     if (isOrganizer && user) {
       fetchEventVendors();
+      fetchOrganizerNotes();
     }
   }, [user, isVendor, isOrganizer]);
+
+  const fetchOrganizerNotes = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('organizer_vendor_notes')
+        .select('vendor_id, is_favorite, is_blacklisted, private_rating, custom_list')
+        .eq('organizer_id', user.id);
+
+      if (error) throw error;
+
+      const notesMap = new Map<string, {
+        is_favorite: boolean;
+        is_blacklisted: boolean;
+        private_rating: number | null;
+        custom_list: string | null;
+      }>();
+
+      data?.forEach((note) => {
+        notesMap.set(note.vendor_id, {
+          is_favorite: note.is_favorite || false,
+          is_blacklisted: note.is_blacklisted || false,
+          private_rating: note.private_rating,
+          custom_list: note.custom_list,
+        });
+      });
+
+      setOrganizerNotes(notesMap);
+    } catch (error) {
+      console.error('Error fetching organizer notes:', error);
+    }
+  };
+
+  const handleOpenVendorNotes = (vendorId: string, vendorName: string) => {
+    setSelectedVendorForNotes({ id: vendorId, name: vendorName });
+    setVendorNotesDialogOpen(true);
+  };
+
+  const getVendorNotesBadges = (vendorId: string) => {
+    const notes = organizerNotes.get(vendorId);
+    if (!notes) return null;
+
+    return (
+      <div className="flex gap-1 flex-wrap mt-1">
+        {notes.is_favorite && (
+          <Badge className="bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200 text-xs py-0">
+            <Heart className="w-2 h-2 mr-0.5 fill-current" />
+            Fav
+          </Badge>
+        )}
+        {notes.is_blacklisted && (
+          <Badge variant="destructive" className="text-xs py-0">
+            <Ban className="w-2 h-2 mr-0.5" />
+            Blocked
+          </Badge>
+        )}
+        {notes.private_rating && (
+          <Badge variant="secondary" className="text-xs py-0">
+            <Star className="w-2 h-2 mr-0.5 fill-yellow-400 text-yellow-400" />
+            {notes.private_rating}
+          </Badge>
+        )}
+        {notes.custom_list && (
+          <Badge variant="outline" className="text-xs py-0">
+            {notes.custom_list}
+          </Badge>
+        )}
+      </div>
+    );
+  };
 
   const fetchVendors = async () => {
     try {
@@ -754,14 +834,26 @@ const Vendors = () => {
                                   <AvatarImage src={vendor.avatar_url || vendor.profiles?.avatar_url || ''} />
                                   <AvatarFallback>{getInitials(vendor.business_name)}</AvatarFallback>
                                 </Avatar>
-                                <div>
+                                <div className="flex-1 min-w-0">
                                   <Link to={`/vendor/${vendor.id}`} className="font-semibold hover:underline">
                                     {vendor.business_name}
                                   </Link>
                                   <p className="text-xs text-muted-foreground">{eventTitle}</p>
+                                  {getVendorNotesBadges(vendor.id)}
                                 </div>
                               </div>
                             </CardHeader>
+                            <CardContent className="pt-0">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full"
+                                onClick={() => handleOpenVendorNotes(vendor.id, vendor.business_name)}
+                              >
+                                <Settings2 className="w-3 h-3 mr-2" />
+                                Manage
+                              </Button>
+                            </CardContent>
                           </Card>
                         ))}
                       </div>
@@ -786,14 +878,26 @@ const Vendors = () => {
                                   <AvatarImage src={vendor.avatar_url || vendor.profiles?.avatar_url || ''} />
                                   <AvatarFallback>{getInitials(vendor.business_name)}</AvatarFallback>
                                 </Avatar>
-                                <div>
+                                <div className="flex-1 min-w-0">
                                   <Link to={`/vendor/${vendor.id}`} className="font-semibold hover:underline">
                                     {vendor.business_name}
                                   </Link>
                                   <p className="text-xs text-muted-foreground">{eventTitle}</p>
+                                  {getVendorNotesBadges(vendor.id)}
                                 </div>
                               </div>
                             </CardHeader>
+                            <CardContent className="pt-0">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full"
+                                onClick={() => handleOpenVendorNotes(vendor.id, vendor.business_name)}
+                              >
+                                <Settings2 className="w-3 h-3 mr-2" />
+                                Manage
+                              </Button>
+                            </CardContent>
                           </Card>
                         ))}
                       </div>
@@ -818,14 +922,26 @@ const Vendors = () => {
                                   <AvatarImage src={vendor.avatar_url || vendor.profiles?.avatar_url || ''} />
                                   <AvatarFallback>{getInitials(vendor.business_name)}</AvatarFallback>
                                 </Avatar>
-                                <div>
+                                <div className="flex-1 min-w-0">
                                   <Link to={`/vendor/${vendor.id}`} className="font-semibold hover:underline">
                                     {vendor.business_name}
                                   </Link>
                                   <p className="text-xs text-muted-foreground">{eventTitle}</p>
+                                  {getVendorNotesBadges(vendor.id)}
                                 </div>
                               </div>
                             </CardHeader>
+                            <CardContent className="pt-0">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full"
+                                onClick={() => handleOpenVendorNotes(vendor.id, vendor.business_name)}
+                              >
+                                <Settings2 className="w-3 h-3 mr-2" />
+                                Manage
+                              </Button>
+                            </CardContent>
                           </Card>
                         ))}
                       </div>
@@ -962,6 +1078,17 @@ const Vendors = () => {
         vendors={selectedVendorsForInvite}
         preSelectedVendor={selectedVendorForInvite}
       />
+
+      {/* Organizer Vendor Notes Dialog */}
+      {selectedVendorForNotes && (
+        <OrganizerVendorNotes
+          open={vendorNotesDialogOpen}
+          onOpenChange={setVendorNotesDialogOpen}
+          vendorId={selectedVendorForNotes.id}
+          vendorName={selectedVendorForNotes.name}
+          onUpdate={fetchOrganizerNotes}
+        />
+      )}
     </div>
   );
 };
