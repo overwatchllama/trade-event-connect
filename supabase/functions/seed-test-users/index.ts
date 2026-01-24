@@ -16,25 +16,25 @@ interface TestUser {
 const testUsers: TestUser[] = [
   {
     email: "admin@test.com",
-    password: "test",
+    password: "test12",
     fullName: "Admin User",
     roles: ["admin", "user"],
   },
   {
     email: "event@test.com",
-    password: "test",
+    password: "test12",
     fullName: "Event Organizer",
     roles: ["organizer", "venue", "user"],
   },
   {
     email: "vendor@test.com",
-    password: "test",
+    password: "test12",
     fullName: "Test Vendor",
     roles: ["vendor", "user"],
   },
   {
     email: "user@test.com",
-    password: "test",
+    password: "test12",
     fullName: "Regular User",
     roles: ["user"],
   },
