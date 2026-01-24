@@ -1423,6 +1423,10 @@ export type Database = {
         Args: { _user_id?: string; _vendor_id: string }
         Returns: boolean
       }
+      update_set_completion: {
+        Args: { p_tcg_set_id: string; p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       approval_status: "pending" | "approved" | "rejected"
