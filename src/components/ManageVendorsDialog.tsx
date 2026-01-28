@@ -27,6 +27,7 @@ import { Database } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import { BulkActionsBar } from "./vendor-management/BulkActionsBar";
 import { useVendorBulkActions } from "./vendor-management/useVendorBulkActions";
+import { VendorSummaryBar } from "./vendor-management/VendorSummaryBar";
 import type { VendorApplication, ManageVendorsDialogProps } from "./vendor-management/types";
 
 const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: ManageVendorsDialogProps) => {
@@ -806,12 +807,35 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
     </Card>
   );
 
+  // Calculate summary counts
+  const summaryStats = {
+    total: applications.length,
+    pending: applications.filter(a => a.application_status === 'pending').length,
+    waitlist: applications.filter(a => a.application_status === 'waitlist').length,
+    approved: applications.filter(a => a.application_status === 'approved').length,
+    paid: applications.filter(a => a.application_status === 'approved' && a.payment_status === 'paid').length,
+    unpaid: applications.filter(a => a.application_status === 'approved' && a.payment_status === 'unpaid').length,
+    rejected: applications.filter(a => a.application_status === 'rejected').length,
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Manage Vendors - {eventTitle}</DialogTitle>
         </DialogHeader>
+
+        {applications.length > 0 && (
+          <VendorSummaryBar
+            total={summaryStats.total}
+            pending={summaryStats.pending}
+            waitlist={summaryStats.waitlist}
+            approved={summaryStats.approved}
+            paid={summaryStats.paid}
+            unpaid={summaryStats.unpaid}
+            rejected={summaryStats.rejected}
+          />
+        )}
 
         <Tabs defaultValue="all" value={activeTab} onValueChange={(v) => { setActiveTab(v); bulkActions.clearSelection(); }} className="w-full">
           <TabsList className="grid w-full grid-cols-6">
