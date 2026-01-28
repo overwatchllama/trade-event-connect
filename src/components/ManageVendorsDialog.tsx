@@ -19,51 +19,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle, XCircle, Clock, DollarSign, User, Star, Calendar, History, Mail, Bell, Upload, ExternalLink, Printer, Ban, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { toast } from "sonner";
-
-interface VendorApplication {
-  id: string;
-  event_id: string;
-  vendor_id: string;
-  user_id: string;
-  application_status: 'pending' | 'approved' | 'rejected' | 'waitlist';
-  payment_status: 'unpaid' | 'paid' | 'refunded';
-  application_date: string;
-  approved_date?: string;
-  payment_date?: string;
-  table_number?: string;
-  requested_tables: number;
-  approved_tables?: number;
-  notes?: string;
-  file_url?: string;
-  vendor: {
-    id: string;
-    business_name: string;
-    business_email: string;
-    business_phone?: string;
-    rating: number;
-    total_reviews: number;
-  };
-  total_shows?: number;
-  previous_shows_with_organizer?: number;
-  event_table_price?: number;
-}
-
-interface ManageVendorsDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  eventId: string;
-  eventTitle: string;
-}
+import { BulkActionsBar } from "./vendor-management/BulkActionsBar";
+import { useVendorBulkActions } from "./vendor-management/useVendorBulkActions";
+import type { VendorApplication, ManageVendorsDialogProps } from "./vendor-management/types";
 
 const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: ManageVendorsDialogProps) => {
   const [applications, setApplications] = useState<VendorApplication[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<{ [key: string]: boolean }>({});
+  const [activeTab, setActiveTab] = useState("all");
 
   const fetchApplications = async () => {
     setLoading(true);
@@ -445,6 +415,9 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
     }
   }, [open, eventId]);
 
+  // Bulk actions hook
+  const bulkActions = useVendorBulkActions(applications, eventTitle, fetchApplications);
+
   const getStatusBadge = (status: string, type: 'application' | 'payment') => {
     const baseClasses = "font-medium";
     
@@ -511,9 +484,18 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
     return applications.filter(app => app.application_status === status);
   };
 
-  const VendorApplicationCard = ({ application }: { application: VendorApplication }) => (
+  const VendorApplicationCard = ({ application, showCheckbox = false }: { application: VendorApplication; showCheckbox?: boolean }) => (
     <Card className="p-4 space-y-4">
       <div className="flex justify-between items-start">
+        {showCheckbox && (
+          <div className="mr-3 pt-1">
+            <Checkbox
+              checked={bulkActions.selectedIds.has(application.id)}
+              onCheckedChange={() => bulkActions.toggleSelection(application.id)}
+              aria-label={`Select ${application.vendor.business_name}`}
+            />
+          </div>
+        )}
         <div className="space-y-2 flex-1">
           <div className="flex items-center gap-2">
             <User className="w-4 h-4 text-muted-foreground" />
@@ -831,7 +813,7 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
           <DialogTitle>Manage Vendors - {eventTitle}</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="all" className="w-full">
+        <Tabs defaultValue="all" value={activeTab} onValueChange={(v) => { setActiveTab(v); bulkActions.clearSelection(); }} className="w-full">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="all">All ({applications.length})</TabsTrigger>
             <TabsTrigger value="pending">
@@ -850,6 +832,81 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
               Rejected ({filterApplications('rejected').length})
             </TabsTrigger>
           </TabsList>
+
+          {/* Bulk Actions for Pending Tab */}
+          {activeTab === 'pending' && filterApplications('pending').length > 0 && (
+            <BulkActionsBar
+              selectedCount={bulkActions.selectedIds.size}
+              totalCount={filterApplications('pending').length}
+              onSelectAll={(checked) => {
+                if (checked) {
+                  bulkActions.selectAll(filterApplications('pending').map(a => a.id));
+                } else {
+                  bulkActions.clearSelection();
+                }
+              }}
+              allSelected={filterApplications('pending').length > 0 && filterApplications('pending').every(a => bulkActions.selectedIds.has(a.id))}
+              onBulkApprove={bulkActions.bulkApprove}
+              onBulkReject={bulkActions.bulkReject}
+              onBulkWaitlist={bulkActions.bulkWaitlist}
+              onBulkSendInvoice={bulkActions.bulkSendInvoice}
+              onBulkEmailInvoice={bulkActions.bulkEmailInvoice}
+              onClearSelection={bulkActions.clearSelection}
+              canApprove={true}
+              canSendInvoice={false}
+              isProcessing={bulkActions.isProcessing}
+            />
+          )}
+
+          {/* Bulk Actions for Waitlist Tab */}
+          {activeTab === 'waitlist' && filterApplications('waitlist').length > 0 && (
+            <BulkActionsBar
+              selectedCount={bulkActions.selectedIds.size}
+              totalCount={filterApplications('waitlist').length}
+              onSelectAll={(checked) => {
+                if (checked) {
+                  bulkActions.selectAll(filterApplications('waitlist').map(a => a.id));
+                } else {
+                  bulkActions.clearSelection();
+                }
+              }}
+              allSelected={filterApplications('waitlist').length > 0 && filterApplications('waitlist').every(a => bulkActions.selectedIds.has(a.id))}
+              onBulkApprove={bulkActions.bulkApprove}
+              onBulkReject={bulkActions.bulkReject}
+              onBulkWaitlist={bulkActions.bulkWaitlist}
+              onBulkSendInvoice={bulkActions.bulkSendInvoice}
+              onBulkEmailInvoice={bulkActions.bulkEmailInvoice}
+              onClearSelection={bulkActions.clearSelection}
+              canApprove={true}
+              canSendInvoice={false}
+              isProcessing={bulkActions.isProcessing}
+            />
+          )}
+
+          {/* Bulk Actions for Payment Due Tab */}
+          {activeTab === 'payment_due' && filterApplications('payment_due').length > 0 && (
+            <BulkActionsBar
+              selectedCount={bulkActions.selectedIds.size}
+              totalCount={filterApplications('payment_due').length}
+              onSelectAll={(checked) => {
+                if (checked) {
+                  bulkActions.selectAll(filterApplications('payment_due').map(a => a.id));
+                } else {
+                  bulkActions.clearSelection();
+                }
+              }}
+              allSelected={filterApplications('payment_due').length > 0 && filterApplications('payment_due').every(a => bulkActions.selectedIds.has(a.id))}
+              onBulkApprove={bulkActions.bulkApprove}
+              onBulkReject={bulkActions.bulkReject}
+              onBulkWaitlist={bulkActions.bulkWaitlist}
+              onBulkSendInvoice={bulkActions.bulkSendInvoice}
+              onBulkEmailInvoice={bulkActions.bulkEmailInvoice}
+              onClearSelection={bulkActions.clearSelection}
+              canApprove={false}
+              canSendInvoice={true}
+              isProcessing={bulkActions.isProcessing}
+            />
+          )}
 
           <TabsContent value="all" className="space-y-4">
             {loading ? (
@@ -875,7 +932,7 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
             ) : (
               <div className="space-y-4">
                 {filterApplications('pending').map((application) => (
-                  <VendorApplicationCard key={application.id} application={application} />
+                  <VendorApplicationCard key={application.id} application={application} showCheckbox />
                 ))}
               </div>
             )}
@@ -889,7 +946,7 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
             ) : (
               <div className="space-y-4">
                 {filterApplications('payment_due').map((application) => (
-                  <VendorApplicationCard key={application.id} application={application} />
+                  <VendorApplicationCard key={application.id} application={application} showCheckbox />
                 ))}
               </div>
             )}
@@ -917,7 +974,7 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
             ) : (
               <div className="space-y-4">
                 {filterApplications('waitlist').map((application) => (
-                  <VendorApplicationCard key={application.id} application={application} />
+                  <VendorApplicationCard key={application.id} application={application} showCheckbox />
                 ))}
               </div>
             )}
