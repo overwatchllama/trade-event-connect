@@ -23,6 +23,7 @@ import ManageEvent from "./pages/ManageEvent";
 import SponsorProfile from "./pages/SponsorProfile";
 import Settings from "./pages/Settings";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
+import TicketSuccess from "./pages/TicketSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -72,6 +73,11 @@ const App = () => (
             <Route path="/employee-dashboard" element={
               <ProtectedRoute>
                 <EmployeeDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/tickets/success" element={
+              <ProtectedRoute>
+                <TicketSuccess />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

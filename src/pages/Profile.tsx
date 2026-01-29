@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { User, Mail, ArrowLeft, Save, Building, MapPin, Users, Plus, Trash2, UserCog, Settings, Calendar, FileText } from 'lucide-react';
+import { User, Mail, ArrowLeft, Save, Building, MapPin, Users, Plus, Trash2, UserCog, Settings, Calendar, FileText, Ticket } from 'lucide-react';
 import Header from '@/components/Header';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,7 @@ import { SelfManageRoles } from '@/components/SelfManageRoles';
 import { ManageVenue } from '@/components/ManageVenue';
 import { VendorApplicationsList } from '@/components/VendorApplicationsList';
 import EventCard from '@/components/EventCard';
+import MyTickets from '@/components/tickets/MyTickets';
 import { Database } from '@/integrations/supabase/types';
 
 const profileSchema = z.object({
@@ -406,44 +407,32 @@ const Profile = () => {
           </div>
 
           <Tabs defaultValue="personal" className="space-y-6">
-            <TabsList className={`grid w-full ${
-              userRoles.includes('venue') 
-                ? userRoles.includes('vendor')
-                  ? (vendingEvents.length > 0 || sponsoringEvents.length > 0) 
-                    ? 'grid-cols-7' 
-                    : 'grid-cols-5'
-                  : (vendingEvents.length > 0 || sponsoringEvents.length > 0) 
-                    ? 'grid-cols-6' 
-                    : 'grid-cols-4'
-                : userRoles.includes('vendor')
-                  ? (vendingEvents.length > 0 || sponsoringEvents.length > 0)
-                    ? 'grid-cols-6'
-                    : 'grid-cols-4'
-                  : (vendingEvents.length > 0 || sponsoringEvents.length > 0)
-                    ? 'grid-cols-5'
-                    : 'grid-cols-3'
-            }`}>
+            <TabsList className="flex flex-wrap h-auto gap-1 w-full">
               <TabsTrigger value="personal">Personal Info</TabsTrigger>
+              <TabsTrigger value="tickets" className="gap-1">
+                <Ticket className="w-4 h-4" />
+                My Tickets
+              </TabsTrigger>
               <TabsTrigger value="roles">Roles</TabsTrigger>
               {userRoles.includes('vendor') && (
-                <TabsTrigger value="applications">
-                  <FileText className="w-4 h-4 mr-2" />
-                  My Applications
+                <TabsTrigger value="applications" className="gap-1">
+                  <FileText className="w-4 h-4" />
+                  Applications
                 </TabsTrigger>
               )}
               {userRoles.includes('venue') && (
                 <TabsTrigger value="venue">My Venue</TabsTrigger>
               )}
               {vendingEvents.length > 0 && (
-                <TabsTrigger value="vending">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Vending Events
+                <TabsTrigger value="vending" className="gap-1">
+                  <Calendar className="w-4 h-4" />
+                  Vending
                 </TabsTrigger>
               )}
               {sponsoringEvents.length > 0 && (
-                <TabsTrigger value="sponsoring">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Sponsoring Events
+                <TabsTrigger value="sponsoring" className="gap-1">
+                  <Calendar className="w-4 h-4" />
+                  Sponsoring
                 </TabsTrigger>
               )}
               <TabsTrigger value="plans">Plans</TabsTrigger>
@@ -819,6 +808,23 @@ const Profile = () => {
                 </Card>
               </TabsContent>
             )}
+
+            <TabsContent value="tickets" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Ticket className="h-5 w-5" />
+                    My Tickets
+                  </CardTitle>
+                  <CardDescription>
+                    View and manage your event tickets
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <MyTickets />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="plans" className="space-y-6">
               <Card>

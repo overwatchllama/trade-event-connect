@@ -1,1 +1,34 @@
 project_id = "gsjwamfnoezhwlhkqzdn"
+
+[functions.check-subscription]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.customer-portal]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false
+
+[functions.event-share]
+verify_jwt = false
+
+[functions.seed-test-users]
+verify_jwt = false
+
+[functions.send-announcement]
+verify_jwt = false
+
+[functions.send-vendor-invoice]
+verify_jwt = false
+
+[functions.vendor-registration-payment]
+verify_jwt = false
+
+[functions.create-ticket-checkout]
+verify_jwt = false
+
+[functions.verify-ticket-payment]
+verify_jwt = false

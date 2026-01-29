@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MapPin, Calendar, Users, Tag, Settings, Store, Mail, Phone, Instagram, Twitter, Facebook, ExternalLink, Share2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Users, Tag, Settings, Store, Mail, Phone, Instagram, Twitter, Facebook, ExternalLink, Share2, ScanLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
@@ -23,6 +23,8 @@ import EditEventDialog from '@/components/EditEventDialog';
 import ManageVendorsDialog from '@/components/ManageVendorsDialog';
 import ManageSponsorsDialog from '@/components/ManageSponsorsDialog';
 import { VendorApplicationStatus } from '@/components/VendorApplicationStatus';
+import BuyTicketDialog from '@/components/tickets/BuyTicketDialog';
+import TicketScanner from '@/components/tickets/TicketScanner';
 import { Database } from '@/integrations/supabase/types';
 
 type Event = Database['public']['Tables']['events']['Row'];
@@ -49,6 +51,8 @@ const EventDetails = () => {
   const [socialMediaLinks, setSocialMediaLinks] = useState<SocialMediaLink[]>([]);
   const [eventDays, setEventDays] = useState<EventDay[]>([]);
   const [hasApplied, setHasApplied] = useState(false);
+  const [buyTicketOpen, setBuyTicketOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const isVendorPro = subscribed &&
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
@@ -155,43 +159,13 @@ const EventDetails = () => {
     }
   };
 
-  const handleBuyTicket = async () => {
+  const handleBuyTicket = () => {
     if (!user) {
       toast.error('Please sign in to purchase tickets');
       navigate('/auth');
       return;
     }
-
-    if (!event) return;
-
-    setPurchasing(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: {
-          priceAmount: event.entry_fee,
-          successUrl: `${window.location.origin}/events?ticket=success&event=${event.id}`,
-          cancelUrl: `${window.location.origin}/event/${event.id}`,
-          metadata: {
-            type: 'event_ticket',
-            event_id: event.id,
-            event_title: event.title,
-            user_id: user.id,
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (error: unknown) {
-      console.error('Purchase error:', error);
-      toast.error('Failed to process ticket purchase');
-    } finally {
-      setPurchasing(false);
-    }
+    setBuyTicketOpen(true);
   };
 
   if (loading) {
@@ -256,7 +230,7 @@ const EventDetails = () => {
         </Button>
 
         {isOrganizer && (
-          <div className="mb-6 flex gap-2">
+          <div className="mb-6 flex flex-wrap gap-2">
             <Button
               onClick={() => setEditDialogOpen(true)}
               variant="outline"
@@ -277,6 +251,13 @@ const EventDetails = () => {
             >
               <Settings className="w-4 h-4 mr-2" />
               Manage Sponsors
+            </Button>
+            <Button
+              onClick={() => setScannerOpen(true)}
+              variant="default"
+            >
+              <ScanLine className="w-4 h-4 mr-2" />
+              Scan Tickets
             </Button>
           </div>
         )}
@@ -649,6 +630,22 @@ const EventDetails = () => {
           onOpenChange={setManageSponsorsOpen}
           eventId={event.id}
           eventTitle={event.title}
+        />
+
+        <BuyTicketDialog
+          open={buyTicketOpen}
+          onOpenChange={setBuyTicketOpen}
+          eventId={event.id}
+          eventTitle={event.title}
+          ticketPrice={event.entry_fee || 0}
+          eventDate={event.date}
+        />
+
+        <TicketScanner
+          eventId={event.id}
+          eventTitle={event.title}
+          open={scannerOpen}
+          onOpenChange={setScannerOpen}
         />
       </div>
     </div>
