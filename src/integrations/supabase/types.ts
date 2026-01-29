@@ -545,6 +545,132 @@ export type Database = {
         }
         Relationships: []
       }
+      order_items: {
+        Row: {
+          checked_in: boolean | null
+          checked_in_at: string | null
+          checked_in_by: string | null
+          created_at: string
+          event_day_id: string | null
+          event_id: string
+          id: string
+          order_id: string
+          qr_data: string
+          quantity: number
+          ticket_code: string
+          ticket_type: string
+          unit_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checked_in?: boolean | null
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          created_at?: string
+          event_day_id?: string | null
+          event_id: string
+          id?: string
+          order_id: string
+          qr_data: string
+          quantity?: number
+          ticket_code: string
+          ticket_type?: string
+          unit_price?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checked_in?: boolean | null
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          created_at?: string
+          event_day_id?: string | null
+          event_id?: string
+          id?: string
+          order_id?: string
+          qr_data?: string
+          quantity?: number
+          ticket_code?: string
+          ticket_type?: string
+          unit_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_event_day_id_fkey"
+            columns: ["event_day_id"]
+            isOneToOne: false
+            referencedRelation: "event_days"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          discount_amount: number | null
+          event_id: string
+          id: string
+          payment_status: string
+          promo_code: string | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          discount_amount?: number | null
+          event_id: string
+          id?: string
+          payment_status?: string
+          promo_code?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          total_amount?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          discount_amount?: number | null
+          event_id?: string
+          id?: string
+          payment_status?: string
+          promo_code?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizer_saved_locations: {
         Row: {
           address: string
