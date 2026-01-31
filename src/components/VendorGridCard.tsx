@@ -47,6 +47,7 @@ interface VendorGridCardProps {
   isFavorite?: boolean;
   onToggleFavorite?: (vendorId: string) => void;
   isOrganizer?: boolean;
+  isVendor?: boolean;
   onInviteClick?: (vendor: VendorProfile) => void;
   selectable?: boolean;
   isSelected?: boolean;
@@ -61,6 +62,7 @@ export const VendorGridCard = ({
   isFavorite = false,
   onToggleFavorite,
   isOrganizer = false,
+  isVendor = false,
   onInviteClick,
   selectable = false,
   isSelected = false,
@@ -199,13 +201,15 @@ export const VendorGridCard = ({
                   Invite
                 </Button>
               )}
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => toast.info('Contact feature coming soon!')}
-              >
-                Contact
-              </Button>
+              {(isOrganizer || isVendor) && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => toast.info('Contact feature coming soon!')}
+                >
+                  Contact
+                </Button>
+              )}
             </>
           )}
         </div>

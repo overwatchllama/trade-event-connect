@@ -769,6 +769,7 @@ const Vendors = () => {
                       isFavorite={favoriteVendorIds.includes(vendor.id)}
                       onToggleFavorite={handleToggleFavorite}
                       isOrganizer={isOrganizer}
+                      isVendor={isVendor}
                       onInviteClick={handleInviteVendor}
                       selectable={selectionMode}
                       isSelected={selectedVendorIds.includes(vendor.id)}
@@ -798,6 +799,7 @@ const Vendors = () => {
                       isFavorite={true}
                       onToggleFavorite={handleToggleFavorite}
                       isOrganizer={isOrganizer}
+                      isVendor={isVendor}
                       onInviteClick={handleInviteVendor}
                     />
                   ))}
@@ -1052,6 +1054,7 @@ const Vendors = () => {
                   isFavorite={favoriteVendorIds.includes(vendor.id)}
                   onToggleFavorite={handleToggleFavorite}
                   isOrganizer={isOrganizer}
+                  isVendor={isVendor}
                   onInviteClick={handleInviteVendor}
                 />
               ))}
