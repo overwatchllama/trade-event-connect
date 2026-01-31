@@ -639,6 +639,7 @@ const EventDetails = () => {
           eventTitle={event.title}
           ticketPrice={event.entry_fee || 0}
           eventDate={event.date}
+          isMultiDay={event.is_multi_day}
         />
 
         <TicketScanner
