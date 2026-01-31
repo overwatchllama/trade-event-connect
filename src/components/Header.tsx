@@ -11,6 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import CartIcon from "@/components/CartIcon";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Header = () => {
   const location = useLocation();
@@ -19,6 +21,37 @@ const Header = () => {
   const { hasVendorRole } = useVendorProfile();
   const { isAdmin } = useAdmin();
   const { subscription_tier } = useSubscription();
+
+  // Check if user is a vendor employee
+  const { data: isEmployee } = useQuery({
+    queryKey: ['is-employee', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data } = await supabase
+        .from('vendor_employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Check if user has a sponsor profile
+  const { data: hasSponsorProfile } = useQuery({
+    queryKey: ['has-sponsor', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data } = await supabase
+        .from('sponsors')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user?.id,
+  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -108,14 +141,18 @@ const Header = () => {
                       My Vendor Profile
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={() => navigate('/my-sponsor-profile')}>
-                    <Award className="mr-2 h-4 w-4" />
-                    My Sponsor Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/employee-dashboard')}>
-                    <Users className="mr-2 h-4 w-4" />
-                    Employee Dashboard
-                  </DropdownMenuItem>
+                  {hasSponsorProfile && (
+                    <DropdownMenuItem onClick={() => navigate('/my-sponsor-profile')}>
+                      <Award className="mr-2 h-4 w-4" />
+                      My Sponsor Profile
+                    </DropdownMenuItem>
+                  )}
+                  {isEmployee && (
+                    <DropdownMenuItem onClick={() => navigate('/employee-dashboard')}>
+                      <Users className="mr-2 h-4 w-4" />
+                      Employee Dashboard
+                    </DropdownMenuItem>
+                  )}
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => navigate('/admin')}>
                       <Shield className="mr-2 h-4 w-4" />
