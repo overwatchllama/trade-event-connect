@@ -30,12 +30,12 @@ serve(async (req) => {
 
     console.log("Sending ticket confirmation to:", userEmail, "for order:", orderId);
 
-    // Get order details with tickets
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // Get order items with tickets
     const { data: orderItems, error: itemsError } = await supabaseAdmin
       .from("order_items")
       .select(`
@@ -52,11 +52,11 @@ serve(async (req) => {
       throw new Error("Could not find tickets for this order");
     }
 
-    // Get event details
+    // Get event details with branding
     const eventId = orderItems[0].event_id;
     const { data: event, error: eventError } = await supabaseAdmin
       .from("events")
-      .select("title, date, venue, address, city, state, zip_code")
+      .select("title, date, venue, address, city, state, zip_code, brand_primary_color, brand_secondary_color, brand_logo_url, organizer_name")
       .eq("id", eventId)
       .single();
 
@@ -65,7 +65,12 @@ serve(async (req) => {
       throw new Error("Could not find event details");
     }
 
-    // Generate QR code URLs for each ticket
+    // Use custom branding or defaults
+    const primaryColor = event.brand_primary_color || "#667eea";
+    const secondaryColor = event.brand_secondary_color || "#764ba2";
+    const logoUrl = event.brand_logo_url;
+
+    // Generate ticket HTML for each ticket
     const ticketHtml = orderItems.map((ticket, index) => `
       <div style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px; margin: 15px 0; text-align: center;">
         <p style="margin: 0 0 10px 0; font-weight: 600; color: #374151;">Ticket ${index + 1} - ${ticket.ticket_type}</p>
@@ -87,6 +92,17 @@ serve(async (req) => {
 
     const totalAmount = orderItems.reduce((sum, item) => sum + Number(item.unit_price), 0);
 
+    // Build logo section if logo is provided
+    const logoSection = logoUrl ? `
+      <div style="margin-bottom: 15px;">
+        <img 
+          src="${logoUrl}" 
+          alt="${event.title} logo"
+          style="max-width: 150px; max-height: 80px; object-fit: contain;"
+        />
+      </div>
+    ` : '';
+
     const emailResponse = await resend.emails.send({
       from: "Trading Card Events <onboarding@resend.dev>",
       to: [userEmail],
@@ -100,7 +116,8 @@ serve(async (req) => {
             <title>Your Event Tickets</title>
           </head>
           <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+            <div style="background: linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%); color: white; padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+              ${logoSection}
               <h1 style="margin: 0; font-size: 28px;">🎟️ Your Tickets Are Ready!</h1>
               <p style="margin: 10px 0 0 0; opacity: 0.9;">Thank you for your purchase${userName ? `, ${userName}` : ''}!</p>
             </div>
@@ -108,7 +125,7 @@ serve(async (req) => {
             <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
               <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 22px;">${event.title}</h2>
               
-              <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 0 0 25px 0; border-radius: 4px;">
+              <div style="background: #f0f9ff; border-left: 4px solid ${primaryColor}; padding: 15px; margin: 0 0 25px 0; border-radius: 4px;">
                 <p style="margin: 0; font-weight: 600; color: #1e40af;">📅 ${event.date}</p>
                 <p style="margin: 5px 0 0 0; color: #1e40af;">📍 ${event.venue}</p>
                 <p style="margin: 5px 0 0 0; color: #3b82f6; font-size: 14px;">${event.address}, ${event.city}, ${event.state} ${event.zip_code}</p>
@@ -140,7 +157,7 @@ serve(async (req) => {
             
             <div style="background: white; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px; text-align: center;">
               <p style="margin: 0; color: #6b7280; font-size: 14px;">
-                Questions? Contact the event organizer directly.
+                Questions? Contact ${event.organizer_name || 'the event organizer'} directly.
               </p>
               <p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 12px;">
                 Trading Card Events Platform

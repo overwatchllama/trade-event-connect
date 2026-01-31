@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { MultiSelect, Option } from '@/components/ui/multi-select';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Calendar, MapPin, Users, DollarSign, Clock, Upload, X, Plus, ChevronDown, ChevronRight, Save, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Users, DollarSign, Clock, Upload, X, Plus, ChevronDown, ChevronRight, Save, Trash2, Palette } from 'lucide-react';
 import DraggableEventDays from './DraggableEventDays';
 import DraggableSponsorTiers from './DraggableSponsorTiers';
 import { useAuth } from '@/hooks/useAuth';
@@ -51,6 +51,7 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
   const [locationOpen, setLocationOpen] = useState(true);
   const [eventDetailsOpen, setEventDetailsOpen] = useState(true);
   const [contactOpen, setContactOpen] = useState(false);
+  const [brandingOpen, setBrandingOpen] = useState(false);
 
   // Location management
   const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
@@ -95,7 +96,10 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
     contactPhone: '',
     preferredContactMethod: '',
     vendorStartTime: '',
-    vendorNotes: ''
+    vendorNotes: '',
+    brandPrimaryColor: '#667eea',
+    brandSecondaryColor: '#764ba2',
+    brandLogoUrl: ''
   });
 
   const [isMultiDay, setIsMultiDay] = useState(false);
@@ -177,7 +181,10 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
         contactPhone: event.contact_phone || '',
         preferredContactMethod: event.preferred_contact_method || '',
         vendorStartTime: (event as any).vendor_start_time || '',
-        vendorNotes: event.vendor_notes || ''
+        vendorNotes: event.vendor_notes || '',
+        brandPrimaryColor: (event as any).brand_primary_color || '#667eea',
+        brandSecondaryColor: (event as any).brand_secondary_color || '#764ba2',
+        brandLogoUrl: (event as any).brand_logo_url || ''
       });
 
       setSelectedCardTypes(event.card_types || []);
@@ -486,7 +493,10 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
           sponsor_tier_slots: null,
           contact_email: formData.contactEmail || null,
           contact_phone: formData.contactPhone || null,
-          preferred_contact_method: formData.preferredContactMethod || null
+          preferred_contact_method: formData.preferredContactMethod || null,
+          brand_primary_color: formData.brandPrimaryColor || '#667eea',
+          brand_secondary_color: formData.brandSecondaryColor || '#764ba2',
+          brand_logo_url: formData.brandLogoUrl || null
         })
         .eq('id', eventId);
 
@@ -927,6 +937,97 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
                   <Plus className="w-4 h-4 mr-1" /> Add Social Link
                 </Button>
               </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          {/* Email Branding */}
+          <Collapsible open={brandingOpen} onOpenChange={setBrandingOpen}>
+            <SectionHeader 
+              title="Email Branding" 
+              icon={Palette} 
+              isOpen={brandingOpen} 
+              onToggle={() => setBrandingOpen(!brandingOpen)} 
+            />
+            <CollapsibleContent className="pt-4 space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Customize the look of ticket confirmation emails sent to attendees.
+              </p>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Primary Color</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="color" 
+                      value={formData.brandPrimaryColor} 
+                      onChange={(e) => handleInputChange('brandPrimaryColor', e.target.value)}
+                      className="w-12 h-9 p-1 cursor-pointer"
+                    />
+                    <Input 
+                      type="text" 
+                      value={formData.brandPrimaryColor} 
+                      onChange={(e) => handleInputChange('brandPrimaryColor', e.target.value)}
+                      placeholder="#667eea"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Secondary Color</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="color" 
+                      value={formData.brandSecondaryColor} 
+                      onChange={(e) => handleInputChange('brandSecondaryColor', e.target.value)}
+                      className="w-12 h-9 p-1 cursor-pointer"
+                    />
+                    <Input 
+                      type="text" 
+                      value={formData.brandSecondaryColor} 
+                      onChange={(e) => handleInputChange('brandSecondaryColor', e.target.value)}
+                      placeholder="#764ba2"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Logo URL</Label>
+                <Input 
+                  type="url" 
+                  value={formData.brandLogoUrl} 
+                  onChange={(e) => handleInputChange('brandLogoUrl', e.target.value)}
+                  placeholder="https://example.com/logo.png"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the URL of your event or brand logo to display in confirmation emails.
+                </p>
+              </div>
+
+              {/* Preview */}
+              {(formData.brandPrimaryColor || formData.brandSecondaryColor) && (
+                <div className="space-y-2">
+                  <Label className="text-xs">Email Header Preview</Label>
+                  <div 
+                    className="p-6 rounded-lg text-white text-center"
+                    style={{
+                      background: `linear-gradient(135deg, ${formData.brandPrimaryColor} 0%, ${formData.brandSecondaryColor} 100%)`
+                    }}
+                  >
+                    {formData.brandLogoUrl && (
+                      <img 
+                        src={formData.brandLogoUrl} 
+                        alt="Logo preview" 
+                        className="max-h-12 mx-auto mb-2 object-contain"
+                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                      />
+                    )}
+                    <p className="font-semibold">🎟️ Your Tickets Are Ready!</p>
+                    <p className="text-sm opacity-90">Thank you for your purchase!</p>
+                  </div>
+                </div>
+              )}
             </CollapsibleContent>
           </Collapsible>
 
