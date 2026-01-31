@@ -6,8 +6,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Download, Eye, Calendar, MapPin, Clock, ChevronDown, ChevronRight, Ticket } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Download, Eye, Calendar, MapPin, Clock, ChevronDown, ChevronRight, Ticket, History, CalendarClock } from "lucide-react";
+import { format, parseISO, isToday, isFuture, isPast, startOfDay } from "date-fns";
 import { toast } from "sonner";
 import TicketQRCode from "./TicketQRCode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -109,9 +110,10 @@ const MyTickets = () => {
     }
   };
 
-  // Group tickets by event
-  const groupedTickets = useMemo(() => {
+  // Group tickets by event and separate into upcoming/past
+  const { upcomingEvents, pastEvents } = useMemo(() => {
     const groups: Map<string, GroupedEvent> = new Map();
+    const today = startOfDay(new Date());
     
     tickets.forEach(ticket => {
       if (!ticket.event?.id) return;
@@ -147,7 +149,65 @@ const MyTickets = () => {
       });
     });
     
-    return Array.from(groups.values());
+    const allGroups = Array.from(groups.values());
+    
+    // Helper to get the latest relevant date for an event
+    const getEventDate = (group: GroupedEvent): Date => {
+      // For multi-day events, use the latest ticket day date
+      if (group.isMultiDay && group.tickets.length > 0) {
+        const latestDay = group.tickets.reduce((latest, ticket) => {
+          if (ticket.event_day?.day_date) {
+            const dayDate = parseISO(ticket.event_day.day_date);
+            return dayDate > latest ? dayDate : latest;
+          }
+          return latest;
+        }, new Date(0));
+        if (latestDay.getTime() > 0) return latestDay;
+      }
+      // Parse the event date string (format: "Month Day, Year" or similar)
+      try {
+        return new Date(group.eventDate);
+      } catch {
+        return new Date();
+      }
+    };
+    
+    // Separate into upcoming (including today) and past
+    const upcoming: GroupedEvent[] = [];
+    const past: GroupedEvent[] = [];
+    
+    allGroups.forEach(group => {
+      const eventDate = startOfDay(getEventDate(group));
+      if (eventDate >= today) {
+        upcoming.push(group);
+      } else {
+        past.push(group);
+      }
+    });
+    
+    // Sort upcoming: today first, then by date ascending
+    upcoming.sort((a, b) => {
+      const dateA = getEventDate(a);
+      const dateB = getEventDate(b);
+      const isAToday = isToday(dateA);
+      const isBToday = isToday(dateB);
+      
+      // Today's events come first
+      if (isAToday && !isBToday) return -1;
+      if (!isAToday && isBToday) return 1;
+      
+      // Then sort by date ascending (soonest first)
+      return dateA.getTime() - dateB.getTime();
+    });
+    
+    // Sort past by date descending (most recent first)
+    past.sort((a, b) => {
+      const dateA = getEventDate(a);
+      const dateB = getEventDate(b);
+      return dateB.getTime() - dateA.getTime();
+    });
+    
+    return { upcomingEvents: upcoming, pastEvents: past };
   }, [tickets]);
 
   const toggleEvent = (eventId: string) => {
@@ -221,106 +281,163 @@ const MyTickets = () => {
     );
   }
 
-  return (
-    <>
-      <div className="space-y-4">
-        {groupedTickets.map((group) => (
-          <Card key={group.eventId} className="overflow-hidden">
-            <Collapsible 
-              open={expandedEvents.has(group.eventId)} 
-              onOpenChange={() => toggleEvent(group.eventId)}
-            >
-              <CollapsibleTrigger className="w-full">
-                <div className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1">
-                      {expandedEvents.has(group.eventId) ? (
-                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+  const renderEventGroup = (group: GroupedEvent, isUpcoming: boolean) => {
+    const eventDate = (() => {
+      try {
+        if (group.isMultiDay && group.tickets[0]?.event_day?.day_date) {
+          return parseISO(group.tickets[0].event_day.day_date);
+        }
+        return new Date(group.eventDate);
+      } catch {
+        return new Date();
+      }
+    })();
+    const isTodayEvent = isToday(eventDate);
+    
+    return (
+      <Card key={group.eventId} className={`overflow-hidden ${isTodayEvent && isUpcoming ? 'ring-2 ring-primary' : ''}`}>
+        <Collapsible 
+          open={expandedEvents.has(group.eventId)} 
+          onOpenChange={() => toggleEvent(group.eventId)}
+        >
+          <CollapsibleTrigger className="w-full">
+            <div className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+              <div className="flex items-start gap-3">
+                <div className="mt-1">
+                  {expandedEvents.has(group.eventId) ? (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="text-left">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold">{group.eventTitle}</h3>
+                    {isTodayEvent && isUpcoming && (
+                      <Badge className="bg-primary text-primary-foreground text-xs">Today</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                    <Calendar className="h-4 w-4" />
+                    <span>{group.eventDate}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span>{group.venue}, {group.city}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Ticket className="h-3 w-3" />
+                  {group.tickets.length} ticket{group.tickets.length !== 1 ? 's' : ''}
+                </Badge>
+                {group.isMultiDay && (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                    Multi-day
+                  </Badge>
+                )}
+                {group.checkedInCount > 0 && (
+                  <Badge className="bg-green-500">
+                    {group.checkedInCount} checked in
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent>
+            <div className="border-t divide-y">
+              {group.tickets.map((ticket) => (
+                <div key={ticket.id} className="p-4 pl-12 flex items-center justify-between bg-muted/20">
+                  <div className="space-y-1">
+                    {group.isMultiDay && ticket.event_day ? (
+                      <>
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                            Day {ticket.event_day.day_number}
+                          </Badge>
+                          <span>{format(parseISO(ticket.event_day.day_date), "EEEE, MMM d, yyyy")}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          <span>{ticket.event_day.start_time} - {ticket.event_day.end_time}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Badge variant="outline">{ticket.ticket_type}</Badge>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>Code: {ticket.ticket_code}</span>
+                      {ticket.checked_in ? (
+                        <Badge variant="default" className="bg-green-500 text-xs">Checked In</Badge>
                       ) : (
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                        <Badge variant="secondary" className="text-xs">Valid</Badge>
                       )}
                     </div>
-                    <div className="text-left">
-                      <h3 className="font-semibold">{group.eventTitle}</h3>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>{group.eventDate}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        <span>{group.venue}, {group.city}</span>
-                      </div>
-                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Ticket className="h-3 w-3" />
-                      {group.tickets.length} ticket{group.tickets.length !== 1 ? 's' : ''}
-                    </Badge>
-                    {group.isMultiDay && (
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                        Multi-day
-                      </Badge>
-                    )}
-                    {group.checkedInCount > 0 && (
-                      <Badge className="bg-green-500">
-                        {group.checkedInCount} checked in
-                      </Badge>
-                    )}
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedTicket(ticket)}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    View QR
+                  </Button>
                 </div>
-              </CollapsibleTrigger>
-              
-              <CollapsibleContent>
-                <div className="border-t divide-y">
-                  {group.tickets.map((ticket) => (
-                    <div key={ticket.id} className="p-4 pl-12 flex items-center justify-between bg-muted/20">
-                      <div className="space-y-1">
-                        {/* Show specific day for multi-day events */}
-                        {group.isMultiDay && ticket.event_day ? (
-                          <>
-                            <div className="flex items-center gap-2 text-sm font-medium">
-                              <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                                Day {ticket.event_day.day_number}
-                              </Badge>
-                              <span>{format(parseISO(ticket.event_day.day_date), "EEEE, MMM d, yyyy")}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              <span>{ticket.event_day.start_time} - {ticket.event_day.end_time}</span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Badge variant="outline">{ticket.ticket_type}</Badge>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>Code: {ticket.ticket_code}</span>
-                          {ticket.checked_in ? (
-                            <Badge variant="default" className="bg-green-500 text-xs">Checked In</Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-xs">Valid</Badge>
-                          )}
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedTicket(ticket)}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        View QR
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </Card>
-        ))}
-      </div>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
+    );
+  };
+
+  return (
+    <>
+      <Tabs defaultValue="upcoming" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="upcoming" className="flex items-center gap-2">
+            <CalendarClock className="h-4 w-4" />
+            Upcoming ({upcomingEvents.length})
+          </TabsTrigger>
+          <TabsTrigger value="past" className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            Past ({pastEvents.length})
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="upcoming" className="space-y-4">
+          {upcomingEvents.length === 0 ? (
+            <Card className="p-8 text-center">
+              <CalendarClock className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">No upcoming events.</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Purchase tickets to upcoming events to see them here.
+              </p>
+            </Card>
+          ) : (
+            upcomingEvents.map((group) => renderEventGroup(group, true))
+          )}
+        </TabsContent>
+        
+        <TabsContent value="past" className="space-y-4">
+          {pastEvents.length === 0 ? (
+            <Card className="p-8 text-center">
+              <History className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">No past events.</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Your ticket history will appear here after events have passed.
+              </p>
+            </Card>
+          ) : (
+            pastEvents.map((group) => renderEventGroup(group, false))
+          )}
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
         <DialogContent className="max-w-md">
