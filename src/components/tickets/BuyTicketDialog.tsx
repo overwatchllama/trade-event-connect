@@ -92,9 +92,26 @@ const BuyTicketDialog = ({
 
       if (ticketsError) throw ticketsError;
 
-      // If ticket is free, mark order as completed
+      // If ticket is free, mark order as completed and send confirmation email
       if (ticketPrice === 0) {
-        toast.success(`${quantity} ticket(s) added to your account!`);
+        // Send confirmation email for free tickets
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.email) {
+          supabase.functions.invoke("send-ticket-confirmation", {
+            body: {
+              orderId: order.id,
+              userEmail: profile.email,
+              userName: profile.full_name,
+            },
+          }).catch(err => console.error("Failed to send confirmation email:", err));
+        }
+
+        toast.success(`${quantity} ticket(s) added to your account! Check your email for confirmation.`);
         onOpenChange(false);
         setQuantity(1);
         return;
