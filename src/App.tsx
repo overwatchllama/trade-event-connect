@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from 'react-helmet-async';
 import { ThemeProvider } from "next-themes";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { CartProvider } from "@/contexts/CartContext";
 import Index from "./pages/Index";
 import Events from "./pages/Events";
 import Auth from "./pages/Auth";
@@ -33,10 +34,11 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <HelmetProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+        <CartProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/events" element={<Events />} />
@@ -85,8 +87,9 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-        </TooltipProvider>
+          </BrowserRouter>
+          </TooltipProvider>
+        </CartProvider>
       </ThemeProvider>
     </HelmetProvider>
   </QueryClientProvider>

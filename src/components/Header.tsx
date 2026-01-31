@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import CartIcon from "@/components/CartIcon";
 
 const Header = () => {
   const location = useLocation();
@@ -62,6 +63,7 @@ const Header = () => {
 
           <div className="flex items-center space-x-4">
             <ThemeToggle />
+            <CartIcon />
             {loading ? (
               <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
             ) : user ? (
