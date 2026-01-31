@@ -5,12 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Eye, Calendar, MapPin } from "lucide-react";
+import { Download, Eye, Calendar, MapPin, Clock } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import TicketQRCode from "./TicketQRCode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+
+interface EventDay {
+  id: string;
+  day_number: number;
+  day_date: string;
+  start_time: string;
+  end_time: string;
+}
 
 interface Ticket {
   id: string;
@@ -20,6 +29,8 @@ interface Ticket {
   checked_in: boolean;
   checked_in_at: string | null;
   created_at: string;
+  event_day_id: string | null;
+  event_day?: EventDay | null;
   event: {
     id: string;
     title: string;
@@ -27,6 +38,7 @@ interface Ticket {
     venue: string;
     city: string;
     state: string;
+    is_multi_day: boolean;
   };
 }
 
@@ -55,17 +67,20 @@ const MyTickets = () => {
           checked_in,
           checked_in_at,
           created_at,
-          event:events(id, title, date, venue, city, state)
+          event_day_id,
+          event_day:event_days(id, day_number, day_date, start_time, end_time),
+          event:events(id, title, date, venue, city, state, is_multi_day)
         `)
         .eq("user_id", user?.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       
-      // Transform the data to handle the event join
+      // Transform the data to handle the event and event_day joins
       const transformedData = (data || []).map(item => ({
         ...item,
-        event: Array.isArray(item.event) ? item.event[0] : item.event
+        event: Array.isArray(item.event) ? item.event[0] : item.event,
+        event_day: Array.isArray(item.event_day) ? item.event_day[0] : item.event_day
       }));
       
       setTickets(transformedData as Ticket[]);
@@ -145,16 +160,41 @@ const MyTickets = () => {
             <div className="flex items-start justify-between">
               <div className="space-y-1">
                 <h3 className="font-semibold">{ticket.event?.title || "Event"}</h3>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>{ticket.event?.date}</span>
-                </div>
+                
+                {/* Show specific day for multi-day events */}
+                {ticket.event?.is_multi_day && ticket.event_day ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>
+                      Day {ticket.event_day.day_number}: {format(parseISO(ticket.event_day.day_date), "EEEE, MMM d, yyyy")}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>{ticket.event?.date}</span>
+                  </div>
+                )}
+                
+                {/* Show time for multi-day events */}
+                {ticket.event?.is_multi_day && ticket.event_day && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>{ticket.event_day.start_time} - {ticket.event_day.end_time}</span>
+                  </div>
+                )}
+                
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MapPin className="h-4 w-4" />
                   <span>{ticket.event?.venue}, {ticket.event?.city}</span>
                 </div>
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <Badge variant="outline">{ticket.ticket_type}</Badge>
+                  {ticket.event?.is_multi_day && ticket.event_day && (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                      Day {ticket.event_day.day_number}
+                    </Badge>
+                  )}
                   {ticket.checked_in ? (
                     <Badge variant="default" className="bg-green-500">Checked In</Badge>
                   ) : (
