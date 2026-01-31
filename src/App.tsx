@@ -24,6 +24,7 @@ import SponsorProfile from "./pages/SponsorProfile";
 import Settings from "./pages/Settings";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import TicketSuccess from "./pages/TicketSuccess";
+import SharedTicket from "./pages/SharedTicket";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -80,6 +81,7 @@ const App = () => (
                 <TicketSuccess />
               </ProtectedRoute>
             } />
+            <Route path="/ticket/:ticketCode" element={<SharedTicket />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
