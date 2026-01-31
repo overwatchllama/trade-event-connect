@@ -51,6 +51,53 @@ serve(async (req) => {
       throw new Error("Failed to update order");
     }
 
+    // Get user email from order
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .select("user_id")
+      .eq("id", orderId)
+      .single();
+
+    if (orderError || !order) {
+      console.error("Error fetching order for email:", orderError);
+    } else {
+      // Get user profile for email
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("email, full_name")
+        .eq("id", order.user_id)
+        .single();
+
+      if (profile?.email) {
+        // Send confirmation email in background
+        const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+        
+        EdgeRuntime.waitUntil(
+          fetch(`${supabaseUrl}/functions/v1/send-ticket-confirmation`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${supabaseKey}`,
+            },
+            body: JSON.stringify({
+              orderId,
+              userEmail: profile.email,
+              userName: profile.full_name,
+            }),
+          }).then(res => {
+            if (!res.ok) {
+              console.error("Failed to send confirmation email");
+            } else {
+              console.log("Confirmation email triggered successfully");
+            }
+          }).catch(err => {
+            console.error("Error triggering confirmation email:", err);
+          })
+        );
+      }
+    }
+
     console.log("Order payment verified:", orderId);
 
     return new Response(
