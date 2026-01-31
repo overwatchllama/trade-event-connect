@@ -382,6 +382,9 @@ export type Database = {
         Row: {
           address: string
           age_pricing_info: string | null
+          brand_logo_url: string | null
+          brand_primary_color: string | null
+          brand_secondary_color: string | null
           card_types: string[]
           city: string
           contact_email: string | null
@@ -421,6 +424,9 @@ export type Database = {
         Insert: {
           address: string
           age_pricing_info?: string | null
+          brand_logo_url?: string | null
+          brand_primary_color?: string | null
+          brand_secondary_color?: string | null
           card_types?: string[]
           city: string
           contact_email?: string | null
@@ -460,6 +466,9 @@ export type Database = {
         Update: {
           address?: string
           age_pricing_info?: string | null
+          brand_logo_url?: string | null
+          brand_primary_color?: string | null
+          brand_secondary_color?: string | null
           card_types?: string[]
           city?: string
           contact_email?: string | null
