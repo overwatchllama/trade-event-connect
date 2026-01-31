@@ -35,3 +35,9 @@ verify_jwt = false
 
 [functions.verify-ticket-payment]
 verify_jwt = false
+
+[functions.get-shared-ticket]
+verify_jwt = false
+
+[functions.share-ticket-email]
+verify_jwt = false

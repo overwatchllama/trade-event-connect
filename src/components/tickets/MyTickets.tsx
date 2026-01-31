@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Eye, Calendar, MapPin, Clock, ChevronDown, ChevronRight, Ticket, History, CalendarClock } from "lucide-react";
+import { Download, Eye, Calendar, MapPin, Clock, ChevronDown, ChevronRight, Ticket, History, CalendarClock, Share2 } from "lucide-react";
 import { format, parseISO, isToday, isFuture, isPast, startOfDay } from "date-fns";
 import { toast } from "sonner";
 import TicketQRCode from "./TicketQRCode";
+import ShareTicketDialog from "./ShareTicketDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -63,6 +64,8 @@ const MyTickets = () => {
   const [selectedTicket, setSelectedTicket] = useState<TicketData | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [ticketToShare, setTicketToShare] = useState<TicketData | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -379,14 +382,26 @@ const MyTickets = () => {
                       )}
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedTicket(ticket)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View QR
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setTicketToShare(ticket);
+                        setShareDialogOpen(true);
+                      }}
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedTicket(ticket)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View QR
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -463,18 +478,45 @@ const MyTickets = () => {
                 checkedIn={selectedTicket.checked_in}
               />
               
-              <Button
-                className="w-full"
-                onClick={() => downloadTicketPDF(selectedTicket)}
-                disabled={downloading}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {downloading ? "Generating PDF..." : "Download PDF"}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setTicketToShare(selectedTicket);
+                    setShareDialogOpen(true);
+                  }}
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => downloadTicketPDF(selectedTicket)}
+                  disabled={downloading}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {downloading ? "Generating..." : "Download"}
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {ticketToShare && (
+        <ShareTicketDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          ticketCode={ticketToShare.ticket_code}
+          eventTitle={ticketToShare.event?.title || "Event"}
+          eventDate={
+            ticketToShare.event_day 
+              ? `Day ${ticketToShare.event_day.day_number}: ${format(parseISO(ticketToShare.event_day.day_date), "MMM d, yyyy")}`
+              : ticketToShare.event?.date || ""
+          }
+        />
+      )}
     </>
   );
 };
