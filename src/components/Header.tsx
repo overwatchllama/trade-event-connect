@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { User, LogOut, Settings, Store, Bell, Shield, PenTool, Award, Users } from "lucide-react";
+import { User, LogOut, Settings, Store, Bell, Shield, PenTool, Award, Users, Ticket } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorProfile } from "@/hooks/useVendorProfile";
@@ -126,6 +126,10 @@ const Header = () => {
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
                     <User className="mr-2 h-4 w-4" />
                     Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/profile?tab=tickets')}>
+                    <Ticket className="mr-2 h-4 w-4" />
+                    My Tickets
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/subscription')}>
                     <Settings className="mr-2 h-4 w-4" />
