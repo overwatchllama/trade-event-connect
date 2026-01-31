@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Eye, Calendar, MapPin, Clock } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Download, Eye, Calendar, MapPin, Clock, ChevronDown, ChevronRight, Ticket } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import TicketQRCode from "./TicketQRCode";
@@ -21,7 +22,7 @@ interface EventDay {
   end_time: string;
 }
 
-interface Ticket {
+interface TicketData {
   id: string;
   ticket_code: string;
   qr_data: string;
@@ -42,12 +43,25 @@ interface Ticket {
   };
 }
 
+interface GroupedEvent {
+  eventId: string;
+  eventTitle: string;
+  eventDate: string;
+  venue: string;
+  city: string;
+  state: string;
+  isMultiDay: boolean;
+  tickets: TicketData[];
+  checkedInCount: number;
+}
+
 const MyTickets = () => {
   const { user } = useAuth();
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [tickets, setTickets] = useState<TicketData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<TicketData | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -76,14 +90,17 @@ const MyTickets = () => {
 
       if (error) throw error;
       
-      // Transform the data to handle the event and event_day joins
       const transformedData = (data || []).map(item => ({
         ...item,
         event: Array.isArray(item.event) ? item.event[0] : item.event,
         event_day: Array.isArray(item.event_day) ? item.event_day[0] : item.event_day
       }));
       
-      setTickets(transformedData as Ticket[]);
+      setTickets(transformedData as TicketData[]);
+      
+      // Auto-expand all events by default
+      const eventIds = new Set(transformedData.map(t => t.event?.id).filter(Boolean));
+      setExpandedEvents(eventIds as Set<string>);
     } catch (error) {
       console.error("Error fetching tickets:", error);
       toast.error("Failed to load tickets");
@@ -92,10 +109,62 @@ const MyTickets = () => {
     }
   };
 
-  const downloadTicketPDF = async (ticket: Ticket) => {
+  // Group tickets by event
+  const groupedTickets = useMemo(() => {
+    const groups: Map<string, GroupedEvent> = new Map();
+    
+    tickets.forEach(ticket => {
+      if (!ticket.event?.id) return;
+      
+      const eventId = ticket.event.id;
+      if (!groups.has(eventId)) {
+        groups.set(eventId, {
+          eventId,
+          eventTitle: ticket.event.title,
+          eventDate: ticket.event.date,
+          venue: ticket.event.venue,
+          city: ticket.event.city,
+          state: ticket.event.state,
+          isMultiDay: ticket.event.is_multi_day,
+          tickets: [],
+          checkedInCount: 0
+        });
+      }
+      
+      const group = groups.get(eventId)!;
+      group.tickets.push(ticket);
+      if (ticket.checked_in) {
+        group.checkedInCount++;
+      }
+    });
+    
+    // Sort tickets within each group by day number
+    groups.forEach(group => {
+      group.tickets.sort((a, b) => {
+        const dayA = a.event_day?.day_number ?? 0;
+        const dayB = b.event_day?.day_number ?? 0;
+        return dayA - dayB;
+      });
+    });
+    
+    return Array.from(groups.values());
+  }, [tickets]);
+
+  const toggleEvent = (eventId: string) => {
+    setExpandedEvents(prev => {
+      const next = new Set(prev);
+      if (next.has(eventId)) {
+        next.delete(eventId);
+      } else {
+        next.add(eventId);
+      }
+      return next;
+    });
+  };
+
+  const downloadTicketPDF = async (ticket: TicketData) => {
     setDownloading(true);
     try {
-      // Wait for dialog to render the ticket
       await new Promise(resolve => setTimeout(resolve, 300));
       
       const ticketElement = document.getElementById(`ticket-${ticket.ticket_code}`);
@@ -155,64 +224,100 @@ const MyTickets = () => {
   return (
     <>
       <div className="space-y-4">
-        {tickets.map((ticket) => (
-          <Card key={ticket.id} className="p-4">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <h3 className="font-semibold">{ticket.event?.title || "Event"}</h3>
-                
-                {/* Show specific day for multi-day events */}
-                {ticket.event?.is_multi_day && ticket.event_day ? (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>
-                      Day {ticket.event_day.day_number}: {format(parseISO(ticket.event_day.day_date), "EEEE, MMM d, yyyy")}
-                    </span>
+        {groupedTickets.map((group) => (
+          <Card key={group.eventId} className="overflow-hidden">
+            <Collapsible 
+              open={expandedEvents.has(group.eventId)} 
+              onOpenChange={() => toggleEvent(group.eventId)}
+            >
+              <CollapsibleTrigger className="w-full">
+                <div className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1">
+                      {expandedEvents.has(group.eventId) ? (
+                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-semibold">{group.eventTitle}</h3>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>{group.eventDate}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        <span>{group.venue}, {group.city}</span>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>{ticket.event?.date}</span>
-                  </div>
-                )}
-                
-                {/* Show time for multi-day events */}
-                {ticket.event?.is_multi_day && ticket.event_day && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>{ticket.event_day.start_time} - {ticket.event_day.end_time}</span>
-                  </div>
-                )}
-                
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  <span>{ticket.event?.venue}, {ticket.event?.city}</span>
-                </div>
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <Badge variant="outline">{ticket.ticket_type}</Badge>
-                  {ticket.event?.is_multi_day && ticket.event_day && (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                      Day {ticket.event_day.day_number}
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <Ticket className="h-3 w-3" />
+                      {group.tickets.length} ticket{group.tickets.length !== 1 ? 's' : ''}
                     </Badge>
-                  )}
-                  {ticket.checked_in ? (
-                    <Badge variant="default" className="bg-green-500">Checked In</Badge>
-                  ) : (
-                    <Badge variant="secondary">Valid</Badge>
-                  )}
+                    {group.isMultiDay && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                        Multi-day
+                      </Badge>
+                    )}
+                    {group.checkedInCount > 0 && (
+                      <Badge className="bg-green-500">
+                        {group.checkedInCount} checked in
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedTicket(ticket)}
-                >
-                  <Eye className="h-4 w-4 mr-1" />
-                  View
-                </Button>
-              </div>
-            </div>
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent>
+                <div className="border-t divide-y">
+                  {group.tickets.map((ticket) => (
+                    <div key={ticket.id} className="p-4 pl-12 flex items-center justify-between bg-muted/20">
+                      <div className="space-y-1">
+                        {/* Show specific day for multi-day events */}
+                        {group.isMultiDay && ticket.event_day ? (
+                          <>
+                            <div className="flex items-center gap-2 text-sm font-medium">
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                                Day {ticket.event_day.day_number}
+                              </Badge>
+                              <span>{format(parseISO(ticket.event_day.day_date), "EEEE, MMM d, yyyy")}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              <span>{ticket.event_day.start_time} - {ticket.event_day.end_time}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Badge variant="outline">{ticket.ticket_type}</Badge>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>Code: {ticket.ticket_code}</span>
+                          {ticket.checked_in ? (
+                            <Badge variant="default" className="bg-green-500 text-xs">Checked In</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">Valid</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedTicket(ticket)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View QR
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
         ))}
       </div>
@@ -229,7 +334,11 @@ const MyTickets = () => {
                 ticketCode={selectedTicket.ticket_code}
                 qrData={selectedTicket.qr_data}
                 eventTitle={selectedTicket.event?.title || "Event"}
-                eventDate={selectedTicket.event?.date || ""}
+                eventDate={
+                  selectedTicket.event_day 
+                    ? `Day ${selectedTicket.event_day.day_number}: ${format(parseISO(selectedTicket.event_day.day_date), "MMM d, yyyy")}`
+                    : selectedTicket.event?.date || ""
+                }
                 eventVenue={selectedTicket.event?.venue || ""}
                 eventCity={selectedTicket.event?.city || ""}
                 eventState={selectedTicket.event?.state || ""}
