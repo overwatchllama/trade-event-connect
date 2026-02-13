@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Canvas as FabricCanvas, Rect, Text as FabricText, Group, FabricObject } from "fabric";
+import { Canvas as FabricCanvas, Rect, Text as FabricText, Group } from "fabric";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { Move, Trash2, Download, Upload, Save, Home, Bath, Table, DoorOpen, Cuboid, Presentation, UtensilsCrossed, Utensils, Box } from "lucide-react";
+import { Move, Trash2, Download, Upload, Save, Home, Bath, DoorOpen, Cuboid, Presentation, UtensilsCrossed, Utensils, Box, LayoutGrid, Rows3 } from "lucide-react";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Label } from "./ui/label";
 
 interface LayoutDrawingToolProps {
   eventId?: string;
@@ -12,36 +14,39 @@ interface LayoutDrawingToolProps {
   readOnly?: boolean;
 }
 
+type ToolType = "select" | "room" | "wall" | "restroom" | "table-row" | "table-pod" | "door" | "counter" | "stage" | "food" | "dining";
+type TableSize = "6ft" | "8ft";
+
+const WALL_THICKNESS = 3;
+// Scale: 1ft = 8px
+const FT = 8;
+
 export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = false }: LayoutDrawingToolProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
-  const [activeTool, setActiveTool] = useState<"select" | "room" | "wall" | "restroom" | "table" | "door" | "counter" | "stage" | "food" | "dining">("select");
+  const [activeTool, setActiveTool] = useState<ToolType>("select");
+  const [tableSize, setTableSize] = useState<TableSize>("6ft");
+  const [rowCount, setRowCount] = useState(5);
   const [saving, setSaving] = useState(false);
-  const tableCountRef = useRef(0);
-
-  const SNAP_THRESHOLD = 10;
-  const WALL_THICKNESS = 3;
 
   const getNextTableNumber = () => {
     if (!fabricCanvas) return 1;
-    
-    // Count existing tables
     const objects = fabricCanvas.getObjects();
-    let maxTableNum = 0;
-    
+    let maxNum = 0;
     objects.forEach((obj: any) => {
-      if (obj.type === 'group') {
-        const textObj = obj._objects?.find((o: any) => o.type === 'text');
-        if (textObj && textObj.text && textObj.text.startsWith('Table ')) {
-          const num = parseInt(textObj.text.replace('Table ', ''));
-          if (!isNaN(num) && num > maxTableNum) {
-            maxTableNum = num;
+      if (obj.type === 'group' && obj._objects) {
+        obj._objects.forEach((o: any) => {
+          if (o.type === 'text' && o.text) {
+            const match = o.text.match(/^(\d+)$/);
+            if (match) {
+              const num = parseInt(match[1]);
+              if (num > maxNum) maxNum = num;
+            }
           }
-        }
+        });
       }
     });
-    
-    return maxTableNum + 1;
+    return maxNum + 1;
   };
 
   useEffect(() => {
@@ -53,49 +58,32 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       backgroundColor: "#ffffff",
     });
 
-    // Keep rooms at the back even when selected or moved
     canvas.on('selection:created', (e) => {
       const obj = e.selected?.[0] as any;
-      if (obj && obj.objectType === 'room') {
-        canvas.sendObjectToBack(obj);
-      }
+      if (obj && obj.objectType === 'room') canvas.sendObjectToBack(obj);
     });
-
     canvas.on('selection:updated', (e) => {
       const obj = e.selected?.[0] as any;
-      if (obj && obj.objectType === 'room') {
-        canvas.sendObjectToBack(obj);
-      }
+      if (obj && obj.objectType === 'room') canvas.sendObjectToBack(obj);
     });
-
     canvas.on('object:moving', (e) => {
       const obj = e.target as any;
-      if (obj && obj.objectType === 'room') {
-        canvas.sendObjectToBack(obj);
-      }
+      if (obj && obj.objectType === 'room') canvas.sendObjectToBack(obj);
     });
-
     canvas.on('object:modified', (e) => {
       const obj = e.target as any;
-      if (obj && obj.objectType === 'room') {
-        canvas.sendObjectToBack(obj);
-      }
+      if (obj && obj.objectType === 'room') canvas.sendObjectToBack(obj);
     });
 
-    // Load initial layout if provided
     if (initialLayout) {
       canvas.loadFromJSON(initialLayout, () => {
-        // After loading, send all rooms to the back
         canvas.getObjects().forEach((obj: any) => {
-          if (obj.objectType === 'room') {
-            canvas.sendObjectToBack(obj);
-          }
+          if (obj.objectType === 'room') canvas.sendObjectToBack(obj);
         });
         canvas.renderAll();
       });
     }
 
-    // Make canvas read-only if specified
     if (readOnly) {
       canvas.selection = false;
       canvas.forEachObject((obj) => {
@@ -107,16 +95,114 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     setFabricCanvas(canvas);
     toast.success("Layout tool ready!");
 
-    return () => {
-      canvas.dispose();
-    };
+    return () => { canvas.dispose(); };
   }, [initialLayout, readOnly]);
 
-  const createLabeledObject = (rect: Rect, label: string, showLabel: boolean = true) => {
-    if (!showLabel) {
-      return rect;
+  const createSingleTable = (tableNum: number, size: TableSize) => {
+    const w = size === "6ft" ? 6 * FT : 8 * FT;
+    const h = 30; // 30in ≈ 2.5ft depth
+
+    const rect = new Rect({
+      width: w,
+      height: h,
+      fill: "#fff3e0",
+      stroke: "#f57c00",
+      strokeWidth: 2,
+      originX: 'center',
+      originY: 'center',
+    });
+
+    const label = new FabricText(`${tableNum}`, {
+      fontSize: 12,
+      fontFamily: 'Arial',
+      fill: '#333',
+      originX: 'center',
+      originY: 'center',
+    });
+
+    const sizeLabel = new FabricText(size, {
+      fontSize: 8,
+      fontFamily: 'Arial',
+      fill: '#999',
+      originX: 'center',
+      originY: 'center',
+      top: 10,
+    });
+
+    return new Group([rect, label, sizeLabel]);
+  };
+
+  const addTableRow = () => {
+    if (!fabricCanvas) return;
+    const startNum = getNextTableNumber();
+    const w = tableSize === "6ft" ? 6 * FT : 8 * FT;
+    const gap = 4;
+    const tables: Group[] = [];
+
+    for (let i = 0; i < rowCount; i++) {
+      const table = createSingleTable(startNum + i, tableSize);
+      table.set({ left: i * (w + gap), top: 0 });
+      tables.push(table);
     }
 
+    const rowGroup = new Group(tables, {
+      left: 100,
+      top: 100,
+    });
+    (rowGroup as any).objectType = 'table-row';
+    fabricCanvas.add(rowGroup);
+    fabricCanvas.setActiveObject(rowGroup);
+    fabricCanvas.renderAll();
+  };
+
+  const addTablePod = () => {
+    if (!fabricCanvas) return;
+    const startNum = getNextTableNumber();
+    const w = tableSize === "6ft" ? 6 * FT : 8 * FT;
+    const h = 30;
+    const gap = 4;
+    const tables: Group[] = [];
+
+    // Pod layout: 2 rows of 5 tables facing each other (like the reference image)
+    // Top row: tables facing down
+    for (let i = 0; i < 5; i++) {
+      const table = createSingleTable(startNum + i, tableSize);
+      table.set({ left: i * (w + gap), top: 0 });
+      tables.push(table);
+    }
+
+    // Bottom row: tables facing up (mirrored), numbered 6-10
+    for (let i = 0; i < 5; i++) {
+      const table = createSingleTable(startNum + 5 + i, tableSize);
+      table.set({ left: i * (w + gap), top: h + 20 }); // 20px aisle between rows
+      tables.push(table);
+    }
+
+    // Outline around the pod
+    const podW = 5 * (w + gap) - gap;
+    const podH = 2 * h + 20;
+    const outline = new Rect({
+      left: -6,
+      top: -6,
+      width: podW + 12,
+      height: podH + 12,
+      fill: 'transparent',
+      stroke: '#bdbdbd',
+      strokeWidth: 1,
+      strokeDashArray: [4, 4],
+    });
+
+    const podGroup = new Group([outline, ...tables], {
+      left: 100,
+      top: 100,
+    });
+    (podGroup as any).objectType = 'table-pod';
+    fabricCanvas.add(podGroup);
+    fabricCanvas.setActiveObject(podGroup);
+    fabricCanvas.renderAll();
+  };
+
+  const createLabeledObject = (rect: Rect, label: string) => {
     const text = new FabricText(label, {
       fontSize: 14,
       fontFamily: 'Arial',
@@ -124,136 +210,60 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       originX: 'center',
       originY: 'center',
     });
-
-    const group = new Group([rect, text], {
-      left: 100,
-      top: 100,
-    });
-
-    return group;
+    return new Group([rect, text], { left: 100, top: 100 });
   };
 
-  const handleToolClick = (tool: typeof activeTool) => {
+  const handleToolClick = (tool: ToolType) => {
     setActiveTool(tool);
-
     if (!fabricCanvas) return;
 
+    if (tool === "table-row") {
+      addTableRow();
+      return;
+    }
+    if (tool === "table-pod") {
+      addTablePod();
+      return;
+    }
+
     if (tool === "room") {
-      const rect = new Rect({
-        left: 100,
-        top: 100,
-        width: 200,
-        height: 150,
-        fill: "#e3f2fd",
-        stroke: "#1976d2",
-        strokeWidth: WALL_THICKNESS,
-      });
+      const rect = new Rect({ left: 100, top: 100, width: 200, height: 150, fill: "#e3f2fd", stroke: "#1976d2", strokeWidth: WALL_THICKNESS });
       rect.set({ objectType: 'room' } as any);
       fabricCanvas.add(rect);
       fabricCanvas.sendObjectToBack(rect);
       fabricCanvas.setActiveObject(rect);
     } else if (tool === "wall") {
-      const rect = new Rect({
-        left: 100,
-        top: 100,
-        width: 200,
-        height: WALL_THICKNESS,
-        fill: "#424242",
-        stroke: "#424242",
-        strokeWidth: 0,
-      });
+      const rect = new Rect({ left: 100, top: 100, width: 200, height: WALL_THICKNESS, fill: "#424242", stroke: "#424242", strokeWidth: 0 });
       rect.set({ objectType: 'wall' } as any);
       fabricCanvas.add(rect);
       fabricCanvas.setActiveObject(rect);
     } else if (tool === "restroom") {
-      const rect = new Rect({
-        width: 80,
-        height: 80,
-        fill: "#f3e5f5",
-        stroke: "#7b1fa2",
-        strokeWidth: WALL_THICKNESS,
-        originX: 'center',
-        originY: 'center',
-      });
+      const rect = new Rect({ width: 80, height: 80, fill: "#f3e5f5", stroke: "#7b1fa2", strokeWidth: WALL_THICKNESS, originX: 'center', originY: 'center' });
       const group = createLabeledObject(rect, "Restroom");
       fabricCanvas.add(group);
       fabricCanvas.setActiveObject(group);
-    } else if (tool === "table") {
-      const tableNumber = getNextTableNumber();
-      const rect = new Rect({
-        width: 38,
-        height: 96,
-        fill: "#fff3e0",
-        stroke: "#f57c00",
-        strokeWidth: WALL_THICKNESS,
-        originX: 'center',
-        originY: 'center',
-      });
-      const group = createLabeledObject(rect, `Table ${tableNumber}`);
-      fabricCanvas.add(group);
-      fabricCanvas.setActiveObject(group);
     } else if (tool === "door") {
-      const rect = new Rect({
-        width: 80,
-        height: 20,
-        fill: "#e8f5e9",
-        stroke: "#388e3c",
-        strokeWidth: WALL_THICKNESS,
-        originX: 'center',
-        originY: 'center',
-      });
+      const rect = new Rect({ width: 80, height: 20, fill: "#e8f5e9", stroke: "#388e3c", strokeWidth: WALL_THICKNESS, originX: 'center', originY: 'center' });
       const group = createLabeledObject(rect, "Door");
       fabricCanvas.add(group);
       fabricCanvas.setActiveObject(group);
     } else if (tool === "counter") {
-      const rect = new Rect({
-        width: 150,
-        height: 60,
-        fill: "#fce4ec",
-        stroke: "#c2185b",
-        strokeWidth: WALL_THICKNESS,
-        originX: 'center',
-        originY: 'center',
-      });
+      const rect = new Rect({ width: 150, height: 60, fill: "#fce4ec", stroke: "#c2185b", strokeWidth: WALL_THICKNESS, originX: 'center', originY: 'center' });
       const group = createLabeledObject(rect, "Counter");
       fabricCanvas.add(group);
       fabricCanvas.setActiveObject(group);
     } else if (tool === "stage") {
-      const rect = new Rect({
-        width: 250,
-        height: 100,
-        fill: "#ede7f6",
-        stroke: "#512da8",
-        strokeWidth: WALL_THICKNESS,
-        originX: 'center',
-        originY: 'center',
-      });
+      const rect = new Rect({ width: 250, height: 100, fill: "#ede7f6", stroke: "#512da8", strokeWidth: WALL_THICKNESS, originX: 'center', originY: 'center' });
       const group = createLabeledObject(rect, "Stage");
       fabricCanvas.add(group);
       fabricCanvas.setActiveObject(group);
     } else if (tool === "food") {
-      const rect = new Rect({
-        width: 120,
-        height: 100,
-        fill: "#fff9c4",
-        stroke: "#f57f17",
-        strokeWidth: WALL_THICKNESS,
-        originX: 'center',
-        originY: 'center',
-      });
+      const rect = new Rect({ width: 120, height: 100, fill: "#fff9c4", stroke: "#f57f17", strokeWidth: WALL_THICKNESS, originX: 'center', originY: 'center' });
       const group = createLabeledObject(rect, "Food");
       fabricCanvas.add(group);
       fabricCanvas.setActiveObject(group);
     } else if (tool === "dining") {
-      const rect = new Rect({
-        width: 180,
-        height: 120,
-        fill: "#e0f2f1",
-        stroke: "#00897b",
-        strokeWidth: WALL_THICKNESS,
-        originX: 'center',
-        originY: 'center',
-      });
+      const rect = new Rect({ width: 180, height: 120, fill: "#e0f2f1", stroke: "#00897b", strokeWidth: WALL_THICKNESS, originX: 'center', originY: 'center' });
       const group = createLabeledObject(rect, "Dining");
       fabricCanvas.add(group);
       fabricCanvas.setActiveObject(group);
@@ -270,33 +280,23 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
 
   const handleDownload = () => {
     if (!fabricCanvas) return;
-    
-    const dataURL = fabricCanvas.toDataURL({
-      format: 'png',
-      quality: 1,
-      multiplier: 1,
-    });
-    
+    const dataURL = fabricCanvas.toDataURL({ format: 'png', quality: 1, multiplier: 2 });
     const link = document.createElement('a');
     link.download = `layout-${Date.now()}.png`;
     link.href = dataURL;
     link.click();
-    
     toast.success("Layout downloaded!");
   };
 
   const handleSaveJSON = () => {
     if (!fabricCanvas) return;
-    
     const json = JSON.stringify(fabricCanvas.toJSON());
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
     const link = document.createElement('a');
     link.download = `layout-${Date.now()}.json`;
     link.href = url;
     link.click();
-    
     URL.revokeObjectURL(url);
     toast.success("Layout saved!");
   };
@@ -305,11 +305,9 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
-    
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file || !fabricCanvas) return;
-      
       const reader = new FileReader();
       reader.onload = (event) => {
         const json = event.target?.result as string;
@@ -320,13 +318,11 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       };
       reader.readAsText(file);
     };
-    
     input.click();
   };
 
   const handleSaveToEvent = async () => {
     if (!fabricCanvas || !onSave) return;
-    
     setSaving(true);
     try {
       const json = fabricCanvas.toJSON();
@@ -343,124 +339,116 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
   return (
     <div className="space-y-4">
       {!readOnly && (
-        <Card className="p-4">
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              variant={activeTool === "select" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleToolClick("select")}
-            >
-              <Move className="h-4 w-4 mr-2" />
-              Select
-            </Button>
-            <Button
-              variant={activeTool === "room" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleToolClick("room")}
-              title="Room"
-            >
-              <Home className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={activeTool === "wall" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleToolClick("wall")}
-            >
-              <Box className="h-4 w-4 mr-2" />
-              Wall
-            </Button>
-            <Button
-              variant={activeTool === "restroom" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleToolClick("restroom")}
-            >
-              <Bath className="h-4 w-4 mr-2" />
-              Restroom
-            </Button>
-            <Button
-              variant={activeTool === "table" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleToolClick("table")}
-            >
-              <Table className="h-4 w-4 mr-2" />
-              Table
-            </Button>
-            <Button
-              variant={activeTool === "door" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleToolClick("door")}
-            >
-              <DoorOpen className="h-4 w-4 mr-2" />
-              Door
-            </Button>
-            <Button
-              variant={activeTool === "counter" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleToolClick("counter")}
-            >
-              <Cuboid className="h-4 w-4 mr-2" />
-              Counter
-            </Button>
-            <Button
-              variant={activeTool === "stage" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleToolClick("stage")}
-            >
-              <Presentation className="h-4 w-4 mr-2" />
-              Stage
-            </Button>
-            <Button
-              variant={activeTool === "food" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleToolClick("food")}
-            >
-              <UtensilsCrossed className="h-4 w-4 mr-2" />
-              Food
-            </Button>
-            <Button
-              variant={activeTool === "dining" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleToolClick("dining")}
-            >
-              <Utensils className="h-4 w-4 mr-2" />
-              Dining
-            </Button>
-            
-            <div className="border-l border-border mx-2" />
-            
-            <Button variant="outline" size="sm" onClick={handleClear}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Clear
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleDownload}>
-              <Download className="h-4 w-4 mr-2" />
-              Download PNG
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleSaveJSON}>
-              <Download className="h-4 w-4 mr-2" />
-              Save
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleLoadJSON}>
-              <Upload className="h-4 w-4 mr-2" />
-              Load
-            </Button>
-            
-            {eventId && onSave && (
-              <>
-                <div className="border-l border-border mx-2" />
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  onClick={handleSaveToEvent}
-                  disabled={saving}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? "Saving..." : "Save to Event"}
-                </Button>
-              </>
-            )}
-          </div>
-        </Card>
+        <>
+          {/* Table configuration bar */}
+          <Card className="p-4">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium whitespace-nowrap">Table Size:</Label>
+                <Select value={tableSize} onValueChange={(v) => setTableSize(v as TableSize)}>
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6ft">6 ft</SelectItem>
+                    <SelectItem value="8ft">8 ft</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium whitespace-nowrap">Row Count:</Label>
+                <Select value={String(rowCount)} onValueChange={(v) => setRowCount(Number(v))}>
+                  <SelectTrigger className="w-[80px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="border-l border-border h-8 mx-1" />
+
+              <Button
+                variant={activeTool === "table-row" ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleToolClick("table-row")}
+              >
+                <Rows3 className="h-4 w-4 mr-2" />
+                Add Row
+              </Button>
+              <Button
+                variant={activeTool === "table-pod" ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleToolClick("table-pod")}
+              >
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                Add Pod (10)
+              </Button>
+            </div>
+          </Card>
+
+          {/* Tools bar */}
+          <Card className="p-4">
+            <div className="flex gap-2 flex-wrap">
+              <Button variant={activeTool === "select" ? "default" : "outline"} size="sm" onClick={() => handleToolClick("select")}>
+                <Move className="h-4 w-4 mr-2" />Select
+              </Button>
+              <Button variant={activeTool === "room" ? "default" : "outline"} size="sm" onClick={() => handleToolClick("room")} title="Room">
+                <Home className="h-4 w-4" />
+              </Button>
+              <Button variant={activeTool === "wall" ? "default" : "outline"} size="sm" onClick={() => handleToolClick("wall")}>
+                <Box className="h-4 w-4 mr-2" />Wall
+              </Button>
+              <Button variant={activeTool === "restroom" ? "default" : "outline"} size="sm" onClick={() => handleToolClick("restroom")}>
+                <Bath className="h-4 w-4 mr-2" />Restroom
+              </Button>
+              <Button variant={activeTool === "door" ? "default" : "outline"} size="sm" onClick={() => handleToolClick("door")}>
+                <DoorOpen className="h-4 w-4 mr-2" />Door
+              </Button>
+              <Button variant={activeTool === "counter" ? "default" : "outline"} size="sm" onClick={() => handleToolClick("counter")}>
+                <Cuboid className="h-4 w-4 mr-2" />Counter
+              </Button>
+              <Button variant={activeTool === "stage" ? "default" : "outline"} size="sm" onClick={() => handleToolClick("stage")}>
+                <Presentation className="h-4 w-4 mr-2" />Stage
+              </Button>
+              <Button variant={activeTool === "food" ? "default" : "outline"} size="sm" onClick={() => handleToolClick("food")}>
+                <UtensilsCrossed className="h-4 w-4 mr-2" />Food
+              </Button>
+              <Button variant={activeTool === "dining" ? "default" : "outline"} size="sm" onClick={() => handleToolClick("dining")}>
+                <Utensils className="h-4 w-4 mr-2" />Dining
+              </Button>
+
+              <div className="border-l border-border mx-2" />
+
+              <Button variant="outline" size="sm" onClick={handleClear}>
+                <Trash2 className="h-4 w-4 mr-2" />Clear
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleDownload}>
+                <Download className="h-4 w-4 mr-2" />Download PNG
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleSaveJSON}>
+                <Download className="h-4 w-4 mr-2" />Save
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleLoadJSON}>
+                <Upload className="h-4 w-4 mr-2" />Load
+              </Button>
+
+              {eventId && onSave && (
+                <>
+                  <div className="border-l border-border mx-2" />
+                  <Button variant="default" size="sm" onClick={handleSaveToEvent} disabled={saving}>
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? "Saving..." : "Save to Event"}
+                  </Button>
+                </>
+              )}
+            </div>
+          </Card>
+        </>
       )}
 
       <div className={readOnly ? "" : "p-4"}>
@@ -468,6 +456,17 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
           <canvas ref={canvasRef} />
         </div>
       </div>
+
+      {!readOnly && (
+        <Card className="p-4">
+          <div className="flex gap-6 text-xs text-muted-foreground">
+            <div><span className="font-medium">Pod:</span> 2 rows × 5 tables (10 total), facing each other</div>
+            <div><span className="font-medium">Row:</span> Single line of tables, configurable count</div>
+            <div><span className="font-medium">6ft table:</span> 6' × 30"</div>
+            <div><span className="font-medium">8ft table:</span> 8' × 30"</div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 };
