@@ -383,7 +383,7 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
             </div>
           </div>
 
-          {items.length > 0 && (
+          {items.length > 0 && !items.some(i => DEFAULT_CHECKLIST_ITEMS.includes(i.title)) && (
             <div className="pt-2">
               <Button variant="outline" size="sm" onClick={loadDefaults}>
                 <Sparkles className="h-4 w-4 mr-2" />
