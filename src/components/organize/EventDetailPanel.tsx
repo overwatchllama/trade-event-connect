@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { format, parseISO } from "date-fns";
 import {
-  MapPin,
   ChevronRight,
   Settings,
   BarChart3,
@@ -16,15 +18,21 @@ import {
   Wrench,
   ListChecks,
   ClipboardCheck,
+  Upload,
+  Loader2,
+  Image,
+  Map,
+  FileText,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { EventDashboard } from "@/components/EventDashboard";
 import { AttendeeManagement } from "@/components/AttendeeManagement";
 import ManageVendorsDialog from "@/components/ManageVendorsDialog";
 import ManageSponsorsDialog from "@/components/ManageSponsorsDialog";
-import { EventFileManager } from "@/components/EventFileManager";
 import { DayOfChecklist } from "@/components/DayOfChecklist";
-import { PostEventSummary } from "@/components/PostEventSummary";
+import { LayoutDrawingTool } from "@/components/LayoutDrawingTool";
 import EventCheckInDialog from "@/components/organize/EventCheckInDialog";
 
 interface EventDetailPanelProps {
@@ -55,6 +63,62 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
   const [sponsorsDialogOpen, setSponsorsDialogOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const [flyerDialogOpen, setFlyerDialogOpen] = useState(false);
+  const [floorPlanDialogOpen, setFloorPlanDialogOpen] = useState(false);
+  const [vendorNotesDialogOpen, setVendorNotesDialogOpen] = useState(false);
+  const [flyerFile, setFlyerFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [currentFlyerUrl, setCurrentFlyerUrl] = useState(event.flyer_url);
+  const [vendorNotes, setVendorNotes] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [loadingNotes, setLoadingNotes] = useState(false);
+
+  const handleFlyerUpload = async () => {
+    if (!flyerFile) return;
+    setUploading(true);
+    try {
+      const fileExt = flyerFile.name.split('.').pop();
+      const fileName = `${event.id}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('event-flyers').upload(fileName, flyerFile);
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('event-flyers').getPublicUrl(fileName);
+      const { error: updateError } = await supabase.from('events').update({ flyer_url: publicUrl }).eq('id', event.id);
+      if (updateError) throw updateError;
+      setCurrentFlyerUrl(publicUrl);
+      setFlyerFile(null);
+      toast.success('Flyer uploaded!');
+    } catch {
+      toast.error('Failed to upload flyer');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const openVendorNotes = async () => {
+    setVendorNotesDialogOpen(true);
+    setLoadingNotes(true);
+    try {
+      const { data } = await supabase.from('events').select('vendor_notes').eq('id', event.id).single();
+      setVendorNotes(data?.vendor_notes || "");
+    } catch {
+      setVendorNotes("");
+    } finally {
+      setLoadingNotes(false);
+    }
+  };
+
+  const handleSaveVendorNotes = async () => {
+    setSavingNotes(true);
+    try {
+      const { error } = await supabase.from('events').update({ vendor_notes: vendorNotes }).eq('id', event.id);
+      if (error) throw error;
+      toast.success('Vendor instructions saved!');
+    } catch {
+      toast.error('Failed to save vendor instructions');
+    } finally {
+      setSavingNotes(false);
+    }
+  };
 
   return (
     <Card className="mt-6">
@@ -216,38 +280,36 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
                     <CardDescription>Track event day tasks</CardDescription>
                   </CardHeader>
                 </Card>
-                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/manage-event/${event.id}?tab=summary`)}>
+                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setFlyerDialogOpen(true)}>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Post-Event Summary</CardTitle>
-                    <CardDescription>Review event performance</CardDescription>
-                  </CardHeader>
-                </Card>
-                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/manage-event/${event.id}?tab=flyer`)}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Event Flyer</CardTitle>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Image className="h-4 w-4" />
+                      Event Flyer
+                    </CardTitle>
                     <CardDescription>Upload or update flyer</CardDescription>
                   </CardHeader>
                 </Card>
-                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/manage-event/${event.id}?tab=layout`)}>
+                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setFloorPlanDialogOpen(true)}>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Floor Plan</CardTitle>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Map className="h-4 w-4" />
+                      Floor Plan
+                    </CardTitle>
                     <CardDescription>Design your venue layout</CardDescription>
                   </CardHeader>
                 </Card>
-                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/manage-event/${event.id}?tab=vendor-notes`)}>
+                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={openVendorNotes}>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Vendor Notes</CardTitle>
-                    <CardDescription>Instructions for vendors</CardDescription>
-                  </CardHeader>
-                </Card>
-                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/manage-event/${event.id}?tab=files`)}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Files & Documents</CardTitle>
-                    <CardDescription>Manage event files</CardDescription>
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Vendor Instructions
+                    </CardTitle>
+                    <CardDescription>Add notes for vendors</CardDescription>
                   </CardHeader>
                 </Card>
               </div>
 
+              {/* Day-of Checklist Dialog */}
               <Dialog open={checklistOpen} onOpenChange={setChecklistOpen}>
                 <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                   <DialogHeader>
@@ -256,6 +318,79 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
                   <DayOfChecklist eventId={event.id} />
                 </DialogContent>
               </Dialog>
+
+              {/* Flyer Dialog */}
+              <Dialog open={flyerDialogOpen} onOpenChange={setFlyerDialogOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Event Flyer</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    {currentFlyerUrl && (
+                      <div className="rounded-lg overflow-hidden border">
+                        <img src={currentFlyerUrl} alt="Event flyer" className="w-full object-contain max-h-64" />
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <Label>Upload new flyer</Label>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setFlyerFile(e.target.files?.[0] || null)}
+                      />
+                    </div>
+                    <Button onClick={handleFlyerUpload} disabled={!flyerFile || uploading} className="w-full">
+                      {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                      {uploading ? "Uploading..." : "Upload Flyer"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Floor Plan Dialog */}
+              <Dialog open={floorPlanDialogOpen} onOpenChange={setFloorPlanDialogOpen}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Floor Plan</DialogTitle>
+                  </DialogHeader>
+                  <LayoutDrawingTool
+                    eventId={event.id}
+                    initialLayout={null}
+                    onSave={async (layoutJson) => {
+                      await supabase.from('events').update({ layout_json: layoutJson }).eq('id', event.id);
+                      toast.success('Floor plan saved!');
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
+
+              {/* Vendor Instructions Dialog */}
+              <Dialog open={vendorNotesDialogOpen} onOpenChange={setVendorNotesDialogOpen}>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Vendor Instructions</DialogTitle>
+                  </DialogHeader>
+                  {loadingNotes ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <Textarea
+                        placeholder="Enter instructions for vendors (e.g., load-in times, parking, setup rules)..."
+                        value={vendorNotes}
+                        onChange={(e) => setVendorNotes(e.target.value)}
+                        rows={6}
+                      />
+                      <Button onClick={handleSaveVendorNotes} disabled={savingNotes} className="w-full">
+                        {savingNotes ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                        {savingNotes ? "Saving..." : "Save Instructions"}
+                      </Button>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+
               <div className="pt-2">
                 <Button onClick={() => navigate(`/manage-event/${event.id}`)}>
                   <Settings className="h-4 w-4 mr-2" />
