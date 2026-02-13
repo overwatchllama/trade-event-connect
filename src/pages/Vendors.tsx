@@ -515,11 +515,9 @@ const Vendors = () => {
 
         {/* Conditional tabs based on user type */}
         {user ? (
-          <Tabs defaultValue={hasVendorRole ? "others" : (isOrganizer ? "event-vendors" : "all")} className="w-full">
+          <Tabs defaultValue={hasVendorRole ? "others" : "all"} className="w-full">
             <TabsList className={`grid w-full ${
-              isOrganizer ? (hasVendorRole ? 'grid-cols-5' : 'grid-cols-4') :
-              hasVendorRole ? 'grid-cols-3' : 
-              'grid-cols-2'
+              hasVendorRole ? 'grid-cols-3' : 'grid-cols-2'
             }`}>
               {hasVendorRole && (
                 <TabsTrigger value="profile">My Vendor Profile</TabsTrigger>
@@ -527,25 +525,10 @@ const Vendors = () => {
               <TabsTrigger value={hasVendorRole ? "others" : "all"}>
                 {hasVendorRole ? "Other Vendors" : "All Vendors"}
               </TabsTrigger>
-              {isOrganizer ? (
-                <>
-                  <TabsTrigger value="event-vendors" className="gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Manage Vendors
-                  </TabsTrigger>
-                  <TabsTrigger value="manage-sponsors" className="gap-2">
-                    Manage Sponsors
-                  </TabsTrigger>
-                  <TabsTrigger value="manage-staff" className="gap-2">
-                    Manage Staff
-                  </TabsTrigger>
-                </>
-              ) : (
-                <TabsTrigger value="favorites" className="gap-2">
-                  <Heart className="w-4 h-4" />
-                  Favorites ({favoriteVendors.length})
-                </TabsTrigger>
-              )}
+              <TabsTrigger value="favorites" className="gap-2">
+                <Heart className="w-4 h-4" />
+                Favorites ({favoriteVendors.length})
+              </TabsTrigger>
             </TabsList>
             
             {hasVendorRole && (
@@ -790,69 +773,32 @@ const Vendors = () => {
               )}
             </TabsContent>
             
-            {/* Favorites Tab - Non-organizers only */}
-            {!isOrganizer && (
-              <TabsContent value="favorites">
-                {favoriteVendors.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-foreground mb-2">No Favorite Vendors</h3>
-                    <p className="text-muted-foreground">Click the heart icon on vendor cards to add them to your favorites.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {favoriteVendors.map((vendor) => (
-                      <VendorGridCard 
-                        key={vendor.id} 
-                        vendor={vendor} 
-                        getInitials={getInitials}
-                        currentUserId={user?.id}
-                        isFavorite={true}
-                        onToggleFavorite={handleToggleFavorite}
-                        isOrganizer={isOrganizer}
-                        isVendor={isVendor}
-                        onInviteClick={handleInviteVendor}
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            )}
-
-            {/* Event Vendors Tab - Organizers Only */}
-            {isOrganizer && (
-              <TabsContent value="event-vendors">
-                <EventVendorsOverview 
-                  eventVendors={eventVendors}
-                  organizerNotes={organizerNotes}
-                  getVendorNotesBadges={getVendorNotesBadges}
-                  getInitials={getInitials}
-                  onOpenVendorNotes={handleOpenVendorNotes}
-                />
-              </TabsContent>
-            )}
-
-            {/* Manage Sponsors Tab - Organizers Only */}
-            {isOrganizer && (
-              <TabsContent value="manage-sponsors">
+            {/* Favorites Tab */}
+            <TabsContent value="favorites">
+              {favoriteVendors.length === 0 ? (
                 <div className="text-center py-12">
-                  <Store className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-foreground mb-2">Manage Sponsors</h3>
-                  <p className="text-muted-foreground">View and manage sponsor applications across your events.</p>
+                  <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">No Favorite Vendors</h3>
+                  <p className="text-muted-foreground">Click the heart icon on vendor cards to add them to your favorites.</p>
                 </div>
-              </TabsContent>
-            )}
-
-            {/* Manage Staff Tab - Organizers Only */}
-            {isOrganizer && (
-              <TabsContent value="manage-staff">
-                <div className="text-center py-12">
-                  <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-foreground mb-2">Manage Staff</h3>
-                  <p className="text-muted-foreground">View and manage staff assignments across your events.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {favoriteVendors.map((vendor) => (
+                    <VendorGridCard 
+                      key={vendor.id} 
+                      vendor={vendor} 
+                      getInitials={getInitials}
+                      currentUserId={user?.id}
+                      isFavorite={true}
+                      onToggleFavorite={handleToggleFavorite}
+                      isOrganizer={isOrganizer}
+                      isVendor={isVendor}
+                      onInviteClick={handleInviteVendor}
+                    />
+                  ))}
                 </div>
-              </TabsContent>
-            )}
+              )}
+            </TabsContent>
           </Tabs>
         ) : (
           /* Search and Filters for non-logged-in users */

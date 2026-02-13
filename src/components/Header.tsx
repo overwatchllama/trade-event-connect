@@ -78,25 +78,14 @@ const Header = () => {
             >
               Events
             </Link>
-            {isOrganizer ? (
-              <Link 
-                to="/vendors?tab=event-vendors" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === '/vendors' ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                Manage Vendors
-              </Link>
-            ) : (
-              <Link 
-                to="/vendors" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === '/vendors' ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                Vendors
-              </Link>
-            )}
+            <Link 
+              to="/vendors" 
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === '/vendors' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              Vendors
+            </Link>
             {!isOrganizer && (
               <Link 
                 to="/my-collection" 

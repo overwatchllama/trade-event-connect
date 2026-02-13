@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -15,13 +16,18 @@ import {
   CalendarIcon,
   MapPin,
   Plus,
+  Store,
+  Users,
+  Award,
 } from "lucide-react";
 import { format, parseISO, isBefore, startOfDay, isSameDay, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import CreateEventDialog from "@/components/CreateEventDialog";
 import EventDetailPanel from "@/components/organize/EventDetailPanel";
+import { EventVendorsOverview } from "@/components/vendor-management/EventVendorsOverview";
+import { OrganizerVendorNotes } from "@/components/OrganizerVendorNotes";
 
 interface HostedEvent {
   id: string;
@@ -46,11 +52,22 @@ interface HostedEvent {
 const HostingDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [events, setEvents] = useState<HostedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [vendorNotesDialogOpen, setVendorNotesDialogOpen] = useState(false);
+  const [selectedVendorForNotes, setSelectedVendorForNotes] = useState<{ id: string; name: string } | null>(null);
+  const [organizerNotes, setOrganizerNotes] = useState<Map<string, {
+    is_favorite: boolean;
+    is_blacklisted: boolean;
+    private_rating: number | null;
+    custom_list: string | null;
+  }>>(new Map());
+
+  const defaultTab = searchParams.get('tab') || 'calendar';
 
   const fetchHostedEvents = useCallback(async () => {
     if (!user) return;
@@ -112,7 +129,62 @@ const HostingDashboard = () => {
   useEffect(() => {
     if (!user) return;
     fetchHostedEvents();
+    fetchOrganizerNotes();
   }, [user, fetchHostedEvents]);
+
+  const fetchOrganizerNotes = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('organizer_vendor_notes')
+        .select('vendor_id, is_favorite, is_blacklisted, private_rating, custom_list')
+        .eq('organizer_id', user.id);
+      if (error) throw error;
+      const notesMap = new Map<string, { is_favorite: boolean; is_blacklisted: boolean; private_rating: number | null; custom_list: string | null }>();
+      data?.forEach((note) => {
+        notesMap.set(note.vendor_id, {
+          is_favorite: note.is_favorite || false,
+          is_blacklisted: note.is_blacklisted || false,
+          private_rating: note.private_rating,
+          custom_list: note.custom_list,
+        });
+      });
+      setOrganizerNotes(notesMap);
+    } catch (error) {
+      console.error('Error fetching organizer notes:', error);
+    }
+  };
+
+  const handleOpenVendorNotes = (vendorId: string, vendorName: string) => {
+    setSelectedVendorForNotes({ id: vendorId, name: vendorName });
+    setVendorNotesDialogOpen(true);
+  };
+
+  const getVendorNotesBadges = (vendorId: string) => {
+    const notes = organizerNotes.get(vendorId);
+    if (!notes) return null;
+    return (
+      <div className="flex gap-1 flex-wrap mt-1">
+        {notes.is_favorite && (
+          <Badge className="bg-accent text-accent-foreground text-xs py-0">♥ Fav</Badge>
+        )}
+        {notes.is_blacklisted && (
+          <Badge variant="destructive" className="text-xs py-0">Blocked</Badge>
+        )}
+        {notes.private_rating && (
+          <Badge variant="secondary" className="text-xs py-0">★ {notes.private_rating}</Badge>
+        )}
+        {notes.custom_list && (
+          <Badge variant="outline" className="text-xs py-0">{notes.custom_list}</Badge>
+        )}
+      </div>
+    );
+  };
+
+  const getInitials = (name: string | null) => {
+    if (!name) return 'V';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
 
   const today = useMemo(() => startOfDay(new Date()), []);
 
@@ -174,17 +246,16 @@ const HostingDashboard = () => {
 
   return (
     <div className="space-y-0">
-      {/* Calendar Section */}
       <section className="py-8 bg-muted/30">
         <div className="container mx-auto px-4">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="text-center flex-1">
               <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
-                My Calendar
+                Organize
               </h2>
               <p className="text-muted-foreground text-sm">
-                Your event schedule
+                Manage your events, vendors, sponsors, and staff
               </p>
             </div>
             <Button onClick={() => setCreateDialogOpen(true)} size="sm">
@@ -192,6 +263,28 @@ const HostingDashboard = () => {
               Create Event
             </Button>
           </div>
+
+          <Tabs defaultValue={defaultTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="calendar" className="gap-2">
+                <CalendarIcon className="w-4 h-4" />
+                Calendar
+              </TabsTrigger>
+              <TabsTrigger value="manage-vendors" className="gap-2">
+                <Store className="w-4 h-4" />
+                Manage Vendors
+              </TabsTrigger>
+              <TabsTrigger value="manage-sponsors" className="gap-2">
+                <Award className="w-4 h-4" />
+                Manage Sponsors
+              </TabsTrigger>
+              <TabsTrigger value="manage-staff" className="gap-2">
+                <Users className="w-4 h-4" />
+                Manage Staff
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="calendar" className="mt-6">
 
           {loading ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -355,8 +448,48 @@ const HostingDashboard = () => {
 
           {/* Selected event detail panel */}
           {selectedEvent && <EventDetailPanel event={selectedEvent} />}
+            </TabsContent>
+
+            <TabsContent value="manage-vendors" className="mt-6">
+              <EventVendorsOverview
+                eventVendors={{ approved: [], pending: [], rejected: [] }}
+                organizerNotes={organizerNotes}
+                getVendorNotesBadges={getVendorNotesBadges}
+                getInitials={getInitials}
+                onOpenVendorNotes={handleOpenVendorNotes}
+              />
+            </TabsContent>
+
+            <TabsContent value="manage-sponsors" className="mt-6">
+              <div className="text-center py-12">
+                <Award className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">Manage Sponsors</h3>
+                <p className="text-muted-foreground">View and manage sponsor applications across your events.</p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="manage-staff" className="mt-6">
+              <div className="text-center py-12">
+                <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-foreground mb-2">Manage Staff</h3>
+                <p className="text-muted-foreground">View and manage staff assignments across your events.</p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </section>
+
+      {vendorNotesDialogOpen && selectedVendorForNotes && (
+        <OrganizerVendorNotes
+          vendorId={selectedVendorForNotes.id}
+          vendorName={selectedVendorForNotes.name}
+          open={vendorNotesDialogOpen}
+          onOpenChange={(open) => {
+            setVendorNotesDialogOpen(open);
+            if (!open) fetchOrganizerNotes();
+          }}
+        />
+      )}
 
       <CreateEventDialog
         open={createDialogOpen}
