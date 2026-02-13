@@ -22,10 +22,12 @@ interface EventWithVendors {
   id: string;
   title: string;
   date: string;
+  total_tables: number | null;
   vendors: {
     vendor: VendorProfile;
     applicationStatus: string;
     paymentStatus: string;
+    approvedTables: number | null;
   }[];
 }
 
@@ -61,7 +63,7 @@ export const EventVendorsOverview = ({
     try {
       const { data: myEvents } = await supabase
         .from('events')
-        .select('id, title, date')
+        .select('id, title, date, total_tables')
         .eq('organizer_id', user.id)
         .order('date', { ascending: false });
 
@@ -75,7 +77,7 @@ export const EventVendorsOverview = ({
 
       const { data: applications } = await supabase
         .from('vendor_applications')
-        .select('event_id, vendor_id, application_status, payment_status')
+        .select('event_id, vendor_id, application_status, payment_status, approved_tables')
         .in('event_id', eventIds);
 
       const vendorIds = [...new Set(applications?.map(a => a.vendor_id) || [])];
@@ -117,6 +119,7 @@ export const EventVendorsOverview = ({
                 vendor,
                 applicationStatus: app.application_status,
                 paymentStatus: app.payment_status,
+                approvedTables: app.approved_tables,
               };
             })
             .filter(Boolean) as EventWithVendors['vendors'],
@@ -192,7 +195,9 @@ export const EventVendorsOverview = ({
       {events.map(event => {
         const isExpanded = expandedEvents.has(event.id);
         const counts = getStatusCounts(event.vendors);
-
+        const tablesPurchased = event.vendors
+          .filter(v => v.applicationStatus === 'approved' && v.paymentStatus === 'paid')
+          .reduce((sum, v) => sum + (v.approvedTables || 0), 0);
         return (
           <Collapsible key={event.id} open={isExpanded} onOpenChange={() => toggleEvent(event.id)}>
             <Card>
@@ -207,6 +212,11 @@ export const EventVendorsOverview = ({
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      {event.total_tables != null && (
+                        <Badge variant="outline" className="gap-1">
+                          {tablesPurchased}/{event.total_tables} tables
+                        </Badge>
+                      )}
                       <Badge variant="outline" className="gap-1">
                         <Users className="w-3 h-3" />
                         {counts.total} vendor{counts.total !== 1 ? 's' : ''}
