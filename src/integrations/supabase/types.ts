@@ -200,6 +200,7 @@ export type Database = {
       }
       event_checklist_items: {
         Row: {
+          assigned_to: string | null
           completed_at: string | null
           completed_by: string | null
           created_at: string
@@ -211,6 +212,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_to?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
@@ -222,6 +224,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_to?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string

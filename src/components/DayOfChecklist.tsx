@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Trash2, ListChecks, Sparkles } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, Plus, Trash2, ListChecks, Sparkles, UserCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -19,6 +20,12 @@ interface ChecklistItem {
   is_completed: boolean;
   completed_at: string | null;
   sort_order: number;
+  assigned_to: string | null;
+}
+
+interface StaffMember {
+  id: string;
+  name: string;
 }
 
 const DEFAULT_CHECKLIST_ITEMS = [
@@ -42,16 +49,18 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
   const [loading, setLoading] = useState(true);
   const [newItemTitle, setNewItemTitle] = useState('');
   const [adding, setAdding] = useState(false);
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
 
   useEffect(() => {
     fetchItems();
+    fetchStaff();
   }, [eventId]);
 
   const fetchItems = async () => {
     try {
       const { data, error } = await supabase
         .from('event_checklist_items')
-        .select('id, title, is_completed, completed_at, sort_order')
+        .select('id, title, is_completed, completed_at, sort_order, assigned_to')
         .eq('event_id', eventId)
         .order('sort_order', { ascending: true });
 
@@ -61,6 +70,64 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
       console.error('Error fetching checklist:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStaff = async () => {
+    try {
+      // Get the event's organizer to find their vendor, then employees
+      const { data: event } = await supabase
+        .from('events')
+        .select('organizer_id')
+        .eq('id', eventId)
+        .single();
+
+      if (!event) return;
+
+      // Get vendor employees assigned to this event
+      const { data: assignments } = await supabase
+        .from('vendor_employee_events')
+        .select('employee_id')
+        .eq('event_id', eventId);
+
+      if (!assignments?.length) {
+        // Fallback: get the organizer as the only staff member
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .eq('id', event.organizer_id)
+          .single();
+
+        if (profile) {
+          setStaffMembers([{ id: profile.id, name: profile.full_name || profile.email }]);
+        }
+        return;
+      }
+
+      const employeeIds = assignments.map(a => a.employee_id);
+      const { data: employees } = await supabase
+        .from('vendor_employees')
+        .select('user_id')
+        .in('id', employeeIds)
+        .not('user_id', 'is', null);
+
+      if (!employees?.length) return;
+
+      const userIds = employees.map(e => e.user_id).filter(Boolean) as string[];
+      
+      // Include organizer
+      const allIds = [...new Set([event.organizer_id, ...userIds])];
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', allIds);
+
+      if (profiles) {
+        setStaffMembers(profiles.map(p => ({ id: p.id, name: p.full_name || p.email })));
+      }
+    } catch (error) {
+      console.error('Error fetching staff:', error);
     }
   };
 
@@ -75,7 +142,7 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
           title: newItemTitle.trim(),
           sort_order: items.length,
         })
-        .select('id, title, is_completed, completed_at, sort_order')
+        .select('id, title, is_completed, completed_at, sort_order, assigned_to')
         .single();
 
       if (error) throw error;
@@ -91,7 +158,6 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
 
   const toggleItem = async (item: ChecklistItem) => {
     const newCompleted = !item.is_completed;
-    // Optimistic update
     setItems(prev => prev.map(i =>
       i.id === item.id
         ? { ...i, is_completed: newCompleted, completed_at: newCompleted ? new Date().toISOString() : null }
@@ -108,9 +174,24 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
       .eq('id', item.id);
 
     if (error) {
-      // Revert
       setItems(prev => prev.map(i => i.id === item.id ? item : i));
       toast.error('Failed to update item');
+    }
+  };
+
+  const assignItem = async (itemId: string, userId: string | null) => {
+    setItems(prev => prev.map(i =>
+      i.id === itemId ? { ...i, assigned_to: userId } : i
+    ));
+
+    const { error } = await supabase
+      .from('event_checklist_items')
+      .update({ assigned_to: userId })
+      .eq('id', itemId);
+
+    if (error) {
+      fetchItems();
+      toast.error('Failed to assign item');
     }
   };
 
@@ -140,7 +221,7 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
       const { data, error } = await supabase
         .from('event_checklist_items')
         .insert(inserts)
-        .select('id, title, is_completed, completed_at, sort_order');
+        .select('id, title, is_completed, completed_at, sort_order, assigned_to');
 
       if (error) throw error;
       setItems([...items, ...(data || [])]);
@@ -150,6 +231,12 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
       toast.error('Failed to load defaults');
     }
   };
+
+  const staffMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    staffMembers.forEach(s => { map[s.id] = s.name; });
+    return map;
+  }, [staffMembers]);
 
   const completedCount = items.filter(i => i.is_completed).length;
   const progress = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0;
@@ -193,7 +280,7 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
         <CardHeader>
           <CardTitle>Checklist Items</CardTitle>
           <CardDescription>
-            Track your event day tasks. Check items off as you complete them.
+            Track your event day tasks. Check items off and assign them to staff.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -220,6 +307,30 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
                 <span className={`flex-1 text-sm ${item.is_completed ? 'line-through text-muted-foreground' : ''}`}>
                   {item.title}
                 </span>
+
+                {/* Staff assignment */}
+                <Select
+                  value={item.assigned_to || 'unassigned'}
+                  onValueChange={(val) => assignItem(item.id, val === 'unassigned' ? null : val)}
+                >
+                  <SelectTrigger className="w-[140px] h-8 text-xs">
+                    <div className="flex items-center gap-1 truncate">
+                      <UserCircle className="h-3 w-3 shrink-0" />
+                      <span className="truncate">
+                        {item.assigned_to ? (staffMap[item.assigned_to] || 'Assigned') : 'Unassigned'}
+                      </span>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {staffMembers.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
                 <Button
                   variant="ghost"
                   size="sm"
