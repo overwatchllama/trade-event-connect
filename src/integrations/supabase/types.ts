@@ -425,6 +425,60 @@ export type Database = {
           },
         ]
       }
+      event_staff_assignments: {
+        Row: {
+          assigned_email: string | null
+          assigned_name: string
+          assigned_phone: string | null
+          created_at: string
+          event_id: string
+          id: string
+          notes: string | null
+          staff_role_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_email?: string | null
+          assigned_name: string
+          assigned_phone?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          notes?: string | null
+          staff_role_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_email?: string | null
+          assigned_name?: string
+          assigned_phone?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          notes?: string | null
+          staff_role_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_staff_assignments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_staff_assignments_staff_role_id_fkey"
+            columns: ["staff_role_id"]
+            isOneToOne: false
+            referencedRelation: "event_staff_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_staff_roles: {
         Row: {
           created_at: string
