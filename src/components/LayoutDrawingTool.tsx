@@ -291,13 +291,13 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     }
 
     if (tool === "room") {
-      const rect = new Rect({ left: 100, top: 100, width: 200, height: 150, fill: "#e3f2fd", stroke: "#1976d2", strokeWidth: WALL_THICKNESS });
+      const rect = new Rect({ left: 100, top: 100, width: 200, height: 150, fill: "#e3f2fd", stroke: "#000000", strokeWidth: WALL_THICKNESS, strokeUniform: true });
       rect.set({ objectType: 'room' } as any);
       fabricCanvas.add(rect);
       fabricCanvas.sendObjectToBack(rect);
       fabricCanvas.setActiveObject(rect);
     } else if (tool === "wall") {
-      const rect = new Rect({ left: 100, top: 100, width: 200, height: WALL_THICKNESS, fill: "#424242", stroke: "#424242", strokeWidth: 0 });
+      const rect = new Rect({ left: 100, top: 100, width: 200, height: WALL_THICKNESS, fill: "#000000", stroke: "#000000", strokeWidth: 0, strokeUniform: true });
       rect.set({ objectType: 'wall' } as any);
       fabricCanvas.add(rect);
       fabricCanvas.setActiveObject(rect);
