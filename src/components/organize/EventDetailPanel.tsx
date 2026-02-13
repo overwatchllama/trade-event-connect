@@ -15,6 +15,7 @@ import {
   UserCog,
   Wrench,
   ListChecks,
+  ClipboardCheck,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EventDashboard } from "@/components/EventDashboard";
@@ -24,6 +25,7 @@ import ManageSponsorsDialog from "@/components/ManageSponsorsDialog";
 import { EventFileManager } from "@/components/EventFileManager";
 import { DayOfChecklist } from "@/components/DayOfChecklist";
 import { PostEventSummary } from "@/components/PostEventSummary";
+import EventCheckInDialog from "@/components/organize/EventCheckInDialog";
 
 interface EventDetailPanelProps {
   event: {
@@ -52,6 +54,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
   const [vendorsDialogOpen, setVendorsDialogOpen] = useState(false);
   const [sponsorsDialogOpen, setSponsorsDialogOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
+  const [checkInOpen, setCheckInOpen] = useState(false);
 
   return (
     <Card className="mt-6">
@@ -64,14 +67,24 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
               {event.venue}, {event.city}, {event.state}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/event/${event.id}`)}
-          >
-            View Page
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCheckInOpen(true)}
+            >
+              <ClipboardCheck className="h-4 w-4 mr-1" />
+              Check-ins
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/event/${event.id}`)}
+            >
+              View Page
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -263,6 +276,13 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
           ))}
         </div>
       </CardContent>
+
+      <EventCheckInDialog
+        open={checkInOpen}
+        onOpenChange={setCheckInOpen}
+        eventId={event.id}
+        eventTitle={event.title}
+      />
     </Card>
   );
 };
