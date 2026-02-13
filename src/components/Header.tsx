@@ -103,7 +103,7 @@ const Header = () => {
                   location.pathname === '/organize' ? 'text-primary' : 'text-muted-foreground'
                 }`}
               >
-                Organize
+                Organize Events
               </Link>
             )}
             {isVendor && (
@@ -171,7 +171,7 @@ const Header = () => {
                   {isOrganizer && (
                     <DropdownMenuItem onClick={() => navigate('/organize')}>
                       <Megaphone className="mr-2 h-4 w-4" />
-                      Organize
+                      Organize Events
                     </DropdownMenuItem>
                   )}
                   {hasVendorRole && (
