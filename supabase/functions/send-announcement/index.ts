@@ -14,6 +14,16 @@ interface AnnouncementRequest {
   roles: string[]; // Array of role IDs or ['all'] for all users
 }
 
+// Escape HTML to prevent XSS in email content
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -57,6 +67,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!subject || !message || !roles || roles.length === 0) {
       throw new Error("Missing required fields: subject, message, and roles");
+    }
+
+    // Validate input lengths
+    if (subject.length > 200) {
+      throw new Error("Subject must be 200 characters or less");
+    }
+    if (message.length > 10000) {
+      throw new Error("Message must be 10000 characters or less");
     }
 
     console.log("[SEND-ANNOUNCEMENT] Sending to roles:", roles);
@@ -138,9 +156,9 @@ const handler = async (req: Request): Promise<Response> => {
           subject: subject,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2>Hello ${recipient.full_name || "there"}!</h2>
+              <h2>Hello ${escapeHtml(recipient.full_name || "there")}!</h2>
               <div style="margin: 20px 0; line-height: 1.6;">
-                ${message.replace(/\n/g, "<br>")}
+                ${escapeHtml(message).replace(/\n/g, "<br>")}
               </div>
               <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
               <p style="color: #666; font-size: 12px;">

@@ -15,11 +15,17 @@ serve(async (req) => {
   try {
     const { ticketCode } = await req.json();
 
-    if (!ticketCode) {
+    if (!ticketCode || typeof ticketCode !== 'string') {
       throw new Error("Ticket code is required");
     }
 
-    console.log("Fetching shared ticket:", ticketCode);
+    // Validate ticket code format (alphanumeric, reasonable length)
+    const sanitizedCode = ticketCode.trim();
+    if (sanitizedCode.length < 4 || sanitizedCode.length > 64 || !/^[a-zA-Z0-9_-]+$/.test(sanitizedCode)) {
+      throw new Error("Invalid ticket code format");
+    }
+
+    console.log("Fetching shared ticket with validated code");
 
     // Use service role to bypass RLS for public ticket viewing
     const supabaseAdmin = createClient(
@@ -40,7 +46,7 @@ serve(async (req) => {
         event_day:event_days(id, day_number, day_date, start_time, end_time),
         event:events(id, title, date, venue, city, state, is_multi_day, brand_primary_color, brand_secondary_color, brand_logo_url)
       `)
-      .eq("ticket_code", ticketCode)
+      .eq("ticket_code", sanitizedCode)
       .single();
 
     if (error || !ticket) {
