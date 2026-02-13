@@ -15,17 +15,13 @@ import {
   CalendarIcon,
   MapPin,
   Plus,
-  Settings,
-  Users,
-  Store,
-  Ticket,
-  ChevronRight,
 } from "lucide-react";
 import { format, parseISO, isBefore, startOfDay, isSameDay, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import CreateEventDialog from "@/components/CreateEventDialog";
+import EventDetailPanel from "@/components/organize/EventDetailPanel";
 
 interface HostedEvent {
   id: string;
@@ -358,104 +354,7 @@ const HostingDashboard = () => {
           )}
 
           {/* Selected event detail panel */}
-          {selectedEvent && (
-            <Card className="mt-6">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-xl">{selectedEvent.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {format(parseISO(selectedEvent.date), "EEEE, MMMM d, yyyy")} ·{" "}
-                      {selectedEvent.venue}, {selectedEvent.city}, {selectedEvent.state}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/event/${selectedEvent.id}`)}
-                    >
-                      View Page
-                      <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => navigate(`/manage-event/${selectedEvent.id}`)}
-                    >
-                      <Settings className="h-4 w-4 mr-1" />
-                      Manage
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Ticket className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-foreground">
-                        {selectedEvent.ticket_count || 0}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Tickets Sold</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Store className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-foreground">
-                        {selectedEvent.vendor_count || 0}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Vendors</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Users className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-foreground">
-                        {selectedEvent.max_attendees ?? "—"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Max Attendees</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-                      <CalendarIcon className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-foreground">
-                        {selectedEvent.tables_available ?? selectedEvent.total_tables ?? "—"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Tables Available</p>
-                    </div>
-                  </div>
-                </div>
-
-                {selectedEvent.description && (
-                  <p className="text-sm text-muted-foreground mt-4 line-clamp-3">
-                    {selectedEvent.description}
-                  </p>
-                )}
-
-                <div className="flex flex-wrap gap-2 mt-4">
-                  <Badge variant="outline">{selectedEvent.event_type}</Badge>
-                  {selectedEvent.card_types?.map((ct) => (
-                    <Badge key={ct} variant="secondary" className="text-xs">
-                      {ct}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {selectedEvent && <EventDetailPanel event={selectedEvent} />}
         </div>
       </section>
 
