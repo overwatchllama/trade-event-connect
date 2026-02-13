@@ -340,7 +340,11 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
                     <CardDescription>Upload or update flyer</CardDescription>
                   </CardHeader>
                 </Card>
-                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setFloorPlanDialogOpen(true)}>
+                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={async () => {
+                  const { data } = await supabase.from('events').select('layout_json').eq('id', event.id).single();
+                  setSavedLayoutJson(data?.layout_json || null);
+                  setFloorPlanDialogOpen(true);
+                }}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <Map className="h-4 w-4" />
@@ -417,12 +421,8 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
               </Dialog>
 
               {/* Floor Plan Dialog */}
-              <Dialog open={floorPlanDialogOpen} onOpenChange={async (open) => {
-                if (open) {
-                  const { data } = await supabase.from('events').select('layout_json').eq('id', event.id).single();
-                  setSavedLayoutJson(data?.layout_json || null);
-                }
-                setFloorPlanDialogOpen(open);
+              <Dialog open={floorPlanDialogOpen} onOpenChange={(open) => {
+                if (!open) setFloorPlanDialogOpen(false);
               }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
