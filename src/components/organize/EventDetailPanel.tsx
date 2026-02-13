@@ -35,6 +35,7 @@ import { DayOfChecklist } from "@/components/DayOfChecklist";
 import { LayoutDrawingTool } from "@/components/LayoutDrawingTool";
 import EventCheckInDialog from "@/components/organize/EventCheckInDialog";
 import { EventStaffRoles } from "@/components/organize/EventStaffRoles";
+import StaffCheckInDialog from "@/components/organize/StaffCheckInDialog";
 
 interface EventDetailPanelProps {
   event: {
@@ -64,6 +65,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
   const [sponsorsDialogOpen, setSponsorsDialogOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const [staffCheckInOpen, setStaffCheckInOpen] = useState(false);
   const [flyerDialogOpen, setFlyerDialogOpen] = useState(false);
   const [floorPlanDialogOpen, setFloorPlanDialogOpen] = useState(false);
   const [savedLayoutJson, setSavedLayoutJson] = useState<any>(null);
@@ -192,6 +194,14 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
             >
               <ClipboardCheck className="h-4 w-4 mr-1" />
               Check-ins
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setStaffCheckInOpen(true)}
+            >
+              <UserCog className="h-4 w-4 mr-1" />
+              Staff Check-in
             </Button>
             <Button
               variant="outline"
@@ -490,6 +500,12 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
       <EventCheckInDialog
         open={checkInOpen}
         onOpenChange={setCheckInOpen}
+        eventId={event.id}
+        eventTitle={event.title}
+      />
+      <StaffCheckInDialog
+        open={staffCheckInOpen}
+        onOpenChange={setStaffCheckInOpen}
         eventId={event.id}
         eventTitle={event.title}
       />

@@ -430,6 +430,9 @@ export type Database = {
           assigned_email: string | null
           assigned_name: string
           assigned_phone: string | null
+          checked_in: boolean
+          checked_in_at: string | null
+          checked_out_at: string | null
           created_at: string
           event_id: string
           id: string
@@ -442,6 +445,9 @@ export type Database = {
           assigned_email?: string | null
           assigned_name: string
           assigned_phone?: string | null
+          checked_in?: boolean
+          checked_in_at?: string | null
+          checked_out_at?: string | null
           created_at?: string
           event_id: string
           id?: string
@@ -454,6 +460,9 @@ export type Database = {
           assigned_email?: string | null
           assigned_name?: string
           assigned_phone?: string | null
+          checked_in?: boolean
+          checked_in_at?: string | null
+          checked_out_at?: string | null
           created_at?: string
           event_id?: string
           id?: string
