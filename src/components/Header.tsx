@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { User, LogOut, Settings, Store, Bell, Shield, PenTool, Award, Users, Ticket } from "lucide-react";
+import { User, LogOut, Settings, Store, Bell, Shield, PenTool, Award, Users, Ticket, Megaphone, CreditCard } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorProfile } from "@/hooks/useVendorProfile";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -21,6 +22,7 @@ const Header = () => {
   const { hasVendorRole } = useVendorProfile();
   const { isAdmin } = useAdmin();
   const { subscription_tier } = useSubscription();
+  const { isOrganizer, isVendor } = useUserRoles();
 
   // Check if user is a vendor employee
   const { data: isEmployee } = useQuery({
@@ -92,6 +94,26 @@ const Header = () => {
             >
               My Collection
             </Link>
+            {isOrganizer && (
+              <Link 
+                to="/organize" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === '/organize' ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                Organize
+              </Link>
+            )}
+            {isVendor && (
+              <Link 
+                to="/vending" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === '/vending' ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                Vending
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center space-x-4 min-h-[40px]">
@@ -131,18 +153,35 @@ const Header = () => {
                     <Ticket className="mr-2 h-4 w-4" />
                     My Tickets
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/subscription')}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    My Subscriptions
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/following')}>
                     <Bell className="mr-2 h-4 w-4" />
                     My Following
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/subscription')}>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    My Subscriptions
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {isOrganizer && (
+                    <DropdownMenuItem onClick={() => navigate('/organize')}>
+                      <Megaphone className="mr-2 h-4 w-4" />
+                      Organize
+                    </DropdownMenuItem>
+                  )}
                   {hasVendorRole && (
                     <DropdownMenuItem onClick={() => navigate('/my-vendor-profile')}>
                       <Store className="mr-2 h-4 w-4" />
                       My Vendor Profile
+                    </DropdownMenuItem>
+                  )}
+                  {isVendor && (
+                    <DropdownMenuItem onClick={() => navigate('/vending')}>
+                      <Store className="mr-2 h-4 w-4" />
+                      Vending
                     </DropdownMenuItem>
                   )}
                   {hasSponsorProfile && (
@@ -169,10 +208,6 @@ const Header = () => {
                       Layout Tool
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={() => navigate('/settings')}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
