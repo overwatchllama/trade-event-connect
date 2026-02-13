@@ -29,24 +29,27 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
   const [rowCount, setRowCount] = useState(5);
   const [saving, setSaving] = useState(false);
 
+  const findMaxTableNumber = (objects: any[]): number => {
+    let maxNum = 0;
+    for (const obj of objects) {
+      if (obj.type === 'text' && obj.text) {
+        const match = obj.text.match(/^(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1]);
+          if (num > maxNum) maxNum = num;
+        }
+      }
+      if (obj._objects) {
+        const nested = findMaxTableNumber(obj._objects);
+        if (nested > maxNum) maxNum = nested;
+      }
+    }
+    return maxNum;
+  };
+
   const getNextTableNumber = () => {
     if (!fabricCanvas) return 1;
-    const objects = fabricCanvas.getObjects();
-    let maxNum = 0;
-    objects.forEach((obj: any) => {
-      if (obj.type === 'group' && obj._objects) {
-        obj._objects.forEach((o: any) => {
-          if (o.type === 'text' && o.text) {
-            const match = o.text.match(/^(\d+)$/);
-            if (match) {
-              const num = parseInt(match[1]);
-              if (num > maxNum) maxNum = num;
-            }
-          }
-        });
-      }
-    });
-    return maxNum + 1;
+    return findMaxTableNumber(fabricCanvas.getObjects()) + 1;
   };
 
   useEffect(() => {
