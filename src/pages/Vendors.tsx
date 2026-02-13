@@ -14,6 +14,7 @@ import { VendorGridCard } from '@/components/VendorGridCard';
 import EditVendorProfile from '@/components/EditVendorProfile';
 import { InviteVendorToEventDialog } from '@/components/InviteVendorToEventDialog';
 import { OrganizerVendorNotes } from '@/components/OrganizerVendorNotes';
+import { EventVendorsOverview } from '@/components/vendor-management/EventVendorsOverview';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useVendorProfile } from '@/hooks/useVendorProfile';
@@ -810,156 +811,13 @@ const Vendors = () => {
             {/* Event Vendors Tab - Organizers Only */}
             {isOrganizer && (
               <TabsContent value="event-vendors">
-                <div className="space-y-8">
-                  {/* Approved/Paid Vendors */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      Approved Vendors ({eventVendors.approved.length})
-                    </h3>
-                    {eventVendors.approved.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">No approved vendors for your events yet.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {eventVendors.approved.map(({ vendor, eventTitle, status }, idx) => (
-                          <Card key={`approved-${vendor.id}-${idx}`} className="relative">
-                            <Badge 
-                              className={`absolute top-2 right-2 ${
-                                status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                              }`}
-                            >
-                              {status}
-                            </Badge>
-                            <CardHeader className="pb-2">
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10">
-                                  <AvatarImage src={vendor.avatar_url || vendor.profiles?.avatar_url || ''} />
-                                  <AvatarFallback>{getInitials(vendor.business_name)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0">
-                                  <Link to={`/vendor/${vendor.id}`} className="font-semibold hover:underline">
-                                    {vendor.business_name}
-                                  </Link>
-                                  <p className="text-xs text-muted-foreground">{eventTitle}</p>
-                                  {getVendorNotesBadges(vendor.id)}
-                                </div>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="w-full"
-                                onClick={() => handleOpenVendorNotes(vendor.id, vendor.business_name)}
-                              >
-                                <Settings2 className="w-3 h-3 mr-2" />
-                                Manage
-                              </Button>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Pending Vendors */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-yellow-600" />
-                      Pending Applications ({eventVendors.pending.length})
-                    </h3>
-                    {eventVendors.pending.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">No pending vendor applications.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {eventVendors.pending.map(({ vendor, eventTitle }, idx) => (
-                          <Card key={`pending-${vendor.id}-${idx}`}>
-                            <CardHeader className="pb-2">
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10">
-                                  <AvatarImage src={vendor.avatar_url || vendor.profiles?.avatar_url || ''} />
-                                  <AvatarFallback>{getInitials(vendor.business_name)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0">
-                                  <Link to={`/vendor/${vendor.id}`} className="font-semibold hover:underline">
-                                    {vendor.business_name}
-                                  </Link>
-                                  <p className="text-xs text-muted-foreground">{eventTitle}</p>
-                                  {getVendorNotesBadges(vendor.id)}
-                                </div>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="w-full"
-                                onClick={() => handleOpenVendorNotes(vendor.id, vendor.business_name)}
-                              >
-                                <Settings2 className="w-3 h-3 mr-2" />
-                                Manage
-                              </Button>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Rejected/Banned Vendors */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <Ban className="w-5 h-5 text-red-600" />
-                      Rejected/Cancelled ({eventVendors.rejected.length})
-                    </h3>
-                    {eventVendors.rejected.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">No rejected vendors.</p>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {eventVendors.rejected.map(({ vendor, eventTitle }, idx) => (
-                          <Card key={`rejected-${vendor.id}-${idx}`} className="opacity-75">
-                            <CardHeader className="pb-2">
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10">
-                                  <AvatarImage src={vendor.avatar_url || vendor.profiles?.avatar_url || ''} />
-                                  <AvatarFallback>{getInitials(vendor.business_name)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0">
-                                  <Link to={`/vendor/${vendor.id}`} className="font-semibold hover:underline">
-                                    {vendor.business_name}
-                                  </Link>
-                                  <p className="text-xs text-muted-foreground">{eventTitle}</p>
-                                  {getVendorNotesBadges(vendor.id)}
-                                </div>
-                              </div>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="w-full"
-                                onClick={() => handleOpenVendorNotes(vendor.id, vendor.business_name)}
-                              >
-                                <Settings2 className="w-3 h-3 mr-2" />
-                                Manage
-                              </Button>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {eventVendors.approved.length === 0 && eventVendors.pending.length === 0 && eventVendors.rejected.length === 0 && (
-                    <div className="text-center py-12">
-                      <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-foreground mb-2">No Event Vendors Yet</h3>
-                      <p className="text-muted-foreground">
-                        Vendors who apply to your events will appear here.
-                      </p>
-                    </div>
-                  )}
-                </div>
+                <EventVendorsOverview 
+                  eventVendors={eventVendors}
+                  organizerNotes={organizerNotes}
+                  getVendorNotesBadges={getVendorNotesBadges}
+                  getInitials={getInitials}
+                  onOpenVendorNotes={handleOpenVendorNotes}
+                />
               </TabsContent>
             )}
           </Tabs>
