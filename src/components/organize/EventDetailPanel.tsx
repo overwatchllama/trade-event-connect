@@ -65,6 +65,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [flyerDialogOpen, setFlyerDialogOpen] = useState(false);
   const [floorPlanDialogOpen, setFloorPlanDialogOpen] = useState(false);
+  const [savedLayoutJson, setSavedLayoutJson] = useState<any>(null);
   const [vendorNotesDialogOpen, setVendorNotesDialogOpen] = useState(false);
   const [flyerFrontFile, setFlyerFrontFile] = useState<File | null>(null);
   const [flyerBackFile, setFlyerBackFile] = useState<File | null>(null);
@@ -416,19 +417,28 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
               </Dialog>
 
               {/* Floor Plan Dialog */}
-              <Dialog open={floorPlanDialogOpen} onOpenChange={setFloorPlanDialogOpen}>
+              <Dialog open={floorPlanDialogOpen} onOpenChange={async (open) => {
+                if (open) {
+                  const { data } = await supabase.from('events').select('layout_json').eq('id', event.id).single();
+                  setSavedLayoutJson(data?.layout_json || null);
+                }
+                setFloorPlanDialogOpen(open);
+              }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Floor Plan</DialogTitle>
                   </DialogHeader>
-                  <LayoutDrawingTool
-                    eventId={event.id}
-                    initialLayout={null}
-                    onSave={async (layoutJson) => {
-                      await supabase.from('events').update({ layout_json: layoutJson }).eq('id', event.id);
-                      toast.success('Floor plan saved!');
-                    }}
-                  />
+                  {floorPlanDialogOpen && (
+                    <LayoutDrawingTool
+                      eventId={event.id}
+                      initialLayout={savedLayoutJson}
+                      onSave={async (layoutJson) => {
+                        await supabase.from('events').update({ layout_json: layoutJson }).eq('id', event.id);
+                        setSavedLayoutJson(layoutJson);
+                        toast.success('Floor plan saved!');
+                      }}
+                    />
+                  )}
                 </DialogContent>
               </Dialog>
 
