@@ -63,7 +63,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
-            <img src={logo} alt="Cardboard Curators" className="w-10 h-10 rounded-lg" />
+            <img src={logo} alt="Cardboard Curators" className="w-10 h-10 rounded-lg" width={40} height={40} decoding="async" />
             <span className="text-xl font-bold text-foreground">Cardboard Curators</span>
           </Link>
 
