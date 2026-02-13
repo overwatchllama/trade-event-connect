@@ -225,6 +225,7 @@ const SubscriptionTiers = () => {
             <Switch
               checked={isYearly}
               onCheckedChange={setIsYearly}
+              aria-label="Toggle yearly billing"
             />
             <span className={`text-sm ${isYearly ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
               Yearly

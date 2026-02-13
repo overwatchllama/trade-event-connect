@@ -19,7 +19,7 @@ const CartIcon = () => {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative" aria-label="Shopping cart">
           <ShoppingCart className="h-5 w-5" />
           {totalItems > 0 && (
             <Badge 
