@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "npm:resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,39 +8,120 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Escape HTML to prevent XSS in email content
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 interface InvoiceRequest {
-  vendorEmail: string;
-  vendorName: string;
-  eventTitle: string;
-  tableCount: number;
-  pricePerTable: number;
-  totalAmount: number;
   applicationId: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { 
-      vendorEmail, 
-      vendorName, 
-      eventTitle, 
-      tableCount, 
-      pricePerTable, 
-      totalAmount,
-      applicationId 
-    }: InvoiceRequest = await req.json();
+    // Require authentication
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
-    console.log("Sending invoice to:", vendorEmail);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify the caller's identity
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const { applicationId }: InvoiceRequest = await req.json();
+
+    if (!applicationId || typeof applicationId !== "string") {
+      return new Response(JSON.stringify({ error: "Application ID is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Fetch the application with vendor and event data, and verify the caller is the event organizer
+    const { data: application, error: appError } = await supabase
+      .from("vendor_applications")
+      .select(`
+        id, requested_tables, approved_tables, application_status, payment_status, user_id,
+        vendor:vendors!fk_vendor_applications_vendor_id(business_name, business_email),
+        event:events!vendor_applications_event_id_fkey(title, organizer_id, vendor_table_price)
+      `)
+      .eq("id", applicationId)
+      .single();
+
+    if (appError || !application) {
+      console.error("Application not found:", appError);
+      return new Response(JSON.stringify({ error: "Application not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Authorization: only the event organizer can send invoices
+    const event = application.event as any;
+    const vendor = application.vendor as any;
+
+    if (event.organizer_id !== user.id) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Validate application state
+    if (application.application_status !== "approved") {
+      return new Response(JSON.stringify({ error: "Application must be approved to send invoice" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const vendorEmail = vendor.business_email;
+    if (!vendorEmail) {
+      return new Response(JSON.stringify({ error: "Vendor has no email configured" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // Compute invoice values server-side
+    const vendorName = vendor.business_name;
+    const eventTitle = event.title;
+    const tableCount = application.approved_tables || application.requested_tables;
+    const pricePerTable = event.vendor_table_price || 0;
+    const totalAmount = pricePerTable * tableCount;
+
+    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+    console.log("Sending invoice for application:", applicationId);
 
     const emailResponse = await resend.emails.send({
       from: "Trading Card Events <onboarding@resend.dev>",
       to: [vendorEmail],
-      subject: `Invoice for ${eventTitle} - Vendor Table Payment`,
+      subject: `Invoice for ${escapeHtml(eventTitle)} - Vendor Table Payment`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -57,9 +137,9 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
             
             <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
-              <p style="font-size: 16px; margin-top: 0;">Hello ${vendorName},</p>
+              <p style="font-size: 16px; margin-top: 0;">Hello ${escapeHtml(vendorName)},</p>
               
-              <p style="font-size: 16px;">Your vendor application for <strong>${eventTitle}</strong> has been approved! Below is your invoice for the vendor table(s).</p>
+              <p style="font-size: 16px;">Your vendor application for <strong>${escapeHtml(eventTitle)}</strong> has been approved! Below is your invoice for the vendor table(s).</p>
               
               <div style="background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 25px 0;">
                 <h2 style="margin: 0 0 15px 0; color: #667eea; font-size: 20px;">Invoice Details</h2>
@@ -67,7 +147,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <table style="width: 100%; border-collapse: collapse;">
                   <tr style="border-bottom: 1px solid #e5e7eb;">
                     <td style="padding: 12px 0; font-weight: 500;">Event:</td>
-                    <td style="padding: 12px 0; text-align: right;">${eventTitle}</td>
+                    <td style="padding: 12px 0; text-align: right;">${escapeHtml(eventTitle)}</td>
                   </tr>
                   <tr style="border-bottom: 1px solid #e5e7eb;">
                     <td style="padding: 12px 0; font-weight: 500;">Number of Tables:</td>
@@ -105,20 +185,16 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Email sent successfully for application:", applicationId);
 
     return new Response(JSON.stringify(emailResponse), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: unknown) {
     console.error("Error in send-vendor-invoice function:", error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: "Failed to send invoice" }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

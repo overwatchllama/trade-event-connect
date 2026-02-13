@@ -101,12 +101,6 @@ export const useVendorBulkActions = (
         const promises = selectedApps.map(app => 
           supabase.functions.invoke('send-vendor-invoice', {
             body: {
-              vendorEmail: app.vendor.business_email,
-              vendorName: app.vendor.business_name,
-              eventTitle: eventTitle,
-              tableCount: app.approved_tables || app.requested_tables,
-              pricePerTable: app.event_table_price || 0,
-              totalAmount: (app.event_table_price || 0) * (app.approved_tables || app.requested_tables),
               applicationId: app.id,
             }
           })
