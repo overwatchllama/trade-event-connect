@@ -222,53 +222,63 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     if (!fabricCanvas) return;
     const startNum = getNextTableNumber();
     const w = tableSize === "6ft" ? 6 * FT : 8 * FT;
-    const h = 30;
+    const h = 2.5 * FT; // 30 inches table depth
     const gap = 4;
     const podLetter = getNextPodLetter();
     const items: any[] = [];
 
-    // Square pod: 3 top, 3 bottom, 4 corners rotated 90°
-    const topRowWidth = 3 * (w + gap) - gap;
-    const cornerW = h; // rotated: width becomes the table depth
+    // Square pod: tables on all 4 sides
     const innerPadding = 8;
-    const podWidth = cornerW + innerPadding + topRowWidth + innerPadding + cornerW;
-    const podHeight = w + innerPadding * 2; // corner tables (rotated) define height
+    // Top/bottom rows: 3 tables horizontal
+    const topRowWidth = 3 * (w + gap) - gap;
+    // Side columns use rotated tables, so their "width" along the side = h
+    const sideSize = h; // depth of rotated side tables
+    const podSize = sideSize + innerPadding + topRowWidth + innerPadding + sideSize;
 
-    // Top row: 3 tables (numbered 1-3)
-    const topRowLeft = cornerW + innerPadding;
+    // How many side tables fit vertically (rotated, so their length = w goes vertical)
+    const sideAvailableHeight = podSize - 2 * (h + innerPadding); // space between top/bottom row depths
+    const sideTableCount = Math.max(1, Math.floor((sideAvailableHeight + gap) / (w + gap)));
+    const sideTableStartY = h + innerPadding;
+
+    // Top row: 3 tables
+    const topRowLeft = sideSize + innerPadding;
     for (let i = 0; i < 3; i++) {
       const table = createSingleTable(startNum + i, tableSize);
       table.set({ left: topRowLeft + i * (w + gap), top: 0 });
       items.push(table);
     }
 
-    // Bottom row: 3 tables (numbered 4-6)
-    const bottomY = podHeight - h;
+    // Bottom row: 3 tables
+    const bottomY = podSize - h;
     for (let i = 0; i < 3; i++) {
       const table = createSingleTable(startNum + 3 + i, tableSize);
       table.set({ left: topRowLeft + i * (w + gap), top: bottomY });
       items.push(table);
     }
 
-    // Corner tables rotated 90° (numbered 7-10)
-    const corners = [
-      { left: cornerW, top: 0 },                          // top-left
-      { left: podWidth, top: 0 },                          // top-right
-      { left: cornerW, top: podHeight },                   // bottom-left
-      { left: podWidth, top: podHeight },                  // bottom-right
-    ];
-    for (let i = 0; i < 4; i++) {
-      const table = createSingleTable(startNum + 6 + i, tableSize);
-      table.set({ left: corners[i].left, top: corners[i].top, angle: 90 });
+    // Left side tables (rotated 90°)
+    let tableIndex = 6;
+    for (let i = 0; i < sideTableCount; i++) {
+      const table = createSingleTable(startNum + tableIndex, tableSize);
+      table.set({ left: sideSize, top: sideTableStartY + i * (w + gap), angle: 90 });
       items.push(table);
+      tableIndex++;
+    }
+
+    // Right side tables (rotated 90°)
+    for (let i = 0; i < sideTableCount; i++) {
+      const table = createSingleTable(startNum + tableIndex, tableSize);
+      table.set({ left: podSize, top: sideTableStartY + i * (w + gap), angle: 90 });
+      items.push(table);
+      tableIndex++;
     }
 
     // Dashed outline
     const outline = new Rect({
       left: -6,
       top: -6,
-      width: podWidth + 12,
-      height: podHeight + 12,
+      width: podSize + 12,
+      height: podSize + 12,
       fill: 'transparent',
       stroke: '#bdbdbd',
       strokeWidth: 1,
@@ -282,8 +292,8 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       fontFamily: 'Arial',
       fontWeight: 'bold',
       fill: '#1976d2',
-      left: podWidth / 2,
-      top: podHeight / 2,
+      left: podSize / 2,
+      top: podSize / 2,
       originX: 'center',
       originY: 'center',
     });
@@ -594,7 +604,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
                 onClick={() => handleToolClick("table-pod")}
               >
                 <LayoutGrid className="h-4 w-4 mr-2" />
-                Add Pod (10)
+                Add Pod
               </Button>
             </div>
           </Card>
