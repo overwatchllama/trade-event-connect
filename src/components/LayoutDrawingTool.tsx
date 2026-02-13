@@ -363,9 +363,6 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       `Total Tables: ${eventData.total_tables ?? "N/A"}`,
       `Table Size: ${tableSize}`,
     ];
-    if (eventData.vendor_table_price != null) {
-      lines.push(`Price: $${eventData.vendor_table_price}/table`);
-    }
     createInfoBlock(lines, '#f57c00');
   };
 
