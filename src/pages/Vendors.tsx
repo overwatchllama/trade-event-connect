@@ -517,26 +517,35 @@ const Vendors = () => {
         {user ? (
           <Tabs defaultValue={hasVendorRole ? "others" : (isOrganizer ? "event-vendors" : "all")} className="w-full">
             <TabsList className={`grid w-full ${
-              hasVendorRole && isOrganizer ? 'grid-cols-4' : 
-              hasVendorRole || isOrganizer ? 'grid-cols-3' : 
+              isOrganizer ? (hasVendorRole ? 'grid-cols-5' : 'grid-cols-4') :
+              hasVendorRole ? 'grid-cols-3' : 
               'grid-cols-2'
             }`}>
               {hasVendorRole && (
                 <TabsTrigger value="profile">My Vendor Profile</TabsTrigger>
               )}
-              {isOrganizer && (
-                <TabsTrigger value="event-vendors" className="gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Event Vendors
-                </TabsTrigger>
-              )}
               <TabsTrigger value={hasVendorRole ? "others" : "all"}>
                 {hasVendorRole ? "Other Vendors" : "All Vendors"}
               </TabsTrigger>
-              <TabsTrigger value="favorites" className="gap-2">
-                <Heart className="w-4 h-4" />
-                Favorites ({favoriteVendors.length})
-              </TabsTrigger>
+              {isOrganizer ? (
+                <>
+                  <TabsTrigger value="event-vendors" className="gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Manage Vendors
+                  </TabsTrigger>
+                  <TabsTrigger value="manage-sponsors" className="gap-2">
+                    Manage Sponsors
+                  </TabsTrigger>
+                  <TabsTrigger value="manage-staff" className="gap-2">
+                    Manage Staff
+                  </TabsTrigger>
+                </>
+              ) : (
+                <TabsTrigger value="favorites" className="gap-2">
+                  <Heart className="w-4 h-4" />
+                  Favorites ({favoriteVendors.length})
+                </TabsTrigger>
+              )}
             </TabsList>
             
             {hasVendorRole && (
@@ -781,32 +790,34 @@ const Vendors = () => {
               )}
             </TabsContent>
             
-            {/* Favorites Tab */}
-            <TabsContent value="favorites">
-              {favoriteVendors.length === 0 ? (
-                <div className="text-center py-12">
-                  <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-foreground mb-2">No Favorite Vendors</h3>
-                  <p className="text-muted-foreground">Click the heart icon on vendor cards to add them to your favorites.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {favoriteVendors.map((vendor) => (
-                    <VendorGridCard 
-                      key={vendor.id} 
-                      vendor={vendor} 
-                      getInitials={getInitials}
-                      currentUserId={user?.id}
-                      isFavorite={true}
-                      onToggleFavorite={handleToggleFavorite}
-                      isOrganizer={isOrganizer}
-                      isVendor={isVendor}
-                      onInviteClick={handleInviteVendor}
-                    />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
+            {/* Favorites Tab - Non-organizers only */}
+            {!isOrganizer && (
+              <TabsContent value="favorites">
+                {favoriteVendors.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-foreground mb-2">No Favorite Vendors</h3>
+                    <p className="text-muted-foreground">Click the heart icon on vendor cards to add them to your favorites.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {favoriteVendors.map((vendor) => (
+                      <VendorGridCard 
+                        key={vendor.id} 
+                        vendor={vendor} 
+                        getInitials={getInitials}
+                        currentUserId={user?.id}
+                        isFavorite={true}
+                        onToggleFavorite={handleToggleFavorite}
+                        isOrganizer={isOrganizer}
+                        isVendor={isVendor}
+                        onInviteClick={handleInviteVendor}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            )}
 
             {/* Event Vendors Tab - Organizers Only */}
             {isOrganizer && (
@@ -818,6 +829,28 @@ const Vendors = () => {
                   getInitials={getInitials}
                   onOpenVendorNotes={handleOpenVendorNotes}
                 />
+              </TabsContent>
+            )}
+
+            {/* Manage Sponsors Tab - Organizers Only */}
+            {isOrganizer && (
+              <TabsContent value="manage-sponsors">
+                <div className="text-center py-12">
+                  <Store className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Manage Sponsors</h3>
+                  <p className="text-muted-foreground">View and manage sponsor applications across your events.</p>
+                </div>
+              </TabsContent>
+            )}
+
+            {/* Manage Staff Tab - Organizers Only */}
+            {isOrganizer && (
+              <TabsContent value="manage-staff">
+                <div className="text-center py-12">
+                  <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Manage Staff</h3>
+                  <p className="text-muted-foreground">View and manage staff assignments across your events.</p>
+                </div>
               </TabsContent>
             )}
           </Tabs>
