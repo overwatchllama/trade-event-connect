@@ -34,6 +34,7 @@ import ManageSponsorsDialog from "@/components/ManageSponsorsDialog";
 import { DayOfChecklist } from "@/components/DayOfChecklist";
 import { LayoutDrawingTool } from "@/components/LayoutDrawingTool";
 import EventCheckInDialog from "@/components/organize/EventCheckInDialog";
+import { EventStaffRoles } from "@/components/organize/EventStaffRoles";
 
 interface EventDetailPanelProps {
   event: {
@@ -293,25 +294,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
 
           {/* STAFF TAB */}
           <TabsContent value="staff">
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold">Event Staff</h3>
-                <p className="text-sm text-muted-foreground">
-                  Manage staff assignments and roles for this event.
-                </p>
-              </div>
-              <Card className="border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                  <UserCog className="h-12 w-12 text-muted-foreground/40 mb-4" />
-                  <h4 className="font-medium text-muted-foreground mb-1">
-                    Staff Management Coming Soon
-                  </h4>
-                  <p className="text-sm text-muted-foreground max-w-md">
-                    You'll be able to assign staff members, define roles, and manage event-day responsibilities here.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+            <EventStaffRoles eventId={event.id} />
           </TabsContent>
 
           {/* VISITORS TAB */}

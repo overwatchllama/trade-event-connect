@@ -425,6 +425,41 @@ export type Database = {
           },
         ]
       }
+      event_staff_roles: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          required_count: number
+          role_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          required_count?: number
+          role_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          required_count?: number
+          role_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_staff_roles_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           address: string
