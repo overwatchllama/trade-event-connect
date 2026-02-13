@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { LayoutDrawingTool } from '@/components/LayoutDrawingTool';
+import { EventDashboard } from '@/components/EventDashboard';
 import { ManageEventSponsors } from '@/components/ManageEventSponsors';
 import ManageVendorsDialog from '@/components/ManageVendorsDialog';
 import ManageSponsorsDialog from '@/components/ManageSponsorsDialog';
@@ -26,7 +27,7 @@ const ManageEvent = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get('tab') || 'flyer';
+  const defaultTab = searchParams.get('tab') || 'dashboard';
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -183,7 +184,8 @@ const ManageEvent = () => {
         </div>
 
         <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="flyer">Event Flyer</TabsTrigger>
             <TabsTrigger value="layout">Floor Plan</TabsTrigger>
             <TabsTrigger value="vendor-notes">Vendor Notes</TabsTrigger>
@@ -191,6 +193,16 @@ const ManageEvent = () => {
             <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard" className="space-y-6">
+            <EventDashboard
+              eventId={event.id}
+              eventTitle={event.title}
+              vendorTablePrice={event.vendor_table_price}
+              totalTables={event.total_tables}
+              maxAttendees={event.max_attendees}
+            />
+          </TabsContent>
 
           <TabsContent value="flyer" className="space-y-6">
             <Card>
