@@ -270,6 +270,30 @@ serve(async (req) => {
       },
     });
 
+    // Authentication: require admin user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "No authorization header" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
+    if (userError || !userData.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+    const { data: isAdminResult } = await supabaseAdmin.rpc("is_admin", { user_id: userData.user.id });
+    if (!isAdminResult) {
+      return new Response(JSON.stringify({ error: "Admin access required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
+    }
+
     const results: { email: string; success: boolean; error?: string }[] = [];
     let eventOrganizerId: string | null = null;
 
