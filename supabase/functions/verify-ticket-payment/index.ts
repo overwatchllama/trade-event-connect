@@ -107,7 +107,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error verifying payment:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Payment verification failed" }),
       { 
         status: 400, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
