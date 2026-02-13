@@ -202,75 +202,109 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     fabricCanvas.renderAll();
   };
 
-  const getNextPodLetter = () => {
-    if (!fabricCanvas) return 'A';
-    let maxCode = 64; // '@' = one before 'A'
+  const getNextPodNumber = () => {
+    if (!fabricCanvas) return 1;
+    let maxNum = 0;
     const findPodLabels = (objects: any[]) => {
       for (const obj of objects) {
-        if (obj.type === 'text' && obj.text && /^[A-Z]$/.test(obj.text)) {
-          const code = obj.text.charCodeAt(0);
-          if (code > maxCode) maxCode = code;
+        if (obj.type === 'text' && obj.text && /^\d+$/.test(obj.text)) {
+          const num = parseInt(obj.text, 10);
+          if (num > maxNum) maxNum = num;
         }
         if (obj._objects) findPodLabels(obj._objects);
       }
     };
-    findPodLabels(fabricCanvas.getObjects());
-    return String.fromCharCode(maxCode + 1);
+    // Only search pod groups
+    fabricCanvas.getObjects().forEach((obj: any) => {
+      if (obj.objectType === 'table-pod' && obj._objects) {
+        findPodLabels(obj._objects);
+      }
+    });
+    return maxNum + 1;
+  };
+
+  const createPodTable = (letter: string, size: TableSize) => {
+    const w = size === "6ft" ? 6 * FT : 8 * FT;
+    const h = 2.5 * FT;
+
+    const rect = new Rect({
+      width: w,
+      height: h,
+      fill: "#fff3e0",
+      stroke: "#f57c00",
+      strokeWidth: 2,
+      originX: 'center',
+      originY: 'center',
+    });
+
+    const label = new FabricText(letter, {
+      fontSize: 12,
+      fontFamily: 'Arial',
+      fill: '#333',
+      originX: 'center',
+      originY: 'center',
+    });
+
+    const sizeLabel = new FabricText(size, {
+      fontSize: 8,
+      fontFamily: 'Arial',
+      fill: '#999',
+      originX: 'center',
+      originY: 'center',
+      top: 10,
+    });
+
+    return new Group([rect, label, sizeLabel]);
   };
 
   const addTablePod = () => {
     if (!fabricCanvas) return;
-    const startNum = getNextTableNumber();
     const w = tableSize === "6ft" ? 6 * FT : 8 * FT;
     const h = 2.5 * FT; // 30 inches table depth
     const gap = 4;
-    const podLetter = getNextPodLetter();
+    const podNumber = getNextPodNumber();
     const items: any[] = [];
+    let letterIndex = 0;
+    const getLetter = () => String.fromCharCode(65 + letterIndex++);
 
     // Square pod: tables on all 4 sides
     const innerPadding = 8;
-    // Top/bottom rows: 3 tables horizontal
     const topRowWidth = 3 * (w + gap) - gap;
-    // Side columns use rotated tables, so their "width" along the side = h
-    const sideSize = h; // depth of rotated side tables
+    const sideSize = h;
     const podSize = sideSize + innerPadding + topRowWidth + innerPadding + sideSize;
 
-    // How many side tables fit vertically (rotated, so their length = w goes vertical)
-    const sideAvailableHeight = podSize - 2 * (h + innerPadding); // space between top/bottom row depths
+    const sideAvailableHeight = podSize - 2 * (h + innerPadding);
     const sideTableCount = Math.max(1, Math.floor((sideAvailableHeight + gap) / (w + gap)));
     const sideTableStartY = h + innerPadding;
 
-    // Top row: 3 tables
+    // Top row: 3 tables (left to right = A, B, C...)
     const topRowLeft = sideSize + innerPadding;
     for (let i = 0; i < 3; i++) {
-      const table = createSingleTable(startNum + i, tableSize);
+      const table = createPodTable(getLetter(), tableSize);
       table.set({ left: topRowLeft + i * (w + gap), top: 0 });
       items.push(table);
     }
 
-    // Bottom row: 3 tables
+    // Right side tables (top to bottom)
+    for (let i = 0; i < sideTableCount; i++) {
+      const table = createPodTable(getLetter(), tableSize);
+      table.set({ left: podSize, top: sideTableStartY + i * (w + gap), angle: 90 });
+      items.push(table);
+    }
+
+    // Bottom row: 3 tables (right to left)
     const bottomY = podSize - h;
-    for (let i = 0; i < 3; i++) {
-      const table = createSingleTable(startNum + 3 + i, tableSize);
+    for (let i = 2; i >= 0; i--) {
+      const table = createPodTable(getLetter(), tableSize);
       table.set({ left: topRowLeft + i * (w + gap), top: bottomY });
       items.push(table);
     }
 
-    // Left side tables (rotated 90°)
-    let tableIndex = 6;
-    for (let i = 0; i < sideTableCount; i++) {
-      const table = createSingleTable(startNum + tableIndex, tableSize);
+    // Left side tables (bottom to top)
+    for (let i = sideTableCount - 1; i >= 0; i--) {
+      const table = createPodTable(getLetter(), tableSize);
       table.set({ left: sideSize, top: sideTableStartY + i * (w + gap), angle: 90 });
       items.push(table);
-      tableIndex++;
-    }
-
-    // Right side tables (rotated 90°)
-    for (let i = 0; i < sideTableCount; i++) {
-      const table = createSingleTable(startNum + tableIndex, tableSize);
-      table.set({ left: podSize, top: sideTableStartY + i * (w + gap), angle: 90 });
-      items.push(table);
-      tableIndex++;
     }
 
     // Dashed outline
@@ -286,9 +320,10 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     });
     items.unshift(outline);
 
-    // Editable pod letter label in center
-    const podLabel = new FabricText(podLetter, {
-      fontSize: 16,
+    // Pod number label in center
+    const podNumStr = `${podNumber}`;
+    const podLabel = new FabricText(podNumStr, {
+      fontSize: 20,
       fontFamily: 'Arial',
       fontWeight: 'bold',
       fill: '#1976d2',
@@ -306,11 +341,11 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     });
     (podGroup as any).objectType = 'table-pod';
 
-    // Double-click to edit pod label
+    // Double-click to edit pod number
     podGroup.on('mousedblclick', () => {
-      const newLabel = prompt('Enter pod label:', podLetter);
+      const newLabel = prompt('Enter pod number:', podNumStr);
       if (newLabel !== null && newLabel.trim()) {
-        podLabel.set({ text: newLabel.trim().toUpperCase() });
+        podLabel.set({ text: newLabel.trim() });
         fabricCanvas.renderAll();
       }
     });
