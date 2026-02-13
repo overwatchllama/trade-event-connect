@@ -70,8 +70,8 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     if (!canvasRef.current) return;
 
     const canvas = new FabricCanvas(canvasRef.current, {
-      width: 720,
-      height: 1280,
+      width: 1080,
+      height: 1920,
       backgroundColor: "#ffffff",
       snapAngle: 45,
       snapThreshold: 10,
