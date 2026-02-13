@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Canvas as FabricCanvas, Rect, Text as FabricText, Group } from "fabric";
+import { Canvas as FabricCanvas, Rect, Text as FabricText, Group, Line } from "fabric";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { Move, Trash2, Download, Upload, Save, Home, Bath, DoorOpen, Cuboid, Presentation, UtensilsCrossed, Utensils, Box, LayoutGrid, Rows3, Square } from "lucide-react";
+import { Move, Trash2, Download, Upload, Save, Home, Bath, DoorOpen, Cuboid, Presentation, UtensilsCrossed, Utensils, Box, LayoutGrid, Rows3, Square, XSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Label } from "./ui/label";
@@ -14,7 +14,7 @@ interface LayoutDrawingToolProps {
   readOnly?: boolean;
 }
 
-type ToolType = "select" | "room" | "wall" | "restroom" | "table-single" | "table-row" | "table-pod" | "door" | "counter" | "stage" | "food" | "dining";
+type ToolType = "select" | "room" | "wall" | "restroom" | "table-single" | "table-row" | "table-pod" | "door" | "counter" | "stage" | "food" | "dining" | "void";
 type TableSize = "6ft" | "8ft";
 
 const WALL_THICKNESS = 3;
@@ -80,6 +80,33 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     canvas.on('object:moving', reorderLayers);
     canvas.on('object:modified', reorderLayers);
     canvas.on('object:added', reorderLayers);
+
+    // Keep text right-side-up after rotation (except doors)
+    canvas.on('object:rotating', (e) => {
+      const obj = e.target as any;
+      if (!obj || !obj._objects) return;
+      // Check if it's a door - skip counter-rotation for doors
+      const isDoor = obj._objects.some((child: any) => child.type === 'text' && child.text === 'Door');
+      if (isDoor) return;
+      const angle = obj.angle || 0;
+      obj._objects.forEach((child: any) => {
+        if (child.type === 'text') {
+          child.set({ angle: -angle });
+        }
+      });
+    });
+    canvas.on('object:modified', (e) => {
+      const obj = e.target as any;
+      if (!obj || !obj._objects) return;
+      const isDoor = obj._objects.some((child: any) => child.type === 'text' && child.text === 'Door');
+      if (isDoor) return;
+      const angle = obj.angle || 0;
+      obj._objects.forEach((child: any) => {
+        if (child.type === 'text') {
+          child.set({ angle: -angle });
+        }
+      });
+    });
 
     if (initialLayout) {
       canvas.loadFromJSON(initialLayout, () => {
@@ -348,6 +375,15 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       const group = createLabeledObject(rect, "Dining");
       fabricCanvas.add(group);
       fabricCanvas.setActiveObject(group);
+    } else if (tool === "void") {
+      const size = 100;
+      const rect = new Rect({ width: size, height: size, fill: "#f5f5f5", stroke: "#666666", strokeWidth: WALL_THICKNESS, strokeUniform: true, originX: 'center', originY: 'center' });
+      const line1 = new Line([-size / 2, -size / 2, size / 2, size / 2], { stroke: '#666666', strokeWidth: 2, originX: 'center', originY: 'center' });
+      const line2 = new Line([size / 2, -size / 2, -size / 2, size / 2], { stroke: '#666666', strokeWidth: 2, originX: 'center', originY: 'center' });
+      const label = new FabricText("Void", { fontSize: 14, fontFamily: 'Arial', fill: '#666666', originX: 'center', originY: 'center' });
+      const group = new Group([rect, line1, line2, label], { left: 100, top: 100 });
+      fabricCanvas.add(group);
+      fabricCanvas.setActiveObject(group);
     }
   };
 
@@ -509,6 +545,9 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
               </Button>
               <Button variant={activeTool === "dining" ? "default" : "outline"} size="sm" onClick={() => handleToolClick("dining")}>
                 <Utensils className="h-4 w-4 mr-2" />Dining
+              </Button>
+              <Button variant={activeTool === "void" ? "default" : "outline"} size="sm" onClick={() => handleToolClick("void")}>
+                <XSquare className="h-4 w-4 mr-2" />Void
               </Button>
 
               <div className="border-l border-border mx-2" />
