@@ -141,7 +141,7 @@ const VendingDashboard = () => {
 
   return (
     <div className="space-y-8">
-      <PersonalCalendar defaultTab="vending" />
+      <PersonalCalendar defaultTab="vending" visibleTabs={['vending']} />
 
       <section className="py-4">
         <div className="container mx-auto px-4">
