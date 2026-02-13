@@ -2,10 +2,16 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogIn, LogOut, Clock } from "lucide-react";
+import { Loader2, LogIn, LogOut, Clock, Link2, QrCode, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { QRCodeSVG } from "qrcode.react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface StaffAssignment {
   id: string;
@@ -18,6 +24,7 @@ interface StaffAssignment {
   notes: string | null;
   role_name: string;
   staff_role_id: string;
+  check_in_token: string;
 }
 
 interface StaffCheckInDialogProps {
@@ -30,6 +37,7 @@ interface StaffCheckInDialogProps {
 const StaffCheckInDialog = ({ open, onOpenChange, eventId, eventTitle }: StaffCheckInDialogProps) => {
   const [staff, setStaff] = useState<StaffAssignment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) fetchStaff();
@@ -57,6 +65,7 @@ const StaffCheckInDialog = ({ open, onOpenChange, eventId, eventTitle }: StaffCh
         notes: a.notes,
         role_name: a.event_staff_roles.role_name,
         staff_role_id: a.staff_role_id,
+        check_in_token: a.check_in_token,
       }));
 
       setStaff(mapped);
@@ -108,14 +117,25 @@ const StaffCheckInDialog = ({ open, onOpenChange, eventId, eventTitle }: StaffCh
     if (!s.checked_in_at) return null;
     const start = new Date(s.checked_in_at);
     const end = s.checked_out_at ? new Date(s.checked_out_at) : new Date();
-    const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    return hours;
+    return (end.getTime() - start.getTime()) / (1000 * 60 * 60);
   };
 
   const formatHours = (hours: number) => {
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
     return `${h}h ${m}m`;
+  };
+
+  const getCheckInUrl = (token: string) => {
+    return `${window.location.origin}/staff-checkin/${token}`;
+  };
+
+  const copyLink = (member: StaffAssignment) => {
+    const url = getCheckInUrl(member.check_in_token);
+    navigator.clipboard.writeText(url);
+    setCopiedId(member.id);
+    toast.success(`Check-in link copied for ${member.assigned_name}`);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   // Group by role
@@ -188,7 +208,48 @@ const StaffCheckInDialog = ({ open, onOpenChange, eventId, eventTitle }: StaffCh
                             )}
                           </div>
                         </div>
-                        <div>
+                        <div className="flex items-center gap-1">
+                          {/* Share link */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0"
+                            onClick={() => copyLink(member)}
+                            title="Copy self check-in link"
+                          >
+                            {copiedId === member.id ? (
+                              <Check className="h-3.5 w-3.5 text-green-600" />
+                            ) : (
+                              <Link2 className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+
+                          {/* QR Code */}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                title="Show QR code"
+                              >
+                                <QrCode className="h-3.5 w-3.5" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-4" align="end">
+                              <div className="text-center space-y-2">
+                                <p className="text-xs font-medium">{member.assigned_name}</p>
+                                <QRCodeSVG
+                                  value={getCheckInUrl(member.check_in_token)}
+                                  size={160}
+                                  level="M"
+                                />
+                                <p className="text-xs text-muted-foreground">Scan to check in/out</p>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+
+                          {/* Check in/out button */}
                           {member.checked_in ? (
                             <Button
                               variant="outline"
@@ -197,7 +258,7 @@ const StaffCheckInDialog = ({ open, onOpenChange, eventId, eventTitle }: StaffCh
                               onClick={() => checkOut(member.id)}
                             >
                               <LogOut className="h-3 w-3 mr-1" />
-                              Check Out
+                              Out
                             </Button>
                           ) : (
                             <Button
@@ -206,7 +267,7 @@ const StaffCheckInDialog = ({ open, onOpenChange, eventId, eventTitle }: StaffCh
                               onClick={() => checkIn(member.id)}
                             >
                               <LogIn className="h-3 w-3 mr-1" />
-                              Check In
+                              In
                             </Button>
                           )}
                         </div>

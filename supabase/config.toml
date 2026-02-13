@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.share-ticket-email]
 verify_jwt = false
+
+[functions.staff-check-in]
+verify_jwt = false
