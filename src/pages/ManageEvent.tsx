@@ -17,6 +17,7 @@ import { ManageEventSponsors } from '@/components/ManageEventSponsors';
 import ManageVendorsDialog from '@/components/ManageVendorsDialog';
 import ManageSponsorsDialog from '@/components/ManageSponsorsDialog';
 import { EventFileManager } from '@/components/EventFileManager';
+import { AttendeeManagement } from '@/components/AttendeeManagement';
 import EventDayDialog from '@/components/EventDayDialog';
 import { Database } from '@/integrations/supabase/types';
 
@@ -184,8 +185,9 @@ const ManageEvent = () => {
         </div>
 
         <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="attendees">Attendees</TabsTrigger>
             <TabsTrigger value="flyer">Event Flyer</TabsTrigger>
             <TabsTrigger value="layout">Floor Plan</TabsTrigger>
             <TabsTrigger value="vendor-notes">Vendor Notes</TabsTrigger>
@@ -202,6 +204,10 @@ const ManageEvent = () => {
               totalTables={event.total_tables}
               maxAttendees={event.max_attendees}
             />
+          </TabsContent>
+
+          <TabsContent value="attendees" className="space-y-6">
+            <AttendeeManagement eventId={event.id} />
           </TabsContent>
 
           <TabsContent value="flyer" className="space-y-6">
