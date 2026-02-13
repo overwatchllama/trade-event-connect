@@ -255,7 +255,10 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       top: 10,
     });
 
-    return new Group([rect, label, sizeLabel]);
+    return new Group([rect, label, sizeLabel], {
+      originX: 'center',
+      originY: 'center',
+    });
   };
 
   const addTablePod = () => {
@@ -268,46 +271,51 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     let letterIndex = 0;
     const getLetter = () => String.fromCharCode(65 + letterIndex++);
 
-    const n = podTablesPerSide; // tables per side (configurable)
-    const innerPadding = 8;
-    const topRowWidth = n * (w + gap) - gap;
-    const sideSize = h;
-    const podTotalSize = sideSize + innerPadding + topRowWidth + innerPadding + sideSize;
+    const n = podTablesPerSide;
+    const padding = 8;
+    
+    // Pod inner area = n tables wide (using table width w)
+    const innerSpan = n * w + (n - 1) * gap;
+    // Total pod dimensions
+    const podW = h + padding + innerSpan + padding + h;
+    const podH = h + padding + innerSpan + padding + h;
 
-    const sideTableStartY = h + innerPadding;
-    const sideInset = innerPadding + h;
-
-    // Top row: skip middle table if odd count >= 3, otherwise place all
-    const topRowLeft = sideSize + innerPadding;
+    // Center positions for tables along each edge
     const skipMiddle = n >= 3 && n % 2 === 1;
     const middleIndex = Math.floor(n / 2);
+
+    // Helper: get center X for table index i in top/bottom row
+    const getTableCenterX = (i: number) => h + padding + i * (w + gap) + w / 2;
+    // Helper: get center Y for table index i in left/right column  
+    const getTableCenterY = (i: number) => h + padding + i * (w + gap) + w / 2;
+
+    // Top row: horizontal tables, centered at y = h/2
     for (let i = 0; i < n; i++) {
       if (skipMiddle && i === middleIndex) { getLetter(); continue; }
       const table = createPodTable(getLetter(), tableSize);
-      table.set({ left: topRowLeft + i * (w + gap), top: 0 });
+      table.set({ left: getTableCenterX(i), top: h / 2 });
       items.push(table);
     }
 
-    // Right side tables (top to bottom)
+    // Right side: vertical tables, centered at x = podW - h/2
     for (let i = 0; i < n; i++) {
       const table = createPodTable(getLetter(), tableSize);
-      table.set({ left: podTotalSize - sideInset, top: sideTableStartY + i * (w + gap), angle: 90 });
+      table.set({ left: podW - h / 2, top: getTableCenterY(i), angle: 90 });
       items.push(table);
     }
 
-    // Bottom row (right to left), skip middle if applicable
-    const bottomY = podTotalSize - h;
+    // Bottom row: horizontal tables (right to left), centered at y = podH - h/2
     for (let i = n - 1; i >= 0; i--) {
       if (skipMiddle && i === middleIndex) { getLetter(); continue; }
       const table = createPodTable(getLetter(), tableSize);
-      table.set({ left: topRowLeft + i * (w + gap), top: bottomY });
+      table.set({ left: getTableCenterX(i), top: podH - h / 2 });
       items.push(table);
     }
 
-    // Left side tables (bottom to top)
+    // Left side: vertical tables (bottom to top), centered at x = h/2
     for (let i = n - 1; i >= 0; i--) {
       const table = createPodTable(getLetter(), tableSize);
-      table.set({ left: sideInset, top: sideTableStartY + i * (w + gap), angle: 90 });
+      table.set({ left: h / 2, top: getTableCenterY(i), angle: 90 });
       items.push(table);
     }
 
@@ -315,8 +323,8 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     const outline = new Rect({
       left: -6,
       top: -6,
-      width: podTotalSize + 12,
-      height: podTotalSize + 12,
+      width: podW + 12,
+      height: podH + 12,
       fill: 'transparent',
       stroke: '#bdbdbd',
       strokeWidth: 1,
@@ -331,8 +339,8 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       fontFamily: 'Arial',
       fontWeight: 'bold',
       fill: '#1976d2',
-      left: podTotalSize / 2,
-      top: podTotalSize / 2,
+      left: podW / 2,
+      top: podH / 2,
       originX: 'center',
       originY: 'center',
     });
