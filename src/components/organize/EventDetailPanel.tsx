@@ -66,31 +66,81 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
   const [flyerDialogOpen, setFlyerDialogOpen] = useState(false);
   const [floorPlanDialogOpen, setFloorPlanDialogOpen] = useState(false);
   const [vendorNotesDialogOpen, setVendorNotesDialogOpen] = useState(false);
-  const [flyerFile, setFlyerFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [flyerFrontFile, setFlyerFrontFile] = useState<File | null>(null);
+  const [flyerBackFile, setFlyerBackFile] = useState<File | null>(null);
+  const [uploadingFront, setUploadingFront] = useState(false);
+  const [uploadingBack, setUploadingBack] = useState(false);
+  const [addingFloorPlan, setAddingFloorPlan] = useState(false);
   const [currentFlyerUrl, setCurrentFlyerUrl] = useState(event.flyer_url);
+  const [currentFlyerBackUrl, setCurrentFlyerBackUrl] = useState<string | null>(null);
+  const [flyerViewSide, setFlyerViewSide] = useState<'front' | 'back'>('front');
   const [vendorNotes, setVendorNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
-  const handleFlyerUpload = async () => {
-    if (!flyerFile) return;
-    setUploading(true);
+  useEffect(() => {
+    const fetchBackUrl = async () => {
+      const { data } = await supabase.from('events').select('flyer_back_url').eq('id', event.id).single();
+      if (data) setCurrentFlyerBackUrl((data as any).flyer_back_url);
+    };
+    fetchBackUrl();
+  }, [event.id]);
+
+  const handleFlyerUpload = async (side: 'front' | 'back') => {
+    const file = side === 'front' ? flyerFrontFile : flyerBackFile;
+    if (!file) return;
+    const setter = side === 'front' ? setUploadingFront : setUploadingBack;
+    setter(true);
     try {
-      const fileExt = flyerFile.name.split('.').pop();
-      const fileName = `${event.id}-${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('event-flyers').upload(fileName, flyerFile);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${event.id}-${side}-${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('event-flyers').upload(fileName, file);
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('event-flyers').getPublicUrl(fileName);
-      const { error: updateError } = await supabase.from('events').update({ flyer_url: publicUrl }).eq('id', event.id);
+      const updateField = side === 'front' ? 'flyer_url' : 'flyer_back_url';
+      const { error: updateError } = await supabase.from('events').update({ [updateField]: publicUrl }).eq('id', event.id);
       if (updateError) throw updateError;
-      setCurrentFlyerUrl(publicUrl);
-      setFlyerFile(null);
-      toast.success('Flyer uploaded!');
+      if (side === 'front') { setCurrentFlyerUrl(publicUrl); setFlyerFrontFile(null); }
+      else { setCurrentFlyerBackUrl(publicUrl); setFlyerBackFile(null); }
+      toast.success(`Flyer ${side} uploaded!`);
     } catch {
-      toast.error('Failed to upload flyer');
+      toast.error(`Failed to upload flyer ${side}`);
     } finally {
-      setUploading(false);
+      setter(false);
+    }
+  };
+
+  const handleAddFloorPlanToFlyer = async () => {
+    setAddingFloorPlan(true);
+    try {
+      const { data: eventData } = await supabase.from('events').select('layout_json').eq('id', event.id).single();
+      if (!eventData?.layout_json) {
+        toast.error('No floor plan exists yet. Create one in the Floor Plan tab first.');
+        return;
+      }
+      const fabricModule = await import('fabric');
+      const tempCanvas = new fabricModule.Canvas(null as any, { width: 800, height: 600 });
+      await tempCanvas.loadFromJSON(eventData.layout_json as Record<string, any>);
+      tempCanvas.renderAll();
+      const dataUrl = tempCanvas.toDataURL({ format: 'png', multiplier: 2 });
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `${event.id}-floorplan-${Date.now()}.png`, { type: 'image/png' });
+      const fileName = `${event.id}-floorplan-${Date.now()}.png`;
+      const { error: uploadError } = await supabase.storage.from('event-flyers').upload(fileName, file);
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('event-flyers').getPublicUrl(fileName);
+      const { error: updateError } = await supabase.from('events').update({ flyer_back_url: publicUrl }).eq('id', event.id);
+      if (updateError) throw updateError;
+      setCurrentFlyerBackUrl(publicUrl);
+      setFlyerViewSide('back');
+      toast.success('Floor plan added as flyer back!');
+      tempCanvas.dispose();
+    } catch (error) {
+      console.error('Error adding floor plan:', error);
+      toast.error('Failed to add floor plan to flyer');
+    } finally {
+      setAddingFloorPlan(false);
     }
   };
 
@@ -321,28 +371,46 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
 
               {/* Flyer Dialog */}
               <Dialog open={flyerDialogOpen} onOpenChange={setFlyerDialogOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-lg">
                   <DialogHeader>
                     <DialogTitle>Event Flyer</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
-                    {currentFlyerUrl && (
-                      <div className="rounded-lg overflow-hidden border">
-                        <img src={currentFlyerUrl} alt="Event flyer" className="w-full object-contain max-h-64" />
+                    {(currentFlyerUrl || currentFlyerBackUrl) && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button variant={flyerViewSide === 'front' ? 'default' : 'outline'} size="sm" onClick={() => setFlyerViewSide('front')}>Front</Button>
+                          <Button variant={flyerViewSide === 'back' ? 'default' : 'outline'} size="sm" onClick={() => setFlyerViewSide('back')}>Back</Button>
+                        </div>
+                        <div className="rounded-lg overflow-hidden border bg-muted flex items-center justify-center min-h-[200px]">
+                          {(flyerViewSide === 'front' ? currentFlyerUrl : currentFlyerBackUrl) ? (
+                            <img src={(flyerViewSide === 'front' ? currentFlyerUrl : currentFlyerBackUrl)!} alt={`Flyer ${flyerViewSide}`} className="w-full object-contain max-h-64" />
+                          ) : (
+                            <p className="text-muted-foreground text-sm">No {flyerViewSide} image uploaded</p>
+                          )}
+                        </div>
                       </div>
                     )}
                     <div className="space-y-2">
-                      <Label>Upload new flyer</Label>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setFlyerFile(e.target.files?.[0] || null)}
-                      />
+                      <Label className="font-semibold">Front Image</Label>
+                      <Input type="file" accept="image/*" onChange={(e) => setFlyerFrontFile(e.target.files?.[0] || null)} />
+                      <Button onClick={() => handleFlyerUpload('front')} disabled={!flyerFrontFile || uploadingFront} className="w-full">
+                        {uploadingFront ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Uploading...</> : <><Upload className="h-4 w-4 mr-2" /> Upload Front</>}
+                      </Button>
                     </div>
-                    <Button onClick={handleFlyerUpload} disabled={!flyerFile || uploading} className="w-full">
-                      {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-                      {uploading ? "Uploading..." : "Upload Flyer"}
-                    </Button>
+                    <div className="space-y-2">
+                      <Label className="font-semibold">Back Image</Label>
+                      <Input type="file" accept="image/*" onChange={(e) => setFlyerBackFile(e.target.files?.[0] || null)} />
+                      <Button onClick={() => handleFlyerUpload('back')} disabled={!flyerBackFile || uploadingBack} className="w-full">
+                        {uploadingBack ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Uploading...</> : <><Upload className="h-4 w-4 mr-2" /> Upload Back</>}
+                      </Button>
+                    </div>
+                    <div className="border-t border-border pt-3">
+                      <p className="text-sm text-muted-foreground mb-2">Use your floor plan as the back of the flyer.</p>
+                      <Button variant="outline" onClick={handleAddFloorPlanToFlyer} disabled={addingFloorPlan} className="w-full">
+                        {addingFloorPlan ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Adding...</> : <><Map className="h-4 w-4 mr-2" /> Add Floor Plan as Back</>}
+                      </Button>
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
