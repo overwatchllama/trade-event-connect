@@ -41,6 +41,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
   const [activeTool, setActiveTool] = useState<ToolType>("select");
   const [tableSize, setTableSize] = useState<TableSize>("6ft");
   const [rowCount, setRowCount] = useState(5);
+  const [podTablesPerSide, setPodTablesPerSide] = useState(3);
   const [saving, setSaving] = useState(false);
 
   const findMaxTableNumber = (objects: any[]): number => {
@@ -267,46 +268,44 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     let letterIndex = 0;
     const getLetter = () => String.fromCharCode(65 + letterIndex++);
 
-    // Square pod: tables on all 4 sides, corners open (no middle table on top/bottom)
+    const n = podTablesPerSide; // tables per side (configurable)
     const innerPadding = 8;
-    const topRowWidth = 3 * (w + gap) - gap;
+    const topRowWidth = n * (w + gap) - gap;
     const sideSize = h;
-    const podSize = sideSize + innerPadding + topRowWidth + innerPadding + sideSize;
+    const podTotalSize = sideSize + innerPadding + topRowWidth + innerPadding + sideSize;
 
     const sideTableStartY = h + innerPadding;
-    const sideAvailableHeight = podSize - 2 * (h + innerPadding);
-    const sideTableCount = Math.max(1, Math.floor((sideAvailableHeight + gap) / (w + gap)));
-
-    // Inward offset for side tables
     const sideInset = innerPadding + h;
 
-    // Top row: 2 tables (skip middle position) — A, C
+    // Top row: skip middle table if odd count >= 3, otherwise place all
     const topRowLeft = sideSize + innerPadding;
-    for (let i = 0; i < 3; i++) {
-      if (i === 1) { getLetter(); continue; } // skip B
+    const skipMiddle = n >= 3 && n % 2 === 1;
+    const middleIndex = Math.floor(n / 2);
+    for (let i = 0; i < n; i++) {
+      if (skipMiddle && i === middleIndex) { getLetter(); continue; }
       const table = createPodTable(getLetter(), tableSize);
       table.set({ left: topRowLeft + i * (w + gap), top: 0 });
       items.push(table);
     }
 
-    // Right side tables (top to bottom) — D, E, F — moved inward
-    for (let i = 0; i < sideTableCount; i++) {
+    // Right side tables (top to bottom)
+    for (let i = 0; i < n; i++) {
       const table = createPodTable(getLetter(), tableSize);
-      table.set({ left: podSize - sideInset, top: sideTableStartY + i * (w + gap), angle: 90 });
+      table.set({ left: podTotalSize - sideInset, top: sideTableStartY + i * (w + gap), angle: 90 });
       items.push(table);
     }
 
-    // Bottom row: 2 tables (skip middle) — G, I (right to left)
-    const bottomY = podSize - h;
-    for (let i = 2; i >= 0; i--) {
-      if (i === 1) { getLetter(); continue; } // skip H
+    // Bottom row (right to left), skip middle if applicable
+    const bottomY = podTotalSize - h;
+    for (let i = n - 1; i >= 0; i--) {
+      if (skipMiddle && i === middleIndex) { getLetter(); continue; }
       const table = createPodTable(getLetter(), tableSize);
       table.set({ left: topRowLeft + i * (w + gap), top: bottomY });
       items.push(table);
     }
 
-    // Left side tables (bottom to top) — J, K, L — moved inward
-    for (let i = sideTableCount - 1; i >= 0; i--) {
+    // Left side tables (bottom to top)
+    for (let i = n - 1; i >= 0; i--) {
       const table = createPodTable(getLetter(), tableSize);
       table.set({ left: sideInset, top: sideTableStartY + i * (w + gap), angle: 90 });
       items.push(table);
@@ -316,8 +315,8 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     const outline = new Rect({
       left: -6,
       top: -6,
-      width: podSize + 12,
-      height: podSize + 12,
+      width: podTotalSize + 12,
+      height: podTotalSize + 12,
       fill: 'transparent',
       stroke: '#bdbdbd',
       strokeWidth: 1,
@@ -332,8 +331,8 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       fontFamily: 'Arial',
       fontWeight: 'bold',
       fill: '#1976d2',
-      left: podSize / 2,
-      top: podSize / 2,
+      left: podTotalSize / 2,
+      top: podTotalSize / 2,
       originX: 'center',
       originY: 'center',
     });
@@ -615,6 +614,20 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
                   <SelectContent>
                     {[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
                       <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium whitespace-nowrap">Pod Size:</Label>
+                <Select value={String(podTablesPerSide)} onValueChange={(v) => setPodTablesPerSide(Number(v))}>
+                  <SelectTrigger className="w-[80px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[2, 3, 4, 5, 6].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n}/side</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
