@@ -207,8 +207,8 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     let maxCode = 64; // '@' = one before 'A'
     const findPodLabels = (objects: any[]) => {
       for (const obj of objects) {
-        if (obj.type === 'text' && obj.text && /^Pod [A-Z]$/.test(obj.text)) {
-          const code = obj.text.charCodeAt(4);
+        if (obj.type === 'text' && obj.text && /^[A-Z]$/.test(obj.text)) {
+          const code = obj.text.charCodeAt(0);
           if (code > maxCode) maxCode = code;
         }
         if (obj._objects) findPodLabels(obj._objects);
@@ -287,7 +287,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     items.unshift(outline);
 
     // Editable pod letter label in center
-    const podLabel = new FabricText(`Pod ${podLetter}`, {
+    const podLabel = new FabricText(podLetter, {
       fontSize: 16,
       fontFamily: 'Arial',
       fontWeight: 'bold',
@@ -310,7 +310,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     podGroup.on('mousedblclick', () => {
       const newLabel = prompt('Enter pod label:', podLetter);
       if (newLabel !== null && newLabel.trim()) {
-        podLabel.set({ text: `Pod ${newLabel.trim().toUpperCase()}` });
+        podLabel.set({ text: newLabel.trim().toUpperCase() });
         fabricCanvas.renderAll();
       }
     });
