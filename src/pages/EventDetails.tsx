@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MapPin, Calendar, Users, Tag, Settings, Store, Mail, Phone, Instagram, Twitter, Facebook, ExternalLink, Share2, ScanLine } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Users, Tag, Settings, Store, Mail, Phone, Instagram, Twitter, Facebook, ExternalLink, Share2, ScanLine, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
@@ -53,6 +53,7 @@ const EventDetails = () => {
   const [hasApplied, setHasApplied] = useState(false);
   const [buyTicketOpen, setBuyTicketOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [tablesSold, setTablesSold] = useState(0);
 
   const isVendorPro = subscribed &&
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
@@ -86,16 +87,18 @@ const EventDetails = () => {
           setOrganizerEmail(profileData.email);
         }
 
-        // Fetch vendor count
-        const { count, error: vendorError } = await supabase
+        // Fetch vendor count and tables sold
+        const { data: vendorApps, error: vendorError } = await supabase
           .from('vendor_applications')
-          .select('*', { count: 'exact', head: true })
+          .select('approved_tables')
           .eq('event_id', id)
           .eq('application_status', 'approved')
           .eq('payment_status', 'paid');
 
-        if (!vendorError && count !== null) {
-          setVendorCount(count);
+        if (!vendorError && vendorApps) {
+          setVendorCount(vendorApps.length);
+          const totalSold = vendorApps.reduce((sum, app) => sum + (app.approved_tables || 1), 0);
+          setTablesSold(totalSold);
         }
 
         // Fetch social media links
@@ -527,6 +530,13 @@ const EventDetails = () => {
                   <CardTitle>Vendor Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {event.total_tables && tablesSold >= event.total_tables && (
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+                      <p className="text-sm font-semibold text-destructive">Vendor tables are sold out!</p>
+                    </div>
+                  )}
+
                   {event.vendor_table_price && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Table Price</span>
