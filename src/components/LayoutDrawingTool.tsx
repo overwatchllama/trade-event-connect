@@ -267,43 +267,48 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     let letterIndex = 0;
     const getLetter = () => String.fromCharCode(65 + letterIndex++);
 
-    // Square pod: tables on all 4 sides
+    // Square pod: tables on all 4 sides, corners open (no middle table on top/bottom)
     const innerPadding = 8;
     const topRowWidth = 3 * (w + gap) - gap;
     const sideSize = h;
     const podSize = sideSize + innerPadding + topRowWidth + innerPadding + sideSize;
 
+    const sideTableStartY = h + innerPadding;
     const sideAvailableHeight = podSize - 2 * (h + innerPadding);
     const sideTableCount = Math.max(1, Math.floor((sideAvailableHeight + gap) / (w + gap)));
-    const sideTableStartY = h + innerPadding;
 
-    // Top row: 3 tables (left to right = A, B, C...)
+    // Inward offset for side tables
+    const sideInset = innerPadding + h;
+
+    // Top row: 2 tables (skip middle position) — A, C
     const topRowLeft = sideSize + innerPadding;
     for (let i = 0; i < 3; i++) {
+      if (i === 1) { getLetter(); continue; } // skip B
       const table = createPodTable(getLetter(), tableSize);
       table.set({ left: topRowLeft + i * (w + gap), top: 0 });
       items.push(table);
     }
 
-    // Right side tables (top to bottom)
+    // Right side tables (top to bottom) — D, E, F — moved inward
     for (let i = 0; i < sideTableCount; i++) {
       const table = createPodTable(getLetter(), tableSize);
-      table.set({ left: podSize, top: sideTableStartY + i * (w + gap), angle: 90 });
+      table.set({ left: podSize - sideInset, top: sideTableStartY + i * (w + gap), angle: 90 });
       items.push(table);
     }
 
-    // Bottom row: 3 tables (right to left)
+    // Bottom row: 2 tables (skip middle) — G, I (right to left)
     const bottomY = podSize - h;
     for (let i = 2; i >= 0; i--) {
+      if (i === 1) { getLetter(); continue; } // skip H
       const table = createPodTable(getLetter(), tableSize);
       table.set({ left: topRowLeft + i * (w + gap), top: bottomY });
       items.push(table);
     }
 
-    // Left side tables (bottom to top)
+    // Left side tables (bottom to top) — J, K, L — moved inward
     for (let i = sideTableCount - 1; i >= 0; i--) {
       const table = createPodTable(getLetter(), tableSize);
-      table.set({ left: sideSize, top: sideTableStartY + i * (w + gap), angle: 90 });
+      table.set({ left: sideInset, top: sideTableStartY + i * (w + gap), angle: 90 });
       items.push(table);
     }
 
