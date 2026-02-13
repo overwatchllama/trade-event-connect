@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas as FabricCanvas, Rect, Text as FabricText, Group } from "fabric";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { Move, Trash2, Download, Upload, Save, Home, Bath, DoorOpen, Cuboid, Presentation, UtensilsCrossed, Utensils, Box, LayoutGrid, Rows3 } from "lucide-react";
+import { Move, Trash2, Download, Upload, Save, Home, Bath, DoorOpen, Cuboid, Presentation, UtensilsCrossed, Utensils, Box, LayoutGrid, Rows3, Square } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Label } from "./ui/label";
@@ -14,7 +14,7 @@ interface LayoutDrawingToolProps {
   readOnly?: boolean;
 }
 
-type ToolType = "select" | "room" | "wall" | "restroom" | "table-row" | "table-pod" | "door" | "counter" | "stage" | "food" | "dining";
+type ToolType = "select" | "room" | "wall" | "restroom" | "table-single" | "table-row" | "table-pod" | "door" | "counter" | "stage" | "food" | "dining";
 type TableSize = "6ft" | "8ft";
 
 const WALL_THICKNESS = 3;
@@ -61,22 +61,23 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       backgroundColor: "#ffffff",
     });
 
-    canvas.on('selection:created', (e) => {
-      const obj = e.selected?.[0] as any;
-      if (obj && obj.objectType === 'room') canvas.sendObjectToBack(obj);
-    });
-    canvas.on('selection:updated', (e) => {
-      const obj = e.selected?.[0] as any;
-      if (obj && obj.objectType === 'room') canvas.sendObjectToBack(obj);
-    });
-    canvas.on('object:moving', (e) => {
-      const obj = e.target as any;
-      if (obj && obj.objectType === 'room') canvas.sendObjectToBack(obj);
-    });
-    canvas.on('object:modified', (e) => {
-      const obj = e.target as any;
-      if (obj && obj.objectType === 'room') canvas.sendObjectToBack(obj);
-    });
+    const reorderLayers = () => {
+      const objects = canvas.getObjects();
+      const rooms = objects.filter((o: any) => o.objectType === 'room');
+      const walls = objects.filter((o: any) => o.objectType === 'wall');
+      rooms.forEach((o) => canvas.sendObjectToBack(o));
+      walls.forEach((o) => {
+        canvas.sendObjectToBack(o);
+        // Move walls above rooms
+        rooms.forEach(() => canvas.bringObjectForward(o));
+      });
+    };
+
+    canvas.on('selection:created', reorderLayers);
+    canvas.on('selection:updated', reorderLayers);
+    canvas.on('object:moving', reorderLayers);
+    canvas.on('object:modified', reorderLayers);
+    canvas.on('object:added', reorderLayers);
 
     if (initialLayout) {
       canvas.loadFromJSON(initialLayout, () => {
@@ -277,10 +278,25 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     return new Group([rect, text], { left: 100, top: 100 });
   };
 
+  const addSingleTable = () => {
+    if (!fabricCanvas) return;
+    const tableNum = getNextTableNumber();
+    const table = createSingleTable(tableNum, tableSize);
+    table.set({ left: 100, top: 100 });
+    (table as any).objectType = 'table';
+    fabricCanvas.add(table);
+    fabricCanvas.setActiveObject(table);
+    fabricCanvas.renderAll();
+  };
+
   const handleToolClick = (tool: ToolType) => {
     setActiveTool(tool);
     if (!fabricCanvas) return;
 
+    if (tool === "table-single") {
+      addSingleTable();
+      return;
+    }
     if (tool === "table-row") {
       addTableRow();
       return;
@@ -294,10 +310,9 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       const rect = new Rect({ left: 100, top: 100, width: 200, height: 150, fill: "#e3f2fd", stroke: "#000000", strokeWidth: WALL_THICKNESS, strokeUniform: true });
       rect.set({ objectType: 'room' } as any);
       fabricCanvas.add(rect);
-      fabricCanvas.sendObjectToBack(rect);
       fabricCanvas.setActiveObject(rect);
     } else if (tool === "wall") {
-      const rect = new Rect({ left: 100, top: 100, width: 200, height: WALL_THICKNESS, fill: "#000000", stroke: "#000000", strokeWidth: 0, strokeUniform: true });
+      const rect = new Rect({ left: 100, top: 100, width: 200, height: WALL_THICKNESS, fill: "#000000", stroke: "#000000", strokeWidth: WALL_THICKNESS, strokeUniform: true });
       rect.set({ objectType: 'wall' } as any);
       fabricCanvas.add(rect);
       fabricCanvas.setActiveObject(rect);
@@ -436,6 +451,14 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
 
               <div className="border-l border-border h-8 mx-1" />
 
+              <Button
+                variant={activeTool === "table-single" ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleToolClick("table-single")}
+              >
+                <Square className="h-4 w-4 mr-2" />
+                Add Table
+              </Button>
               <Button
                 variant={activeTool === "table-row" ? "default" : "outline"}
                 size="sm"
