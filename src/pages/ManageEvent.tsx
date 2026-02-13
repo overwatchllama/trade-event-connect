@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, PenTool, Upload, X, Image } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -39,6 +39,9 @@ const ManageEvent = () => {
   const [vendorsDialogOpen, setVendorsDialogOpen] = useState(false);
   const [sponsorsDialogOpen, setSponsorsDialogOpen] = useState(false);
   const [eventDayDialogOpen, setEventDayDialogOpen] = useState(false);
+  const [floorPlanMode, setFloorPlanMode] = useState<'choose' | 'design' | 'upload'>('choose');
+  const [uploadingFloorPlan, setUploadingFloorPlan] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -199,21 +202,132 @@ const ManageEvent = () => {
           </TabsContent>
 
           <TabsContent value="layout" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Floor Plan Layout</CardTitle>
-                <CardDescription>
-                  Design the floor plan layout for your event. This will be visible to attendees and vendors.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <LayoutDrawingTool
-                  eventId={event.id}
-                  initialLayout={event.layout_json}
-                  onSave={handleSaveLayout}
+            {floorPlanMode === 'choose' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setFloorPlanMode('design')}>
+                  <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
+                    <PenTool className="h-12 w-12 text-primary" />
+                    <h3 className="text-xl font-semibold">Design My Own</h3>
+                    <p className="text-muted-foreground text-center text-sm">Use the built-in drawing tool to create your floor plan layout</p>
+                  </CardContent>
+                </Card>
+                <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => fileInputRef.current?.click()}>
+                  <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
+                    <Upload className="h-12 w-12 text-primary" />
+                    <h3 className="text-xl font-semibold">Upload a File</h3>
+                    <p className="text-muted-foreground text-center text-sm">Upload an image of your existing floor plan (PNG, JPG, PDF)</p>
+                  </CardContent>
+                </Card>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !event) return;
+                    setUploadingFloorPlan(true);
+                    try {
+                      const fileExt = file.name.split('.').pop();
+                      const filePath = `${event.id}/floor-plan.${fileExt}`;
+                      const { error: uploadError } = await supabase.storage
+                        .from('event-files')
+                        .upload(filePath, file, { upsert: true });
+                      if (uploadError) throw uploadError;
+                      const { data: { publicUrl } } = supabase.storage
+                        .from('event-files')
+                        .getPublicUrl(filePath);
+                      const { error: updateError } = await supabase
+                        .from('events')
+                        .update({ floor_plan_url: publicUrl })
+                        .eq('id', event.id);
+                      if (updateError) throw updateError;
+                      setEvent({ ...event, floor_plan_url: publicUrl });
+                      setFloorPlanMode('upload');
+                      toast.success('Floor plan uploaded successfully!');
+                    } catch (error) {
+                      console.error('Error uploading floor plan:', error);
+                      toast.error('Failed to upload floor plan');
+                    } finally {
+                      setUploadingFloorPlan(false);
+                      e.target.value = '';
+                    }
+                  }}
                 />
-              </CardContent>
-            </Card>
+                {uploadingFloorPlan && (
+                  <div className="col-span-full flex justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                )}
+                {event.floor_plan_url && (
+                  <Card className="col-span-full">
+                    <CardHeader>
+                      <CardTitle className="text-base">Current Uploaded Floor Plan</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <img src={event.floor_plan_url} alt="Floor plan" className="max-w-full max-h-96 object-contain rounded-md border" />
+                      <div className="flex gap-2 mt-4">
+                        <Button variant="outline" size="sm" onClick={() => setFloorPlanMode('upload')}>
+                          <Image className="h-4 w-4 mr-2" />View Full
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {event.layout_json && (
+                  <Card className="col-span-full">
+                    <CardContent className="pt-6">
+                      <Button variant="outline" onClick={() => setFloorPlanMode('design')}>
+                        Continue editing existing design
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {floorPlanMode === 'design' && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Floor Plan Layout</CardTitle>
+                    <CardDescription>Design the floor plan layout for your event.</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setFloorPlanMode('choose')}>
+                    <X className="h-4 w-4 mr-2" />Back
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <LayoutDrawingTool
+                    eventId={event.id}
+                    initialLayout={event.layout_json}
+                    onSave={handleSaveLayout}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {floorPlanMode === 'upload' && event.floor_plan_url && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Uploaded Floor Plan</CardTitle>
+                    <CardDescription>Your uploaded floor plan image.</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                      <Upload className="h-4 w-4 mr-2" />Replace
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setFloorPlanMode('choose')}>
+                      <X className="h-4 w-4 mr-2" />Back
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <img src={event.floor_plan_url} alt="Floor plan" className="w-full object-contain rounded-md border" />
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="vendor-notes" className="space-y-6">
