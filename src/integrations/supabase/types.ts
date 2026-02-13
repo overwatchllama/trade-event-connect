@@ -442,6 +442,7 @@ export type Database = {
           entry_fee: number | null
           event_type: string
           floor_plan_url: string | null
+          flyer_back_url: string | null
           flyer_url: string | null
           id: string
           image_url: string | null
@@ -484,6 +485,7 @@ export type Database = {
           entry_fee?: number | null
           event_type: string
           floor_plan_url?: string | null
+          flyer_back_url?: string | null
           flyer_url?: string | null
           id?: string
           image_url?: string | null
@@ -526,6 +528,7 @@ export type Database = {
           entry_fee?: number | null
           event_type?: string
           floor_plan_url?: string | null
+          flyer_back_url?: string | null
           flyer_url?: string | null
           id?: string
           image_url?: string | null
