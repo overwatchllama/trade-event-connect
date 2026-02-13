@@ -207,7 +207,7 @@ const Index = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background">
       <Header />
       <Hero />
       
@@ -251,7 +251,7 @@ const Index = () => {
       ) : (
         mainContent
       )}
-    </div>
+    </main>
   );
 };
 
