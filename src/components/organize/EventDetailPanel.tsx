@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import {
   Users,
   UserCog,
   Wrench,
+  ListChecks,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EventDashboard } from "@/components/EventDashboard";
@@ -49,6 +51,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
   const navigate = useNavigate();
   const [vendorsDialogOpen, setVendorsDialogOpen] = useState(false);
   const [sponsorsDialogOpen, setSponsorsDialogOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
 
   return (
     <Card className="mt-6">
@@ -191,9 +194,15 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
           <TabsContent value="manage">
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <DayOfChecklist eventId={event.id} />
-                </div>
+                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setChecklistOpen(true)}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <ListChecks className="h-4 w-4" />
+                      Day-of Checklist
+                    </CardTitle>
+                    <CardDescription>Track event day tasks</CardDescription>
+                  </CardHeader>
+                </Card>
                 <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/manage-event/${event.id}?tab=summary`)}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm">Post-Event Summary</CardTitle>
@@ -225,6 +234,15 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
                   </CardHeader>
                 </Card>
               </div>
+
+              <Dialog open={checklistOpen} onOpenChange={setChecklistOpen}>
+                <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Day-of Checklist</DialogTitle>
+                  </DialogHeader>
+                  <DayOfChecklist eventId={event.id} />
+                </DialogContent>
+              </Dialog>
               <div className="pt-2">
                 <Button onClick={() => navigate(`/manage-event/${event.id}`)}>
                   <Settings className="h-4 w-4 mr-2" />
