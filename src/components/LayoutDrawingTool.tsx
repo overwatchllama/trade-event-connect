@@ -59,6 +59,8 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       width: 1000,
       height: 700,
       backgroundColor: "#ffffff",
+      snapAngle: 45,
+      snapThreshold: 10,
     });
 
     const reorderLayers = () => {
