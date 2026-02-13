@@ -21,7 +21,7 @@ import {
   Ticket,
   ChevronRight,
 } from "lucide-react";
-import { format, parseISO, isBefore, startOfDay, isSameDay } from "date-fns";
+import { format, parseISO, isBefore, startOfDay, isSameDay, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -130,6 +130,18 @@ const HostingDashboard = () => {
     [events, today]
   );
 
+  // Events in next 2 weeks
+  const twoWeeksOut = useMemo(() => addDays(today, 14), [today]);
+  const upcomingTwoWeeks = useMemo(
+    () => events
+      .filter((e) => {
+        const d = parseISO(e.date);
+        return !isBefore(d, today) && isBefore(d, twoWeeksOut);
+      })
+      .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime()),
+    [events, today, twoWeeksOut]
+  );
+
   // Calendar event dates for indicators
   const eventDates = useMemo(
     () => events.map((e) => parseISO(e.date)),
@@ -193,10 +205,10 @@ const HostingDashboard = () => {
               <Skeleton className="h-[350px] w-full" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Calendar */}
-              <div className="lg:col-span-2">
-                <Card>
+            <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6">
+              {/* Calendar - auto width to fit content */}
+              <div>
+                <Card className="w-fit">
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <CalendarIcon className="h-5 w-5" />
@@ -260,6 +272,34 @@ const HostingDashboard = () => {
                             </div>
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Upcoming 2 weeks */}
+                    {upcomingTwoWeeks.length > 0 && (
+                      <div className="mt-4 pt-4 border-t">
+                        <p className="text-xs font-semibold text-muted-foreground mb-2">
+                          Upcoming Events
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {upcomingTwoWeeks.map((event) => (
+                            <Button
+                              key={event.id}
+                              variant={selectedEventId === event.id ? "default" : "outline"}
+                              size="sm"
+                              className="text-xs h-auto py-1.5 px-3"
+                              onClick={() => {
+                                setSelectedEventId(event.id);
+                                setSelectedDate(parseISO(event.date));
+                              }}
+                            >
+                              {event.title}
+                              <span className="ml-1 opacity-70">
+                                {format(parseISO(event.date), "M/d")}
+                              </span>
+                            </Button>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </CardContent>
