@@ -158,48 +158,109 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     fabricCanvas.renderAll();
   };
 
+  const getNextPodLetter = () => {
+    if (!fabricCanvas) return 'A';
+    let maxCode = 64; // '@' = one before 'A'
+    const findPodLabels = (objects: any[]) => {
+      for (const obj of objects) {
+        if (obj.type === 'text' && obj.text && /^Pod [A-Z]$/.test(obj.text)) {
+          const code = obj.text.charCodeAt(4);
+          if (code > maxCode) maxCode = code;
+        }
+        if (obj._objects) findPodLabels(obj._objects);
+      }
+    };
+    findPodLabels(fabricCanvas.getObjects());
+    return String.fromCharCode(maxCode + 1);
+  };
+
   const addTablePod = () => {
     if (!fabricCanvas) return;
     const startNum = getNextTableNumber();
     const w = tableSize === "6ft" ? 6 * FT : 8 * FT;
     const h = 30;
     const gap = 4;
-    const tables: Group[] = [];
+    const podLetter = getNextPodLetter();
+    const items: any[] = [];
 
-    // Pod layout: 2 rows of 5 tables facing each other (like the reference image)
-    // Top row: tables facing down
-    for (let i = 0; i < 5; i++) {
+    // Square pod: 3 top, 3 bottom, 4 corners rotated 90°
+    const topRowWidth = 3 * (w + gap) - gap;
+    const cornerW = h; // rotated: width becomes the table depth
+    const innerPadding = 8;
+    const podWidth = cornerW + innerPadding + topRowWidth + innerPadding + cornerW;
+    const podHeight = w + innerPadding * 2; // corner tables (rotated) define height
+
+    // Top row: 3 tables (numbered 1-3)
+    const topRowLeft = cornerW + innerPadding;
+    for (let i = 0; i < 3; i++) {
       const table = createSingleTable(startNum + i, tableSize);
-      table.set({ left: i * (w + gap), top: 0 });
-      tables.push(table);
+      table.set({ left: topRowLeft + i * (w + gap), top: 0 });
+      items.push(table);
     }
 
-    // Bottom row: tables facing up (mirrored), numbered 6-10
-    for (let i = 0; i < 5; i++) {
-      const table = createSingleTable(startNum + 5 + i, tableSize);
-      table.set({ left: i * (w + gap), top: h + 20 }); // 20px aisle between rows
-      tables.push(table);
+    // Bottom row: 3 tables (numbered 4-6)
+    const bottomY = podHeight - h;
+    for (let i = 0; i < 3; i++) {
+      const table = createSingleTable(startNum + 3 + i, tableSize);
+      table.set({ left: topRowLeft + i * (w + gap), top: bottomY });
+      items.push(table);
     }
 
-    // Outline around the pod
-    const podW = 5 * (w + gap) - gap;
-    const podH = 2 * h + 20;
+    // Corner tables rotated 90° (numbered 7-10)
+    const corners = [
+      { left: cornerW, top: 0 },                          // top-left
+      { left: podWidth, top: 0 },                          // top-right
+      { left: cornerW, top: podHeight },                   // bottom-left
+      { left: podWidth, top: podHeight },                  // bottom-right
+    ];
+    for (let i = 0; i < 4; i++) {
+      const table = createSingleTable(startNum + 6 + i, tableSize);
+      table.set({ left: corners[i].left, top: corners[i].top, angle: 90 });
+      items.push(table);
+    }
+
+    // Dashed outline
     const outline = new Rect({
       left: -6,
       top: -6,
-      width: podW + 12,
-      height: podH + 12,
+      width: podWidth + 12,
+      height: podHeight + 12,
       fill: 'transparent',
       stroke: '#bdbdbd',
       strokeWidth: 1,
       strokeDashArray: [4, 4],
     });
+    items.unshift(outline);
 
-    const podGroup = new Group([outline, ...tables], {
+    // Editable pod letter label in center
+    const podLabel = new FabricText(`Pod ${podLetter}`, {
+      fontSize: 16,
+      fontFamily: 'Arial',
+      fontWeight: 'bold',
+      fill: '#1976d2',
+      left: podWidth / 2,
+      top: podHeight / 2,
+      originX: 'center',
+      originY: 'center',
+    });
+    items.push(podLabel);
+
+    const podGroup = new Group(items, {
       left: 100,
       top: 100,
+      subTargetCheck: true,
     });
     (podGroup as any).objectType = 'table-pod';
+
+    // Double-click to edit pod label
+    podGroup.on('mousedblclick', () => {
+      const newLabel = prompt('Enter pod label:', podLetter);
+      if (newLabel !== null && newLabel.trim()) {
+        podLabel.set({ text: `Pod ${newLabel.trim().toUpperCase()}` });
+        fabricCanvas.renderAll();
+      }
+    });
+
     fabricCanvas.add(podGroup);
     fabricCanvas.setActiveObject(podGroup);
     fabricCanvas.renderAll();
@@ -463,7 +524,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
       {!readOnly && (
         <Card className="p-4">
           <div className="flex gap-6 text-xs text-muted-foreground">
-            <div><span className="font-medium">Pod:</span> 2 rows × 5 tables (10 total), facing each other</div>
+            <div><span className="font-medium">Pod:</span> Square layout — 3 top, 3 bottom, 4 corners rotated (10 tables). Double-click to rename.</div>
             <div><span className="font-medium">Row:</span> Single line of tables, configurable count</div>
             <div><span className="font-medium">6ft table:</span> 6' × 30"</div>
             <div><span className="font-medium">8ft table:</span> 8' × 30"</div>
