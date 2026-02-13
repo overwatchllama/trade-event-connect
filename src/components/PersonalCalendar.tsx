@@ -21,7 +21,11 @@ interface CalendarEvent {
   vendorName?: string;
 }
 
-const PersonalCalendar = () => {
+interface PersonalCalendarProps {
+  defaultTab?: string;
+}
+
+const PersonalCalendar = ({ defaultTab }: PersonalCalendarProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -30,7 +34,7 @@ const PersonalCalendar = () => {
   const [vendingEvents, setVendingEvents] = useState<CalendarEvent[]>([]);
   const [hostingEvents, setHostingEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('favorites');
+  const [activeTab, setActiveTab] = useState(defaultTab || 'favorites');
   const [dataFetched, setDataFetched] = useState(false);
 
   // Fetch data only once when user is available

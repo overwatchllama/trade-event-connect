@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import PersonalCalendar from "@/components/PersonalCalendar";
+import HostingDashboard from "@/components/HostingDashboard";
 import SubscriptionTiers from "@/components/SubscriptionTiers";
 import SimplifiedEventCard from "@/components/SimplifiedEventCard";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import {
   Select,
   SelectContent,
@@ -15,9 +18,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Database } from "@/integrations/supabase/types";
+import { Megaphone, Home } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { isOrganizer } = useUserRoles();
+  const [activeMainTab, setActiveMainTab] = useState("home");
   const [popularEvents, setPopularEvents] = useState<any[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,10 +116,8 @@ const Index = () => {
     }
   }, [selectedState, popularEvents]);
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <Hero />
+  const mainContent = (
+    <>
       <PersonalCalendar />
       
       {/* Featured Events Section - only show if there are upcoming events */}
@@ -184,6 +188,39 @@ const Index = () => {
           </div>
         </div>
       </section>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <Hero />
+      
+      {isOrganizer ? (
+        <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
+          <div className="container mx-auto px-4 pt-6">
+            <TabsList className="w-full max-w-md mx-auto grid grid-cols-2">
+              <TabsTrigger value="home" className="flex items-center gap-2">
+                <Home className="h-4 w-4" />
+                Home
+              </TabsTrigger>
+              <TabsTrigger value="hosting" className="flex items-center gap-2">
+                <Megaphone className="h-4 w-4" />
+                Hosting
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="home" className="mt-0">
+            {mainContent}
+          </TabsContent>
+          <TabsContent value="hosting" className="mt-0">
+            <HostingDashboard />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        mainContent
+      )}
     </div>
   );
 };
