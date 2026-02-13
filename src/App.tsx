@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,25 +9,27 @@ import { ThemeProvider } from "next-themes";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { CartProvider } from "@/contexts/CartContext";
 import Index from "./pages/Index";
-import Events from "./pages/Events";
-import Auth from "./pages/Auth";
-import Profile from "./pages/Profile";
-import Vendors from "./pages/Vendors";
-import VendorProfile from "./pages/VendorProfile";
-import EnhancedCollection from "./pages/EnhancedCollection";
-import Subscription from "./pages/Subscription";
-import SubscriptionSuccess from "./pages/SubscriptionSuccess";
-import Following from "./pages/Following";
-import Admin from "./pages/Admin";
-import EventDetails from "./pages/EventDetails";
-import LayoutTool from "./pages/LayoutTool";
-import ManageEvent from "./pages/ManageEvent";
-import SponsorProfile from "./pages/SponsorProfile";
-import Settings from "./pages/Settings";
-import EmployeeDashboard from "./pages/EmployeeDashboard";
-import TicketSuccess from "./pages/TicketSuccess";
-import SharedTicket from "./pages/SharedTicket";
-import NotFound from "./pages/NotFound";
+
+// Lazy-loaded routes
+const Events = lazy(() => import("./pages/Events"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Vendors = lazy(() => import("./pages/Vendors"));
+const VendorProfile = lazy(() => import("./pages/VendorProfile"));
+const EnhancedCollection = lazy(() => import("./pages/EnhancedCollection"));
+const Subscription = lazy(() => import("./pages/Subscription"));
+const SubscriptionSuccess = lazy(() => import("./pages/SubscriptionSuccess"));
+const Following = lazy(() => import("./pages/Following"));
+const Admin = lazy(() => import("./pages/Admin"));
+const EventDetails = lazy(() => import("./pages/EventDetails"));
+const LayoutTool = lazy(() => import("./pages/LayoutTool"));
+const ManageEvent = lazy(() => import("./pages/ManageEvent"));
+const SponsorProfile = lazy(() => import("./pages/SponsorProfile"));
+const Settings = lazy(() => import("./pages/Settings"));
+const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
+const TicketSuccess = lazy(() => import("./pages/TicketSuccess"));
+const SharedTicket = lazy(() => import("./pages/SharedTicket"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
@@ -39,6 +42,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/events" element={<Events />} />
@@ -87,6 +91,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
           </BrowserRouter>
           </TooltipProvider>
         </CartProvider>
