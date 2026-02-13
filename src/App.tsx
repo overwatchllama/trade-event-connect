@@ -29,6 +29,8 @@ const Settings = lazy(() => import("./pages/Settings"));
 const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
 const TicketSuccess = lazy(() => import("./pages/TicketSuccess"));
 const SharedTicket = lazy(() => import("./pages/SharedTicket"));
+const Organize = lazy(() => import("./pages/Organize"));
+const Vending = lazy(() => import("./pages/Vending"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -75,6 +77,16 @@ const App = () => (
             <Route path="/settings" element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="/organize" element={
+              <ProtectedRoute>
+                <Organize />
+              </ProtectedRoute>
+            } />
+            <Route path="/vending" element={
+              <ProtectedRoute>
+                <Vending />
               </ProtectedRoute>
             } />
             <Route path="/employee-dashboard" element={

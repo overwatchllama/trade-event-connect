@@ -1,16 +1,11 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import PersonalCalendar from "@/components/PersonalCalendar";
-import HostingDashboard from "@/components/HostingDashboard";
-import VendingDashboard from "@/components/VendingDashboard";
 import SubscriptionTiers from "@/components/SubscriptionTiers";
 import SimplifiedEventCard from "@/components/SimplifiedEventCard";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useUserRoles } from "@/hooks/useUserRoles";
 import {
   Select,
   SelectContent,
@@ -18,13 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Database } from "@/integrations/supabase/types";
-import { Megaphone, Home, Store } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { isOrganizer, isVendor } = useUserRoles();
-  const [activeMainTab, setActiveMainTab] = useState("home");
   const [popularEvents, setPopularEvents] = useState<any[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +31,6 @@ const Index = () => {
           .limit(6);
 
         if (eventsData) {
-          // Get event days for each event
           const eventIds = eventsData.map(e => e.id);
           const { data: eventDaysData } = await supabase
             .from('event_days')
@@ -84,13 +74,11 @@ const Index = () => {
               lastEventDate
             };
           }).filter(event => {
-            // Only show upcoming events (events that haven't ended yet)
             if (event.lastEventDate) {
               return event.lastEventDate >= today;
             }
-            return true; // Keep events without date info
+            return true;
           }).sort((a, b) => {
-            // Sort by date, soonest first
             if (!a.lastEventDate) return 1;
             if (!b.lastEventDate) return -1;
             return a.lastEventDate.getTime() - b.lastEventDate.getTime();
@@ -117,11 +105,12 @@ const Index = () => {
     }
   }, [selectedState, popularEvents]);
 
-  const mainContent = (
-    <>
-      <PersonalCalendar />
-      
-      {/* Featured Events Section - always render to prevent CLS */}
+  return (
+    <main className="min-h-screen bg-background">
+      <Header />
+      <Hero />
+
+      {/* Featured Events Section */}
       <section className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-8">
@@ -203,54 +192,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-    </>
-  );
-
-  return (
-    <main className="min-h-screen bg-background">
-      <Header />
-      <Hero />
-      
-      {(isOrganizer || isVendor) ? (
-        <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
-          <div className="container mx-auto px-4 pt-6">
-            <TabsList className="w-full max-w-md mx-auto grid" style={{ gridTemplateColumns: `repeat(${1 + (isOrganizer ? 1 : 0) + (isVendor ? 1 : 0)}, 1fr)` }}>
-              <TabsTrigger value="home" className="flex items-center gap-2">
-                <Home className="h-4 w-4" />
-                Home
-              </TabsTrigger>
-              {isOrganizer && (
-                <TabsTrigger value="hosting" className="flex items-center gap-2">
-                  <Megaphone className="h-4 w-4" />
-                  Hosting
-                </TabsTrigger>
-              )}
-              {isVendor && (
-                <TabsTrigger value="vending" className="flex items-center gap-2">
-                  <Store className="h-4 w-4" />
-                  Vending
-                </TabsTrigger>
-              )}
-            </TabsList>
-          </div>
-
-          <TabsContent value="home" className="mt-0">
-            {mainContent}
-          </TabsContent>
-          {isOrganizer && (
-            <TabsContent value="hosting" className="mt-0">
-              <HostingDashboard />
-            </TabsContent>
-          )}
-          {isVendor && (
-            <TabsContent value="vending" className="mt-0">
-              <VendingDashboard />
-            </TabsContent>
-          )}
-        </Tabs>
-      ) : (
-        mainContent
-      )}
     </main>
   );
 };
