@@ -18,6 +18,7 @@ import ManageVendorsDialog from '@/components/ManageVendorsDialog';
 import ManageSponsorsDialog from '@/components/ManageSponsorsDialog';
 import { EventFileManager } from '@/components/EventFileManager';
 import { AttendeeManagement } from '@/components/AttendeeManagement';
+import { DayOfChecklist } from '@/components/DayOfChecklist';
 import EventDayDialog from '@/components/EventDayDialog';
 import { Database } from '@/integrations/supabase/types';
 
@@ -185,9 +186,10 @@ const ManageEvent = () => {
         </div>
 
         <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="attendees">Attendees</TabsTrigger>
+            <TabsTrigger value="checklist">Checklist</TabsTrigger>
             <TabsTrigger value="flyer">Event Flyer</TabsTrigger>
             <TabsTrigger value="layout">Floor Plan</TabsTrigger>
             <TabsTrigger value="vendor-notes">Vendor Notes</TabsTrigger>
@@ -208,6 +210,10 @@ const ManageEvent = () => {
 
           <TabsContent value="attendees" className="space-y-6">
             <AttendeeManagement eventId={event.id} />
+          </TabsContent>
+
+          <TabsContent value="checklist" className="space-y-6">
+            <DayOfChecklist eventId={event.id} />
           </TabsContent>
 
           <TabsContent value="flyer" className="space-y-6">
