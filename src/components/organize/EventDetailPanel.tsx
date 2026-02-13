@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { format, parseISO } from "date-fns";
 import {
   ChevronRight,
+  Clock,
   Settings,
   BarChart3,
   Store,
@@ -36,6 +37,7 @@ import { LayoutDrawingTool } from "@/components/LayoutDrawingTool";
 import EventCheckInDialog from "@/components/organize/EventCheckInDialog";
 import { EventStaffRoles } from "@/components/organize/EventStaffRoles";
 import StaffCheckInDialog from "@/components/organize/StaffCheckInDialog";
+import { StaffHoursSummary } from "@/components/organize/StaffHoursSummary";
 
 interface EventDetailPanelProps {
   event: {
@@ -305,6 +307,13 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
           {/* STAFF TAB */}
           <TabsContent value="staff">
             <EventStaffRoles eventId={event.id} />
+            <div className="mt-6">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Staff Hours Summary
+              </h3>
+              <StaffHoursSummary eventId={event.id} />
+            </div>
           </TabsContent>
 
           {/* VISITORS TAB */}
