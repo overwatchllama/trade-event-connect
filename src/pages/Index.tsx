@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import PersonalCalendar from "@/components/PersonalCalendar";
 import HostingDashboard from "@/components/HostingDashboard";
+import VendingDashboard from "@/components/VendingDashboard";
 import SubscriptionTiers from "@/components/SubscriptionTiers";
 import SimplifiedEventCard from "@/components/SimplifiedEventCard";
 import { Button } from "@/components/ui/button";
@@ -18,11 +19,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Database } from "@/integrations/supabase/types";
-import { Megaphone, Home } from "lucide-react";
+import { Megaphone, Home, Store } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { isOrganizer } = useUserRoles();
+  const { isOrganizer, isVendor } = useUserRoles();
   const [activeMainTab, setActiveMainTab] = useState("home");
   const [popularEvents, setPopularEvents] = useState<any[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<any[]>([]);
@@ -196,27 +197,42 @@ const Index = () => {
       <Header />
       <Hero />
       
-      {isOrganizer ? (
+      {(isOrganizer || isVendor) ? (
         <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
           <div className="container mx-auto px-4 pt-6">
-            <TabsList className="w-full max-w-md mx-auto grid grid-cols-2">
+            <TabsList className="w-full max-w-md mx-auto grid" style={{ gridTemplateColumns: `repeat(${1 + (isOrganizer ? 1 : 0) + (isVendor ? 1 : 0)}, 1fr)` }}>
               <TabsTrigger value="home" className="flex items-center gap-2">
                 <Home className="h-4 w-4" />
                 Home
               </TabsTrigger>
-              <TabsTrigger value="hosting" className="flex items-center gap-2">
-                <Megaphone className="h-4 w-4" />
-                Hosting
-              </TabsTrigger>
+              {isOrganizer && (
+                <TabsTrigger value="hosting" className="flex items-center gap-2">
+                  <Megaphone className="h-4 w-4" />
+                  Hosting
+                </TabsTrigger>
+              )}
+              {isVendor && (
+                <TabsTrigger value="vending" className="flex items-center gap-2">
+                  <Store className="h-4 w-4" />
+                  Vending
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
           <TabsContent value="home" className="mt-0">
             {mainContent}
           </TabsContent>
-          <TabsContent value="hosting" className="mt-0">
-            <HostingDashboard />
-          </TabsContent>
+          {isOrganizer && (
+            <TabsContent value="hosting" className="mt-0">
+              <HostingDashboard />
+            </TabsContent>
+          )}
+          {isVendor && (
+            <TabsContent value="vending" className="mt-0">
+              <VendingDashboard />
+            </TabsContent>
+          )}
         </Tabs>
       ) : (
         mainContent
