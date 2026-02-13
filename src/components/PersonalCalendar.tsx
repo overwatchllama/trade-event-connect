@@ -23,9 +23,14 @@ interface CalendarEvent {
 
 interface PersonalCalendarProps {
   defaultTab?: string;
+  visibleTabs?: string[];
+  tabLabels?: Record<string, string>;
 }
 
-const PersonalCalendar = ({ defaultTab }: PersonalCalendarProps) => {
+const PersonalCalendar = ({ defaultTab, visibleTabs, tabLabels }: PersonalCalendarProps) => {
+  const allTabs = ['favorites', 'following', 'vending', 'hosting'];
+  const tabs = visibleTabs && visibleTabs.length > 0 ? visibleTabs : allTabs;
+  const getTabLabel = (tab: string) => tabLabels?.[tab] || { favorites: 'Favorites', following: 'Following', vending: 'Vending', hosting: 'Hosting' }[tab] || tab;
   const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -252,35 +257,43 @@ const PersonalCalendar = ({ defaultTab }: PersonalCalendarProps) => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-lg mx-auto grid-cols-4 mb-6">
-            <TabsTrigger value="favorites" className="flex items-center gap-1">
-              <Heart className="h-4 w-4" />
-              <span className="hidden sm:inline">Favorites</span>
-              {favoriteVendorEvents.length > 0 && (
-                <Badge variant="secondary" className="ml-1">{favoriteVendorEvents.length}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="following" className="flex items-center gap-1">
-              <Ticket className="h-4 w-4" />
-              <span className="hidden sm:inline">Following</span>
-              {followingEvents.length > 0 && (
-                <Badge variant="secondary" className="ml-1">{followingEvents.length}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="vending" className="flex items-center gap-1">
-              <Store className="h-4 w-4" />
-              <span className="hidden sm:inline">Vending</span>
-              {vendingEvents.length > 0 && (
-                <Badge variant="secondary" className="ml-1">{vendingEvents.length}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="hosting" className="flex items-center gap-1">
-              <Megaphone className="h-4 w-4" />
-              <span className="hidden sm:inline">Hosting</span>
-              {hostingEvents.length > 0 && (
-                <Badge variant="secondary" className="ml-1">{hostingEvents.length}</Badge>
-              )}
-            </TabsTrigger>
+          <TabsList className={`grid w-full max-w-lg mx-auto mb-6`} style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
+            {tabs.includes('favorites') && (
+              <TabsTrigger value="favorites" className="flex items-center gap-1">
+                <Heart className="h-4 w-4" />
+                <span className="hidden sm:inline">{getTabLabel('favorites')}</span>
+                {favoriteVendorEvents.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">{favoriteVendorEvents.length}</Badge>
+                )}
+              </TabsTrigger>
+            )}
+            {tabs.includes('following') && (
+              <TabsTrigger value="following" className="flex items-center gap-1">
+                <Ticket className="h-4 w-4" />
+                <span className="hidden sm:inline">{getTabLabel('following')}</span>
+                {followingEvents.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">{followingEvents.length}</Badge>
+                )}
+              </TabsTrigger>
+            )}
+            {tabs.includes('vending') && (
+              <TabsTrigger value="vending" className="flex items-center gap-1">
+                <Store className="h-4 w-4" />
+                <span className="hidden sm:inline">{getTabLabel('vending')}</span>
+                {vendingEvents.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">{vendingEvents.length}</Badge>
+                )}
+              </TabsTrigger>
+            )}
+            {tabs.includes('hosting') && (
+              <TabsTrigger value="hosting" className="flex items-center gap-1">
+                <Megaphone className="h-4 w-4" />
+                <span className="hidden sm:inline">{getTabLabel('hosting')}</span>
+                {hostingEvents.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">{hostingEvents.length}</Badge>
+                )}
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -290,10 +303,10 @@ const PersonalCalendar = ({ defaultTab }: PersonalCalendarProps) => {
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <CalendarIcon className="h-5 w-5" />
-                    {activeTab === 'favorites' && 'Favorite Vendors Events'}
+                    {activeTab === 'favorites' && `${getTabLabel('favorites')} Events`}
                     {activeTab === 'following' && 'Followed Events'}
                     {activeTab === 'vending' && 'My Vending Events'}
-                    {activeTab === 'hosting' && 'My Hosted Events'}
+                    {activeTab === 'hosting' && `My ${getTabLabel('hosting')} Events`}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

@@ -113,7 +113,7 @@ const HostingDashboard = () => {
   return (
     <div className="space-y-8">
       {/* Calendar */}
-      <PersonalCalendar defaultTab="hosting" />
+      <PersonalCalendar defaultTab="hosting" visibleTabs={['hosting']} tabLabels={{ hosting: 'Events' }} />
 
       {/* Event Lists */}
       <section className="py-4">
