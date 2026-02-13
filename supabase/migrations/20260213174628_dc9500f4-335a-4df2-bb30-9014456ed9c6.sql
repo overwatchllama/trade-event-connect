@@ -1,0 +1,1 @@
+ALTER TABLE public.events ADD COLUMN flyer_back_url text;
