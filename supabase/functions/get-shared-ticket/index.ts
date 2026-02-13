@@ -73,7 +73,7 @@ serve(async (req) => {
   } catch (error: any) {
     console.error("Error in get-shared-ticket:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Failed to retrieve ticket" }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
