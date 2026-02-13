@@ -103,7 +103,7 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
 
   const createSingleTable = (tableNum: number, size: TableSize) => {
     const w = size === "6ft" ? 6 * FT : 8 * FT;
-    const h = 30; // 30in ≈ 2.5ft depth
+    const h = 2.5 * FT; // 30 inches = 2.5ft
 
     const rect = new Rect({
       width: w,
