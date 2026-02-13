@@ -102,6 +102,7 @@ const SimplifiedEventCard = ({ event }: SimplifiedEventCardProps) => {
         }`}
         onClick={handleFavoriteToggle}
         disabled={loadingFavorite}
+        aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
       >
         <Heart className={`h-4 w-4 ${isFavorited ? 'fill-current' : ''}`} />
       </Button>

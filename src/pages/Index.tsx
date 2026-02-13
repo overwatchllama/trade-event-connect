@@ -149,7 +149,7 @@ const Index = () => {
             <>
               <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-8">
                 <Select value={selectedState} onValueChange={setSelectedState}>
-                  <SelectTrigger className="w-[200px]">
+                  <SelectTrigger className="w-[200px]" aria-label="Filter events by state">
                     <SelectValue placeholder="Filter by State" />
                   </SelectTrigger>
                   <SelectContent>
