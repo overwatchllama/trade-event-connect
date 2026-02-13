@@ -191,12 +191,9 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
           <TabsContent value="manage">
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/manage-event/${event.id}?tab=checklist`)}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Day-of Checklist</CardTitle>
-                    <CardDescription>Manage your event-day tasks</CardDescription>
-                  </CardHeader>
-                </Card>
+                <div className="md:col-span-2">
+                  <DayOfChecklist eventId={event.id} />
+                </div>
                 <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => navigate(`/manage-event/${event.id}?tab=summary`)}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm">Post-Event Summary</CardTitle>
