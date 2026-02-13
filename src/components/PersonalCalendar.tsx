@@ -3,7 +3,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarIcon, MapPin, Clock, Heart, Store, Ticket } from 'lucide-react';
+import { CalendarIcon, MapPin, Clock, Heart, Store, Ticket, Megaphone } from 'lucide-react';
 import { format, parseISO, isSameDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,7 +17,7 @@ interface CalendarEvent {
   city: string;
   state: string;
   venue: string;
-  type: 'favorite_vendor' | 'following' | 'vending';
+  type: 'favorite_vendor' | 'following' | 'vending' | 'hosting';
   vendorName?: string;
 }
 
@@ -28,6 +28,7 @@ const PersonalCalendar = () => {
   const [favoriteVendorEvents, setFavoriteVendorEvents] = useState<CalendarEvent[]>([]);
   const [followingEvents, setFollowingEvents] = useState<CalendarEvent[]>([]);
   const [vendingEvents, setVendingEvents] = useState<CalendarEvent[]>([]);
+  const [hostingEvents, setHostingEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('favorites');
   const [dataFetched, setDataFetched] = useState(false);
@@ -58,17 +59,24 @@ const PersonalCalendar = () => {
       const favoriteVendorIds = subscriptions?.filter(s => s.subscription_type === 'favorite_vendor').map(s => s.target_id) || [];
       const followedEventIds = subscriptions?.filter(s => s.subscription_type === 'event').map(s => s.target_id) || [];
 
-      // Fetch vending applications
-      const { data: vendingApps } = await supabase
-        .from('vendor_applications')
-        .select('event_id')
-        .eq('user_id', user.id)
-        .eq('application_status', 'approved');
+      // Fetch vending applications and hosting events in parallel
+      const [vendingAppsResult, hostingEventsResult] = await Promise.all([
+        supabase
+          .from('vendor_applications')
+          .select('event_id')
+          .eq('user_id', user.id)
+          .eq('application_status', 'approved'),
+        supabase
+          .from('events')
+          .select('id')
+          .eq('organizer_id', user.id)
+      ]);
 
-      const vendingEventIds = vendingApps?.map(a => a.event_id) || [];
+      const vendingEventIds = vendingAppsResult.data?.map(a => a.event_id) || [];
+      const hostingEventIds = hostingEventsResult.data?.map(e => e.id) || [];
 
       // Get all unique event IDs we need
-      let allEventIds: string[] = [...followedEventIds, ...vendingEventIds];
+      let allEventIds: string[] = [...followedEventIds, ...vendingEventIds, ...hostingEventIds];
 
       // For favorite vendors, get their event applications first
       let vendorApplicationsMap = new Map<string, string>();
@@ -93,6 +101,7 @@ const PersonalCalendar = () => {
         setFavoriteVendorEvents([]);
         setFollowingEvents([]);
         setVendingEvents([]);
+        setHostingEvents([]);
         setDataFetched(true);
         setLoading(false);
         return;
@@ -111,6 +120,7 @@ const PersonalCalendar = () => {
       const favoriteEvents: CalendarEvent[] = [];
       const following: CalendarEvent[] = [];
       const vending: CalendarEvent[] = [];
+      const hosting: CalendarEvent[] = [];
 
       events.forEach(event => {
         const days = eventDays.filter(d => d.event_id === event.id);
@@ -143,12 +153,18 @@ const PersonalCalendar = () => {
           if (vendingEventIds.includes(event.id)) {
             vending.push({ ...baseEvent, type: 'vending' });
           }
+
+          // Hosting events
+          if (hostingEventIds.includes(event.id)) {
+            hosting.push({ ...baseEvent, type: 'hosting' });
+          }
         });
       });
 
       setFavoriteVendorEvents(favoriteEvents);
       setFollowingEvents(following);
       setVendingEvents(vending);
+      setHostingEvents(hosting);
       setDataFetched(true);
     } catch (error) {
       console.error('Error fetching calendar events:', error);
@@ -166,10 +182,12 @@ const PersonalCalendar = () => {
         return followingEvents;
       case 'vending':
         return vendingEvents;
+      case 'hosting':
+        return hostingEvents;
       default:
         return [];
     }
-  }, [activeTab, favoriteVendorEvents, followingEvents, vendingEvents]);
+  }, [activeTab, favoriteVendorEvents, followingEvents, vendingEvents, hostingEvents]);
 
   const eventDates = useMemo(() => activeEvents.map(e => e.date), [activeEvents]);
   
@@ -183,11 +201,13 @@ const PersonalCalendar = () => {
   const getTypeIcon = useCallback((type: string) => {
     switch (type) {
       case 'favorite_vendor':
-        return <Heart className="h-3 w-3 text-red-500" />;
+        return <Heart className="h-3 w-3 text-destructive" />;
       case 'following':
-        return <Ticket className="h-3 w-3 text-blue-500" />;
+        return <Ticket className="h-3 w-3 text-primary" />;
       case 'vending':
-        return <Store className="h-3 w-3 text-green-500" />;
+        return <Store className="h-3 w-3 text-accent-foreground" />;
+      case 'hosting':
+        return <Megaphone className="h-3 w-3 text-primary" />;
       default:
         return null;
     }
@@ -213,7 +233,7 @@ const PersonalCalendar = () => {
     );
   }
 
-  const totalEvents = favoriteVendorEvents.length + followingEvents.length + vendingEvents.length;
+  const totalEvents = favoriteVendorEvents.length + followingEvents.length + vendingEvents.length + hostingEvents.length;
 
   return (
     <section className="py-12 bg-muted/30">
@@ -228,26 +248,33 @@ const PersonalCalendar = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-6">
-            <TabsTrigger value="favorites" className="flex items-center gap-2">
+          <TabsList className="grid w-full max-w-lg mx-auto grid-cols-4 mb-6">
+            <TabsTrigger value="favorites" className="flex items-center gap-1">
               <Heart className="h-4 w-4" />
               <span className="hidden sm:inline">Favorites</span>
               {favoriteVendorEvents.length > 0 && (
                 <Badge variant="secondary" className="ml-1">{favoriteVendorEvents.length}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="following" className="flex items-center gap-2">
+            <TabsTrigger value="following" className="flex items-center gap-1">
               <Ticket className="h-4 w-4" />
               <span className="hidden sm:inline">Following</span>
               {followingEvents.length > 0 && (
                 <Badge variant="secondary" className="ml-1">{followingEvents.length}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="vending" className="flex items-center gap-2">
+            <TabsTrigger value="vending" className="flex items-center gap-1">
               <Store className="h-4 w-4" />
               <span className="hidden sm:inline">Vending</span>
               {vendingEvents.length > 0 && (
                 <Badge variant="secondary" className="ml-1">{vendingEvents.length}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="hosting" className="flex items-center gap-1">
+              <Megaphone className="h-4 w-4" />
+              <span className="hidden sm:inline">Hosting</span>
+              {hostingEvents.length > 0 && (
+                <Badge variant="secondary" className="ml-1">{hostingEvents.length}</Badge>
               )}
             </TabsTrigger>
           </TabsList>
@@ -262,6 +289,7 @@ const PersonalCalendar = () => {
                     {activeTab === 'favorites' && 'Favorite Vendors Events'}
                     {activeTab === 'following' && 'Followed Events'}
                     {activeTab === 'vending' && 'My Vending Events'}
+                    {activeTab === 'hosting' && 'My Hosted Events'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
