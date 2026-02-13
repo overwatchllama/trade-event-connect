@@ -513,6 +513,17 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
 
               <div className="border-l border-border mx-2" />
 
+              <Button variant="destructive" size="sm" onClick={() => {
+                if (!fabricCanvas) return;
+                const active = fabricCanvas.getActiveObjects();
+                if (active.length === 0) { toast.error("No objects selected"); return; }
+                active.forEach((obj) => fabricCanvas.remove(obj));
+                fabricCanvas.discardActiveObject();
+                fabricCanvas.renderAll();
+                toast.success(`Deleted ${active.length} object(s)`);
+              }}>
+                <Trash2 className="h-4 w-4 mr-2" />Delete
+              </Button>
               <Button variant="outline" size="sm" onClick={handleClear}>
                 <Trash2 className="h-4 w-4 mr-2" />Clear
               </Button>
