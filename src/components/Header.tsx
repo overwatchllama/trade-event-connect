@@ -94,7 +94,7 @@ const Header = () => {
             </Link>
           </nav>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 min-h-[40px]">
             <ThemeToggle />
             <CartIcon />
             {loading ? (
