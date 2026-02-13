@@ -66,6 +66,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
   const [flyerDialogOpen, setFlyerDialogOpen] = useState(false);
   const [floorPlanDialogOpen, setFloorPlanDialogOpen] = useState(false);
   const [savedLayoutJson, setSavedLayoutJson] = useState<any>(null);
+  const [floorPlanEventData, setFloorPlanEventData] = useState<any>(null);
   const [vendorNotesDialogOpen, setVendorNotesDialogOpen] = useState(false);
   const [flyerFrontFile, setFlyerFrontFile] = useState<File | null>(null);
   const [flyerBackFile, setFlyerBackFile] = useState<File | null>(null);
@@ -341,8 +342,20 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
                   </CardHeader>
                 </Card>
                 <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={async () => {
-                  const { data } = await supabase.from('events').select('layout_json').eq('id', event.id).single();
+                  const { data } = await supabase.from('events').select('layout_json, address, zip_code, vendor_start_time').eq('id', event.id).single();
                   setSavedLayoutJson(data?.layout_json || null);
+                  setFloorPlanEventData({
+                    title: event.title,
+                    date: event.date,
+                    venue: event.venue,
+                    city: event.city,
+                    state: event.state,
+                    total_tables: event.total_tables,
+                    vendor_table_price: event.vendor_table_price,
+                    address: data?.address,
+                    zip_code: data?.zip_code,
+                    vendor_start_time: data?.vendor_start_time,
+                  });
                   setFloorPlanDialogOpen(true);
                 }}>
                   <CardHeader className="pb-2">
@@ -432,6 +445,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
                     <LayoutDrawingTool
                       eventId={event.id}
                       initialLayout={savedLayoutJson}
+                      eventData={floorPlanEventData}
                       onSave={async (layoutJson) => {
                         await supabase.from('events').update({ layout_json: layoutJson }).eq('id', event.id);
                         setSavedLayoutJson(layoutJson);

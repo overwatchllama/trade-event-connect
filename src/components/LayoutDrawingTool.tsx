@@ -2,16 +2,30 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas as FabricCanvas, Rect, Text as FabricText, Group, Line } from "fabric";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { Move, Trash2, Download, Upload, Save, Home, Bath, DoorOpen, Cuboid, Presentation, UtensilsCrossed, Utensils, Box, LayoutGrid, Rows3, Square, XSquare } from "lucide-react";
+import { Move, Trash2, Download, Upload, Save, Home, Bath, DoorOpen, Cuboid, Presentation, UtensilsCrossed, Utensils, Box, LayoutGrid, Rows3, Square, XSquare, TableProperties, Clock, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Label } from "./ui/label";
+
+interface EventData {
+  title?: string;
+  date?: string;
+  venue?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  total_tables?: number | null;
+  vendor_start_time?: string | null;
+  vendor_table_price?: number | null;
+}
 
 interface LayoutDrawingToolProps {
   eventId?: string;
   initialLayout?: any;
   onSave?: (layoutJson: any) => Promise<void>;
   readOnly?: boolean;
+  eventData?: EventData;
 }
 
 type ToolType = "select" | "room" | "wall" | "restroom" | "table-single" | "table-row" | "table-pod" | "door" | "counter" | "stage" | "food" | "dining" | "void";
@@ -21,7 +35,7 @@ const WALL_THICKNESS = 3;
 // Scale: 1ft = 8px
 const FT = 8;
 
-export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = false }: LayoutDrawingToolProps) => {
+export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = false, eventData }: LayoutDrawingToolProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [fabricCanvas, setFabricCanvas] = useState<FabricCanvas | null>(null);
   const [activeTool, setActiveTool] = useState<ToolType>("select");
@@ -307,6 +321,78 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
     return new Group([rect, text], { left: 100, top: 100 });
   };
 
+  const createInfoBlock = (lines: string[], borderColor: string) => {
+    if (!fabricCanvas) return;
+    const padding = 12;
+    const lineHeight = 16;
+    const textObjects = lines.map((line, i) => {
+      const isBold = i === 0;
+      return new FabricText(line, {
+        fontSize: isBold ? 13 : 11,
+        fontFamily: 'Arial',
+        fontWeight: isBold ? 'bold' : 'normal',
+        fill: '#333333',
+        left: padding,
+        top: padding + i * lineHeight,
+      });
+    });
+    const maxWidth = Math.max(...textObjects.map(t => t.width || 80));
+    const boxWidth = maxWidth + padding * 2;
+    const boxHeight = padding * 2 + lines.length * lineHeight;
+    const bg = new Rect({
+      width: boxWidth,
+      height: boxHeight,
+      fill: '#ffffff',
+      stroke: borderColor,
+      strokeWidth: 2,
+      strokeUniform: true,
+      rx: 4,
+      ry: 4,
+    });
+    const group = new Group([bg, ...textObjects], { left: 50, top: 50 });
+    (group as any).objectType = 'info-block';
+    fabricCanvas.add(group);
+    fabricCanvas.setActiveObject(group);
+    fabricCanvas.renderAll();
+  };
+
+  const addTableInfoBlock = () => {
+    if (!eventData) { toast.error("No event data available"); return; }
+    const lines = [
+      "Vendor / Exhibit Tables",
+      `Total Tables: ${eventData.total_tables ?? "N/A"}`,
+      `Table Size: ${tableSize}`,
+    ];
+    if (eventData.vendor_table_price != null) {
+      lines.push(`Price: $${eventData.vendor_table_price}/table`);
+    }
+    createInfoBlock(lines, '#f57c00');
+  };
+
+  const addDateTimeBlock = () => {
+    if (!eventData) { toast.error("No event data available"); return; }
+    const lines = [
+      "Show Date & Time",
+      `Date: ${eventData.date || "TBD"}`,
+    ];
+    if (eventData.vendor_start_time) {
+      lines.push(`Vendor Start: ${eventData.vendor_start_time}`);
+    }
+    createInfoBlock(lines, '#1976d2');
+  };
+
+  const addLocationBlock = () => {
+    if (!eventData) { toast.error("No event data available"); return; }
+    const lines = [
+      "Location",
+      eventData.venue || "TBD",
+    ];
+    if (eventData.address) lines.push(eventData.address);
+    const cityLine = [eventData.city, eventData.state, eventData.zip_code].filter(Boolean).join(', ');
+    if (cityLine) lines.push(cityLine);
+    createInfoBlock(lines, '#388e3c');
+  };
+
   const addSingleTable = () => {
     if (!fabricCanvas) return;
     const tableNum = getNextTableNumber();
@@ -549,6 +635,21 @@ export const LayoutDrawingTool = ({ eventId, initialLayout, onSave, readOnly = f
               <Button variant={activeTool === "void" ? "default" : "outline"} size="sm" onClick={() => handleToolClick("void")}>
                 <XSquare className="h-4 w-4 mr-2" />Void
               </Button>
+
+              {eventData && (
+                <>
+                  <div className="border-l border-border mx-2" />
+                  <Button variant="outline" size="sm" onClick={addTableInfoBlock}>
+                    <TableProperties className="h-4 w-4 mr-2" />Tables Info
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={addDateTimeBlock}>
+                    <Clock className="h-4 w-4 mr-2" />Date/Time
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={addLocationBlock}>
+                    <MapPin className="h-4 w-4 mr-2" />Location
+                  </Button>
+                </>
+              )}
 
               <div className="border-l border-border mx-2" />
 
