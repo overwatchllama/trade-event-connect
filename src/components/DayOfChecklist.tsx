@@ -48,6 +48,7 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [newItemTitle, setNewItemTitle] = useState('');
+  const [newItemAssignee, setNewItemAssignee] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
 
@@ -141,6 +142,7 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
           event_id: eventId,
           title: newItemTitle.trim(),
           sort_order: items.length,
+          assigned_to: newItemAssignee,
         })
         .select('id, title, is_completed, completed_at, sort_order, assigned_to')
         .single();
@@ -148,6 +150,7 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
       if (error) throw error;
       setItems([...items, data]);
       setNewItemTitle('');
+      setNewItemAssignee(null);
     } catch (error) {
       console.error('Error adding item:', error);
       toast.error('Failed to add item');
@@ -344,16 +347,40 @@ export const DayOfChecklist = ({ eventId }: DayOfChecklistProps) => {
           </div>
 
           {/* Add new item */}
-          <div className="flex gap-2 pt-2">
-            <Input
-              placeholder="Add a new checklist item..."
-              value={newItemTitle}
-              onChange={(e) => setNewItemTitle(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addItem()}
-            />
-            <Button onClick={addItem} disabled={!newItemTitle.trim() || adding} size="sm">
-              {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            </Button>
+          <div className="flex flex-col gap-2 pt-2">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add a new checklist item..."
+                value={newItemTitle}
+                onChange={(e) => setNewItemTitle(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addItem()}
+                className="flex-1"
+              />
+              <Select
+                value={newItemAssignee || 'unassigned'}
+                onValueChange={(val) => setNewItemAssignee(val === 'unassigned' ? null : val)}
+              >
+                <SelectTrigger className="w-[140px] h-9 text-xs">
+                  <div className="flex items-center gap-1 truncate">
+                    <UserCircle className="h-3 w-3 shrink-0" />
+                    <span className="truncate">
+                      {newItemAssignee ? (staffMap[newItemAssignee] || 'Assigned') : 'Assign to...'}
+                    </span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {staffMembers.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={addItem} disabled={!newItemTitle.trim() || adding} size="sm">
+                {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
 
           {items.length > 0 && (
