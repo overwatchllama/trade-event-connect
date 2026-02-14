@@ -19,6 +19,7 @@ import {
   Store,
   Users,
   Award,
+  Star,
 } from "lucide-react";
 import { format, parseISO, isBefore, startOfDay, isSameDay, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -265,7 +266,7 @@ const HostingDashboard = () => {
           </div>
 
           <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="calendar" className="gap-2">
                 <CalendarIcon className="w-4 h-4" />
                 Calendar
@@ -281,6 +282,10 @@ const HostingDashboard = () => {
               <TabsTrigger value="manage-staff" className="gap-2">
                 <Users className="w-4 h-4" />
                 Manage Staff
+              </TabsTrigger>
+              <TabsTrigger value="rate-review" className="gap-2">
+                <Star className="w-4 h-4" />
+                Rate & Review
               </TabsTrigger>
             </TabsList>
 
@@ -473,6 +478,46 @@ const HostingDashboard = () => {
                 <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-foreground mb-2">Manage Staff</h3>
                 <p className="text-muted-foreground">View and manage staff assignments across your events.</p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="rate-review" className="mt-6">
+              <div className="space-y-6">
+                <div className="text-center pb-4">
+                  <Star className="h-10 w-10 text-primary mx-auto mb-2" />
+                  <h3 className="text-xl font-semibold text-foreground mb-1">Rate & Review</h3>
+                  <p className="text-muted-foreground text-sm">Rate vendors and sponsors you've worked with across your events.</p>
+                </div>
+
+                {/* Vendors to rate */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Store className="h-5 w-5" />
+                      Vendors
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground text-sm text-center py-6">
+                      Select an event from the Calendar tab to view and rate its vendors using private notes and star ratings.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Sponsors to rate */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Award className="h-5 w-5" />
+                      Sponsors
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground text-sm text-center py-6">
+                      Select an event from the Calendar tab to view and rate its sponsors.
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
           </Tabs>
