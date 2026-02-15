@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import PersonalCalendar from "@/components/PersonalCalendar";
 import VendorTableListings from "@/components/vending/VendorTableListings";
-import EmployeeManagement from "@/components/vendor/EmployeeManagement";
+import VendorStaffRoster from "@/components/vending/VendorStaffRoster";
 import VendorRateEvents from "@/components/vending/VendorRateEvents";
 import VendorRateVenues from "@/components/vending/VendorRateVenues";
 
@@ -280,7 +280,7 @@ const VendingDashboard = () => {
         {/* Staff Tab */}
         <TabsContent value="staff">
           {vendorId ? (
-            <EmployeeManagement vendorId={vendorId} />
+            <VendorStaffRoster vendorId={vendorId} />
           ) : (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
