@@ -29,6 +29,7 @@ import CreateEventDialog from "@/components/CreateEventDialog";
 import EventDetailPanel from "@/components/organize/EventDetailPanel";
 import { EventVendorsOverview } from "@/components/vendor-management/EventVendorsOverview";
 import { OrganizerVendorNotes } from "@/components/OrganizerVendorNotes";
+import { VendorRateReview } from "@/components/organize/VendorRateReview";
 
 interface HostedEvent {
   id: string;
@@ -482,43 +483,7 @@ const HostingDashboard = () => {
             </TabsContent>
 
             <TabsContent value="rate-review" className="mt-6">
-              <div className="space-y-6">
-                <div className="text-center pb-4">
-                  <Star className="h-10 w-10 text-primary mx-auto mb-2" />
-                  <h3 className="text-xl font-semibold text-foreground mb-1">Rate & Review</h3>
-                  <p className="text-muted-foreground text-sm">Rate vendors and sponsors you've worked with across your events.</p>
-                </div>
-
-                {/* Vendors to rate */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Store className="h-5 w-5" />
-                      Vendors
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground text-sm text-center py-6">
-                      Select an event from the Calendar tab to view and rate its vendors using private notes and star ratings.
-                    </p>
-                  </CardContent>
-                </Card>
-
-                {/* Sponsors to rate */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Award className="h-5 w-5" />
-                      Sponsors
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground text-sm text-center py-6">
-                      Select an event from the Calendar tab to view and rate its sponsors.
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+              <VendorRateReview />
             </TabsContent>
           </Tabs>
         </div>
