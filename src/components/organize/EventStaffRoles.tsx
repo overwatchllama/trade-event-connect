@@ -3,9 +3,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Trash2, Loader2, UserCog, ChevronDown, ChevronRight, UserPlus, X } from "lucide-react";
+import { MultiSelect } from "@/components/ui/multi-select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Trash2, Loader2, UserCog, ChevronDown, ChevronRight, UserPlus, X, Store, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface StaffRole {
@@ -24,28 +41,77 @@ interface StaffAssignment {
   user_id: string | null;
 }
 
+interface RosterMember {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  default_role: string | null;
+  notes: string | null;
+  allow_vend: boolean;
+  vendor_id: string | null;
+}
+
+interface VendorOption {
+  id: string;
+  business_name: string;
+}
+
+interface SavedRole {
+  id: string;
+  role_name: string;
+}
+
 interface EventStaffRolesProps {
   eventId: string;
 }
 
+const parseRoles = (roleStr: string | null): string[] => {
+  if (!roleStr) return [];
+  return roleStr.split(",").map((r) => r.trim()).filter(Boolean);
+};
+
+const joinRoles = (roles: string[]): string | null => {
+  return roles.length > 0 ? roles.join(", ") : null;
+};
+
 export const EventStaffRoles = ({ eventId }: EventStaffRolesProps) => {
+  const { user } = useAuth();
   const [roles, setRoles] = useState<StaffRole[]>([]);
   const [assignments, setAssignments] = useState<StaffAssignment[]>([]);
+  const [rosterMembers, setRosterMembers] = useState<RosterMember[]>([]);
+  const [organizerRoles, setOrganizerRoles] = useState<SavedRole[]>([]);
+  const [vendors, setVendors] = useState<VendorOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleCount, setNewRoleCount] = useState(1);
   const [adding, setAdding] = useState(false);
   const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
-  const [addingToRole, setAddingToRole] = useState<string | null>(null);
-  const [newAssignment, setNewAssignment] = useState({ name: "", email: "", phone: "", notes: "" });
+
+  // Roster picker state
+  const [selectingForRole, setSelectingForRole] = useState<string | null>(null);
+  const [selectedRosterId, setSelectedRosterId] = useState("");
+
+  // New member dialog state
+  const [newMemberDialogOpen, setNewMemberDialogOpen] = useState(false);
+  const [newMemberForRole, setNewMemberForRole] = useState<string | null>(null);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newRoles2, setNewRoles2] = useState<string[]>([]);
+  const [newNotes, setNewNotes] = useState("");
+  const [newAllowVend, setNewAllowVend] = useState(false);
+  const [newVendorId, setNewVendorId] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
 
   useEffect(() => {
     fetchData();
-  }, [eventId]);
+  }, [eventId, user]);
 
   const fetchData = async () => {
+    if (!user) return;
     try {
-      const [rolesRes, assignmentsRes] = await Promise.all([
+      const [rolesRes, assignmentsRes, rosterRes, orgRolesRes, vendorsRes] = await Promise.all([
         supabase
           .from("event_staff_roles")
           .select("*")
@@ -56,12 +122,33 @@ export const EventStaffRoles = ({ eventId }: EventStaffRolesProps) => {
           .select("*")
           .eq("event_id", eventId)
           .order("created_at", { ascending: true }),
+        supabase
+          .from("organizer_staff_roster")
+          .select("id, name, email, phone, default_role, notes, allow_vend, vendor_id")
+          .eq("organizer_id", user.id)
+          .order("name"),
+        supabase
+          .from("organizer_staff_roles")
+          .select("id, role_name")
+          .eq("organizer_id", user.id)
+          .order("role_name"),
+        supabase
+          .from("vendors")
+          .select("id, business_name")
+          .order("business_name"),
       ]);
 
       if (rolesRes.error) throw rolesRes.error;
       if (assignmentsRes.error) throw assignmentsRes.error;
       setRoles(rolesRes.data || []);
       setAssignments(assignmentsRes.data || []);
+      setRosterMembers((rosterRes.data || []).map((m: any) => ({
+        ...m,
+        allow_vend: m.allow_vend ?? false,
+        vendor_id: m.vendor_id ?? null,
+      })));
+      setOrganizerRoles(orgRolesRes.data || []);
+      setVendors(vendorsRes.data || []);
     } catch (error) {
       console.error("Error fetching staff data:", error);
     } finally {
@@ -122,20 +209,23 @@ export const EventStaffRoles = ({ eventId }: EventStaffRolesProps) => {
     }
   };
 
-  const addAssignment = async (roleId: string) => {
-    if (!newAssignment.name.trim()) return;
+  const assignRosterMember = async (roleId: string) => {
+    if (!selectedRosterId) return;
+    const member = rosterMembers.find((m) => m.id === selectedRosterId);
+    if (!member) return;
+
     try {
       const { error } = await supabase.from("event_staff_assignments").insert({
         event_id: eventId,
         staff_role_id: roleId,
-        assigned_name: newAssignment.name.trim(),
-        assigned_email: newAssignment.email.trim() || null,
-        assigned_phone: newAssignment.phone.trim() || null,
-        notes: newAssignment.notes.trim() || null,
+        assigned_name: member.name,
+        assigned_email: member.email,
+        assigned_phone: member.phone,
+        notes: member.notes,
       });
       if (error) throw error;
-      setNewAssignment({ name: "", email: "", phone: "", notes: "" });
-      setAddingToRole(null);
+      setSelectedRosterId("");
+      setSelectingForRole(null);
       toast.success("Staff member assigned!");
       fetchData();
     } catch (error) {
@@ -170,6 +260,63 @@ export const EventStaffRoles = ({ eventId }: EventStaffRolesProps) => {
   const getAssignmentsForRole = (roleId: string) =>
     assignments.filter((a) => a.staff_role_id === roleId);
 
+  const openNewMemberDialog = (roleId: string) => {
+    setNewMemberForRole(roleId);
+    setNewName("");
+    setNewEmail("");
+    setNewPhone("");
+    setNewRoles2([]);
+    setNewNotes("");
+    setNewAllowVend(false);
+    setNewVendorId("");
+    setNewMemberDialogOpen(true);
+  };
+
+  const createAndAssignMember = async () => {
+    if (!user || !newName.trim() || !newMemberForRole) return;
+    setAddingMember(true);
+    try {
+      // 1. Add to organizer roster
+      const { data: rosterData, error: rosterError } = await supabase
+        .from("organizer_staff_roster")
+        .insert({
+          organizer_id: user.id,
+          name: newName.trim(),
+          email: newEmail.trim() || null,
+          phone: newPhone.trim() || null,
+          default_role: joinRoles(newRoles2),
+          notes: newNotes.trim() || null,
+          allow_vend: newAllowVend,
+          vendor_id: newVendorId || null,
+        })
+        .select("id")
+        .single();
+      if (rosterError) throw rosterError;
+
+      // 2. Assign to event role
+      const { error: assignError } = await supabase.from("event_staff_assignments").insert({
+        event_id: eventId,
+        staff_role_id: newMemberForRole,
+        assigned_name: newName.trim(),
+        assigned_email: newEmail.trim() || null,
+        assigned_phone: newPhone.trim() || null,
+        notes: newNotes.trim() || null,
+      });
+      if (assignError) throw assignError;
+
+      setNewMemberDialogOpen(false);
+      toast.success("Staff member created and assigned!");
+      fetchData();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to create staff member");
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
+  const roleOptions = organizerRoles.map((r) => ({ label: r.role_name, value: r.role_name }));
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -186,7 +333,7 @@ export const EventStaffRoles = ({ eventId }: EventStaffRolesProps) => {
       <div>
         <h3 className="font-semibold">Event Staff Roles</h3>
         <p className="text-sm text-muted-foreground">
-          Define roles, set headcount, and assign staff members.
+          Define roles, set headcount, and assign staff from your roster.
         </p>
       </div>
 
@@ -326,52 +473,49 @@ export const EventStaffRoles = ({ eventId }: EventStaffRolesProps) => {
                         </p>
                       )}
 
-                      {/* Add staff form */}
-                      {addingToRole === role.id ? (
+                      {/* Select from roster or add new */}
+                      {selectingForRole === role.id ? (
                         <div className="space-y-2 pt-1 border-t">
-                          <div className="grid grid-cols-2 gap-2">
-                            <Input
-                              placeholder="Name *"
-                              value={newAssignment.name}
-                              onChange={(e) => setNewAssignment((p) => ({ ...p, name: e.target.value }))}
-                              className="h-8 text-sm"
-                            />
-                            <Input
-                              placeholder="Email"
-                              value={newAssignment.email}
-                              onChange={(e) => setNewAssignment((p) => ({ ...p, email: e.target.value }))}
-                              className="h-8 text-sm"
-                            />
-                            <Input
-                              placeholder="Phone"
-                              value={newAssignment.phone}
-                              onChange={(e) => setNewAssignment((p) => ({ ...p, phone: e.target.value }))}
-                              className="h-8 text-sm"
-                            />
-                            <Input
-                              placeholder="Notes"
-                              value={newAssignment.notes}
-                              onChange={(e) => setNewAssignment((p) => ({ ...p, notes: e.target.value }))}
-                              className="h-8 text-sm"
-                            />
-                          </div>
+                          <label className="text-xs font-medium text-muted-foreground">Select from roster</label>
+                          <Select value={selectedRosterId} onValueChange={setSelectedRosterId}>
+                            <SelectTrigger className="h-8 text-sm">
+                              <SelectValue placeholder="Choose a staff member..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {rosterMembers.map((m) => (
+                                <SelectItem key={m.id} value={m.id}>
+                                  {m.name}
+                                  {m.default_role ? ` (${m.default_role})` : ""}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <div className="flex gap-2">
                             <Button
                               size="sm"
                               className="h-7 text-xs"
-                              onClick={() => addAssignment(role.id)}
-                              disabled={!newAssignment.name.trim()}
+                              onClick={() => assignRosterMember(role.id)}
+                              disabled={!selectedRosterId}
                             >
                               <Plus className="h-3 w-3 mr-1" />
                               Assign
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => openNewMemberDialog(role.id)}
+                            >
+                              <UserPlus className="h-3 w-3 mr-1" />
+                              Add Staff Member
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               className="h-7 text-xs"
                               onClick={() => {
-                                setAddingToRole(null);
-                                setNewAssignment({ name: "", email: "", phone: "", notes: "" });
+                                setSelectingForRole(null);
+                                setSelectedRosterId("");
                               }}
                             >
                               Cancel
@@ -379,18 +523,29 @@ export const EventStaffRoles = ({ eventId }: EventStaffRolesProps) => {
                           </div>
                         </div>
                       ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs w-full"
-                          onClick={() => {
-                            setAddingToRole(role.id);
-                            setNewAssignment({ name: "", email: "", phone: "", notes: "" });
-                          }}
-                        >
-                          <UserPlus className="h-3 w-3 mr-1" />
-                          Add Staff Member
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs flex-1"
+                            onClick={() => {
+                              setSelectingForRole(role.id);
+                              setSelectedRosterId("");
+                            }}
+                          >
+                            <Users className="h-3 w-3 mr-1" />
+                            Assign from Roster
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => openNewMemberDialog(role.id)}
+                          >
+                            <UserPlus className="h-3 w-3 mr-1" />
+                            Add Staff Member
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </CollapsibleContent>
@@ -403,6 +558,83 @@ export const EventStaffRoles = ({ eventId }: EventStaffRolesProps) => {
           </div>
         </div>
       )}
+
+      {/* New Staff Member Dialog (mirrors Manage Staff roster fields) */}
+      <Dialog open={newMemberDialogOpen} onOpenChange={setNewMemberDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Add Staff Member
+            </DialogTitle>
+            <DialogDescription>
+              Create a new staff member. They'll be added to your roster and assigned to this role.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                placeholder="Name *"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+              <Input
+                placeholder="Email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+              />
+              <Input
+                placeholder="Phone"
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+              />
+            </div>
+            <MultiSelect
+              options={roleOptions}
+              onChange={setNewRoles2}
+              selected={newRoles2}
+              placeholder="Select default roles"
+            />
+            <Input
+              placeholder="Notes (optional)"
+              value={newNotes}
+              onChange={(e) => setNewNotes(e.target.value)}
+            />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="dialog-allow-vend"
+                  checked={newAllowVend}
+                  onCheckedChange={(v) => setNewAllowVend(!!v)}
+                />
+                <label htmlFor="dialog-allow-vend" className="text-sm cursor-pointer">Allow to vend</label>
+              </div>
+              {newAllowVend && vendors.length > 0 && (
+                <Select value={newVendorId} onValueChange={setNewVendorId}>
+                  <SelectTrigger className="w-[200px] h-8 text-sm">
+                    <SelectValue placeholder="Associate vendor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No vendor</SelectItem>
+                    {vendors.map((v) => (
+                      <SelectItem key={v.id} value={v.id}>{v.business_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button onClick={createAndAssignMember} disabled={addingMember || !newName.trim()} size="sm">
+                {addingMember ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+                Create & Assign
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setNewMemberDialogOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
