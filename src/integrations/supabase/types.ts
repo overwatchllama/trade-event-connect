@@ -1581,6 +1581,192 @@ export type Database = {
           },
         ]
       }
+      vendor_event_ratings: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          rating: number
+          review: string | null
+          updated_at: string
+          user_id: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          rating: number
+          review?: string | null
+          updated_at?: string
+          user_id: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          rating?: number
+          review?: string | null
+          updated_at?: string
+          user_id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_event_ratings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_event_ratings_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_table_listings: {
+        Row: {
+          buyer_user_id: string | null
+          buyer_vendor_id: string | null
+          created_at: string
+          event_id: string
+          id: string
+          listing_type: string
+          notes: string | null
+          price_per_table: number | null
+          seller_user_id: string
+          seller_vendor_id: string
+          status: string
+          tables_offered: number
+          target_vendor_id: string | null
+          updated_at: string
+          vendor_application_id: string
+        }
+        Insert: {
+          buyer_user_id?: string | null
+          buyer_vendor_id?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          listing_type?: string
+          notes?: string | null
+          price_per_table?: number | null
+          seller_user_id: string
+          seller_vendor_id: string
+          status?: string
+          tables_offered?: number
+          target_vendor_id?: string | null
+          updated_at?: string
+          vendor_application_id: string
+        }
+        Update: {
+          buyer_user_id?: string | null
+          buyer_vendor_id?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          listing_type?: string
+          notes?: string | null
+          price_per_table?: number | null
+          seller_user_id?: string
+          seller_vendor_id?: string
+          status?: string
+          tables_offered?: number
+          target_vendor_id?: string | null
+          updated_at?: string
+          vendor_application_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_table_listings_buyer_vendor_id_fkey"
+            columns: ["buyer_vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_table_listings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_table_listings_seller_vendor_id_fkey"
+            columns: ["seller_vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_table_listings_target_vendor_id_fkey"
+            columns: ["target_vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_table_listings_vendor_application_id_fkey"
+            columns: ["vendor_application_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_venue_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          rating: number
+          review: string | null
+          updated_at: string
+          user_id: string
+          vendor_id: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rating: number
+          review?: string | null
+          updated_at?: string
+          user_id: string
+          vendor_id: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rating?: number
+          review?: string | null
+          updated_at?: string
+          user_id?: string
+          vendor_id?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_venue_ratings_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_venue_ratings_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendors: {
         Row: {
           avatar_url: string | null
