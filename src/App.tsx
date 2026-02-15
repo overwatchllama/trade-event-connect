@@ -32,6 +32,7 @@ const SharedTicket = lazy(() => import("./pages/SharedTicket"));
 const Organize = lazy(() => import("./pages/Organize"));
 const Vending = lazy(() => import("./pages/Vending"));
 const StaffCheckIn = lazy(() => import("./pages/StaffCheckIn"));
+const OrganizeVenue = lazy(() => import("./pages/OrganizeVenue"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -102,6 +103,11 @@ const App = () => (
             } />
             <Route path="/ticket/:ticketCode" element={<SharedTicket />} />
             <Route path="/staff-checkin/:token" element={<StaffCheckIn />} />
+            <Route path="/organize-venue" element={
+              <ProtectedRoute>
+                <OrganizeVenue />
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

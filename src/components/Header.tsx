@@ -22,7 +22,7 @@ const Header = () => {
   const { hasVendorRole } = useVendorProfile();
   const { isAdmin } = useAdmin();
   const { subscription_tier } = useSubscription();
-  const { isOrganizer, isVendor } = useUserRoles();
+  const { isOrganizer, isVendor, isVenue } = useUserRoles();
 
   // Check if user is a vendor employee
   const { data: isEmployee } = useQuery({
@@ -114,6 +114,16 @@ const Header = () => {
                 }`}
               >
                 Vending
+              </Link>
+            )}
+            {isVenue && (
+              <Link 
+                to="/organize-venue" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === '/organize-venue' ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                Organize Venue
               </Link>
             )}
           </nav>
