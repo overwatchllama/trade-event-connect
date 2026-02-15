@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, MapPin, Users, Star, Building2 } from "lucide-react";
+import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store } from "lucide-react";
 import { format, parseISO, isBefore, startOfDay, isSameDay, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -155,15 +155,24 @@ const VendingDashboard = () => {
 
   // Auto-select first event on selected date
   useEffect(() => {
-    if (eventsOnSelectedDate.length > 0 && !selectedEventId) {
-      setSelectedEventId(eventsOnSelectedDate[0].id);
+    if (eventsOnSelectedDate.length > 0) {
+      // Only auto-select if current selection isn't on this date
+      const currentlySelected = events.find((e) => e.id === selectedEventId);
+      if (!currentlySelected || !selectedDate || !isSameDay(parseISO(currentlySelected.date), selectedDate)) {
+        setSelectedEventId(eventsOnSelectedDate[0].id);
+      }
     }
-  }, [eventsOnSelectedDate, selectedEventId]);
+  }, [eventsOnSelectedDate]);
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
     setSelectedEventId(null);
   };
+
+  const selectedEvent = useMemo(
+    () => events.find((e) => e.id === selectedEventId) || null,
+    [events, selectedEventId]
+  );
 
   const getStatusBadge = (app: VendingEvent) => {
     if (app.application_status === "approved" && app.payment_status === "paid") {
@@ -266,7 +275,7 @@ const VendingDashboard = () => {
                               ? "bg-primary/10 border-primary"
                               : "hover:bg-accent/50"
                           }`}
-                          onClick={() => navigate(`/event/${event.event_id}`)}
+                          onClick={() => setSelectedEventId(event.id)}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <h3 className="font-semibold text-sm leading-tight">
@@ -326,6 +335,60 @@ const VendingDashboard = () => {
               </Card>
             </div>
           </div>
+
+          {/* Selected Event Detail Panel */}
+          {selectedEvent && (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-xl">{selectedEvent.title}</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {format(parseISO(selectedEvent.date), "EEEE, MMMM d, yyyy")} ·{" "}
+                      {selectedEvent.venue}, {selectedEvent.city}, {selectedEvent.state}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {getStatusBadge(selectedEvent)}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/event/${selectedEvent.event_id}`)}
+                    >
+                      View Page
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-lg bg-muted/50 text-center">
+                    <p className="text-2xl font-bold">
+                      {selectedEvent.approved_tables || selectedEvent.requested_tables}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedEvent.approved_tables ? "Approved Tables" : "Requested Tables"}
+                    </p>
+                  </div>
+                  {selectedEvent.table_number && (
+                    <div className="p-3 rounded-lg bg-muted/50 text-center">
+                      <p className="text-2xl font-bold">#{selectedEvent.table_number}</p>
+                      <p className="text-xs text-muted-foreground">Table Assignment</p>
+                    </div>
+                  )}
+                  <div className="p-3 rounded-lg bg-muted/50 text-center">
+                    <p className="text-sm font-semibold capitalize">{selectedEvent.application_status}</p>
+                    <p className="text-xs text-muted-foreground">Application</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/50 text-center">
+                    <p className="text-sm font-semibold capitalize">{selectedEvent.payment_status}</p>
+                    <p className="text-xs text-muted-foreground">Payment</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Table Marketplace */}
           {vendorId && <VendorTableListings vendorId={vendorId} />}
