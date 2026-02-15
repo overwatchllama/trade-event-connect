@@ -896,6 +896,7 @@ export type Database = {
       }
       organizer_staff_roster: {
         Row: {
+          allow_vend: boolean
           created_at: string
           default_role: string | null
           email: string | null
@@ -905,8 +906,10 @@ export type Database = {
           organizer_id: string
           phone: string | null
           updated_at: string
+          vendor_id: string | null
         }
         Insert: {
+          allow_vend?: boolean
           created_at?: string
           default_role?: string | null
           email?: string | null
@@ -916,8 +919,10 @@ export type Database = {
           organizer_id: string
           phone?: string | null
           updated_at?: string
+          vendor_id?: string | null
         }
         Update: {
+          allow_vend?: boolean
           created_at?: string
           default_role?: string | null
           email?: string | null
@@ -927,8 +932,17 @@ export type Database = {
           organizer_id?: string
           phone?: string | null
           updated_at?: string
+          vendor_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organizer_staff_roster_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       organizer_vendor_notes: {
         Row: {
