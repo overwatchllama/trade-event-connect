@@ -5,7 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { Plus, Trash2, Loader2, Users, UserPlus, Edit2, Check, X, Tags } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Trash2, Loader2, Users, UserPlus, Edit2, Check, X, Tags, Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -17,11 +25,18 @@ interface RosterMember {
   phone: string | null;
   default_role: string | null;
   notes: string | null;
+  allow_vend: boolean;
+  vendor_id: string | null;
 }
 
 interface SavedRole {
   id: string;
   role_name: string;
+}
+
+interface VendorOption {
+  id: string;
+  business_name: string;
 }
 
 const parseRoles = (roleStr: string | null): string[] => {
@@ -37,6 +52,7 @@ export const OrganizerStaffRoster = () => {
   const { user } = useAuth();
   const [members, setMembers] = useState<RosterMember[]>([]);
   const [roles, setRoles] = useState<SavedRole[]>([]);
+  const [vendors, setVendors] = useState<VendorOption[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Add member form
@@ -45,6 +61,8 @@ export const OrganizerStaffRoster = () => {
   const [newPhone, setNewPhone] = useState("");
   const [newRoles, setNewRoles] = useState<string[]>([]);
   const [newNotes, setNewNotes] = useState("");
+  const [newAllowVend, setNewAllowVend] = useState(false);
+  const [newVendorId, setNewVendorId] = useState("");
   const [addingMember, setAddingMember] = useState(false);
 
   // Add role form
@@ -53,7 +71,7 @@ export const OrganizerStaffRoster = () => {
 
   // Edit member
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", default_roles: [] as string[], notes: "" });
+  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", default_roles: [] as string[], notes: "", allow_vend: false, vendor_id: "" });
 
   useEffect(() => {
     if (user) fetchAll();
@@ -62,10 +80,10 @@ export const OrganizerStaffRoster = () => {
   const fetchAll = async () => {
     if (!user) return;
     try {
-      const [membersRes, rolesRes] = await Promise.all([
+      const [membersRes, rolesRes, vendorsRes] = await Promise.all([
         supabase
           .from("organizer_staff_roster")
-          .select("id, name, email, phone, default_role, notes")
+          .select("id, name, email, phone, default_role, notes, allow_vend, vendor_id")
           .eq("organizer_id", user.id)
           .order("name"),
         supabase
@@ -73,8 +91,17 @@ export const OrganizerStaffRoster = () => {
           .select("id, role_name")
           .eq("organizer_id", user.id)
           .order("role_name"),
+        supabase
+          .from("vendors")
+          .select("id, business_name")
+          .order("business_name"),
       ]);
-      setMembers(membersRes.data || []);
+      setMembers((membersRes.data || []).map((m: any) => ({
+        ...m,
+        allow_vend: m.allow_vend ?? false,
+        vendor_id: m.vendor_id ?? null,
+      })));
+      setVendors(vendorsRes.data || []);
 
       const fetchedRoles = rolesRes.data || [];
       if (fetchedRoles.length === 0) {
@@ -107,6 +134,8 @@ export const OrganizerStaffRoster = () => {
         phone: newPhone.trim() || null,
         default_role: joinRoles(newRoles),
         notes: newNotes.trim() || null,
+        allow_vend: newAllowVend,
+        vendor_id: newVendorId || null,
       });
       if (error) throw error;
       setNewName("");
@@ -114,6 +143,8 @@ export const OrganizerStaffRoster = () => {
       setNewPhone("");
       setNewRoles([]);
       setNewNotes("");
+      setNewAllowVend(false);
+      setNewVendorId("");
       toast.success("Staff member added to roster");
       fetchAll();
     } catch (error) {
@@ -143,6 +174,8 @@ export const OrganizerStaffRoster = () => {
       phone: m.phone || "",
       default_roles: parseRoles(m.default_role),
       notes: m.notes || "",
+      allow_vend: m.allow_vend,
+      vendor_id: m.vendor_id || "",
     });
   };
 
@@ -157,6 +190,8 @@ export const OrganizerStaffRoster = () => {
           phone: editForm.phone.trim() || null,
           default_role: joinRoles(editForm.default_roles),
           notes: editForm.notes.trim() || null,
+          allow_vend: editForm.allow_vend,
+          vendor_id: editForm.vendor_id || null,
         })
         .eq("id", editingId);
       if (error) throw error;
@@ -274,6 +309,29 @@ export const OrganizerStaffRoster = () => {
                 value={newNotes}
                 onChange={(e) => setNewNotes(e.target.value)}
               />
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="new-allow-vend"
+                    checked={newAllowVend}
+                    onCheckedChange={(v) => setNewAllowVend(!!v)}
+                  />
+                  <label htmlFor="new-allow-vend" className="text-sm cursor-pointer">Allow to vend</label>
+                </div>
+                {newAllowVend && vendors.length > 0 && (
+                  <Select value={newVendorId} onValueChange={setNewVendorId}>
+                    <SelectTrigger className="w-[200px] h-8 text-sm">
+                      <SelectValue placeholder="Associate vendor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No vendor</SelectItem>
+                      {vendors.map((v) => (
+                        <SelectItem key={v.id} value={v.id}>{v.business_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
               <Button onClick={addMember} disabled={addingMember || !newName.trim()} size="sm">
                 {addingMember ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
                 Add to Roster
@@ -330,6 +388,32 @@ export const OrganizerStaffRoster = () => {
                           placeholder="Notes"
                           className="h-8 text-sm"
                         />
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`edit-allow-vend-${editingId}`}
+                              checked={editForm.allow_vend}
+                              onCheckedChange={(v) => setEditForm((p) => ({ ...p, allow_vend: !!v }))}
+                            />
+                            <label htmlFor={`edit-allow-vend-${editingId}`} className="text-sm cursor-pointer">Allow to vend</label>
+                          </div>
+                          {editForm.allow_vend && vendors.length > 0 && (
+                            <Select
+                              value={editForm.vendor_id || "none"}
+                              onValueChange={(v) => setEditForm((p) => ({ ...p, vendor_id: v === "none" ? "" : v }))}
+                            >
+                              <SelectTrigger className="w-[200px] h-8 text-sm">
+                                <SelectValue placeholder="Associate vendor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">No vendor</SelectItem>
+                                {vendors.map((v) => (
+                                  <SelectItem key={v.id} value={v.id}>{v.business_name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
                         <div className="flex gap-2">
                           <Button size="sm" className="h-7 text-xs" onClick={saveEdit} disabled={!editForm.name.trim()}>
                             <Check className="h-3 w-3 mr-1" /> Save
@@ -355,6 +439,17 @@ export const OrganizerStaffRoster = () => {
                           </div>
                           {m.notes && (
                             <div className="text-xs text-muted-foreground italic">{m.notes}</div>
+                          )}
+                          {m.allow_vend && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Store className="h-3 w-3" />
+                              <span>Allowed to vend</span>
+                              {m.vendor_id && (
+                                <Badge variant="outline" className="text-xs py-0">
+                                  {vendors.find((v) => v.id === m.vendor_id)?.business_name || "Vendor"}
+                                </Badge>
+                              )}
+                            </div>
                           )}
                         </div>
                         <div className="flex items-center gap-1">
