@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Star,
-  Heart,
   Ban,
   List,
   StickyNote,
@@ -176,15 +175,7 @@ export const VendorRateReview = () => {
     }
   };
 
-  const toggleFavorite = async (v: VendorEntry) => {
-    try {
-      await upsertNote(v.vendor_id, { is_favorite: !v.is_favorite });
-      toast.success(v.is_favorite ? "Removed from favorites" : "Added to favorites");
-      fetchVendors();
-    } catch {
-      toast.error("Failed to update");
-    }
-  };
+
 
   const toggleShortlist = async (v: VendorEntry) => {
     const newList = v.custom_list === "shortlist" ? null : "shortlist";
@@ -228,7 +219,7 @@ export const VendorRateReview = () => {
 
   const filtered = vendors.filter((v) => {
     if (search && !v.business_name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (filterList === "favorites" && !v.is_favorite) return false;
+    if (filterList === "unrated" && v.private_rating != null) return false;
     if (filterList === "shortlist" && v.custom_list !== "shortlist") return false;
     if (filterList === "banned" && !v.is_blacklisted) return false;
     return true;
@@ -265,7 +256,7 @@ export const VendorRateReview = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Vendors</SelectItem>
-            <SelectItem value="favorites">Favorites</SelectItem>
+            <SelectItem value="unrated">Unrated</SelectItem>
             <SelectItem value="shortlist">Shortlist</SelectItem>
             <SelectItem value="banned">Banned</SelectItem>
           </SelectContent>
@@ -294,9 +285,6 @@ export const VendorRateReview = () => {
                       <span className="font-semibold text-foreground truncate">
                         {v.business_name}
                       </span>
-                      {v.is_favorite && (
-                        <Heart className="h-4 w-4 fill-red-500 text-red-500 shrink-0" />
-                      )}
                       {v.custom_list === "shortlist" && (
                         <Badge variant="secondary" className="text-xs">Shortlist</Badge>
                       )}
@@ -372,17 +360,6 @@ export const VendorRateReview = () => {
                     >
                       <StickyNote className="h-4 w-4" />
                       <span className="hidden sm:inline">Notes</span>
-                    </Button>
-                    <Button
-                      variant={v.is_favorite ? "default" : "outline"}
-                      size="sm"
-                      className="gap-1"
-                      onClick={() => toggleFavorite(v)}
-                    >
-                      <Heart className={`h-4 w-4 ${v.is_favorite ? "fill-current" : ""}`} />
-                      <span className="hidden sm:inline">
-                        {v.is_favorite ? "Favorited" : "Favorite"}
-                      </span>
                     </Button>
                     <Button
                       variant={v.custom_list === "shortlist" ? "default" : "outline"}
