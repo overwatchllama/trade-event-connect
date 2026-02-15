@@ -4,8 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store, UserCheck } from "lucide-react";
+import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store, UserCheck, Megaphone } from "lucide-react";
 import NearbyEventsPanel from "@/components/vending/NearbyEventsPanel";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { format, parseISO, isBefore, startOfDay, isSameDay, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,10 +31,12 @@ interface VendingEvent {
   requested_tables: number;
   approved_tables: number | null;
   table_number: string | null;
+  source: 'vending' | 'organizing';
 }
 
 const VendingDashboard = () => {
   const { user } = useAuth();
+  const { isOrganizer } = useUserRoles();
   const navigate = useNavigate();
   const [vendorId, setVendorId] = useState<string | null>(null);
   const [vendorCity, setVendorCity] = useState("");
@@ -104,6 +107,7 @@ const VendingDashboard = () => {
 
       if (error) throw error;
 
+      let vendingEvts: VendingEvent[] = [];
       if (apps && apps.length > 0) {
         const eventIds = apps.map((a) => a.event_id);
         const { data: eventsData } = await supabase
@@ -113,26 +117,57 @@ const VendingDashboard = () => {
 
         const eventsMap = new Map(eventsData?.map((e) => [e.id, e]) || []);
 
-        setEvents(
-          apps
-            .map((app) => {
-              const event = eventsMap.get(app.event_id);
-              if (!event) return null;
-              return {
-                ...app,
-                title: event.title,
-                date: event.date,
-                venue: event.venue,
-                city: event.city,
-                state: event.state,
-                event_type: event.event_type,
-              };
-            })
-            .filter(Boolean) as VendingEvent[]
-        );
-      } else {
-        setEvents([]);
+        vendingEvts = apps
+          .map((app) => {
+            const event = eventsMap.get(app.event_id);
+            if (!event) return null;
+            return {
+              ...app,
+              title: event.title,
+              date: event.date,
+              venue: event.venue,
+              city: event.city,
+              state: event.state,
+              event_type: event.event_type,
+              source: 'vending' as const,
+            };
+          })
+          .filter(Boolean) as VendingEvent[];
       }
+
+      // Also fetch organizing events if user has organizer role
+      let organizingEvts: VendingEvent[] = [];
+      if (isOrganizer) {
+        const { data: orgEvents } = await supabase
+          .from("events")
+          .select("id, title, date, venue, city, state, event_type")
+          .eq("organizer_id", user.id);
+
+        if (orgEvents) {
+          // Avoid duplicates — skip events already in vending list
+          const vendingEventIds = new Set(vendingEvts.map(e => e.event_id));
+          organizingEvts = orgEvents
+            .filter(e => !vendingEventIds.has(e.id))
+            .map(e => ({
+              id: `org-${e.id}`,
+              event_id: e.id,
+              title: e.title,
+              date: e.date,
+              venue: e.venue,
+              city: e.city,
+              state: e.state,
+              event_type: e.event_type,
+              application_status: 'approved',
+              payment_status: 'paid',
+              requested_tables: 0,
+              approved_tables: null,
+              table_number: null,
+              source: 'organizing' as const,
+            }));
+        }
+      }
+
+      setEvents([...vendingEvts, ...organizingEvts]);
     } catch (error) {
       console.error("Error fetching vending data:", error);
     } finally {
@@ -301,10 +336,20 @@ const VendingDashboard = () => {
                           onClick={() => setSelectedEventId(event.id)}
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <h3 className="font-semibold text-sm leading-tight">
-                              {event.title}
-                            </h3>
-                            {getStatusBadge(event)}
+                            <div className="flex items-center gap-1.5">
+                              {event.source === 'organizing' ? (
+                                <Megaphone className="h-3.5 w-3.5 text-primary shrink-0" />
+                              ) : (
+                                <Store className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              )}
+                              <h3 className="font-semibold text-sm leading-tight">
+                                {event.title}
+                              </h3>
+                            </div>
+                            {event.source === 'vending' && getStatusBadge(event)}
+                            {event.source === 'organizing' && (
+                              <Badge variant="outline" className="text-xs py-0 border-primary text-primary">Organizing</Badge>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                             <MapPin className="h-3 w-3" />
@@ -312,16 +357,18 @@ const VendingDashboard = () => {
                               {event.venue} · {event.city}, {event.state}
                             </span>
                           </div>
-                          <div className="flex flex-wrap gap-1.5 mt-1.5">
-                            <Badge variant="outline" className="text-xs py-0">
-                              {event.approved_tables || event.requested_tables} table{(event.approved_tables || event.requested_tables) !== 1 ? "s" : ""}
-                            </Badge>
-                            {event.table_number && (
-                              <Badge variant="secondary" className="text-xs py-0">
-                                Table #{event.table_number}
+                          {event.source === 'vending' && (
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              <Badge variant="outline" className="text-xs py-0">
+                                {event.approved_tables || event.requested_tables} table{(event.approved_tables || event.requested_tables) !== 1 ? "s" : ""}
                               </Badge>
-                            )}
-                          </div>
+                              {event.table_number && (
+                                <Badge variant="secondary" className="text-xs py-0">
+                                  Table #{event.table_number}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -383,7 +430,10 @@ const VendingDashboard = () => {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    {getStatusBadge(selectedEvent)}
+                    {selectedEvent.source === 'vending' && getStatusBadge(selectedEvent)}
+                    {selectedEvent.source === 'organizing' && (
+                      <Badge variant="outline" className="border-primary text-primary">Organizing</Badge>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
