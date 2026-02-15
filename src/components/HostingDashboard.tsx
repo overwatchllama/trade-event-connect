@@ -30,6 +30,7 @@ import EventDetailPanel from "@/components/organize/EventDetailPanel";
 import { EventVendorsOverview } from "@/components/vendor-management/EventVendorsOverview";
 import { OrganizerVendorNotes } from "@/components/OrganizerVendorNotes";
 import { VendorRateReview } from "@/components/organize/VendorRateReview";
+import { OrganizerStaffRoster } from "@/components/organize/OrganizerStaffRoster";
 
 interface HostedEvent {
   id: string;
@@ -475,11 +476,7 @@ const HostingDashboard = () => {
             </TabsContent>
 
             <TabsContent value="manage-staff" className="mt-6">
-              <div className="text-center py-12">
-                <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">Manage Staff</h3>
-                <p className="text-muted-foreground">View and manage staff assignments across your events.</p>
-              </div>
+              <OrganizerStaffRoster />
             </TabsContent>
 
             <TabsContent value="rate-review" className="mt-6">
