@@ -159,10 +159,6 @@ const Header = () => {
                     <Bell className="mr-2 h-4 w-4" />
                     My Following
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/subscription')}>
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    My Subscriptions
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     Settings

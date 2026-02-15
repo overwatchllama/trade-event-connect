@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
-import { User, Mail, ArrowLeft, Save, Building, MapPin, Users, Plus, Trash2, UserCog, Settings, Calendar, FileText, Ticket } from 'lucide-react';
+import { User, Mail, ArrowLeft, Save, Building, MapPin, Users, Plus, Trash2, UserCog, Settings, Calendar, FileText, Ticket, CreditCard } from 'lucide-react';
 import Header from '@/components/Header';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Badge } from '@/components/ui/badge';
@@ -436,6 +436,10 @@ const Profile = () => {
                 </TabsTrigger>
               )}
               <TabsTrigger value="plans">Plans</TabsTrigger>
+              <TabsTrigger value="subscriptions" className="gap-1">
+                <CreditCard className="w-4 h-4" />
+                My Subscriptions
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="personal" className="space-y-6">
@@ -837,6 +841,25 @@ const Profile = () => {
                 <CardContent>
                   <Button onClick={() => navigate('/subscription')} className="w-full">
                     View All Plans
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="subscriptions" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    My Subscriptions
+                  </CardTitle>
+                  <CardDescription>
+                    Manage your active subscriptions and billing
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => navigate('/subscription')} className="w-full">
+                    Manage Subscriptions
                   </Button>
                 </CardContent>
               </Card>
