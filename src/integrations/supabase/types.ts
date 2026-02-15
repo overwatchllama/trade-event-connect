@@ -1629,6 +1629,53 @@ export type Database = {
           },
         ]
       }
+      vendor_organizer_notes: {
+        Row: {
+          blacklist_reason: string | null
+          created_at: string
+          id: string
+          is_blacklisted: boolean | null
+          is_favorite: boolean | null
+          organizer_id: string
+          private_notes: string | null
+          private_rating: number | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          blacklist_reason?: string | null
+          created_at?: string
+          id?: string
+          is_blacklisted?: boolean | null
+          is_favorite?: boolean | null
+          organizer_id: string
+          private_notes?: string | null
+          private_rating?: number | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          blacklist_reason?: string | null
+          created_at?: string
+          id?: string
+          is_blacklisted?: boolean | null
+          is_favorite?: boolean | null
+          organizer_id?: string
+          private_notes?: string | null
+          private_rating?: number | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_organizer_notes_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_staff_roles: {
         Row: {
           created_at: string

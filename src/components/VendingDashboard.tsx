@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import VendorTableListings from "@/components/vending/VendorTableListings";
 import VendorStaffRoster from "@/components/vending/VendorStaffRoster";
-import VendorRateEvents from "@/components/vending/VendorRateEvents";
+import VendorRateOrganizers from "@/components/vending/VendorRateOrganizers";
 import VendorRateVenues from "@/components/vending/VendorRateVenues";
 
 interface VendingEvent {
@@ -209,9 +209,9 @@ const VendingDashboard = () => {
             <Users className="w-4 h-4" />
             Manage Staff
           </TabsTrigger>
-          <TabsTrigger value="rate-events" className="gap-2">
+          <TabsTrigger value="rate-organizers" className="gap-2">
             <Star className="w-4 h-4" />
-            Rate Events
+            Rate Organizers
           </TabsTrigger>
           <TabsTrigger value="rate-venues" className="gap-2">
             <Building2 className="w-4 h-4" />
@@ -407,14 +407,14 @@ const VendingDashboard = () => {
           )}
         </TabsContent>
 
-        {/* Rate Events Tab */}
-        <TabsContent value="rate-events">
+        {/* Rate Organizers Tab */}
+        <TabsContent value="rate-organizers">
           {vendorId ? (
-            <VendorRateEvents vendorId={vendorId} />
+            <VendorRateOrganizers vendorId={vendorId} />
           ) : (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
-                Set up your vendor profile first to rate events.
+                Set up your vendor profile first to rate organizers.
               </CardContent>
             </Card>
           )}
