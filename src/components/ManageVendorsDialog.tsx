@@ -20,21 +20,34 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle, XCircle, Clock, DollarSign, User, Star, Calendar, History, Mail, Bell, Upload, ExternalLink, Printer, Ban, RotateCcw } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { CheckCircle, XCircle, Clock, DollarSign, User, Star, Calendar, History, Mail, Bell, Upload, ExternalLink, Printer, Ban, RotateCcw, List, StickyNote, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 import { BulkActionsBar } from "./vendor-management/BulkActionsBar";
 import { useVendorBulkActions } from "./vendor-management/useVendorBulkActions";
 import { VendorSummaryBar } from "./vendor-management/VendorSummaryBar";
 import type { VendorApplication, ManageVendorsDialogProps } from "./vendor-management/types";
 
+interface OrganizerNote {
+  vendor_id: string;
+  private_rating: number | null;
+  private_notes: string | null;
+  is_blacklisted: boolean | null;
+  custom_list: string | null;
+}
+
 const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: ManageVendorsDialogProps) => {
+  const { user } = useAuth();
   const [applications, setApplications] = useState<VendorApplication[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<{ [key: string]: boolean }>({});
   const [activeTab, setActiveTab] = useState("all");
+  const [organizerNotes, setOrganizerNotes] = useState<Map<string, OrganizerNote>>(new Map());
+  const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
 
   const fetchApplications = async () => {
     setLoading(true);
@@ -413,8 +426,59 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
   useEffect(() => {
     if (open) {
       fetchApplications();
+      fetchOrganizerNotes();
     }
   }, [open, eventId]);
+
+  const fetchOrganizerNotes = async () => {
+    if (!user) return;
+    try {
+      const vendorIds = applications.map(a => a.vendor_id);
+      const { data } = await supabase
+        .from('organizer_vendor_notes')
+        .select('vendor_id, private_rating, private_notes, is_blacklisted, custom_list')
+        .eq('organizer_id', user.id);
+
+      const map = new Map<string, OrganizerNote>();
+      data?.forEach(note => map.set(note.vendor_id, note));
+      setOrganizerNotes(map);
+    } catch (error) {
+      console.error('Error fetching organizer notes:', error);
+    }
+  };
+
+  // Re-fetch notes when applications load
+  useEffect(() => {
+    if (applications.length > 0 && user) {
+      fetchOrganizerNotes();
+    }
+  }, [applications.length]);
+
+  const upsertOrganizerNote = async (vendorId: string, data: Record<string, unknown>) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('organizer_vendor_notes')
+        .upsert(
+          { organizer_id: user.id, vendor_id: vendorId, ...data },
+          { onConflict: 'organizer_id,vendor_id' }
+        );
+      if (error) throw error;
+      fetchOrganizerNotes();
+    } catch (error) {
+      console.error('Error updating organizer note:', error);
+      toast.error('Failed to update');
+    }
+  };
+
+  const toggleReviewPanel = (vendorId: string) => {
+    setExpandedReviews(prev => {
+      const next = new Set(prev);
+      if (next.has(vendorId)) next.delete(vendorId);
+      else next.add(vendorId);
+      return next;
+    });
+  };
 
   // Bulk actions hook
   const bulkActions = useVendorBulkActions(applications, eventTitle, fetchApplications);
@@ -804,6 +868,103 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
           <span> • Paid: {new Date(application.payment_date).toLocaleDateString()}</span>
         )}
       </div>
+
+      {/* Rate & Review Section */}
+      <Collapsible open={expandedReviews.has(application.vendor.id)} onOpenChange={() => toggleReviewPanel(application.vendor.id)}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" size="sm" className="w-full justify-between gap-2 text-muted-foreground">
+            <span className="flex items-center gap-2">
+              <StickyNote className="h-4 w-4" />
+              Rate & Review
+              {(() => {
+                const note = organizerNotes.get(application.vendor.id);
+                const badges = [];
+                if (note?.private_rating) badges.push(`★${note.private_rating}`);
+                if (note?.custom_list === 'shortlist') badges.push('Shortlisted');
+                if (note?.is_blacklisted) badges.push('Banned');
+                return badges.length > 0 ? (
+                  <span className="text-xs font-medium text-primary">({badges.join(' · ')})</span>
+                ) : null;
+              })()}
+            </span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${expandedReviews.has(application.vendor.id) ? 'rotate-180' : ''}`} />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          {(() => {
+            const note = organizerNotes.get(application.vendor.id);
+            const vendorId = application.vendor.id;
+            return (
+              <div className="space-y-3 pt-2 border-t mt-2">
+                {/* Rating */}
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs w-20 shrink-0">My Rating</Label>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        onClick={() => upsertOrganizerNote(vendorId, { private_rating: note?.private_rating === star ? null : star })}
+                        className="focus:outline-none"
+                      >
+                        <Star className={`h-5 w-5 ${star <= (note?.private_rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/40'}`} />
+                      </button>
+                    ))}
+                  </div>
+                  {note?.private_rating && (
+                    <span className="text-xs text-muted-foreground">{note.private_rating}/5</span>
+                  )}
+                </div>
+
+                {/* Private Notes */}
+                <div className="space-y-1">
+                  <Label className="text-xs">Private Notes</Label>
+                  <Textarea
+                    placeholder="Notes visible only to you..."
+                    defaultValue={note?.private_notes || ''}
+                    onBlur={(e) => {
+                      if (e.target.value !== (note?.private_notes || '')) {
+                        upsertOrganizerNote(vendorId, { private_notes: e.target.value });
+                        toast.success('Notes saved');
+                      }
+                    }}
+                    rows={2}
+                    className="text-sm"
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    variant={note?.custom_list === 'shortlist' ? 'default' : 'outline'}
+                    size="sm"
+                    className="gap-1"
+                    onClick={() => {
+                      const newList = note?.custom_list === 'shortlist' ? null : 'shortlist';
+                      upsertOrganizerNote(vendorId, { custom_list: newList });
+                      toast.success(newList ? 'Added to shortlist' : 'Removed from shortlist');
+                    }}
+                  >
+                    <List className="h-4 w-4" />
+                    {note?.custom_list === 'shortlist' ? 'Shortlisted' : 'Shortlist'}
+                  </Button>
+                  <Button
+                    variant={note?.is_blacklisted ? 'destructive' : 'outline'}
+                    size="sm"
+                    className="gap-1"
+                    onClick={() => {
+                      upsertOrganizerNote(vendorId, { is_blacklisted: !note?.is_blacklisted });
+                      toast.success(note?.is_blacklisted ? 'Ban removed' : 'Vendor banned');
+                    }}
+                  >
+                    <Ban className="h-4 w-4" />
+                    {note?.is_blacklisted ? 'Banned' : 'Ban'}
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 
