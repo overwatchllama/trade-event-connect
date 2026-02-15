@@ -420,9 +420,6 @@ const Profile = () => {
                   Applications
                 </TabsTrigger>
               )}
-              {userRoles.includes('venue') && (
-                <TabsTrigger value="venue">My Venue</TabsTrigger>
-              )}
               {vendingEvents.length > 0 && (
                 <TabsTrigger value="vending" className="gap-1">
                   <Calendar className="w-4 h-4" />
@@ -759,11 +756,7 @@ const Profile = () => {
               </TabsContent>
             )}
 
-            {userRoles.includes('venue') && (
-              <TabsContent value="venue" className="space-y-6">
-                <ManageVenue />
-              </TabsContent>
-            )}
+
 
             {vendingEvents.length > 0 && (
               <TabsContent value="vending" className="space-y-6">
