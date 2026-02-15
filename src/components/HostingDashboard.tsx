@@ -287,7 +287,7 @@ const HostingDashboard = () => {
               </TabsTrigger>
               <TabsTrigger value="rate-review" className="gap-2">
                 <Star className="w-4 h-4" />
-                Rate & Review
+                Rate Vendors
               </TabsTrigger>
             </TabsList>
 

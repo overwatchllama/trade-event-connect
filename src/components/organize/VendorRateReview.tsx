@@ -233,7 +233,7 @@ export const VendorRateReview = () => {
     <div className="space-y-4">
       <div className="text-center pb-2">
         <Star className="h-8 w-8 text-primary mx-auto mb-1" />
-        <h3 className="text-xl font-semibold text-foreground">Rate & Review Vendors</h3>
+        <h3 className="text-xl font-semibold text-foreground">Rate Vendors</h3>
         <p className="text-muted-foreground text-sm">
           Manage your private notes, ratings, and lists for vendors across all your events.
         </p>
