@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, DollarSign, Send, Store, Trash2 } from 'lucide-react';
+import { Plus, DollarSign, Send, Store, Trash2, Search, Heart, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -63,6 +63,7 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
   const [myListings, setMyListings] = useState<TableListing[]>([]);
   const [availableListings, setAvailableListings] = useState<AvailableListing[]>([]);
   const [vendors, setVendors] = useState<{ id: string; business_name: string }[]>([]);
+  const [shortlistedVendorIds, setShortlistedVendorIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedAppId, setSelectedAppId] = useState('');
@@ -71,8 +72,13 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
   const [pricePerTable, setPricePerTable] = useState('');
   const [listingType, setListingType] = useState('public');
   const [targetVendorId, setTargetVendorId] = useState('');
+  const [vendorSearch, setVendorSearch] = useState('');
   const [listingNotes, setListingNotes] = useState('');
   const [activeView, setActiveView] = useState<'sell' | 'buy'>('sell');
+  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
+  const [invoiceListing, setInvoiceListing] = useState<TableListing | null>(null);
+  const [invoiceAmount, setInvoiceAmount] = useState('');
+  const [invoiceNotes, setInvoiceNotes] = useState('');
 
   useEffect(() => {
     if (!user || !vendorId) return;
@@ -161,12 +167,20 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
       }
 
       // Fetch all vendors for direct transfer
-      const { data: allVendors } = await supabase
-        .from('vendors')
-        .select('id, business_name')
-        .neq('id', vendorId)
-        .order('business_name');
-      setVendors(allVendors || []);
+      const [vendorsRes, notesRes] = await Promise.all([
+        supabase
+          .from('vendors')
+          .select('id, business_name')
+          .neq('id', vendorId)
+          .order('business_name'),
+        supabase
+          .from('vendor_vendor_notes')
+          .select('target_vendor_id')
+          .eq('vendor_id', vendorId)
+          .eq('is_favorite', true),
+      ]);
+      setVendors(vendorsRes.data || []);
+      setShortlistedVendorIds(new Set((notesRes.data || []).map(n => n.target_vendor_id)));
 
     } catch (error) {
       console.error('Error fetching table listings:', error);
@@ -242,7 +256,72 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
     setPricePerTable('');
     setListingType('public');
     setTargetVendorId('');
+    setVendorSearch('');
     setListingNotes('');
+  };
+
+  // Filtered vendors for search
+  const filteredVendors = useMemo(() => {
+    const q = vendorSearch.toLowerCase().trim();
+    if (!q) {
+      // Show shortlisted first, then all
+      return [...vendors].sort((a, b) => {
+        const aFav = shortlistedVendorIds.has(a.id);
+        const bFav = shortlistedVendorIds.has(b.id);
+        if (aFav && !bFav) return -1;
+        if (!aFav && bFav) return 1;
+        return a.business_name.localeCompare(b.business_name);
+      });
+    }
+    return vendors
+      .filter(v => v.business_name.toLowerCase().includes(q))
+      .sort((a, b) => {
+        const aFav = shortlistedVendorIds.has(a.id);
+        const bFav = shortlistedVendorIds.has(b.id);
+        if (aFav && !bFav) return -1;
+        if (!aFav && bFav) return 1;
+        return a.business_name.localeCompare(b.business_name);
+      });
+  }, [vendors, vendorSearch, shortlistedVendorIds]);
+
+  const handleSendInvoice = async () => {
+    if (!user || !invoiceListing || !invoiceListing.buyer_vendor_id) return;
+    try {
+      // Find the buyer's user_id
+      const { data: buyerVendor } = await supabase
+        .from('vendors')
+        .select('user_id, business_name')
+        .eq('id', invoiceListing.buyer_vendor_id)
+        .single();
+
+      if (!buyerVendor) {
+        toast.error('Could not find buyer vendor');
+        return;
+      }
+
+      // Send in-app notification as invoice
+      const amount = invoiceAmount ? `$${invoiceAmount}` : (invoiceListing.price_per_table ? `$${invoiceListing.price_per_table * invoiceListing.tables_offered}` : 'Free');
+      
+      const { error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: buyerVendor.user_id,
+          title: 'Table Transfer Invoice',
+          message: `Invoice for ${invoiceListing.tables_offered} table(s) at ${invoiceListing.event_title || 'event'}: ${amount}${invoiceNotes ? '. Notes: ' + invoiceNotes : ''}`,
+          type: 'vendor_invoice',
+          reference_id: invoiceListing.id,
+          reference_type: 'table_listing',
+        });
+
+      if (error) throw error;
+      toast.success('Invoice sent!');
+      setShowInvoiceDialog(false);
+      setInvoiceListing(null);
+      setInvoiceAmount('');
+      setInvoiceNotes('');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send invoice');
+    }
   };
 
   const statusBadge = (status: string) => {
@@ -337,10 +416,24 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
                       </Badge>
                     </TableCell>
                     <TableCell>{statusBadge(listing.status)}</TableCell>
-                    <TableCell>
+                    <TableCell className="flex gap-1">
                       {listing.status === 'available' && (
                         <Button variant="ghost" size="icon" onClick={() => handleCancelListing(listing.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                      {listing.status === 'sold' && listing.buyer_vendor_id && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setInvoiceListing(listing);
+                            setInvoiceAmount(listing.price_per_table ? String(listing.price_per_table * listing.tables_offered) : '');
+                            setShowInvoiceDialog(true);
+                          }}
+                        >
+                          <FileText className="h-4 w-4 mr-1" />
+                          Invoice
                         </Button>
                       )}
                     </TableCell>
@@ -451,16 +544,45 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
             {listingType === 'direct' && (
               <div className="space-y-2">
                 <Label>Transfer To</Label>
-                <Select value={targetVendorId} onValueChange={setTargetVendorId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select vendor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vendors.map(v => (
-                      <SelectItem key={v.id} value={v.id}>{v.business_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search vendors..."
+                    value={vendorSearch}
+                    onChange={e => {
+                      setVendorSearch(e.target.value);
+                      setTargetVendorId('');
+                    }}
+                    className="pl-9"
+                  />
+                </div>
+                {targetVendorId && (
+                  <p className="text-sm text-primary font-medium">
+                    Selected: {vendors.find(v => v.id === targetVendorId)?.business_name}
+                  </p>
+                )}
+                <div className="max-h-[160px] overflow-y-auto border rounded-md divide-y">
+                  {filteredVendors.slice(0, 50).map(v => (
+                    <div
+                      key={v.id}
+                      className={`flex items-center gap-2 px-3 py-2 cursor-pointer text-sm transition-colors ${
+                        targetVendorId === v.id ? 'bg-primary/10' : 'hover:bg-accent/50'
+                      }`}
+                      onClick={() => {
+                        setTargetVendorId(v.id);
+                        setVendorSearch(v.business_name);
+                      }}
+                    >
+                      {shortlistedVendorIds.has(v.id) && (
+                        <Heart className="h-3 w-3 fill-red-500 text-red-500 shrink-0" />
+                      )}
+                      <span className="truncate">{v.business_name}</span>
+                    </div>
+                  ))}
+                  {filteredVendors.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-3">No vendors found</p>
+                  )}
+                </div>
               </div>
             )}
             <div className="space-y-2">
@@ -475,6 +597,54 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreateDialog(false); resetForm(); }}>Cancel</Button>
             <Button onClick={handleCreateListing} disabled={!selectedAppId}>Create Listing</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invoice Dialog */}
+      <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Send Invoice
+            </DialogTitle>
+          </DialogHeader>
+          {invoiceListing && (
+            <div className="space-y-4 py-4">
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="font-medium">{invoiceListing.event_title}</p>
+                <p className="text-sm text-muted-foreground">
+                  {invoiceListing.tables_offered} table{invoiceListing.tables_offered !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Invoice Amount ($)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={invoiceAmount}
+                  onChange={e => setInvoiceAmount(e.target.value)}
+                  placeholder="Enter amount"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Notes (optional)</Label>
+                <Textarea
+                  placeholder="Payment instructions, Venmo/Zelle info, etc."
+                  value={invoiceNotes}
+                  onChange={e => setInvoiceNotes(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInvoiceDialog(false)}>Cancel</Button>
+            <Button onClick={handleSendInvoice}>
+              <Send className="h-4 w-4 mr-2" />
+              Send Invoice
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

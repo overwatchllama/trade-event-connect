@@ -1842,6 +1842,60 @@ export type Database = {
           },
         ]
       }
+      vendor_vendor_notes: {
+        Row: {
+          blacklist_reason: string | null
+          created_at: string
+          id: string
+          is_blacklisted: boolean | null
+          is_favorite: boolean | null
+          private_notes: string | null
+          private_rating: number | null
+          target_vendor_id: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          blacklist_reason?: string | null
+          created_at?: string
+          id?: string
+          is_blacklisted?: boolean | null
+          is_favorite?: boolean | null
+          private_notes?: string | null
+          private_rating?: number | null
+          target_vendor_id: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          blacklist_reason?: string | null
+          created_at?: string
+          id?: string
+          is_blacklisted?: boolean | null
+          is_favorite?: boolean | null
+          private_notes?: string | null
+          private_rating?: number | null
+          target_vendor_id?: string
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_vendor_notes_target_vendor_id_fkey"
+            columns: ["target_vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_vendor_notes_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_venue_ratings: {
         Row: {
           created_at: string

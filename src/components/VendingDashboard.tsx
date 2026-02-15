@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store } from "lucide-react";
+import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store, UserCheck } from "lucide-react";
 import NearbyEventsPanel from "@/components/vending/NearbyEventsPanel";
 import { format, parseISO, isBefore, startOfDay, isSameDay, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import VendorTableListings from "@/components/vending/VendorTableListings";
 import VendorStaffRoster from "@/components/vending/VendorStaffRoster";
 import VendorRateOrganizers from "@/components/vending/VendorRateOrganizers";
 import VendorRateVenues from "@/components/vending/VendorRateVenues";
+import VendorRateVendors from "@/components/vending/VendorRateVendors";
 
 interface VendingEvent {
   id: string;
@@ -234,6 +235,10 @@ const VendingDashboard = () => {
           <TabsTrigger value="rate-venues" className="gap-2">
             <Building2 className="w-4 h-4" />
             Rate Venues
+          </TabsTrigger>
+          <TabsTrigger value="rate-vendors" className="gap-2">
+            <UserCheck className="w-4 h-4" />
+            Rate Vendors
           </TabsTrigger>
         </TabsList>
 
@@ -457,6 +462,19 @@ const VendingDashboard = () => {
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 Set up your vendor profile first to rate venues.
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Rate Vendors Tab */}
+        <TabsContent value="rate-vendors">
+          {vendorId ? (
+            <VendorRateVendors vendorId={vendorId} />
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                Set up your vendor profile first to rate vendors.
               </CardContent>
             </Card>
           )}
