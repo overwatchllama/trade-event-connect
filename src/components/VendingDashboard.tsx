@@ -47,17 +47,37 @@ const VendingDashboard = () => {
     if (!user) return;
     setLoading(true);
     try {
-      const { data: vendor } = await supabase
+      let { data: vendor } = await supabase
         .from("vendors")
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (!vendor) {
-        setVendorId(null);
-        setEvents([]);
-        setLoading(false);
-        return;
+        // Auto-create vendor profile if user has vendor role but no profile yet
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, email")
+          .eq("id", user.id)
+          .single();
+
+        const { data: newVendor, error: createError } = await supabase
+          .from("vendors")
+          .insert({
+            user_id: user.id,
+            business_name: profile?.full_name || "My Business",
+            business_email: profile?.email,
+          })
+          .select("id")
+          .single();
+
+        if (createError || !newVendor) {
+          setVendorId(null);
+          setEvents([]);
+          setLoading(false);
+          return;
+        }
+        vendor = newVendor;
       }
 
       setVendorId(vendor.id);
