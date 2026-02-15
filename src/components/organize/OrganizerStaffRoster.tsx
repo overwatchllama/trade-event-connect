@@ -72,7 +72,19 @@ export const OrganizerStaffRoster = () => {
           .order("role_name"),
       ]);
       setMembers(membersRes.data || []);
-      setRoles(rolesRes.data || []);
+
+      // Seed default roles if organizer has none
+      const fetchedRoles = rolesRes.data || [];
+      if (fetchedRoles.length === 0) {
+        const defaults = ["Event Runner", "Security", "Check In", "Manager", "Social Media Manager"];
+        const { data: seeded } = await supabase
+          .from("organizer_staff_roles")
+          .insert(defaults.map((r) => ({ organizer_id: user.id, role_name: r })))
+          .select("id, role_name");
+        setRoles(seeded || []);
+      } else {
+        setRoles(fetchedRoles);
+      }
     } catch (error) {
       console.error("Error fetching staff roster:", error);
     } finally {
