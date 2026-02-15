@@ -870,6 +870,66 @@ export type Database = {
         }
         Relationships: []
       }
+      organizer_staff_roles: {
+        Row: {
+          created_at: string
+          id: string
+          organizer_id: string
+          role_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organizer_id: string
+          role_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organizer_id?: string
+          role_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      organizer_staff_roster: {
+        Row: {
+          created_at: string
+          default_role: string | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          organizer_id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_role?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          organizer_id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_role?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          organizer_id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       organizer_vendor_notes: {
         Row: {
           blacklist_reason: string | null
