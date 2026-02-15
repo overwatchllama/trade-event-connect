@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store } from "lucide-react";
+import NearbyEventsPanel from "@/components/vending/NearbyEventsPanel";
 import { format, parseISO, isBefore, startOfDay, isSameDay, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,6 +35,8 @@ const VendingDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [vendorId, setVendorId] = useState<string | null>(null);
+  const [vendorCity, setVendorCity] = useState("");
+  const [vendorState, setVendorState] = useState("");
   const [events, setEvents] = useState<VendingEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [mainTab, setMainTab] = useState("calendar");
@@ -82,6 +85,16 @@ const VendingDashboard = () => {
       }
 
       setVendorId(vendor.id);
+
+      // Get vendor location from profile for proximity sorting
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("location_city, location_state")
+        .eq("id", user.id)
+        .single();
+
+      setVendorCity(profile?.location_city || "");
+      setVendorState(profile?.location_state || "");
 
       const { data: apps, error } = await supabase
         .from("vendor_applications")
@@ -174,6 +187,11 @@ const VendingDashboard = () => {
     [events, selectedEventId]
   );
 
+  const appliedEventIds = useMemo(
+    () => new Set(events.map((e) => e.event_id)),
+    [events]
+  );
+
   const getStatusBadge = (app: VendingEvent) => {
     if (app.application_status === "approved" && app.payment_status === "paid") {
       return <Badge className="bg-green-600 text-white text-xs">Confirmed</Badge>;
@@ -221,7 +239,7 @@ const VendingDashboard = () => {
 
         {/* Calendar Tab */}
         <TabsContent value="calendar" className="space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_1fr] gap-6">
             {/* Calendar - narrow */}
             <div>
               <Card className="w-fit">
@@ -334,6 +352,17 @@ const VendingDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Nearby Events Panel */}
+            {selectedDate && vendorId && (
+              <NearbyEventsPanel
+                selectedDate={selectedDate}
+                vendorId={vendorId}
+                vendorCity={vendorCity}
+                vendorState={vendorState}
+                appliedEventIds={appliedEventIds}
+              />
+            )}
           </div>
 
           {/* Selected Event Detail Panel */}
