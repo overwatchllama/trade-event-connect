@@ -44,6 +44,7 @@ export const VendorRateReview = () => {
   const [rating, setRating] = useState(0);
   const [banReason, setBanReason] = useState("");
   const [showBanDialog, setShowBanDialog] = useState<VendorEntry | null>(null);
+  const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) fetchVendors();
@@ -322,12 +323,32 @@ export const VendorRateReview = () => {
                     </div>
 
                     {/* Events */}
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {v.events.map((evt) => (
+                    <div className="flex flex-wrap gap-1 mt-2 items-center">
+                      {(expandedEvents.has(v.vendor_id) ? v.events : v.events.slice(0, 2)).map((evt) => (
                         <Badge key={`${v.vendor_id}-${evt.id}`} variant="outline" className="text-xs">
                           {evt.title}
                         </Badge>
                       ))}
+                      {v.events.length > 2 && !expandedEvents.has(v.vendor_id) && (
+                        <button
+                          onClick={() => setExpandedEvents((prev) => new Set(prev).add(v.vendor_id))}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          +{v.events.length - 2} more
+                        </button>
+                      )}
+                      {v.events.length > 2 && expandedEvents.has(v.vendor_id) && (
+                        <button
+                          onClick={() => setExpandedEvents((prev) => {
+                            const next = new Set(prev);
+                            next.delete(v.vendor_id);
+                            return next;
+                          })}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          show less
+                        </button>
+                      )}
                     </div>
 
                     {v.private_notes && (
