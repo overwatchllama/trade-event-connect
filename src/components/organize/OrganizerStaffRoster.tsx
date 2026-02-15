@@ -4,13 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Plus, Trash2, Loader2, Users, UserPlus, Edit2, Check, X, Tags } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,6 +24,15 @@ interface SavedRole {
   role_name: string;
 }
 
+const parseRoles = (roleStr: string | null): string[] => {
+  if (!roleStr) return [];
+  return roleStr.split(",").map((r) => r.trim()).filter(Boolean);
+};
+
+const joinRoles = (roles: string[]): string | null => {
+  return roles.length > 0 ? roles.join(", ") : null;
+};
+
 export const OrganizerStaffRoster = () => {
   const { user } = useAuth();
   const [members, setMembers] = useState<RosterMember[]>([]);
@@ -40,7 +43,7 @@ export const OrganizerStaffRoster = () => {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
-  const [newRole, setNewRole] = useState("");
+  const [newRoles, setNewRoles] = useState<string[]>([]);
   const [newNotes, setNewNotes] = useState("");
   const [addingMember, setAddingMember] = useState(false);
 
@@ -50,7 +53,7 @@ export const OrganizerStaffRoster = () => {
 
   // Edit member
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", default_role: "", notes: "" });
+  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", default_roles: [] as string[], notes: "" });
 
   useEffect(() => {
     if (user) fetchAll();
@@ -73,7 +76,6 @@ export const OrganizerStaffRoster = () => {
       ]);
       setMembers(membersRes.data || []);
 
-      // Seed default roles if organizer has none
       const fetchedRoles = rolesRes.data || [];
       if (fetchedRoles.length === 0) {
         const defaults = ["Event Runner", "Security", "Check In", "Manager", "Social Media Manager"];
@@ -92,6 +94,8 @@ export const OrganizerStaffRoster = () => {
     }
   };
 
+  const roleOptions = roles.map((r) => ({ label: r.role_name, value: r.role_name }));
+
   const addMember = async () => {
     if (!user || !newName.trim()) return;
     setAddingMember(true);
@@ -101,14 +105,14 @@ export const OrganizerStaffRoster = () => {
         name: newName.trim(),
         email: newEmail.trim() || null,
         phone: newPhone.trim() || null,
-        default_role: newRole || null,
+        default_role: joinRoles(newRoles),
         notes: newNotes.trim() || null,
       });
       if (error) throw error;
       setNewName("");
       setNewEmail("");
       setNewPhone("");
-      setNewRole("");
+      setNewRoles([]);
       setNewNotes("");
       toast.success("Staff member added to roster");
       fetchAll();
@@ -137,7 +141,7 @@ export const OrganizerStaffRoster = () => {
       name: m.name,
       email: m.email || "",
       phone: m.phone || "",
-      default_role: m.default_role || "",
+      default_roles: parseRoles(m.default_role),
       notes: m.notes || "",
     });
   };
@@ -151,7 +155,7 @@ export const OrganizerStaffRoster = () => {
           name: editForm.name.trim(),
           email: editForm.email.trim() || null,
           phone: editForm.phone.trim() || null,
-          default_role: editForm.default_role || null,
+          default_role: joinRoles(editForm.default_roles),
           notes: editForm.notes.trim() || null,
         })
         .eq("id", editingId);
@@ -258,20 +262,13 @@ export const OrganizerStaffRoster = () => {
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
                 />
-                <Select value={newRole} onValueChange={setNewRole}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Default role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No default role</SelectItem>
-                    {roles.map((r) => (
-                      <SelectItem key={r.id} value={r.role_name}>
-                        {r.role_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
+              <MultiSelect
+                options={roleOptions}
+                onChange={setNewRoles}
+                selected={newRoles}
+                placeholder="Select default roles"
+              />
               <Input
                 placeholder="Notes (optional)"
                 value={newNotes}
@@ -320,23 +317,13 @@ export const OrganizerStaffRoster = () => {
                             placeholder="Phone"
                             className="h-8 text-sm"
                           />
-                          <Select
-                            value={editForm.default_role || "none"}
-                            onValueChange={(v) => setEditForm((p) => ({ ...p, default_role: v === "none" ? "" : v }))}
-                          >
-                            <SelectTrigger className="h-8 text-sm">
-                              <SelectValue placeholder="Role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No default role</SelectItem>
-                              {roles.map((r) => (
-                                <SelectItem key={r.id} value={r.role_name}>
-                                  {r.role_name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
                         </div>
+                        <MultiSelect
+                          options={roleOptions}
+                          onChange={(vals) => setEditForm((p) => ({ ...p, default_roles: vals }))}
+                          selected={editForm.default_roles}
+                          placeholder="Select roles"
+                        />
                         <Input
                           value={editForm.notes}
                           onChange={(e) => setEditForm((p) => ({ ...p, notes: e.target.value }))}
@@ -355,13 +342,13 @@ export const OrganizerStaffRoster = () => {
                     ) : (
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium text-sm">{m.name}</span>
-                            {m.default_role && (
-                              <Badge variant="secondary" className="text-xs">
-                                {m.default_role}
+                            {parseRoles(m.default_role).map((role) => (
+                              <Badge key={role} variant="secondary" className="text-xs">
+                                {role}
                               </Badge>
-                            )}
+                            ))}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {[m.email, m.phone].filter(Boolean).join(" · ") || "No contact info"}
