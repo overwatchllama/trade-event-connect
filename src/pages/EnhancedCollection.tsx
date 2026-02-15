@@ -234,303 +234,300 @@ const EnhancedCollection = () => {
 
         {/* Main Content */}
         <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <Select value={selectedGame} onValueChange={(v) => setSelectedGame(v as CardCategory)}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pokemon">Pokémon TCG</SelectItem>
-                  <SelectItem value="mtg">Magic: The Gathering</SelectItem>
-                  <SelectItem value="yugioh">Yu-Gi-Oh!</SelectItem>
-                  <SelectItem value="lorcana">Disney Lorcana</SelectItem>
-                  <SelectItem value="onepiece">One Piece</SelectItem>
-                  <SelectItem value="sports">Sports Cards</SelectItem>
-                </SelectContent>
-              </Select>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <Select value={selectedGame} onValueChange={(v) => setSelectedGame(v as CardCategory)}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pokemon">Pokémon TCG</SelectItem>
+                    <SelectItem value="mtg">Magic: The Gathering</SelectItem>
+                    <SelectItem value="yugioh">Yu-Gi-Oh!</SelectItem>
+                    <SelectItem value="lorcana">Disney Lorcana</SelectItem>
+                    <SelectItem value="onepiece">One Piece</SelectItem>
+                    <SelectItem value="sports">Sports Cards</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <Select value={selectedCollection} onValueChange={setSelectedCollection}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="All Collections" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Collections</SelectItem>
-                  {collections.map((col) => (
-                    <SelectItem key={col.id} value={col.id}>
-                      {col.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select value={selectedCollection} onValueChange={setSelectedCollection}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="All Collections" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Collections</SelectItem>
+                    {collections.map((col) => (
+                      <SelectItem key={col.id} value={col.id}>
+                        {col.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-auto">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="cards">Cards</TabsTrigger>
                   <TabsTrigger value="sets">Sets</TabsTrigger>
                   <TabsTrigger value="stats">Stats</TabsTrigger>
                 </TabsList>
-              </Tabs>
+              </div>
+
+              {activeTab === 'cards' && (
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search cards..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 w-64"
+                    />
+                  </div>
+
+                  <Select value={conditionFilter} onValueChange={setConditionFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Condition" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Conditions</SelectItem>
+                      <SelectItem value="mint">Mint</SelectItem>
+                      <SelectItem value="near_mint">Near Mint</SelectItem>
+                      <SelectItem value="excellent">Excellent</SelectItem>
+                      <SelectItem value="good">Good</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+                    <Button
+                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('grid')}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Grid3X3 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('list')}
+                      className="h-8 w-8 p-0"
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {activeTab === 'cards' && (
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search cards..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-64"
-                  />
+            <TabsContent value="cards" className="mt-0">
+              {loading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="text-slate-600 dark:text-slate-400 mt-4">Loading cards...</p>
                 </div>
-
-                <Select value={conditionFilter} onValueChange={setConditionFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Condition" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Conditions</SelectItem>
-                    <SelectItem value="mint">Mint</SelectItem>
-                    <SelectItem value="near_mint">Near Mint</SelectItem>
-                    <SelectItem value="excellent">Excellent</SelectItem>
-                    <SelectItem value="good">Good</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Grid3X3 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    className="h-8 w-8 p-0"
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
+              ) : filteredItems.length === 0 ? (
+                <div className="text-center py-12">
+                  <Package className="h-16 w-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
+                    No cards found
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-400 mb-6">
+                    {searchTerm ? 'Try adjusting your search or filters' : 'Start building your collection by adding cards'}
+                  </p>
+                  {collections.length > 0 && (
+                    <EnhancedAddItemDialog
+                      collectionId={selectedCollection === 'all' ? collections[0]?.id : selectedCollection}
+                      game={selectedGame}
+                      onItemAdded={fetchItems}
+                    />
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
-
-          <TabsContent value="cards" className="mt-0">
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="text-slate-600 dark:text-slate-400 mt-4">Loading cards...</p>
-              </div>
-            ) : filteredItems.length === 0 ? (
-              <div className="text-center py-12">
-                <Package className="h-16 w-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
-                  No cards found
-                </h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-6">
-                  {searchTerm ? 'Try adjusting your search or filters' : 'Start building your collection by adding cards'}
-                </p>
-                {collections.length > 0 && (
-                  <EnhancedAddItemDialog
-                    collectionId={selectedCollection === 'all' ? collections[0]?.id : selectedCollection}
-                    game={selectedGame}
-                    onItemAdded={fetchItems}
-                  />
-                )}
-              </div>
-            ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {filteredItems.map((item) => (
-                  <Card key={item.id} className="hover:shadow-lg transition-shadow group border-slate-200 dark:border-slate-700">
-                    <CardContent className="p-3">
-                      <div className="aspect-[2/3] bg-slate-100 dark:bg-slate-700 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden">
-                        {item.image_url ? (
-                          <img
-                            src={item.image_url}
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <Package className="h-8 w-8 text-slate-400" />
-                        )}
-                        <div className="absolute top-2 right-2 flex flex-col gap-1">
-                          <Badge variant="secondary" className="text-xs">
-                            {item.quantity}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <h4 className="font-medium text-sm text-slate-900 dark:text-white line-clamp-2">
-                          {item.name}
-                        </h4>
-                        {item.set_name && (
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {item.set_name} {item.card_number && `• #${item.card_number}`}
-                          </p>
-                        )}
-                        <div className="flex items-center justify-between">
-                          <div className={`w-2 h-2 rounded-full ${getConditionColor(item.condition)}`} />
-                          {item.current_market_price && (
-                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                              ${item.current_market_price.toFixed(2)}
-                            </span>
+              ) : viewMode === 'grid' ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {filteredItems.map((item) => (
+                    <Card key={item.id} className="hover:shadow-lg transition-shadow group border-slate-200 dark:border-slate-700">
+                      <CardContent className="p-3">
+                        <div className="aspect-[2/3] bg-slate-100 dark:bg-slate-700 rounded-lg mb-3 flex items-center justify-center relative overflow-hidden">
+                          {item.image_url ? (
+                            <img
+                              src={item.image_url}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Package className="h-8 w-8 text-slate-400" />
                           )}
+                          <div className="absolute top-2 right-2 flex flex-col gap-1">
+                            <Badge variant="secondary" className="text-xs">
+                              {item.quantity}
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {filteredItems.map((item) => (
-                  <Card key={item.id} className="hover:shadow-sm transition-shadow border-slate-200 dark:border-slate-700">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-16 bg-slate-100 dark:bg-slate-700 rounded flex items-center justify-center flex-shrink-0">
-                            {item.image_url ? (
-                              <img
-                                src={item.image_url}
-                                alt={item.name}
-                                className="w-full h-full object-cover rounded"
-                              />
-                            ) : (
-                              <Package className="h-6 w-6 text-slate-400" />
+
+                        <div className="space-y-1">
+                          <h4 className="font-medium text-sm text-slate-900 dark:text-white line-clamp-2">
+                            {item.name}
+                          </h4>
+                          {item.set_name && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {item.set_name} {item.card_number && `• #${item.card_number}`}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <div className={`w-2 h-2 rounded-full ${getConditionColor(item.condition)}`} />
+                            {item.current_market_price && (
+                              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                ${item.current_market_price.toFixed(2)}
+                              </span>
                             )}
                           </div>
-                          <div>
-                            <div className="flex items-center space-x-2 mb-1">
-                              <h4 className="font-medium text-slate-900 dark:text-white">
-                                {item.name}
-                              </h4>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredItems.map((item) => (
+                    <Card key={item.id} className="hover:shadow-sm transition-shadow border-slate-200 dark:border-slate-700">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-16 bg-slate-100 dark:bg-slate-700 rounded flex items-center justify-center flex-shrink-0">
+                              {item.image_url ? (
+                                <img
+                                  src={item.image_url}
+                                  alt={item.name}
+                                  className="w-full h-full object-cover rounded"
+                                />
+                              ) : (
+                                <Package className="h-6 w-6 text-slate-400" />
+                              )}
                             </div>
-                            <div className="flex items-center space-x-4 text-sm text-slate-600 dark:text-slate-400">
-                              {item.set_name && <span>{item.set_name}</span>}
-                              {item.card_number && <span>#{item.card_number}</span>}
-                              <span className="flex items-center">
-                                <div className={`w-2 h-2 rounded-full mr-2 ${getConditionColor(item.condition)}`} />
-                                {formatCondition(item.condition)}
-                              </span>
+                            <div>
+                              <div className="flex items-center space-x-2 mb-1">
+                                <h4 className="font-medium text-slate-900 dark:text-white">
+                                  {item.name}
+                                </h4>
+                              </div>
+                              <div className="flex items-center space-x-4 text-sm text-slate-600 dark:text-slate-400">
+                                {item.set_name && <span>{item.set_name}</span>}
+                                {item.card_number && <span>#{item.card_number}</span>}
+                                <span className="flex items-center">
+                                  <div className={`w-2 h-2 rounded-full mr-2 ${getConditionColor(item.condition)}`} />
+                                  {formatCondition(item.condition)}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center space-x-4">
-                          <Badge variant="outline">Qty: {item.quantity}</Badge>
-                          {item.current_market_price && (
-                            <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                              ${item.current_market_price.toFixed(2)}
-                            </span>
-                          )}
+                          <div className="flex items-center space-x-4">
+                            <Badge variant="outline">Qty: {item.quantity}</Badge>
+                            {item.current_market_price && (
+                              <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                                ${item.current_market_price.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
                         </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="sets" className="mt-0">
+              <div className="text-center py-12">
+                <Package className="h-16 w-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-600 dark:text-slate-400">
+                  Set progress tracking coming soon! This will show completion percentages for each set.
+                </p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="stats" className="mt-0">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Cards by Condition</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {Object.entries(stats.byCondition).map(([condition, data]) => (
+                          <div key={condition}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="font-medium">{formatCondition(condition)}</span>
+                              <span className="text-slate-600 dark:text-slate-400">
+                                {data.count} cards • ${data.value.toFixed(2)}
+                              </span>
+                            </div>
+                            <Progress value={(data.count / stats.totalCards) * 100} className="h-2" />
+                          </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
 
-          <TabsContent value="sets" className="mt-0">
-            <div className="text-center py-12">
-              <Package className="h-16 w-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-              <p className="text-slate-600 dark:text-slate-400">
-                Set progress tracking coming soon! This will show completion percentages for each set.
-              </p>
-            </div>
-          </TabsContent>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Cards by Rarity</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {Object.entries(stats.byRarity).slice(0, 5).map(([rarity, data]) => (
+                          <div key={rarity}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="font-medium">{rarity}</span>
+                              <span className="text-slate-600 dark:text-slate-400">
+                                {data.count} cards • ${data.value.toFixed(2)}
+                              </span>
+                            </div>
+                            <Progress value={(data.count / stats.totalCards) * 100} className="h-2" />
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
 
-          <TabsContent value="stats" className="mt-0">
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* By Condition */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Cards by Condition</CardTitle>
+                    <CardTitle className="text-lg">Investment Overview</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      {Object.entries(stats.byCondition).map(([condition, data]) => (
-                        <div key={condition}>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="font-medium">{formatCondition(condition)}</span>
-                            <span className="text-slate-600 dark:text-slate-400">
-                              {data.count} cards • ${data.value.toFixed(2)}
-                            </span>
-                          </div>
-                          <Progress value={(data.count / stats.totalCards) * 100} className="h-2" />
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* By Rarity */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Cards by Rarity</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {Object.entries(stats.byRarity).slice(0, 5).map(([rarity, data]) => (
-                        <div key={rarity}>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="font-medium">{rarity}</span>
-                            <span className="text-slate-600 dark:text-slate-400">
-                              {data.count} cards • ${data.value.toFixed(2)}
-                            </span>
-                          </div>
-                          <Progress value={(data.count / stats.totalCards) * 100} className="h-2" />
-                        </div>
-                      ))}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                      <div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Total Invested</p>
+                        <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                          ${stats.totalInvestment.toFixed(2)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Current Value</p>
+                        <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                          ${stats.totalValue.toFixed(2)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Profit/Loss</p>
+                        <p className={`text-2xl font-bold ${stats.profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          ${stats.profit.toFixed(2)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">ROI</p>
+                        <p className={`text-2xl font-bold ${stats.roi >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {stats.roi.toFixed(1)}%
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
-
-              {/* Investment Overview */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Investment Overview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Total Invested</p>
-                      <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                        ${stats.totalInvestment.toFixed(2)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Current Value</p>
-                      <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                        ${stats.totalValue.toFixed(2)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Profit/Loss</p>
-                      <p className={`text-2xl font-bold ${stats.profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        ${stats.profit.toFixed(2)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">ROI</p>
-                      <p className={`text-2xl font-bold ${stats.roi >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {stats.roi.toFixed(1)}%
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>
