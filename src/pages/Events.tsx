@@ -45,7 +45,8 @@ const Events = () => {
   const [copyFromEventId, setCopyFromEventId] = useState<string | undefined>(undefined);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [eventTimeFilter, setEventTimeFilter] = useState<"upcoming" | "past">("upcoming");
-  const [sortBy, setSortBy] = useState<"date" | "location" | "popularity">("date");
+  const [sortBy, setSortBy] = useState<"date" | "location" | "popularity" | "distance">("date");
+  const [minTables, setMinTables] = useState("");
   const [thisWeekOnly, setThisWeekOnly] = useState(false);
   const [thisMonthOnly, setThisMonthOnly] = useState(false);
   const [showMyEventsOnly, setShowMyEventsOnly] = useState(false);
@@ -589,6 +590,8 @@ const Events = () => {
         selectedStates.includes(event.state);
       
       const matchesEventType = selectedEventType === "both" || event.event_type === selectedEventType;
+
+      const matchesTables = !minTables || (event.tablesAvailable >= parseInt(minTables));
       
       // Filter by upcoming/past (only if no date range is set)
       const isPast = isEventPast(event);
@@ -602,8 +605,20 @@ const Events = () => {
       // Filter by date range
       const matchesDateRange = isEventInDateRange(event);
       
-      return matchesSearch && matchesCardType && matchesStates && matchesEventType && matchesTimeFilter && matchesThisWeek && matchesThisMonth && matchesDateRange;
+      return matchesSearch && matchesCardType && matchesStates && matchesEventType && matchesTables && matchesTimeFilter && matchesThisWeek && matchesThisMonth && matchesDateRange;
     });
+  };
+
+  // Simple proximity score: 0 = same city+state, 1 = same state, 2 = other
+  const getProximity = (event: any) => {
+    const userCity = (profile?.location_city || '').toLowerCase().trim();
+    const userState = (profile?.location_state || '').toLowerCase().trim();
+    if (!userCity && !userState) return 2;
+    const eCity = (event.city || '').toLowerCase().trim();
+    const eState = (event.state || '').toLowerCase().trim();
+    if (eState === userState && eCity === userCity) return 0;
+    if (eState === userState) return 1;
+    return 2;
   };
 
   // Sort events based on selected sort option
@@ -623,6 +638,8 @@ const Events = () => {
         const popA = (a.max_attendees || 0);
         const popB = (b.max_attendees || 0);
         return popB - popA;
+      } else if (sortBy === "distance") {
+        return getProximity(a) - getProximity(b);
       }
       return 0;
     });
@@ -805,14 +822,24 @@ const Events = () => {
                   />
                 </div>
 
-                <Select value={sortBy} onValueChange={(value: "date" | "location" | "popularity") => setSortBy(value)}>
-                  <SelectTrigger className="w-36">
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="Min Tables"
+                  value={minTables}
+                  onChange={(e) => setMinTables(e.target.value)}
+                  className="w-28 h-9"
+                />
+
+                <Select value={sortBy} onValueChange={(value: "date" | "location" | "popularity" | "distance") => setSortBy(value)}>
+                  <SelectTrigger className="w-40">
                     <SelectValue placeholder="Sort By" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="date">Sort by Date</SelectItem>
                     <SelectItem value="location">Sort by Location</SelectItem>
                     <SelectItem value="popularity">Sort by Popularity</SelectItem>
+                    <SelectItem value="distance">Sort by Distance</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -893,7 +920,7 @@ const Events = () => {
           </div>
 
           {/* Active Filters */}
-          {(selectedEventType !== "both" || selectedCardTypes.length > 0 || selectedStates.length > 0 || dateRange.from || dateRange.to || searchQuery || thisWeekOnly || thisMonthOnly || showMyEventsOnly) && (
+          {(selectedEventType !== "both" || selectedCardTypes.length > 0 || selectedStates.length > 0 || dateRange.from || dateRange.to || searchQuery || thisWeekOnly || thisMonthOnly || showMyEventsOnly || minTables) && (
             <div className="flex gap-2 mb-6 flex-wrap items-center">
               {showMyEventsOnly && (
                 <Badge variant="default" className="gap-2 cursor-pointer" onClick={() => setShowMyEventsOnly(false)}>
@@ -967,6 +994,7 @@ const Events = () => {
                   setThisMonthOnly(false);
                   setShowMyEventsOnly(false);
                   setDateRange({ from: undefined, to: undefined });
+                  setMinTables("");
                   setEventTimeFilter("upcoming");
                 }}
               >
