@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, MapPin, Users, Star, Building2 } from "lucide-react";
-import { format, parseISO, isBefore, startOfDay } from "date-fns";
+import { format, parseISO, isBefore, startOfDay, isSameDay, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import PersonalCalendar from "@/components/PersonalCalendar";
 import VendorTableListings from "@/components/vending/VendorTableListings";
 import VendorStaffRoster from "@/components/vending/VendorStaffRoster";
 import VendorRateEvents from "@/components/vending/VendorRateEvents";
@@ -36,7 +37,8 @@ const VendingDashboard = () => {
   const [events, setEvents] = useState<VendingEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [mainTab, setMainTab] = useState("calendar");
-  const [eventTab, setEventTab] = useState("upcoming");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -54,7 +56,6 @@ const VendingDashboard = () => {
         .maybeSingle();
 
       if (!vendor) {
-        // Auto-create vendor profile if user has vendor role but no profile yet
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name, email")
@@ -125,17 +126,44 @@ const VendingDashboard = () => {
     }
   };
 
-  const today = startOfDay(new Date());
+  const today = useMemo(() => startOfDay(new Date()), []);
 
-  const upcomingEvents = events
-    .filter((e) => !isBefore(parseISO(e.date), today))
-    .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime());
+  const eventDates = useMemo(
+    () => events.map((e) => parseISO(e.date)),
+    [events]
+  );
 
-  const pastEvents = events
-    .filter((e) => isBefore(parseISO(e.date), today))
-    .sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
+  const eventsOnSelectedDate = useMemo(
+    () =>
+      selectedDate
+        ? events.filter((e) => isSameDay(parseISO(e.date), selectedDate))
+        : [],
+    [selectedDate, events]
+  );
 
-  const displayedEvents = eventTab === "upcoming" ? upcomingEvents : pastEvents;
+  const twoWeeksOut = useMemo(() => addDays(today, 14), [today]);
+  const upcomingTwoWeeks = useMemo(
+    () =>
+      events
+        .filter((e) => {
+          const d = parseISO(e.date);
+          return !isBefore(d, today) && isBefore(d, twoWeeksOut);
+        })
+        .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime()),
+    [events, today, twoWeeksOut]
+  );
+
+  // Auto-select first event on selected date
+  useEffect(() => {
+    if (eventsOnSelectedDate.length > 0 && !selectedEventId) {
+      setSelectedEventId(eventsOnSelectedDate[0].id);
+    }
+  }, [eventsOnSelectedDate, selectedEventId]);
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    setSelectedEventId(null);
+  };
 
   const getStatusBadge = (app: VendingEvent) => {
     if (app.application_status === "approved" && app.payment_status === "paid") {
@@ -184,97 +212,123 @@ const VendingDashboard = () => {
 
         {/* Calendar Tab */}
         <TabsContent value="calendar" className="space-y-8">
-          <PersonalCalendar defaultTab="vending" visibleTabs={['vending']} />
-
-          {/* Table Marketplace */}
-          {vendorId && <VendorTableListings vendorId={vendorId} />}
-
-          {/* My Vending Events */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-foreground">My Vending Events</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6">
+            {/* Calendar - narrow */}
+            <div>
+              <Card className="w-fit">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <CalendarIcon className="h-5 w-5" />
+                    My Events
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    className="rounded-md border pointer-events-auto"
+                    modifiers={{ hasEvent: eventDates }}
+                    modifiersStyles={{
+                      hasEvent: {
+                        backgroundColor: "hsl(var(--primary))",
+                        color: "hsl(var(--primary-foreground))",
+                        borderRadius: "50%",
+                      },
+                    }}
+                  />
+                </CardContent>
+              </Card>
             </div>
 
-            <Tabs value={eventTab} onValueChange={setEventTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="upcoming">
-                  Upcoming
-                  {upcomingEvents.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">{upcomingEvents.length}</Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="past">
-                  Past
-                  {pastEvents.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">{pastEvents.length}</Badge>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value={eventTab}>
-                {loading ? (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {[1, 2, 3].map((i) => (
-                      <Card key={i} className="animate-pulse">
-                        <CardContent className="p-4 space-y-3">
-                          <div className="h-5 bg-muted rounded w-3/4" />
-                          <div className="h-4 bg-muted rounded w-1/2" />
-                          <div className="h-4 bg-muted rounded w-1/3" />
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : displayedEvents.length === 0 ? (
-                  <Card>
-                    <CardContent className="py-12 text-center text-muted-foreground">
-                      {eventTab === "upcoming"
-                        ? "No upcoming vending events. Browse events to apply!"
-                        : "No past vending events yet."}
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {displayedEvents.map((event) => (
-                      <Card
-                        key={event.id}
-                        className="hover:shadow-md transition-shadow cursor-pointer group"
-                        onClick={() => navigate(`/event/${event.event_id}`)}
-                      >
-                        <CardContent className="p-4 space-y-3">
+            {/* Event list sidebar */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">
+                    {selectedDate
+                      ? format(selectedDate, "MMMM d, yyyy")
+                      : "Select a date"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {eventsOnSelectedDate.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4 text-sm">
+                      No events on this date
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {eventsOnSelectedDate.map((event) => (
+                        <div
+                          key={event.id}
+                          className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                            selectedEventId === event.id
+                              ? "bg-primary/10 border-primary"
+                              : "hover:bg-accent/50"
+                          }`}
+                          onClick={() => navigate(`/event/${event.event_id}`)}
+                        >
                           <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                            <h3 className="font-semibold text-sm leading-tight">
                               {event.title}
-                            </h4>
+                            </h3>
                             {getStatusBadge(event)}
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <CalendarIcon className="h-3.5 w-3.5" />
-                            <span>{format(parseISO(event.date), "MMM d, yyyy")}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <MapPin className="h-3.5 w-3.5" />
-                            <span className="truncate">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                            <MapPin className="h-3 w-3" />
+                            <span>
                               {event.venue} · {event.city}, {event.state}
                             </span>
                           </div>
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            <Badge variant="outline" className="text-xs">
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            <Badge variant="outline" className="text-xs py-0">
                               {event.approved_tables || event.requested_tables} table{(event.approved_tables || event.requested_tables) !== 1 ? "s" : ""}
                             </Badge>
                             {event.table_number && (
-                              <Badge variant="secondary" className="text-xs">
+                              <Badge variant="secondary" className="text-xs py-0">
                                 Table #{event.table_number}
                               </Badge>
                             )}
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </section>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Upcoming 2 weeks */}
+                  {upcomingTwoWeeks.length > 0 && (
+                    <div className="mt-4 pt-4 border-t">
+                      <p className="text-xs font-semibold text-muted-foreground mb-2">
+                        Upcoming Events
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {upcomingTwoWeeks.map((event) => (
+                          <Button
+                            key={event.id}
+                            variant={selectedEventId === event.id ? "default" : "outline"}
+                            size="sm"
+                            className="text-xs h-auto py-1.5 px-3"
+                            onClick={() => {
+                              setSelectedEventId(event.id);
+                              setSelectedDate(parseISO(event.date));
+                            }}
+                          >
+                            {event.title}
+                            <span className="ml-1 opacity-70">
+                              {format(parseISO(event.date), "M/d")}
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Table Marketplace */}
+          {vendorId && <VendorTableListings vendorId={vendorId} />}
         </TabsContent>
 
         {/* Staff Tab */}
