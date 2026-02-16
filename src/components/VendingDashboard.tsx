@@ -311,10 +311,11 @@ const VendingDashboard = () => {
 
         {/* Calendar Tab */}
         <TabsContent value="calendar" className="space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_1fr] gap-6">
-            {/* Calendar - narrow */}
-            <div>
-              <Card className="w-fit">
+          <div className="grid grid-cols-1 lg:grid-cols-[auto_minmax(0,1fr)_1fr] gap-6">
+            {/* Calendar + event list side-by-side */}
+            <div className="lg:col-span-2 flex flex-col sm:flex-row gap-4">
+              {/* Calendar */}
+              <Card className="w-fit shrink-0">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-lg">
@@ -341,108 +342,103 @@ const VendingDashboard = () => {
                   />
                 </CardContent>
               </Card>
-            </div>
 
-            {/* Event list sidebar */}
-            <div className="space-y-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">
-                    {selectedDate
-                      ? format(selectedDate, "MMMM d, yyyy")
-                      : "Select a date"}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {eventsOnSelectedDate.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4 text-sm">
-                      No events on this date
+              {/* Compact event list to the right */}
+              <div className="flex-1 min-w-0 space-y-3">
+                {/* Events on selected date — only show if there are events */}
+                {eventsOnSelectedDate.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground">
+                      {selectedDate && format(selectedDate, "MMM d, yyyy")}
                     </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {eventsOnSelectedDate.map((event) => (
-                        <div
-                          key={event.id}
-                          className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                            selectedEventId === event.id
-                              ? "bg-primary/10 border-primary"
-                              : "hover:bg-accent/50"
-                          }`}
-                          onClick={() => setSelectedEventId(event.id)}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-1.5">
+                    {eventsOnSelectedDate.map((event) => (
+                      <div
+                        key={event.id}
+                        className={`border rounded-lg p-2.5 cursor-pointer transition-colors ${
+                          selectedEventId === event.id
+                            ? "bg-primary/10 border-primary"
+                            : "hover:bg-accent/50"
+                        }`}
+                        onClick={() => setSelectedEventId(event.id)}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
                             {event.source === 'organizing' ? (
-                                <Megaphone className="h-3.5 w-3.5 text-primary shrink-0" />
-                              ) : event.source === 'personal' ? (
-                                <NotebookPen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                              ) : (
-                                <Store className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                              )}
-                              <h3 className="font-semibold text-sm leading-tight">
-                                {event.title}
-                              </h3>
-                            </div>
-                            {event.source === 'vending' && getStatusBadge(event)}
-                            {event.source === 'organizing' && (
-                              <Badge variant="outline" className="text-xs py-0 border-primary text-primary">Organizing</Badge>
+                              <Megaphone className="h-3.5 w-3.5 text-primary shrink-0" />
+                            ) : event.source === 'personal' ? (
+                              <NotebookPen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            ) : (
+                              <Store className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                             )}
-                            {event.source === 'personal' && (
-                              <Badge variant="secondary" className="text-xs py-0">Unlisted</Badge>
-                            )}
+                            <h3 className="font-semibold text-sm leading-tight truncate">
+                              {event.title}
+                            </h3>
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                            <MapPin className="h-3 w-3" />
-                            <span>
-                              {event.venue} · {event.city}, {event.state}
-                            </span>
-                          </div>
-                          {event.source === 'vending' && (
-                            <div className="flex flex-wrap gap-1.5 mt-1.5">
-                              <Badge variant="outline" className="text-xs py-0">
-                                {event.approved_tables || event.requested_tables} table{(event.approved_tables || event.requested_tables) !== 1 ? "s" : ""}
-                              </Badge>
-                              {event.table_number && (
-                                <Badge variant="secondary" className="text-xs py-0">
-                                  Table #{event.table_number}
-                                </Badge>
-                              )}
-                            </div>
+                          {event.source === 'vending' && getStatusBadge(event)}
+                          {event.source === 'organizing' && (
+                            <Badge variant="outline" className="text-xs py-0 border-primary text-primary shrink-0">Organizing</Badge>
+                          )}
+                          {event.source === 'personal' && (
+                            <Badge variant="secondary" className="text-xs py-0 shrink-0">Unlisted</Badge>
                           )}
                         </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">
+                            {event.venue} · {event.city}, {event.state}
+                          </span>
+                        </div>
+                        {event.source === 'vending' && (
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            <Badge variant="outline" className="text-xs py-0">
+                              {event.approved_tables || event.requested_tables} table{(event.approved_tables || event.requested_tables) !== 1 ? "s" : ""}
+                            </Badge>
+                            {event.table_number && (
+                              <Badge variant="secondary" className="text-xs py-0">
+                                Table #{event.table_number}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upcoming 2 weeks */}
+                {upcomingTwoWeeks.length > 0 && (
+                  <div className={eventsOnSelectedDate.length > 0 ? "pt-3 border-t" : ""}>
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">
+                      Upcoming Events
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {upcomingTwoWeeks.map((event) => (
+                        <Button
+                          key={event.id}
+                          variant={selectedEventId === event.id ? "default" : "outline"}
+                          size="sm"
+                          className="text-xs h-auto py-1 px-2.5"
+                          onClick={() => {
+                            setSelectedEventId(event.id);
+                            setSelectedDate(parseISO(event.date));
+                          }}
+                        >
+                          {event.title}
+                          <span className="ml-1 opacity-70">
+                            {format(parseISO(event.date), "M/d")}
+                          </span>
+                        </Button>
                       ))}
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {/* Upcoming 2 weeks */}
-                  {upcomingTwoWeeks.length > 0 && (
-                    <div className="mt-4 pt-4 border-t">
-                      <p className="text-xs font-semibold text-muted-foreground mb-2">
-                        Upcoming Events
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {upcomingTwoWeeks.map((event) => (
-                          <Button
-                            key={event.id}
-                            variant={selectedEventId === event.id ? "default" : "outline"}
-                            size="sm"
-                            className="text-xs h-auto py-1.5 px-3"
-                            onClick={() => {
-                              setSelectedEventId(event.id);
-                              setSelectedDate(parseISO(event.date));
-                            }}
-                          >
-                            {event.title}
-                            <span className="ml-1 opacity-70">
-                              {format(parseISO(event.date), "M/d")}
-                            </span>
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                {eventsOnSelectedDate.length === 0 && upcomingTwoWeeks.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-4">
+                    No upcoming events. Apply to events or add unlisted ones.
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Nearby Events Panel */}
