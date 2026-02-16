@@ -1676,6 +1676,48 @@ export type Database = {
           },
         ]
       }
+      vendor_personal_events: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          state: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          venue: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          date: string
+          id?: string
+          notes?: string | null
+          state?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          venue?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          state?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
       vendor_staff_roles: {
         Row: {
           created_at: string
