@@ -30,6 +30,7 @@ const CreatePersonalEventDialog = ({ onCreated }: CreatePersonalEventDialogProps
     address: "",
     city: "",
     state: "",
+    tables_count: "",
     notes: "",
   });
 
@@ -51,13 +52,14 @@ const CreatePersonalEventDialog = ({ onCreated }: CreatePersonalEventDialogProps
         address: form.address || null,
         city: form.city || null,
         state: form.state || null,
+        tables_count: form.tables_count ? parseInt(form.tables_count) : null,
         notes: form.notes || null,
       });
 
       if (error) throw error;
 
       toast({ title: "Event added", description: "Your personal event has been added to the calendar." });
-      setForm({ title: "", date: "", venue: "", address: "", city: "", state: "", notes: "" });
+      setForm({ title: "", date: "", venue: "", address: "", city: "", state: "", tables_count: "", notes: "" });
       setOpen(false);
       onCreated();
     } catch (err: unknown) {
@@ -139,6 +141,17 @@ const CreatePersonalEventDialog = ({ onCreated }: CreatePersonalEventDialogProps
                 maxLength={2}
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pe-tables">Tables</Label>
+            <Input
+              id="pe-tables"
+              type="number"
+              min={1}
+              value={form.tables_count}
+              onChange={(e) => handleChange("tables_count", e.target.value)}
+              placeholder="Number of tables"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="pe-notes">Notes</Label>
