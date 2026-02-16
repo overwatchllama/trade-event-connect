@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, DollarSign, Send, Store, Trash2, Search, Heart, FileText } from 'lucide-react';
+import { Plus, DollarSign, Send, Store, Trash2, Search, Heart, FileText, X, CalendarIcon, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -50,6 +50,8 @@ interface AvailableListing {
   event_id: string;
   seller_vendor_id: string;
   event_title?: string;
+  event_date?: string;
+  event_state?: string;
   seller_name?: string;
 }
 
@@ -75,6 +77,9 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
   const [vendorSearch, setVendorSearch] = useState('');
   const [listingNotes, setListingNotes] = useState('');
   const [activeView, setActiveView] = useState<'sell' | 'buy'>('sell');
+  const [buySearchEvent, setBuySearchEvent] = useState('');
+  const [buySearchState, setBuySearchState] = useState('');
+  const [buySearchDate, setBuySearchDate] = useState('');
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
   const [invoiceListing, setInvoiceListing] = useState<TableListing | null>(null);
   const [invoiceAmount, setInvoiceAmount] = useState('');
@@ -150,7 +155,7 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
         const vendorIds = [...new Set(available.map(a => a.seller_vendor_id))];
         
         const [eventsRes, vendorsRes] = await Promise.all([
-          supabase.from('events').select('id, title').in('id', eventIds),
+          supabase.from('events').select('id, title, date, state').in('id', eventIds),
           supabase.from('vendors').select('id, business_name').in('id', vendorIds),
         ]);
         
@@ -160,6 +165,8 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
         setAvailableListings(available.map(a => ({
           ...a,
           event_title: eventsMap.get(a.event_id)?.title,
+          event_date: eventsMap.get(a.event_id)?.date,
+          event_state: eventsMap.get(a.event_id)?.state,
           seller_name: vendorsMap.get(a.seller_vendor_id)?.business_name,
         })));
       } else {
@@ -264,7 +271,6 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
   const filteredVendors = useMemo(() => {
     const q = vendorSearch.toLowerCase().trim();
     if (!q) {
-      // Show shortlisted first, then all
       return [...vendors].sort((a, b) => {
         const aFav = shortlistedVendorIds.has(a.id);
         const bFav = shortlistedVendorIds.has(b.id);
@@ -283,6 +289,23 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
         return a.business_name.localeCompare(b.business_name);
       });
   }, [vendors, vendorSearch, shortlistedVendorIds]);
+
+  // Filtered available listings for buy view
+  const filteredAvailableListings = useMemo(() => {
+    return availableListings.filter(listing => {
+      if (buySearchEvent && !listing.event_title?.toLowerCase().includes(buySearchEvent.toLowerCase())) return false;
+      if (buySearchState && listing.event_state?.toLowerCase() !== buySearchState.toLowerCase()) return false;
+      if (buySearchDate && listing.event_date !== buySearchDate) return false;
+      return true;
+    });
+  }, [availableListings, buySearchEvent, buySearchState, buySearchDate]);
+
+  const availableStates = useMemo(() => {
+    const states = new Set(availableListings.map(l => l.event_state).filter(Boolean) as string[]);
+    return [...states].sort();
+  }, [availableListings]);
+
+  const hasActiveFilters = buySearchEvent || buySearchState || buySearchDate;
 
   const handleSendInvoice = async () => {
     if (!user || !invoiceListing || !invoiceListing.buyer_vendor_id) return;
@@ -443,40 +466,110 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
             </Table>
           )
         ) : (
-          availableListings.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Store className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No tables available for purchase</p>
+          <div className="space-y-4">
+            {/* Search Filters */}
+            <div className="flex flex-wrap gap-3 items-end">
+              <div className="space-y-1 flex-1 min-w-[150px]">
+                <Label className="text-xs">Event Name</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search events..."
+                    value={buySearchEvent}
+                    onChange={e => setBuySearchEvent(e.target.value)}
+                    className="pl-9 h-9"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1 min-w-[120px]">
+                <Label className="text-xs">State</Label>
+                <Select value={buySearchState || 'all'} onValueChange={v => setBuySearchState(v === 'all' ? '' : v)}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="All states" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All States</SelectItem>
+                    {availableStates.map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1 min-w-[140px]">
+                <Label className="text-xs">Date</Label>
+                <Input
+                  type="date"
+                  value={buySearchDate}
+                  onChange={e => setBuySearchDate(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9"
+                  onClick={() => {
+                    setBuySearchEvent('');
+                    setBuySearchState('');
+                    setBuySearchDate('');
+                  }}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Clear
+                </Button>
+              )}
             </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {availableListings.map(listing => (
-                <Card key={listing.id} className="border">
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-semibold">{listing.event_title}</h4>
-                        <p className="text-sm text-muted-foreground">by {listing.seller_name}</p>
+
+            {filteredAvailableListings.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Store className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>No tables match your search</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                {filteredAvailableListings.map(listing => (
+                  <Card key={listing.id} className="border">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="font-semibold">{listing.event_title}</h4>
+                          <p className="text-sm text-muted-foreground">by {listing.seller_name}</p>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                            {listing.event_date && (
+                              <span className="flex items-center gap-1">
+                                <CalendarIcon className="h-3 w-3" />
+                                {format(parseISO(listing.event_date), 'MMM d, yyyy')}
+                              </span>
+                            )}
+                            {listing.event_state && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {listing.event_state}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Badge className="bg-green-600 text-white">
+                          {listing.tables_offered} table{listing.tables_offered !== 1 ? 's' : ''}
+                        </Badge>
                       </div>
-                      <Badge className="bg-green-600 text-white">
-                        {listing.tables_offered} table{listing.tables_offered !== 1 ? 's' : ''}
-                      </Badge>
-                    </div>
-                    {listing.price_per_table && (
-                      <p className="text-lg font-bold">${listing.price_per_table}/table</p>
-                    )}
-                    {listing.notes && (
-                      <p className="text-sm text-muted-foreground">{listing.notes}</p>
-                    )}
-                    <Button className="w-full" onClick={() => handleBuyTable(listing)}>
-                      <Send className="h-4 w-4 mr-2" />
-                      Claim Table{listing.tables_offered !== 1 ? 's' : ''}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )
+                      {listing.price_per_table && (
+                        <p className="text-lg font-bold">${listing.price_per_table}/table</p>
+                      )}
+                      {listing.notes && (
+                        <p className="text-sm text-muted-foreground">{listing.notes}</p>
+                      )}
+                      <Button className="w-full" onClick={() => handleBuyTable(listing)}>
+                        <Send className="h-4 w-4 mr-2" />
+                        Claim Table{listing.tables_offered !== 1 ? 's' : ''}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
 

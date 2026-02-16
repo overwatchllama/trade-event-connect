@@ -281,10 +281,14 @@ const VendingDashboard = () => {
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <div className="overflow-x-auto -mx-4 px-4 mb-6">
-          <TabsList className="w-max sm:w-auto">
+           <TabsList className="w-max sm:w-auto">
             <TabsTrigger value="calendar" className="gap-2">
               <CalendarIcon className="w-4 h-4" />
               <span className="hidden sm:inline">Calendar</span>
+            </TabsTrigger>
+            <TabsTrigger value="marketplace" className="gap-2">
+              <Store className="w-4 h-4" />
+              <span className="hidden sm:inline">Table</span> Marketplace
             </TabsTrigger>
             <TabsTrigger value="staff" className="gap-2">
               <Users className="w-4 h-4" />
@@ -523,8 +527,19 @@ const VendingDashboard = () => {
             </Card>
           )}
 
-          {/* Table Marketplace */}
-          {vendorId && <VendorTableListings vendorId={vendorId} />}
+        </TabsContent>
+
+        {/* Marketplace Tab */}
+        <TabsContent value="marketplace">
+          {vendorId ? (
+            <VendorTableListings vendorId={vendorId} />
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                Set up your vendor profile first to access the marketplace.
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Staff Tab */}
