@@ -254,28 +254,30 @@ const VendingDashboard = () => {
       <h2 className="text-2xl font-bold text-foreground mb-6">Manage Vending</h2>
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="calendar" className="gap-2">
-            <CalendarIcon className="w-4 h-4" />
-            Calendar
-          </TabsTrigger>
-          <TabsTrigger value="staff" className="gap-2">
-            <Users className="w-4 h-4" />
-            Manage Staff
-          </TabsTrigger>
-          <TabsTrigger value="rate-organizers" className="gap-2">
-            <Star className="w-4 h-4" />
-            Rate Organizers
-          </TabsTrigger>
-          <TabsTrigger value="rate-venues" className="gap-2">
-            <Building2 className="w-4 h-4" />
-            Rate Venues
-          </TabsTrigger>
-          <TabsTrigger value="rate-vendors" className="gap-2">
-            <UserCheck className="w-4 h-4" />
-            Rate Vendors
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 mb-6">
+          <TabsList className="w-max sm:w-auto">
+            <TabsTrigger value="calendar" className="gap-2">
+              <CalendarIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">Calendar</span>
+            </TabsTrigger>
+            <TabsTrigger value="staff" className="gap-2">
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Manage</span> Staff
+            </TabsTrigger>
+            <TabsTrigger value="rate-organizers" className="gap-2">
+              <Star className="w-4 h-4" />
+              <span className="hidden sm:inline">Rate</span> Organizers
+            </TabsTrigger>
+            <TabsTrigger value="rate-venues" className="gap-2">
+              <Building2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Rate</span> Venues
+            </TabsTrigger>
+            <TabsTrigger value="rate-vendors" className="gap-2">
+              <UserCheck className="w-4 h-4" />
+              <span className="hidden sm:inline">Rate</span> Vendors
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Calendar Tab */}
         <TabsContent value="calendar" className="space-y-8">
