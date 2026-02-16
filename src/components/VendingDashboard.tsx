@@ -4,8 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store, UserCheck, Megaphone } from "lucide-react";
+import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store, UserCheck, Megaphone, NotebookPen } from "lucide-react";
 import NearbyEventsPanel from "@/components/vending/NearbyEventsPanel";
+import CreatePersonalEventDialog from "@/components/vending/CreatePersonalEventDialog";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { format, parseISO, isBefore, startOfDay, isSameDay, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,7 +32,7 @@ interface VendingEvent {
   requested_tables: number;
   approved_tables: number | null;
   table_number: string | null;
-  source: 'vending' | 'organizing';
+  source: 'vending' | 'organizing' | 'personal';
 }
 
 const VendingDashboard = () => {
@@ -144,7 +145,6 @@ const VendingDashboard = () => {
           .eq("organizer_id", user.id);
 
         if (orgEvents) {
-          // Avoid duplicates — skip events already in vending list
           const vendingEventIds = new Set(vendingEvts.map(e => e.event_id));
           organizingEvts = orgEvents
             .filter(e => !vendingEventIds.has(e.id))
@@ -167,7 +167,33 @@ const VendingDashboard = () => {
         }
       }
 
-      setEvents([...vendingEvts, ...organizingEvts]);
+      // Fetch personal/unlisted events
+      let personalEvts: VendingEvent[] = [];
+      const { data: personalData } = await supabase
+        .from("vendor_personal_events")
+        .select("id, title, date, venue, city, state, notes")
+        .eq("user_id", user.id);
+
+      if (personalData) {
+        personalEvts = personalData.map(pe => ({
+          id: `personal-${pe.id}`,
+          event_id: pe.id,
+          title: pe.title,
+          date: pe.date,
+          venue: pe.venue || '',
+          city: pe.city || '',
+          state: pe.state || '',
+          event_type: 'show',
+          application_status: 'personal',
+          payment_status: 'n/a',
+          requested_tables: 0,
+          approved_tables: null,
+          table_number: null,
+          source: 'personal' as const,
+        }));
+      }
+
+      setEvents([...vendingEvts, ...organizingEvts, ...personalEvts]);
     } catch (error) {
       console.error("Error fetching vending data:", error);
     } finally {
@@ -286,10 +312,13 @@ const VendingDashboard = () => {
             <div>
               <Card className="w-fit">
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <CalendarIcon className="h-5 w-5" />
-                    My Events
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <CalendarIcon className="h-5 w-5" />
+                      My Events
+                    </CardTitle>
+                    <CreatePersonalEventDialog onCreated={fetchVendingData} />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Calendar
@@ -339,8 +368,10 @@ const VendingDashboard = () => {
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center gap-1.5">
-                              {event.source === 'organizing' ? (
+                            {event.source === 'organizing' ? (
                                 <Megaphone className="h-3.5 w-3.5 text-primary shrink-0" />
+                              ) : event.source === 'personal' ? (
+                                <NotebookPen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                               ) : (
                                 <Store className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                               )}
@@ -351,6 +382,9 @@ const VendingDashboard = () => {
                             {event.source === 'vending' && getStatusBadge(event)}
                             {event.source === 'organizing' && (
                               <Badge variant="outline" className="text-xs py-0 border-primary text-primary">Organizing</Badge>
+                            )}
+                            {event.source === 'personal' && (
+                              <Badge variant="secondary" className="text-xs py-0">Unlisted</Badge>
                             )}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
@@ -427,8 +461,10 @@ const VendingDashboard = () => {
                   <div>
                     <CardTitle className="text-xl">{selectedEvent.title}</CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {format(parseISO(selectedEvent.date), "EEEE, MMMM d, yyyy")} ·{" "}
-                      {selectedEvent.venue}, {selectedEvent.city}, {selectedEvent.state}
+                      {format(parseISO(selectedEvent.date), "EEEE, MMMM d, yyyy")}
+                      {selectedEvent.venue && ` · ${selectedEvent.venue}`}
+                      {selectedEvent.city && `, ${selectedEvent.city}`}
+                      {selectedEvent.state && `, ${selectedEvent.state}`}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -436,42 +472,53 @@ const VendingDashboard = () => {
                     {selectedEvent.source === 'organizing' && (
                       <Badge variant="outline" className="border-primary text-primary">Organizing</Badge>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/event/${selectedEvent.event_id}`)}
-                    >
-                      View Page
-                      <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
+                    {selectedEvent.source === 'personal' && (
+                      <Badge variant="secondary">Unlisted</Badge>
+                    )}
+                    {selectedEvent.source !== 'personal' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/event/${selectedEvent.event_id}`)}
+                      >
+                        View Page
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="p-3 rounded-lg bg-muted/50 text-center">
-                    <p className="text-2xl font-bold">
-                      {selectedEvent.approved_tables || selectedEvent.requested_tables}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {selectedEvent.approved_tables ? "Approved Tables" : "Requested Tables"}
-                    </p>
-                  </div>
-                  {selectedEvent.table_number && (
+                {selectedEvent.source === 'personal' ? (
+                  <p className="text-sm text-muted-foreground italic">
+                    This is a personal event not managed on the platform.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div className="p-3 rounded-lg bg-muted/50 text-center">
-                      <p className="text-2xl font-bold">#{selectedEvent.table_number}</p>
-                      <p className="text-xs text-muted-foreground">Table Assignment</p>
+                      <p className="text-2xl font-bold">
+                        {selectedEvent.approved_tables || selectedEvent.requested_tables}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedEvent.approved_tables ? "Approved Tables" : "Requested Tables"}
+                      </p>
                     </div>
-                  )}
-                  <div className="p-3 rounded-lg bg-muted/50 text-center">
-                    <p className="text-sm font-semibold capitalize">{selectedEvent.application_status}</p>
-                    <p className="text-xs text-muted-foreground">Application</p>
+                    {selectedEvent.table_number && (
+                      <div className="p-3 rounded-lg bg-muted/50 text-center">
+                        <p className="text-2xl font-bold">#{selectedEvent.table_number}</p>
+                        <p className="text-xs text-muted-foreground">Table Assignment</p>
+                      </div>
+                    )}
+                    <div className="p-3 rounded-lg bg-muted/50 text-center">
+                      <p className="text-sm font-semibold capitalize">{selectedEvent.application_status}</p>
+                      <p className="text-xs text-muted-foreground">Application</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/50 text-center">
+                      <p className="text-sm font-semibold capitalize">{selectedEvent.payment_status}</p>
+                      <p className="text-xs text-muted-foreground">Payment</p>
+                    </div>
                   </div>
-                  <div className="p-3 rounded-lg bg-muted/50 text-center">
-                    <p className="text-sm font-semibold capitalize">{selectedEvent.payment_status}</p>
-                    <p className="text-xs text-muted-foreground">Payment</p>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           )}
