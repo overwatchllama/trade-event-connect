@@ -235,10 +235,10 @@ const EnhancedCollection = () => {
         {/* Main Content */}
         <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <Select value={selectedGame} onValueChange={(v) => setSelectedGame(v as CardCategory)}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -252,7 +252,7 @@ const EnhancedCollection = () => {
                 </Select>
 
                 <Select value={selectedCollection} onValueChange={setSelectedCollection}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="All Collections" />
                   </SelectTrigger>
                   <SelectContent>
@@ -264,59 +264,63 @@ const EnhancedCollection = () => {
                     ))}
                   </SelectContent>
                 </Select>
-
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="cards">Cards</TabsTrigger>
-                  <TabsTrigger value="sets">Sets</TabsTrigger>
-                  <TabsTrigger value="stats">Stats</TabsTrigger>
-                </TabsList>
               </div>
 
-              {activeTab === 'cards' && (
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
-                    <Input
-                      placeholder="Search cards..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 w-64"
-                    />
-                  </div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <TabsList className="w-full sm:w-auto">
+                  <TabsTrigger value="cards" className="flex-1 sm:flex-none">Cards</TabsTrigger>
+                  <TabsTrigger value="sets" className="flex-1 sm:flex-none">Sets</TabsTrigger>
+                  <TabsTrigger value="stats" className="flex-1 sm:flex-none">Stats</TabsTrigger>
+                </TabsList>
 
-                  <Select value={conditionFilter} onValueChange={setConditionFilter}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Condition" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Conditions</SelectItem>
-                      <SelectItem value="mint">Mint</SelectItem>
-                      <SelectItem value="near_mint">Near Mint</SelectItem>
-                      <SelectItem value="excellent">Excellent</SelectItem>
-                      <SelectItem value="good">Good</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {activeTab === 'cards' && (
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+                      <Input
+                        placeholder="Search cards..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 w-full sm:w-64"
+                      />
+                    </div>
 
-                  <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
-                    <Button
-                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('grid')}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Grid3X3 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={viewMode === 'list' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setViewMode('list')}
-                      className="h-8 w-8 p-0"
-                    >
-                      <List className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-3">
+                      <Select value={conditionFilter} onValueChange={setConditionFilter}>
+                        <SelectTrigger className="w-full sm:w-40">
+                          <SelectValue placeholder="Condition" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Conditions</SelectItem>
+                          <SelectItem value="mint">Mint</SelectItem>
+                          <SelectItem value="near_mint">Near Mint</SelectItem>
+                          <SelectItem value="excellent">Excellent</SelectItem>
+                          <SelectItem value="good">Good</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+                        <Button
+                          variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setViewMode('grid')}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Grid3X3 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant={viewMode === 'list' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setViewMode('list')}
+                          className="h-8 w-8 p-0"
+                        >
+                          <List className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             <TabsContent value="cards" className="mt-0">
