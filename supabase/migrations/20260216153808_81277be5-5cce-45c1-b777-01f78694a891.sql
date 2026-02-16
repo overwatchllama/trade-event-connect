@@ -1,0 +1,1 @@
+ALTER TABLE public.vendor_personal_events ADD COLUMN tables_count integer;
