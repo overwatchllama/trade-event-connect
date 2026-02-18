@@ -4,7 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store, UserCheck, Megaphone, NotebookPen } from "lucide-react";
+import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store, UserCheck, Megaphone, NotebookPen, TableProperties } from "lucide-react";
+import { VendorApplicationsList } from "@/components/VendorApplicationsList";
 import NearbyEventsPanel from "@/components/vending/NearbyEventsPanel";
 import CreatePersonalEventDialog from "@/components/vending/CreatePersonalEventDialog";
 import { useUserRoles } from "@/hooks/useUserRoles";
@@ -286,6 +287,10 @@ const VendingDashboard = () => {
               <CalendarIcon className="w-4 h-4" />
               <span className="hidden sm:inline">Calendar</span>
             </TabsTrigger>
+            <TabsTrigger value="tables" className="gap-2">
+              <TableProperties className="w-4 h-4" />
+              <span className="hidden sm:inline">My</span> Tables
+            </TabsTrigger>
             <TabsTrigger value="marketplace" className="gap-2">
               <Store className="w-4 h-4" />
               <span className="hidden sm:inline">Table</span> Marketplace
@@ -523,6 +528,11 @@ const VendingDashboard = () => {
             </Card>
           )}
 
+        </TabsContent>
+
+        {/* My Tables Tab */}
+        <TabsContent value="tables">
+          <VendorApplicationsList />
         </TabsContent>
 
         {/* Marketplace Tab */}
