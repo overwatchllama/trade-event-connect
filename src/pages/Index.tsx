@@ -170,7 +170,7 @@ const Index = () => {
         </div>
       </section>
 
-      <SubscriptionTiers />
+      
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-primary text-primary-foreground">
