@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import SubscriptionTiers from "@/components/SubscriptionTiers";
+
 import SimplifiedEventCard from "@/components/SimplifiedEventCard";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -170,7 +170,7 @@ const Index = () => {
         </div>
       </section>
 
-      <SubscriptionTiers />
+      
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-primary text-primary-foreground">
