@@ -14,6 +14,29 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseAnon = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { sessionId, orderId } = await req.json();
 
     if (!sessionId || !orderId) {
@@ -35,6 +58,21 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    // Verify the order belongs to the authenticated user
+    const { data: orderCheck, error: orderCheckError } = await supabaseAdmin
+      .from("orders")
+      .select("user_id")
+      .eq("id", orderId)
+      .eq("stripe_session_id", sessionId)
+      .single();
+
+    if (orderCheckError || !orderCheck || orderCheck.user_id !== user.id) {
+      return new Response(
+        JSON.stringify({ error: "Order not found or unauthorized" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Update order payment status
     const { error: updateError } = await supabaseAdmin
