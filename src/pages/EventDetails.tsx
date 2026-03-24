@@ -553,7 +553,7 @@ const EventDetails = () => {
               </CardContent>
             </Card>
 
-            {event.total_tables && canSeeVendorInfo && (
+            {event.total_tables && canSeeVendorInfo && !isOrganizer && (
               <Card>
                 <CardHeader>
                   <CardTitle>Vendor Information</CardTitle>
