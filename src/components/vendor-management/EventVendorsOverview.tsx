@@ -223,15 +223,15 @@ export const EventVendorsOverview = ({
                       </Badge>
                     </div>
                   </div>
-                  {counts.total > 0 && (
-                    <div className="mt-3 ml-8">
-                      <VendorSummaryBar {...counts} />
-                    </div>
-                  )}
                 </CardHeader>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="pt-0">
+                  {counts.total > 0 && (
+                    <div className="mb-4 ml-8">
+                      <VendorSummaryBar {...counts} />
+                    </div>
+                  )}
                   {event.vendors.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4">No vendor applications for this event.</p>
                   ) : (
