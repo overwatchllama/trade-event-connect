@@ -26,6 +26,8 @@ import {
   Image,
   Map,
   FileText,
+  Gift,
+  FolderOpen,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +37,9 @@ import { AttendeeManagement } from "@/components/AttendeeManagement";
 import ManageVendorsDialog from "@/components/ManageVendorsDialog";
 import ManageSponsorsDialog from "@/components/ManageSponsorsDialog";
 import { DayOfChecklist } from "@/components/DayOfChecklist";
+import { PostEventSummary } from "@/components/PostEventSummary";
+import { ManageRaffles } from "@/components/raffle/ManageRaffles";
+import { EventFileManager } from "@/components/EventFileManager";
 import { LayoutDrawingTool } from "@/components/LayoutDrawingTool";
 import EventCheckInDialog from "@/components/organize/EventCheckInDialog";
 import { EventStaffRoles } from "@/components/organize/EventStaffRoles";
@@ -85,6 +90,9 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
   const [currentFlyerBackUrl, setCurrentFlyerBackUrl] = useState<string | null>(null);
   const [flyerViewSide, setFlyerViewSide] = useState<'front' | 'back'>('front');
   const [vendorNotes, setVendorNotes] = useState("");
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [rafflesOpen, setRafflesOpen] = useState(false);
+  const [filesOpen, setFilesOpen] = useState(false);
   const [savingNotes, setSavingNotes] = useState(false);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
@@ -334,7 +342,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
           {/* MANAGE TAB */}
           <TabsContent value="manage">
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setChecklistOpen(true)}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
@@ -385,6 +393,33 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
                       Vendor Instructions
                     </CardTitle>
                     <CardDescription>Add notes for vendors</CardDescription>
+                  </CardHeader>
+                </Card>
+                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setSummaryOpen(true)}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4" />
+                      Post-Event Summary
+                    </CardTitle>
+                    <CardDescription>Revenue and attendance reports</CardDescription>
+                  </CardHeader>
+                </Card>
+                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setRafflesOpen(true)}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Gift className="h-4 w-4" />
+                      Raffles
+                    </CardTitle>
+                    <CardDescription>Manage event raffles</CardDescription>
+                  </CardHeader>
+                </Card>
+                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setFilesOpen(true)}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <FolderOpen className="h-4 w-4" />
+                      Files
+                    </CardTitle>
+                    <CardDescription>Manage event documents</CardDescription>
                   </CardHeader>
                 </Card>
               </div>
@@ -492,6 +527,44 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
                       </Button>
                     </div>
                   )}
+                </DialogContent>
+              </Dialog>
+
+              {/* Post-Event Summary Dialog */}
+              <Dialog open={summaryOpen} onOpenChange={setSummaryOpen}>
+                <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Post-Event Summary</DialogTitle>
+                  </DialogHeader>
+                  <PostEventSummary
+                    eventId={event.id}
+                    eventTitle={event.title}
+                    eventDate={event.date}
+                    vendorTablePrice={event.vendor_table_price}
+                    totalTables={event.total_tables}
+                    maxAttendees={event.max_attendees}
+                    entryFee={event.entry_fee}
+                  />
+                </DialogContent>
+              </Dialog>
+
+              {/* Raffles Dialog */}
+              <Dialog open={rafflesOpen} onOpenChange={setRafflesOpen}>
+                <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Manage Raffles</DialogTitle>
+                  </DialogHeader>
+                  <ManageRaffles eventId={event.id} />
+                </DialogContent>
+              </Dialog>
+
+              {/* Files Dialog */}
+              <Dialog open={filesOpen} onOpenChange={setFilesOpen}>
+                <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Event Files</DialogTitle>
+                  </DialogHeader>
+                  <EventFileManager eventId={event.id} />
                 </DialogContent>
               </Dialog>
 
