@@ -250,7 +250,7 @@ const EventDetails = () => {
         {isOrganizer && (
           <div className="mb-6 flex flex-wrap gap-2">
             <Button
-              onClick={() => navigate(`/manage-event/${event.id}`)}
+              onClick={() => navigate(`/event/${event.id}/manage`)}
               variant="outline"
             >
               <Settings className="w-4 h-4 mr-2" />
