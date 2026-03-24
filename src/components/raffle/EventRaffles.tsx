@@ -144,6 +144,9 @@ export const EventRaffles = ({ eventId }: EventRafflesProps) => {
                 <div className="flex items-center gap-2">
                   <Trophy className="h-4 w-4 text-primary" />
                   <span className="font-medium">{raffle.name}</span>
+                  {raffle.vendor_name && (
+                    <Badge variant="outline" className="text-xs">by {raffle.vendor_name}</Badge>
+                  )}
                   {raffle.status === 'claimed' && (
                     <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Claimed</Badge>
                   )}
