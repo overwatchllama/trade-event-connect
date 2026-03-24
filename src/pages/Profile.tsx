@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,6 +52,8 @@ type SocialMediaLink = {
 type ProfileForm = z.infer<typeof profileSchema>;
 
 const Profile = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'personal';
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<Database['public']['Tables']['profiles']['Row'] | null>(null);
   const [roleRequests, setRoleRequests] = useState<Database['public']['Tables']['role_requests']['Row'][]>([]);
@@ -406,7 +408,7 @@ const Profile = () => {
             </div>
           </div>
 
-          <Tabs defaultValue="personal" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={(val) => setSearchParams({ tab: val })} className="space-y-6">
             <TabsList className="flex flex-wrap h-auto gap-1 w-full">
               <TabsTrigger value="personal">Personal Info</TabsTrigger>
               <TabsTrigger value="tickets" className="gap-1">
