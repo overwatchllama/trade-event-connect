@@ -1164,6 +1164,7 @@ export type Database = {
           organizer_id: string
           status: string
           updated_at: string
+          vendor_id: string | null
         }
         Insert: {
           claim_time_seconds?: number
@@ -1177,6 +1178,7 @@ export type Database = {
           organizer_id: string
           status?: string
           updated_at?: string
+          vendor_id?: string | null
         }
         Update: {
           claim_time_seconds?: number
@@ -1190,6 +1192,7 @@ export type Database = {
           organizer_id?: string
           status?: string
           updated_at?: string
+          vendor_id?: string | null
         }
         Relationships: [
           {
@@ -1197,6 +1200,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "raffle_items_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
         ]
