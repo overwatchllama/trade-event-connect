@@ -43,12 +43,16 @@ export const EventRaffles = ({ eventId }: EventRafflesProps) => {
   const fetchData = useCallback(async () => {
     const { data: items } = await supabase
       .from('raffle_items')
-      .select('*')
+      .select('*, vendors:vendor_id(business_name)')
       .eq('event_id', eventId)
       .in('status', ['active', 'drawn', 'claimed'])
       .order('created_at');
 
-    setRaffles(items || []);
+    const mapped = (items || []).map((item: any) => ({
+      ...item,
+      vendor_name: item.vendors?.business_name || null,
+    }));
+    setRaffles(mapped);
 
     if (items && items.length > 0) {
       const ids = items.map(r => r.id);
