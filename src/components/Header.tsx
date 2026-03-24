@@ -70,6 +70,16 @@ const Header = () => {
           </Link>
 
           <nav className="hidden md:flex items-center space-x-8">
+            {isOrganizer && (
+              <Link 
+                to="/organize" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  location.pathname === '/organize' ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                My Events
+              </Link>
+            )}
             <Link 
               to="/events" 
               className={`text-sm font-medium transition-colors hover:text-primary ${
@@ -86,16 +96,6 @@ const Header = () => {
             >
               Vendors
             </Link>
-            {isOrganizer && (
-              <Link 
-                to="/organize" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === '/organize' ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                Organize Events
-              </Link>
-            )}
             {isVendor && (
               <Link 
                 to="/vending" 
