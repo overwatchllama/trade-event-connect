@@ -204,6 +204,7 @@ export const EventVendorsOverview = ({
       userId: v.vendor.profiles?.id || v.vendor.user_id,
       businessName: v.vendor.business_name,
     })));
+    setMessageEventId(event.id);
     setMessageEventTitle(event.title);
     setMessageGroupLabel(label);
     setMessageDialogOpen(true);
@@ -214,6 +215,7 @@ export const EventVendorsOverview = ({
       userId: vendor.profiles?.id || vendor.user_id,
       businessName: vendor.business_name,
     }]);
+    setMessageEventId(event.id);
     setMessageEventTitle(event.title);
     setMessageGroupLabel(vendor.business_name);
     setMessageDialogOpen(true);
