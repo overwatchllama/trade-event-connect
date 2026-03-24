@@ -22,6 +22,7 @@ import { AttendeeManagement } from '@/components/AttendeeManagement';
 import { DayOfChecklist } from '@/components/DayOfChecklist';
 import { PostEventSummary } from '@/components/PostEventSummary';
 import EventDayDialog from '@/components/EventDayDialog';
+import { ManageRaffles } from '@/components/raffle/ManageRaffles';
 import { Database } from '@/integrations/supabase/types';
 
 type Event = Database['public']['Tables']['events']['Row'];
