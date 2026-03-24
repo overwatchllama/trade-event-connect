@@ -7,11 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Eye, Calendar, MapPin, Clock, ChevronDown, ChevronRight, Ticket, History, CalendarClock, Share2 } from "lucide-react";
+import { Download, Eye, Calendar, MapPin, Clock, ChevronDown, ChevronRight, Ticket, History, CalendarClock, Share2, Send } from "lucide-react";
 import { format, parseISO, isToday, isFuture, isPast, startOfDay } from "date-fns";
 import { toast } from "sonner";
 import TicketQRCode from "./TicketQRCode";
 import ShareTicketDialog from "./ShareTicketDialog";
+import BulkShareTicketsDialog from "./BulkShareTicketsDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -66,6 +67,8 @@ const MyTickets = () => {
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [ticketToShare, setTicketToShare] = useState<TicketData | null>(null);
+  const [bulkShareOpen, setBulkShareOpen] = useState(false);
+  const [bulkShareGroup, setBulkShareGroup] = useState<GroupedEvent | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -345,6 +348,19 @@ const MyTickets = () => {
                     {group.checkedInCount} checked in
                   </Badge>
                 )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setBulkShareGroup(group);
+                    setBulkShareOpen(true);
+                  }}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Send
+                </Button>
               </div>
             </div>
           </CollapsibleTrigger>
@@ -515,6 +531,19 @@ const MyTickets = () => {
               ? `Day ${ticketToShare.event_day.day_number}: ${format(parseISO(ticketToShare.event_day.day_date), "MMM d, yyyy")}`
               : ticketToShare.event?.date || ""
           }
+        />
+      )}
+
+      {bulkShareGroup && (
+        <BulkShareTicketsDialog
+          open={bulkShareOpen}
+          onOpenChange={setBulkShareOpen}
+          tickets={bulkShareGroup.tickets.map(t => ({
+            ticket_code: t.ticket_code,
+            event_day: t.event_day ? { day_number: t.event_day.day_number, day_date: t.event_day.day_date } : null,
+          }))}
+          eventTitle={bulkShareGroup.eventTitle}
+          eventDate={bulkShareGroup.eventDate}
         />
       )}
     </>
