@@ -348,6 +348,19 @@ const MyTickets = () => {
                     {group.checkedInCount} checked in
                   </Badge>
                 )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setBulkShareGroup(group);
+                    setBulkShareOpen(true);
+                  }}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Send
+                </Button>
               </div>
             </div>
           </CollapsibleTrigger>
