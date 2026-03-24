@@ -25,6 +25,7 @@ import ManageSponsorsDialog from '@/components/ManageSponsorsDialog';
 import { VendorApplicationStatus } from '@/components/VendorApplicationStatus';
 import BuyTicketDialog from '@/components/tickets/BuyTicketDialog';
 import TicketScanner from '@/components/tickets/TicketScanner';
+import { EventRaffles } from '@/components/raffle/EventRaffles';
 import { Database } from '@/integrations/supabase/types';
 
 type Event = Database['public']['Tables']['events']['Row'];

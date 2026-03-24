@@ -407,6 +407,10 @@ const ManageEvent = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="raffles" className="space-y-6">
+            <ManageRaffles eventId={event.id} />
+          </TabsContent>
+
           <TabsContent value="files" className="space-y-6">
             <EventFileManager eventId={event.id} />
           </TabsContent>
