@@ -184,6 +184,96 @@ export const EventVendorsOverview = ({
     return <Badge variant="outline">{status}</Badge>;
   };
 
+  const getVendorsByGroup = (event: EventWithVendors, group: string) => {
+    return event.vendors.filter(v => {
+      if (group === 'unpaid') return v.applicationStatus === 'approved' && v.paymentStatus !== 'paid';
+      if (group === 'waitlist') return v.applicationStatus === 'waitlist';
+      if (group === 'paid') return v.applicationStatus === 'approved' && v.paymentStatus === 'paid';
+      return false;
+    });
+  };
+
+  const openGroupMessage = (event: EventWithVendors, group: string, label: string) => {
+    const vendors = getVendorsByGroup(event, group);
+    if (vendors.length === 0) {
+      toast.info(`No ${label.toLowerCase()} to message`);
+      return;
+    }
+    setMessageRecipients(vendors.map(v => ({
+      userId: v.vendor.profiles?.id || v.vendor.user_id,
+      businessName: v.vendor.business_name,
+    })));
+    setMessageEventTitle(event.title);
+    setMessageGroupLabel(label);
+    setMessageDialogOpen(true);
+  };
+
+  const openSingleMessage = (event: EventWithVendors, vendor: VendorProfile) => {
+    setMessageRecipients([{
+      userId: vendor.profiles?.id || vendor.user_id,
+      businessName: vendor.business_name,
+    }]);
+    setMessageEventTitle(event.title);
+    setMessageGroupLabel(vendor.business_name);
+    setMessageDialogOpen(true);
+  };
+
+  const inviteFavorites = async (event: EventWithVendors) => {
+    setInvitingFavorites(event.id);
+    try {
+      // Get organizer's favorited vendors
+      const { data: favorites } = await supabase
+        .from('organizer_vendor_notes')
+        .select('vendor_id')
+        .eq('organizer_id', user!.id)
+        .eq('is_favorite', true);
+
+      if (!favorites || favorites.length === 0) {
+        toast.info('You have no favorited vendors to invite');
+        return;
+      }
+
+      // Filter out vendors already applied to this event
+      const existingVendorIds = new Set(event.vendors.map(v => v.vendor.id));
+      const newFavIds = favorites.filter(f => !existingVendorIds.has(f.vendor_id)).map(f => f.vendor_id);
+
+      if (newFavIds.length === 0) {
+        toast.info('All your favorited vendors have already applied');
+        return;
+      }
+
+      // Get vendor user_ids and names
+      const { data: vendorData } = await supabase
+        .from('vendors')
+        .select('id, user_id, business_name')
+        .in('id', newFavIds);
+
+      if (!vendorData || vendorData.length === 0) {
+        toast.info('No vendors found to invite');
+        return;
+      }
+
+      const notifications = vendorData.map(v => ({
+        user_id: v.user_id,
+        title: 'Event Invitation',
+        message: `You've been invited to participate as a vendor at "${event.title}" on ${event.date}. Check out the event and apply if interested!`,
+        type: 'event_invitation',
+        reference_id: event.id,
+        reference_type: 'event',
+      }));
+
+      const { error } = await supabase.from('notifications').insert(notifications);
+      if (error) throw error;
+
+      toast.success(`Invited ${vendorData.length} favorited vendor${vendorData.length !== 1 ? 's' : ''}!`);
+    } catch (error) {
+      console.error('Error inviting favorites:', error);
+      toast.error('Failed to send invitations');
+    } finally {
+      setInvitingFavorites(null);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Loading events...</div>;
   }
