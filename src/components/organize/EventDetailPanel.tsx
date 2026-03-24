@@ -66,6 +66,7 @@ interface EventDetailPanelProps {
 const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(true);
+  const [vendorsDialogOpen, setVendorsDialogOpen] = useState(false);
   const [sponsorsDialogOpen, setSponsorsDialogOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [checkInOpen, setCheckInOpen] = useState(false);
