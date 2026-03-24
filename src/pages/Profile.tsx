@@ -415,7 +415,10 @@ const Profile = () => {
                 <Ticket className="w-4 h-4" />
                 My Tickets
               </TabsTrigger>
-              <TabsTrigger value="roles">Roles</TabsTrigger>
+              <TabsTrigger value="account-type" className="gap-1">
+                <UserCog className="w-4 h-4" />
+                Account Type
+              </TabsTrigger>
               {userRoles.includes('vendor') && (
                 <TabsTrigger value="applications" className="gap-1">
                   <FileText className="w-4 h-4" />
@@ -434,10 +437,6 @@ const Profile = () => {
                   Sponsoring
                 </TabsTrigger>
               )}
-              <TabsTrigger value="billing" className="gap-1">
-                <CreditCard className="w-4 h-4" />
-                Billing
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="personal" className="space-y-6">
@@ -747,8 +746,24 @@ const Profile = () => {
             )}
             </TabsContent>
 
-            <TabsContent value="roles" className="space-y-6">
+            <TabsContent value="account-type" className="space-y-6">
               <SelfManageRoles />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Billing & Subscriptions
+                  </CardTitle>
+                  <CardDescription>
+                    View plans and manage your active subscriptions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => navigate('/subscription')} className="w-full">
+                    Manage Subscriptions
+                  </Button>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {userRoles.includes('vendor') && (
@@ -824,24 +839,7 @@ const Profile = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="billing" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Billing & Subscriptions
-                  </CardTitle>
-                  <CardDescription>
-                    View plans and manage your active subscriptions
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={() => navigate('/subscription')} className="w-full">
-                    Manage Subscriptions
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
+            <TabsContent value="account-type-billing" className="hidden" />
           </Tabs>
         </div>
       </div>
