@@ -56,6 +56,11 @@ export const EventVendorsOverview = ({
   const [events, setEvents] = useState<EventWithVendors[]>([]);
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [messageRecipients, setMessageRecipients] = useState<{ userId: string; businessName: string }[]>([]);
+  const [messageEventTitle, setMessageEventTitle] = useState('');
+  const [messageGroupLabel, setMessageGroupLabel] = useState('');
+  const [invitingFavorites, setInvitingFavorites] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchEventData();
