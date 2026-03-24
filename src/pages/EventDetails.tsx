@@ -531,7 +531,7 @@ const EventDetails = () => {
                   </div>
                 )}
 
-                {!event.no_online_ticket_sales && (
+                {!event.no_online_ticket_sales && !isOrganizer && (
                   <Button
                     className="w-full"
                     size="lg"
@@ -553,7 +553,7 @@ const EventDetails = () => {
               </CardContent>
             </Card>
 
-            {event.total_tables && canSeeVendorInfo && (
+            {event.total_tables && canSeeVendorInfo && !isOrganizer && (
               <Card>
                 <CardHeader>
                   <CardTitle>Vendor Information</CardTitle>
@@ -600,7 +600,7 @@ const EventDetails = () => {
             )}
 
             {/* Vendor Application Status - Show if vendor has applied */}
-            {hasApplied && canSeeVendorInfo && (
+            {hasApplied && canSeeVendorInfo && !isOrganizer && (
               <VendorApplicationStatus 
                 eventId={event.id} 
                 eventTitle={event.title}
