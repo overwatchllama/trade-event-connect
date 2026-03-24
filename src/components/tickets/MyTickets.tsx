@@ -533,6 +533,19 @@ const MyTickets = () => {
           }
         />
       )}
+
+      {bulkShareGroup && (
+        <BulkShareTicketsDialog
+          open={bulkShareOpen}
+          onOpenChange={setBulkShareOpen}
+          tickets={bulkShareGroup.tickets.map(t => ({
+            ticket_code: t.ticket_code,
+            event_day: t.event_day ? { day_number: t.event_day.day_number, day_date: t.event_day.day_date } : null,
+          }))}
+          eventTitle={bulkShareGroup.eventTitle}
+          eventDate={bulkShareGroup.eventDate}
+        />
+      )}
     </>
   );
 };
