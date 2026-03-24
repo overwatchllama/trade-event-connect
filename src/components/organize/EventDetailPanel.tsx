@@ -515,6 +515,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
           ))}
         </div>
       </CardContent>
+      </CollapsibleContent>
 
       <EventCheckInDialog
         open={checkInOpen}
@@ -529,6 +530,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
         eventTitle={event.title}
       />
     </Card>
+    </Collapsible>
   );
 };
 
