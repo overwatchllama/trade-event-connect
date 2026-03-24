@@ -517,7 +517,10 @@ const EventDetails = () => {
                 )}
 
                 {ticketCount > 0 && (
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                  <div 
+                    className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20 cursor-pointer hover:bg-primary/20 transition-colors"
+                    onClick={() => navigate('/profile?tab=tickets')}
+                  >
                     <Ticket className="w-5 h-5 text-primary" />
                     <span className="font-semibold text-primary">
                       You have {ticketCount} ticket{ticketCount !== 1 ? 's' : ''}
