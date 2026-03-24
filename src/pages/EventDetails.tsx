@@ -525,6 +525,7 @@ const EventDetails = () => {
                   </div>
                 )}
 
+                {!event.no_online_ticket_sales && (
                   <Button
                     className="w-full"
                     size="lg"
