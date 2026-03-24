@@ -18,6 +18,7 @@ interface VendorMessageDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   recipients: VendorRecipient[];
+  eventId: string;
   eventTitle: string;
   groupLabel: string;
 }
@@ -26,6 +27,7 @@ export const VendorMessageDialog = ({
   open,
   onOpenChange,
   recipients,
+  eventId,
   eventTitle,
   groupLabel,
 }: VendorMessageDialogProps) => {
@@ -53,7 +55,10 @@ export const VendorMessageDialog = ({
         reference_type: 'event',
       }));
 
-      const { error } = await supabase.from('notifications').insert(notifications);
+      const { error } = await supabase.rpc('send_event_notifications', {
+        p_event_id: eventId,
+        p_notifications: notifications,
+      });
       if (error) throw error;
 
       toast.success(`Message sent to ${recipients.length} vendor${recipients.length !== 1 ? 's' : ''}!`);
