@@ -600,7 +600,7 @@ const EventDetails = () => {
             )}
 
             {/* Vendor Application Status - Show if vendor has applied */}
-            {hasApplied && canSeeVendorInfo && (
+            {hasApplied && canSeeVendorInfo && !isOrganizer && (
               <VendorApplicationStatus 
                 eventId={event.id} 
                 eventTitle={event.title}
