@@ -516,7 +516,15 @@ const EventDetails = () => {
                   </div>
                 )}
 
-                {!event.no_online_ticket_sales && (
+                {ticketCount > 0 && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <Ticket className="w-5 h-5 text-primary" />
+                    <span className="font-semibold text-primary">
+                      You have {ticketCount} ticket{ticketCount !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
+
                   <Button
                     className="w-full"
                     size="lg"
