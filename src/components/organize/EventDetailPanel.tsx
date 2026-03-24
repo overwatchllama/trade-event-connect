@@ -90,6 +90,9 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
   const [currentFlyerBackUrl, setCurrentFlyerBackUrl] = useState<string | null>(null);
   const [flyerViewSide, setFlyerViewSide] = useState<'front' | 'back'>('front');
   const [vendorNotes, setVendorNotes] = useState("");
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [rafflesOpen, setRafflesOpen] = useState(false);
+  const [filesOpen, setFilesOpen] = useState(false);
   const [savingNotes, setSavingNotes] = useState(false);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
