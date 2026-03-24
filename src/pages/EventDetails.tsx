@@ -470,6 +470,8 @@ const EventDetails = () => {
 
                 <EventSponsors eventId={event.id} />
 
+                <EventRaffles eventId={event.id} />
+
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Vendors at this Event</h3>
                   <EventVendors eventId={event.id} maxDisplay={10} />
