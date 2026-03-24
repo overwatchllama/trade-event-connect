@@ -22,6 +22,7 @@ import { AttendeeManagement } from '@/components/AttendeeManagement';
 import { DayOfChecklist } from '@/components/DayOfChecklist';
 import { PostEventSummary } from '@/components/PostEventSummary';
 import EventDayDialog from '@/components/EventDayDialog';
+import { ManageRaffles } from '@/components/raffle/ManageRaffles';
 import { Database } from '@/integrations/supabase/types';
 
 type Event = Database['public']['Tables']['events']['Row'];
@@ -151,7 +152,7 @@ const ManageEvent = () => {
         </div>
 
         <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
+          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="attendees">Attendees</TabsTrigger>
             <TabsTrigger value="checklist">Checklist</TabsTrigger>
@@ -161,6 +162,7 @@ const ManageEvent = () => {
             <TabsTrigger value="vendor-notes">Vendor Notes</TabsTrigger>
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
             <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
+            <TabsTrigger value="raffles">Raffles</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
           </TabsList>
 
@@ -403,6 +405,10 @@ const ManageEvent = () => {
                 </Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="raffles" className="space-y-6">
+            <ManageRaffles eventId={event.id} />
           </TabsContent>
 
           <TabsContent value="files" className="space-y-6">

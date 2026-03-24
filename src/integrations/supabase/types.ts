@@ -1078,6 +1078,129 @@ export type Database = {
         }
         Relationships: []
       }
+      raffle_draws: {
+        Row: {
+          claim_deadline: string
+          claimed_at: string | null
+          created_at: string
+          drawn_at: string
+          id: string
+          raffle_item_id: string
+          status: string
+          updated_at: string
+          winner_user_id: string
+        }
+        Insert: {
+          claim_deadline: string
+          claimed_at?: string | null
+          created_at?: string
+          drawn_at?: string
+          id?: string
+          raffle_item_id: string
+          status?: string
+          updated_at?: string
+          winner_user_id: string
+        }
+        Update: {
+          claim_deadline?: string
+          claimed_at?: string | null
+          created_at?: string
+          drawn_at?: string
+          id?: string
+          raffle_item_id?: string
+          status?: string
+          updated_at?: string
+          winner_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raffle_draws_raffle_item_id_fkey"
+            columns: ["raffle_item_id"]
+            isOneToOne: false
+            referencedRelation: "raffle_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raffle_entries: {
+        Row: {
+          entered_at: string
+          id: string
+          raffle_item_id: string
+          user_id: string
+        }
+        Insert: {
+          entered_at?: string
+          id?: string
+          raffle_item_id: string
+          user_id: string
+        }
+        Update: {
+          entered_at?: string
+          id?: string
+          raffle_item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raffle_entries_raffle_item_id_fkey"
+            columns: ["raffle_item_id"]
+            isOneToOne: false
+            referencedRelation: "raffle_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raffle_items: {
+        Row: {
+          claim_time_seconds: number
+          created_at: string
+          description: string | null
+          entry_method: string
+          event_id: string
+          id: string
+          image_url: string | null
+          name: string
+          organizer_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          claim_time_seconds?: number
+          created_at?: string
+          description?: string | null
+          entry_method?: string
+          event_id: string
+          id?: string
+          image_url?: string | null
+          name: string
+          organizer_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          claim_time_seconds?: number
+          created_at?: string
+          description?: string | null
+          entry_method?: string
+          event_id?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          organizer_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raffle_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_requests: {
         Row: {
           admin_notes: string | null
