@@ -105,9 +105,8 @@ const MyTickets = () => {
       
       setTickets(transformedData as TicketData[]);
       
-      // Auto-expand all events by default
-      const eventIds = new Set(transformedData.map(t => t.event?.id).filter(Boolean));
-      setExpandedEvents(eventIds as Set<string>);
+      // Start with all events collapsed
+      setExpandedEvents(new Set());
     } catch (error) {
       console.error("Error fetching tickets:", error);
       toast.error("Failed to load tickets");
