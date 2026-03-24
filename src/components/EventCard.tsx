@@ -55,6 +55,20 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false, onCopyEve
   const [organizerVendorId, setOrganizerVendorId] = useState<string | null>(null);
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [sponsorDialogOpen, setSponsorDialogOpen] = useState(false);
+  const [ticketCount, setTicketCount] = useState(0);
+
+  useEffect(() => {
+    const fetchTicketCount = async () => {
+      if (!user) return;
+      const { count } = await supabase
+        .from('order_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', event.id)
+        .eq('user_id', user.id);
+      setTicketCount(count || 0);
+    };
+    fetchTicketCount();
+  }, [user, event.id]);
 
   const isVendorPro = subscribed && 
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
