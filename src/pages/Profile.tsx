@@ -746,7 +746,7 @@ const Profile = () => {
             )}
             </TabsContent>
 
-            <TabsContent value="roles" className="space-y-6">
+            <TabsContent value="account-type" className="space-y-6">
               <SelfManageRoles />
             </TabsContent>
 
