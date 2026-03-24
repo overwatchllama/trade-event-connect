@@ -54,6 +54,7 @@ const EventDetails = () => {
   const [buyTicketOpen, setBuyTicketOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [tablesSold, setTablesSold] = useState(0);
+  const [ticketCount, setTicketCount] = useState(0);
 
   const isVendorPro = subscribed &&
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
