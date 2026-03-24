@@ -408,7 +408,7 @@ const Profile = () => {
             </div>
           </div>
 
-          <Tabs defaultValue="personal" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={(val) => setSearchParams({ tab: val })} className="space-y-6">
             <TabsList className="flex flex-wrap h-auto gap-1 w-full">
               <TabsTrigger value="personal">Personal Info</TabsTrigger>
               <TabsTrigger value="tickets" className="gap-1">
