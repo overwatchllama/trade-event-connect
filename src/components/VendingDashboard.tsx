@@ -296,6 +296,10 @@ const VendingDashboard = () => {
               <Store className="w-4 h-4" />
               <span className="hidden sm:inline">Table</span> Marketplace
             </TabsTrigger>
+            <TabsTrigger value="raffles" className="gap-2">
+              <Gift className="w-4 h-4" />
+              Raffles
+            </TabsTrigger>
             <TabsTrigger value="staff" className="gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Manage</span> Staff
