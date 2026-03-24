@@ -748,6 +748,22 @@ const Profile = () => {
 
             <TabsContent value="account-type" className="space-y-6">
               <SelfManageRoles />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Billing & Subscriptions
+                  </CardTitle>
+                  <CardDescription>
+                    View plans and manage your active subscriptions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => navigate('/subscription')} className="w-full">
+                    Manage Subscriptions
+                  </Button>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {userRoles.includes('vendor') && (
