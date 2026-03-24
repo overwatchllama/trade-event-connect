@@ -181,17 +181,22 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
   };
 
   return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
     <Card className="mt-6">
-      <CardHeader className="pb-3">
+      <CollapsibleTrigger asChild>
+      <CardHeader className="pb-3 cursor-pointer hover:bg-accent/30 transition-colors">
         <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-xl">{event.title}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {format(parseISO(event.date), "EEEE, MMMM d, yyyy")} ·{" "}
-              {event.venue}, {event.city}, {event.state}
-            </p>
+          <div className="flex items-center gap-2">
+            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${isOpen ? '' : '-rotate-90'}`} />
+            <div>
+              <CardTitle className="text-xl">{event.title}</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {format(parseISO(event.date), "EEEE, MMMM d, yyyy")} ·{" "}
+                {event.venue}, {event.city}, {event.state}
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               variant="outline"
               size="sm"
@@ -219,6 +224,8 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
           </div>
         </div>
       </CardHeader>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
       <CardContent>
         <Tabs defaultValue="status" className="space-y-4">
           <TabsList className="grid w-full grid-cols-5">
