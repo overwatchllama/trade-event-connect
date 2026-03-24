@@ -86,16 +86,14 @@ const Header = () => {
             >
               Vendors
             </Link>
-            {!isOrganizer && (
-              <Link 
-                to="/my-collection" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === '/my-collection' ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                My Collection
-              </Link>
-            )}
+            <Link 
+              to="/my-collection" 
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === '/my-collection' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              My Collection
+            </Link>
             {isOrganizer && (
               <Link 
                 to="/organize" 
