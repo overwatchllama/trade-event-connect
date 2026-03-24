@@ -12,6 +12,7 @@ import { format, parseISO, isToday, isFuture, isPast, startOfDay } from "date-fn
 import { toast } from "sonner";
 import TicketQRCode from "./TicketQRCode";
 import ShareTicketDialog from "./ShareTicketDialog";
+import BulkShareTicketsDialog from "./BulkShareTicketsDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
