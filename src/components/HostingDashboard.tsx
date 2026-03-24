@@ -20,6 +20,7 @@ import {
   Users,
   Award,
   Star,
+  Globe,
 } from "lucide-react";
 import { format, parseISO, isBefore, startOfDay, isSameDay, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
