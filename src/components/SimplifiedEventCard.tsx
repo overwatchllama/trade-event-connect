@@ -25,6 +25,20 @@ const SimplifiedEventCard = ({ event }: SimplifiedEventCardProps) => {
   const { user } = useAuth();
   const [isFavorited, setIsFavorited] = useState(false);
   const [loadingFavorite, setLoadingFavorite] = useState(false);
+  const [ticketCount, setTicketCount] = useState(0);
+
+  useEffect(() => {
+    const fetchTicketCount = async () => {
+      if (!user) return;
+      const { count } = await supabase
+        .from('order_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', event.id)
+        .eq('user_id', user.id);
+      setTicketCount(count || 0);
+    };
+    fetchTicketCount();
+  }, [user, event.id]);
 
   useEffect(() => {
     const checkFavoriteStatus = async () => {
