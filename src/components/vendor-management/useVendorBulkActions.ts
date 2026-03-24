@@ -132,9 +132,14 @@ export const useVendorBulkActions = (
           };
         });
 
-        const { error } = await supabase
-          .from('notifications')
-          .insert(notifications);
+        // Need event_id for the RPC - get it from the first application
+        const eventId = selectedApps[0]?.event_id;
+        if (!eventId) throw new Error('No event ID found');
+
+        const { error } = await supabase.rpc('send_event_notifications', {
+          p_event_id: eventId,
+          p_notifications: notifications,
+        });
 
         if (error) throw error;
         

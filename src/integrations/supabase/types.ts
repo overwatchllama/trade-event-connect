@@ -2348,6 +2348,10 @@ export type Database = {
         Args: { _user_id?: string; _vendor_id: string }
         Returns: boolean
       }
+      send_event_notifications: {
+        Args: { p_event_id: string; p_notifications: Json }
+        Returns: undefined
+      }
       update_set_completion: {
         Args: { p_tcg_set_id: string; p_user_id: string }
         Returns: undefined

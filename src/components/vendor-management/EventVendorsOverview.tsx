@@ -58,6 +58,7 @@ export const EventVendorsOverview = ({
   const [loading, setLoading] = useState(true);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [messageRecipients, setMessageRecipients] = useState<{ userId: string; businessName: string }[]>([]);
+  const [messageEventId, setMessageEventId] = useState('');
   const [messageEventTitle, setMessageEventTitle] = useState('');
   const [messageGroupLabel, setMessageGroupLabel] = useState('');
   const [invitingFavorites, setInvitingFavorites] = useState<string | null>(null);
@@ -203,6 +204,7 @@ export const EventVendorsOverview = ({
       userId: v.vendor.profiles?.id || v.vendor.user_id,
       businessName: v.vendor.business_name,
     })));
+    setMessageEventId(event.id);
     setMessageEventTitle(event.title);
     setMessageGroupLabel(label);
     setMessageDialogOpen(true);
@@ -213,6 +215,7 @@ export const EventVendorsOverview = ({
       userId: vendor.profiles?.id || vendor.user_id,
       businessName: vendor.business_name,
     }]);
+    setMessageEventId(event.id);
     setMessageEventTitle(event.title);
     setMessageGroupLabel(vendor.business_name);
     setMessageDialogOpen(true);
@@ -262,7 +265,10 @@ export const EventVendorsOverview = ({
         reference_type: 'event',
       }));
 
-      const { error } = await supabase.from('notifications').insert(notifications);
+      const { error } = await supabase.rpc('send_event_notifications', {
+        p_event_id: event.id,
+        p_notifications: notifications,
+      });
       if (error) throw error;
 
       toast.success(`Invited ${vendorData.length} favorited vendor${vendorData.length !== 1 ? 's' : ''}!`);
@@ -430,6 +436,7 @@ export const EventVendorsOverview = ({
         open={messageDialogOpen}
         onOpenChange={setMessageDialogOpen}
         recipients={messageRecipients}
+        eventId={messageEventId}
         eventTitle={messageEventTitle}
         groupLabel={messageGroupLabel}
       />

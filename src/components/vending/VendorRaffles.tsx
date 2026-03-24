@@ -299,13 +299,16 @@ export const VendorRaffles = ({ vendorId }: VendorRafflesProps) => {
         .eq('id', vendorId)
         .single();
 
-      await supabase.from('notifications').insert({
-        user_id: winner.user_id,
-        title: '🎉 You Won a Vendor Raffle!',
-        message: `You won "${raffle.name}" from ${vendorData?.business_name || 'a vendor'}! Report to their table within ${Math.floor(raffle.claim_time_seconds / 60)} minutes to claim your prize.`,
-        type: 'raffle_win',
-        reference_id: raffle.id,
-        reference_type: 'raffle_item',
+      await supabase.rpc('send_event_notifications', {
+        p_event_id: raffle.event_id,
+        p_notifications: [{
+          user_id: winner.user_id,
+          title: '🎉 You Won a Vendor Raffle!',
+          message: `You won "${raffle.name}" from ${vendorData?.business_name || 'a vendor'}! Report to their table within ${Math.floor(raffle.claim_time_seconds / 60)} minutes to claim your prize.`,
+          type: 'raffle_win',
+          reference_id: raffle.id,
+          reference_type: 'raffle_item',
+        }],
       });
 
       toast.success('Winner drawn and notified!');
