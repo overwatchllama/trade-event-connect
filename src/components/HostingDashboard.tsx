@@ -264,11 +264,16 @@ const HostingDashboard = () => {
                 Manage your events, vendors, sponsors, and staff
               </p>
             </div>
-            <Button onClick={() => setCreateDialogOpen(true)} size="sm">
-              <Plus className="h-4 w-4 mr-1" />
-              Create Event
-            </Button>
-          </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setImportDialogOpen(true)} size="sm">
+                <Globe className="h-4 w-4 mr-1" />
+                Import Events
+              </Button>
+              <Button onClick={() => setCreateDialogOpen(true)} size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Create Event
+              </Button>
+            </div>
 
           <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-5">
