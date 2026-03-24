@@ -66,6 +66,8 @@ const MyTickets = () => {
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [ticketToShare, setTicketToShare] = useState<TicketData | null>(null);
+  const [bulkShareOpen, setBulkShareOpen] = useState(false);
+  const [bulkShareGroup, setBulkShareGroup] = useState<GroupedEvent | null>(null);
 
   useEffect(() => {
     if (user) {
