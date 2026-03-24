@@ -568,6 +568,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
                 </DialogContent>
               </Dialog>
 
+              <div className="pt-2">
                 <Button onClick={() => navigate(`/event/${event.id}/manage`)}>
                   <Settings className="h-4 w-4 mr-2" />
                   Open Full Event Management
