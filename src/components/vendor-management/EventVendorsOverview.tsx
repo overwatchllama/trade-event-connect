@@ -330,6 +330,52 @@ export const EventVendorsOverview = ({
                       <VendorSummaryBar {...counts} />
                     </div>
                   )}
+
+                  {/* Action buttons */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <MessageSquare className="w-4 h-4 mr-1.5" />
+                          Message Vendors
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        {counts.unpaid > 0 && (
+                          <DropdownMenuItem onClick={() => openGroupMessage(event, 'unpaid', 'Unpaid Vendors')}>
+                            <DollarSign className="w-4 h-4 mr-2 text-amber-600" />
+                            Unpaid Vendors ({counts.unpaid})
+                          </DropdownMenuItem>
+                        )}
+                        {counts.waitlist > 0 && (
+                          <DropdownMenuItem onClick={() => openGroupMessage(event, 'waitlist', 'Waitlisted Vendors')}>
+                            <Clock className="w-4 h-4 mr-2 text-blue-600" />
+                            Waitlisted Vendors ({counts.waitlist})
+                          </DropdownMenuItem>
+                        )}
+                        {counts.paid > 0 && (
+                          <DropdownMenuItem onClick={() => openGroupMessage(event, 'paid', 'Paid Vendors')}>
+                            <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                            Paid Vendors ({counts.paid})
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* Invite favorites - only show if tables not full */}
+                    {(event.total_tables == null || tablesPurchased < event.total_tables) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => inviteFavorites(event)}
+                        disabled={invitingFavorites === event.id}
+                      >
+                        <Heart className="w-4 h-4 mr-1.5 text-destructive" />
+                        {invitingFavorites === event.id ? 'Inviting...' : 'Invite Favorites'}
+                      </Button>
+                    )}
+                  </div>
+
                   {event.vendors.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4">No vendor applications for this event.</p>
                   ) : (
@@ -352,10 +398,21 @@ export const EventVendorsOverview = ({
                             {getStatusBadge(v.applicationStatus, v.paymentStatus)}
                             <Button
                               variant="ghost"
-                              size="sm"
-                              onClick={() => onOpenVendorNotes(v.vendor.id, v.vendor.business_name)}
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => openSingleMessage(event, v.vendor)}
+                              title="Message vendor"
                             >
-                              <Settings2 className="w-4 h-4" />
+                              <Send className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => onOpenVendorNotes(v.vendor.id, v.vendor.business_name)}
+                              title="Vendor notes"
+                            >
+                              <Settings2 className="w-3.5 h-3.5" />
                             </Button>
                           </div>
                         </div>
@@ -368,6 +425,14 @@ export const EventVendorsOverview = ({
           </Collapsible>
         );
       })}
+
+      <VendorMessageDialog
+        open={messageDialogOpen}
+        onOpenChange={setMessageDialogOpen}
+        recipients={messageRecipients}
+        eventTitle={messageEventTitle}
+        groupLabel={messageGroupLabel}
+      />
     </div>
   );
 };
