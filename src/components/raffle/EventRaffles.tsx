@@ -19,6 +19,8 @@ interface RaffleItem {
   entry_method: string;
   claim_time_seconds: number;
   status: string;
+  vendor_id: string | null;
+  vendor_name?: string;
 }
 
 interface RaffleDraw {
