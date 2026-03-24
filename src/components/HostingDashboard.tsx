@@ -274,6 +274,7 @@ const HostingDashboard = () => {
                 Create Event
               </Button>
             </div>
+          </div>
 
           <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-5">
