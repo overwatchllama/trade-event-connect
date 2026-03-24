@@ -18,6 +18,7 @@ import VendorStaffRoster from "@/components/vending/VendorStaffRoster";
 import VendorRateOrganizers from "@/components/vending/VendorRateOrganizers";
 import VendorRateVenues from "@/components/vending/VendorRateVenues";
 import VendorRateVendors from "@/components/vending/VendorRateVendors";
+import { VendorRaffles } from "@/components/vending/VendorRaffles";
 
 interface VendingEvent {
   id: string;
