@@ -86,14 +86,6 @@ const Header = () => {
             >
               Vendors
             </Link>
-            <Link 
-              to="/my-collection" 
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                location.pathname === '/my-collection' ? 'text-primary' : 'text-muted-foreground'
-              }`}
-            >
-              My Collection
-            </Link>
             {isOrganizer && (
               <Link 
                 to="/organize" 
@@ -124,6 +116,14 @@ const Header = () => {
                 Organize Venue
               </Link>
             )}
+            <Link 
+              to="/my-collection" 
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === '/my-collection' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              My Collection
+            </Link>
           </nav>
 
           <div className="flex items-center space-x-4 min-h-[40px]">
