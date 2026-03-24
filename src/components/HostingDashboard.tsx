@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import CreateEventDialog from "@/components/CreateEventDialog";
+import ImportEventsDialog from "@/components/ImportEventsDialog";
 import EventDetailPanel from "@/components/organize/EventDetailPanel";
 import { EventVendorsOverview } from "@/components/vendor-management/EventVendorsOverview";
 import { OrganizerVendorNotes } from "@/components/OrganizerVendorNotes";
