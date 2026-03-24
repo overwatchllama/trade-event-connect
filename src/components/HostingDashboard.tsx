@@ -514,6 +514,11 @@ const HostingDashboard = () => {
           if (!open) fetchHostedEvents();
         }}
       />
+      <ImportEventsDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImported={() => fetchHostedEvents()}
+      />
     </div>
   );
 };
