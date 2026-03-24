@@ -5,11 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { CheckCircle, Clock, Ban, DollarSign, ChevronDown, ChevronRight, Calendar, Settings2, Users } from 'lucide-react';
+import { CheckCircle, Clock, Ban, DollarSign, ChevronDown, ChevronRight, Calendar, Settings2, Users, Send, Heart, MessageSquare } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { VendorSummaryBar } from './VendorSummaryBar';
+import { VendorMessageDialog } from './VendorMessageDialog';
+import { toast } from 'sonner';
 
 type VendorRow = Database['public']['Tables']['vendors']['Row'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
