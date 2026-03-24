@@ -265,7 +265,10 @@ export const EventVendorsOverview = ({
         reference_type: 'event',
       }));
 
-      const { error } = await supabase.from('notifications').insert(notifications);
+      const { error } = await supabase.rpc('send_event_notifications', {
+        p_event_id: event.id,
+        p_notifications: notifications,
+      });
       if (error) throw error;
 
       toast.success(`Invited ${vendorData.length} favorited vendor${vendorData.length !== 1 ? 's' : ''}!`);
