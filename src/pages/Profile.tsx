@@ -52,6 +52,8 @@ type SocialMediaLink = {
 type ProfileForm = z.infer<typeof profileSchema>;
 
 const Profile = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'personal';
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<Database['public']['Tables']['profiles']['Row'] | null>(null);
   const [roleRequests, setRoleRequests] = useState<Database['public']['Tables']['role_requests']['Row'][]>([]);
