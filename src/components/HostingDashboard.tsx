@@ -63,6 +63,7 @@ const HostingDashboard = () => {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [vendorNotesDialogOpen, setVendorNotesDialogOpen] = useState(false);
   const [selectedVendorForNotes, setSelectedVendorForNotes] = useState<{ id: string; name: string } | null>(null);
   const [organizerNotes, setOrganizerNotes] = useState<Map<string, {
