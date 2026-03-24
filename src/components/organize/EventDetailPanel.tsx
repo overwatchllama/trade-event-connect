@@ -26,6 +26,8 @@ import {
   Image,
   Map,
   FileText,
+  Gift,
+  FolderOpen,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
