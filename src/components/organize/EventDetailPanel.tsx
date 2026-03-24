@@ -395,6 +395,33 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
                     <CardDescription>Add notes for vendors</CardDescription>
                   </CardHeader>
                 </Card>
+                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setSummaryOpen(true)}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4" />
+                      Post-Event Summary
+                    </CardTitle>
+                    <CardDescription>Revenue and attendance reports</CardDescription>
+                  </CardHeader>
+                </Card>
+                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setRafflesOpen(true)}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Gift className="h-4 w-4" />
+                      Raffles
+                    </CardTitle>
+                    <CardDescription>Manage event raffles</CardDescription>
+                  </CardHeader>
+                </Card>
+                <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setFilesOpen(true)}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <FolderOpen className="h-4 w-4" />
+                      Files
+                    </CardTitle>
+                    <CardDescription>Manage event documents</CardDescription>
+                  </CardHeader>
+                </Card>
               </div>
 
               {/* Day-of Checklist Dialog */}
