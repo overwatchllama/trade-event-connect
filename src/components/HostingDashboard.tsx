@@ -20,12 +20,14 @@ import {
   Users,
   Award,
   Star,
+  Globe,
 } from "lucide-react";
 import { format, parseISO, isBefore, startOfDay, isSameDay, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import CreateEventDialog from "@/components/CreateEventDialog";
+import ImportEventsDialog from "@/components/ImportEventsDialog";
 import EventDetailPanel from "@/components/organize/EventDetailPanel";
 import { EventVendorsOverview } from "@/components/vendor-management/EventVendorsOverview";
 import { OrganizerVendorNotes } from "@/components/OrganizerVendorNotes";
@@ -61,6 +63,7 @@ const HostingDashboard = () => {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [vendorNotesDialogOpen, setVendorNotesDialogOpen] = useState(false);
   const [selectedVendorForNotes, setSelectedVendorForNotes] = useState<{ id: string; name: string } | null>(null);
   const [organizerNotes, setOrganizerNotes] = useState<Map<string, {
@@ -261,10 +264,16 @@ const HostingDashboard = () => {
                 Manage your events, vendors, sponsors, and staff
               </p>
             </div>
-            <Button onClick={() => setCreateDialogOpen(true)} size="sm">
-              <Plus className="h-4 w-4 mr-1" />
-              Create Event
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setImportDialogOpen(true)} size="sm">
+                <Globe className="h-4 w-4 mr-1" />
+                Import Events
+              </Button>
+              <Button onClick={() => setCreateDialogOpen(true)} size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Create Event
+              </Button>
+            </div>
           </div>
 
           <Tabs defaultValue={defaultTab} className="w-full">
@@ -504,6 +513,11 @@ const HostingDashboard = () => {
           setCreateDialogOpen(open);
           if (!open) fetchHostedEvents();
         }}
+      />
+      <ImportEventsDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImported={() => fetchHostedEvents()}
       />
     </div>
   );
