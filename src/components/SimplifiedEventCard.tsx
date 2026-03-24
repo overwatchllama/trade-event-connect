@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, MapPin, Calendar } from "lucide-react";
+import { Heart, MapPin, Calendar, Ticket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +25,20 @@ const SimplifiedEventCard = ({ event }: SimplifiedEventCardProps) => {
   const { user } = useAuth();
   const [isFavorited, setIsFavorited] = useState(false);
   const [loadingFavorite, setLoadingFavorite] = useState(false);
+  const [ticketCount, setTicketCount] = useState(0);
+
+  useEffect(() => {
+    const fetchTicketCount = async () => {
+      if (!user) return;
+      const { count } = await supabase
+        .from('order_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', event.id)
+        .eq('user_id', user.id);
+      setTicketCount(count || 0);
+    };
+    fetchTicketCount();
+  }, [user, event.id]);
 
   useEffect(() => {
     const checkFavoriteStatus = async () => {
@@ -146,6 +160,13 @@ const SimplifiedEventCard = ({ event }: SimplifiedEventCardProps) => {
           <MapPin className="w-4 h-4 mr-2 text-primary" />
           <span>{event.city}, {event.state}</span>
         </div>
+
+        {ticketCount > 0 && (
+          <div className="flex items-center text-sm font-medium text-primary">
+            <Ticket className="w-4 h-4 mr-2" />
+            <span>{ticketCount} ticket{ticketCount !== 1 ? 's' : ''}</span>
+          </div>
+        )}
       </div>
     </Card>
   );

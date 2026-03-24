@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Clock, Crown, Settings, UserCheck, Store, Share2, Copy } from "lucide-react";
+import { MapPin, Calendar, Clock, Crown, Settings, UserCheck, Store, Share2, Copy, Ticket } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -55,6 +55,20 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false, onCopyEve
   const [organizerVendorId, setOrganizerVendorId] = useState<string | null>(null);
   const [vendorDialogOpen, setVendorDialogOpen] = useState(false);
   const [sponsorDialogOpen, setSponsorDialogOpen] = useState(false);
+  const [ticketCount, setTicketCount] = useState(0);
+
+  useEffect(() => {
+    const fetchTicketCount = async () => {
+      if (!user) return;
+      const { count } = await supabase
+        .from('order_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', event.id)
+        .eq('user_id', user.id);
+      setTicketCount(count || 0);
+    };
+    fetchTicketCount();
+  }, [user, event.id]);
 
   const isVendorPro = subscribed && 
     (subscription_tier === 'Vendor Pro' || subscription_tier === 'vendor_pro');
@@ -174,6 +188,12 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false, onCopyEve
                 <Clock className="w-4 h-4 mr-2" />
                 <span>{event.date} at {event.time}</span>
               </div>
+              {ticketCount > 0 && (
+                <div className="flex items-center text-sm font-medium text-primary mt-1">
+                  <Ticket className="w-4 h-4 mr-2" />
+                  <span>{ticketCount} ticket{ticketCount !== 1 ? 's' : ''}</span>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between items-center">
