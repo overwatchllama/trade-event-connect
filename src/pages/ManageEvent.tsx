@@ -6,7 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Loader2, PenTool, Upload, X, Image, LayoutDashboard, Users, CheckSquare, BarChart3, ImageIcon, Map, FileText, Store, Award, Gift, FolderOpen } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+  ArrowLeft, Loader2, PenTool, Upload, X, Image, LayoutDashboard, Users,
+  CheckSquare, BarChart3, ImageIcon, Map, FileText, Store, Award, Gift,
+  FolderOpen, UserCog, Wrench, ListChecks, Clock, Settings, ChevronRight,
+  ClipboardCheck, ScanLine
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -22,6 +29,10 @@ import { DayOfChecklist } from '@/components/DayOfChecklist';
 import { PostEventSummary } from '@/components/PostEventSummary';
 import EventDayDialog from '@/components/EventDayDialog';
 import { ManageRaffles } from '@/components/raffle/ManageRaffles';
+import { EventStaffRoles } from '@/components/organize/EventStaffRoles';
+import { StaffHoursSummary } from '@/components/organize/StaffHoursSummary';
+import EventCheckInDialog from '@/components/organize/EventCheckInDialog';
+import StaffCheckInDialog from '@/components/organize/StaffCheckInDialog';
 import { Database } from '@/integrations/supabase/types';
 
 type Event = Database['public']['Tables']['events']['Row'];
@@ -31,42 +42,53 @@ const ManageEvent = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get('tab') || 'dashboard';
+  const defaultTab = searchParams.get('tab') || 'status';
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
-  const [vendorNotes, setVendorNotes] = useState('');
-  const [savingNotes, setSavingNotes] = useState(false);
+
+  // Dialogs
   const [vendorsDialogOpen, setVendorsDialogOpen] = useState(false);
   const [sponsorsDialogOpen, setSponsorsDialogOpen] = useState(false);
   const [eventDayDialogOpen, setEventDayDialogOpen] = useState(false);
-  const [floorPlanMode, setFloorPlanMode] = useState<'choose' | 'design' | 'upload'>('choose');
-  const [uploadingFloorPlan, setUploadingFloorPlan] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [checkInOpen, setCheckInOpen] = useState(false);
+  const [staffCheckInOpen, setStaffCheckInOpen] = useState(false);
+
+  // Manage sub-dialogs
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [flyerOpen, setFlyerOpen] = useState(false);
+  const [floorPlanOpen, setFloorPlanOpen] = useState(false);
+  const [vendorNotesOpen, setVendorNotesOpen] = useState(false);
+  const [rafflesOpen, setRafflesOpen] = useState(false);
+  const [filesOpen, setFilesOpen] = useState(false);
+
+  // Vendor notes
+  const [vendorNotes, setVendorNotes] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [loadingNotes, setLoadingNotes] = useState(false);
+
+  // Floor plan
+  const [savedLayoutJson, setSavedLayoutJson] = useState<any>(null);
+  const [floorPlanEventData, setFloorPlanEventData] = useState<any>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchEvent();
-    }
+    if (user) fetchEvent();
   }, [id, user]);
 
   const fetchEvent = async () => {
     if (!id) return;
-
     try {
       const { data, error } = await supabase
         .from('events')
         .select('*')
         .eq('id', id)
         .single();
-
       if (error) throw error;
-
       if (data.organizer_id !== user?.id) {
         toast.error('You do not have permission to manage this event');
         navigate('/events');
         return;
       }
-
       setEvent(data);
       setVendorNotes(data.vendor_notes || '');
     } catch (error) {
@@ -78,39 +100,51 @@ const ManageEvent = () => {
     }
   };
 
-  const handleSaveLayout = async (layoutJson: Database['public']['Tables']['events']['Row']['layout_json']) => {
+  const openVendorNotes = async () => {
     if (!event) return;
-
-    const { error } = await supabase
-      .from('events')
-      .update({ layout_json: layoutJson })
-      .eq('id', event.id);
-
-    if (error) throw error;
-
-    setEvent({ ...event, layout_json: layoutJson });
+    setVendorNotesOpen(true);
+    setLoadingNotes(true);
+    try {
+      const { data } = await supabase.from('events').select('vendor_notes').eq('id', event.id).single();
+      setVendorNotes(data?.vendor_notes || '');
+    } catch {
+      setVendorNotes('');
+    } finally {
+      setLoadingNotes(false);
+    }
   };
 
   const handleSaveVendorNotes = async () => {
     if (!event) return;
-
     setSavingNotes(true);
     try {
-      const { error } = await supabase
-        .from('events')
-        .update({ vendor_notes: vendorNotes })
-        .eq('id', event.id);
-
+      const { error } = await supabase.from('events').update({ vendor_notes: vendorNotes }).eq('id', event.id);
       if (error) throw error;
-
-      setEvent({ ...event, vendor_notes: vendorNotes });
-      toast.success('Vendor notes saved successfully!');
-    } catch (error) {
-      console.error('Error saving vendor notes:', error);
-      toast.error('Failed to save vendor notes');
+      toast.success('Vendor instructions saved!');
+    } catch {
+      toast.error('Failed to save vendor instructions');
     } finally {
       setSavingNotes(false);
     }
+  };
+
+  const openFloorPlan = async () => {
+    if (!event) return;
+    const { data } = await supabase.from('events').select('layout_json, address, zip_code, vendor_start_time').eq('id', event.id).single();
+    setSavedLayoutJson(data?.layout_json || null);
+    setFloorPlanEventData({
+      title: event.title,
+      date: event.date,
+      venue: event.venue,
+      city: event.city,
+      state: event.state,
+      total_tables: event.total_tables,
+      vendor_table_price: event.vendor_table_price,
+      address: data?.address,
+      zip_code: data?.zip_code,
+      vendor_start_time: data?.vendor_start_time,
+    });
+    setFloorPlanOpen(true);
   };
 
   if (loading) {
@@ -126,9 +160,7 @@ const ManageEvent = () => {
     );
   }
 
-  if (!event) {
-    return null;
-  }
+  if (!event) return null;
 
   return (
     <main className="min-h-screen bg-background">
@@ -136,7 +168,7 @@ const ManageEvent = () => {
 
       <section className="py-8 bg-muted/30">
         <div className="container mx-auto px-4">
-          {/* Header matching /organize style */}
+          {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <Button
               variant="ghost"
@@ -146,340 +178,337 @@ const ManageEvent = () => {
               <ArrowLeft className="w-4 h-4 mr-1" />
               Back to Event
             </Button>
-            <div className="text-center flex-1">
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
-                {event.title}
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                Manage your event details, vendors, and more
-              </p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setCheckInOpen(true)}>
+                <ClipboardCheck className="h-4 w-4 mr-1" />
+                Check-ins
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setStaffCheckInOpen(true)}>
+                <UserCog className="h-4 w-4 mr-1" />
+                Staff Check-in
+              </Button>
             </div>
-            <div className="w-[120px]" /> {/* Spacer to center title */}
           </div>
 
-          <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-11 h-auto">
-              <TabsTrigger value="dashboard" className="gap-1.5 text-xs">
-                <LayoutDashboard className="w-4 h-4" />
-                <span className="hidden sm:inline">Dashboard</span>
-              </TabsTrigger>
-              <TabsTrigger value="attendees" className="gap-1.5 text-xs">
-                <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">Attendees</span>
-              </TabsTrigger>
-              <TabsTrigger value="checklist" className="gap-1.5 text-xs">
-                <CheckSquare className="w-4 h-4" />
-                <span className="hidden sm:inline">Checklist</span>
-              </TabsTrigger>
-              <TabsTrigger value="summary" className="gap-1.5 text-xs">
-                <BarChart3 className="w-4 h-4" />
-                <span className="hidden sm:inline">Summary</span>
-              </TabsTrigger>
-              <TabsTrigger value="flyer" className="gap-1.5 text-xs">
-                <ImageIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">Flyer</span>
-              </TabsTrigger>
-              <TabsTrigger value="layout" className="gap-1.5 text-xs">
-                <Map className="w-4 h-4" />
-                <span className="hidden sm:inline">Floor Plan</span>
-              </TabsTrigger>
-              <TabsTrigger value="vendor-notes" className="gap-1.5 text-xs">
-                <FileText className="w-4 h-4" />
-                <span className="hidden sm:inline">Vendor Notes</span>
-              </TabsTrigger>
-              <TabsTrigger value="vendors" className="gap-1.5 text-xs">
-                <Store className="w-4 h-4" />
-                <span className="hidden sm:inline">Vendors</span>
-              </TabsTrigger>
-              <TabsTrigger value="sponsors" className="gap-1.5 text-xs">
-                <Award className="w-4 h-4" />
-                <span className="hidden sm:inline">Sponsors</span>
-              </TabsTrigger>
-              <TabsTrigger value="raffles" className="gap-1.5 text-xs">
-                <Gift className="w-4 h-4" />
-                <span className="hidden sm:inline">Raffles</span>
-              </TabsTrigger>
-              <TabsTrigger value="files" className="gap-1.5 text-xs">
-                <FolderOpen className="w-4 h-4" />
-                <span className="hidden sm:inline">Files</span>
-              </TabsTrigger>
-            </TabsList>
+          {/* Event Card with tabs - matching /organize style */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl">{event.title}</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Manage your event details, vendors, and more
+              </p>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue={defaultTab} className="space-y-4">
+                <TabsList className="grid w-full grid-cols-5">
+                  <TabsTrigger value="status" className="text-xs sm:text-sm">
+                    <BarChart3 className="h-4 w-4 mr-1 hidden sm:inline" />
+                    Status
+                  </TabsTrigger>
+                  <TabsTrigger value="vendors" className="text-xs sm:text-sm">
+                    <Store className="h-4 w-4 mr-1 hidden sm:inline" />
+                    Vendors
+                  </TabsTrigger>
+                  <TabsTrigger value="staff" className="text-xs sm:text-sm">
+                    <UserCog className="h-4 w-4 mr-1 hidden sm:inline" />
+                    Staff
+                  </TabsTrigger>
+                  <TabsTrigger value="visitors" className="text-xs sm:text-sm">
+                    <Users className="h-4 w-4 mr-1 hidden sm:inline" />
+                    Visitors
+                  </TabsTrigger>
+                  <TabsTrigger value="manage" className="text-xs sm:text-sm">
+                    <Wrench className="h-4 w-4 mr-1 hidden sm:inline" />
+                    Manage
+                  </TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="dashboard" className="mt-6">
-              <EventDashboard
-                eventId={event.id}
-                eventTitle={event.title}
-                vendorTablePrice={event.vendor_table_price}
-                totalTables={event.total_tables}
-                maxAttendees={event.max_attendees}
-              />
-            </TabsContent>
-
-            <TabsContent value="attendees" className="mt-6">
-              <AttendeeManagement eventId={event.id} />
-            </TabsContent>
-
-            <TabsContent value="checklist" className="mt-6">
-              <DayOfChecklist eventId={event.id} />
-            </TabsContent>
-
-            <TabsContent value="summary" className="mt-6">
-              <PostEventSummary
-                eventId={event.id}
-                eventTitle={event.title}
-                eventDate={event.date}
-                vendorTablePrice={event.vendor_table_price}
-                totalTables={event.total_tables}
-                maxAttendees={event.max_attendees}
-                entryFee={event.entry_fee}
-              />
-            </TabsContent>
-
-            <TabsContent value="flyer" className="mt-6">
-              <EventFlyerManager
-                event={event}
-                onEventUpdate={(updated) => setEvent(updated)}
-              />
-            </TabsContent>
-
-            <TabsContent value="layout" className="mt-6">
-              {floorPlanMode === 'choose' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => setFloorPlanMode('design')}>
-                    <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
-                      <PenTool className="h-12 w-12 text-primary" />
-                      <h3 className="text-xl font-semibold">Design My Own</h3>
-                      <p className="text-muted-foreground text-center text-sm">Use the built-in drawing tool to create your floor plan layout</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => fileInputRef.current?.click()}>
-                    <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
-                      <Upload className="h-12 w-12 text-primary" />
-                      <h3 className="text-xl font-semibold">Upload a File</h3>
-                      <p className="text-muted-foreground text-center text-sm">Upload an image of your existing floor plan (PNG, JPG, PDF)</p>
-                    </CardContent>
-                  </Card>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,.pdf"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file || !event) return;
-                      setUploadingFloorPlan(true);
-                      try {
-                        const fileExt = file.name.split('.').pop();
-                        const filePath = `${event.id}/floor-plan.${fileExt}`;
-                        const { error: uploadError } = await supabase.storage
-                          .from('event-files')
-                          .upload(filePath, file, { upsert: true });
-                        if (uploadError) throw uploadError;
-                        const { data: { publicUrl } } = supabase.storage
-                          .from('event-files')
-                          .getPublicUrl(filePath);
-                        const { error: updateError } = await supabase
-                          .from('events')
-                          .update({ floor_plan_url: publicUrl })
-                          .eq('id', event.id);
-                        if (updateError) throw updateError;
-                        setEvent({ ...event, floor_plan_url: publicUrl });
-                        setFloorPlanMode('upload');
-                        toast.success('Floor plan uploaded successfully!');
-                      } catch (error) {
-                        console.error('Error uploading floor plan:', error);
-                        toast.error('Failed to upload floor plan');
-                      } finally {
-                        setUploadingFloorPlan(false);
-                        e.target.value = '';
-                      }
-                    }}
+                {/* STATUS TAB */}
+                <TabsContent value="status">
+                  <EventDashboard
+                    eventId={event.id}
+                    eventTitle={event.title}
+                    vendorTablePrice={event.vendor_table_price}
+                    totalTables={event.total_tables}
+                    maxAttendees={event.max_attendees}
                   />
-                  {uploadingFloorPlan && (
-                    <div className="col-span-full flex justify-center">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                    </div>
-                  )}
-                  {event.floor_plan_url && (
-                    <Card className="col-span-full">
-                      <CardHeader>
-                        <CardTitle className="text-base">Current Uploaded Floor Plan</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <img src={event.floor_plan_url} alt="Floor plan" className="max-w-full max-h-96 object-contain rounded-md border" />
-                        <div className="flex gap-2 mt-4">
-                          <Button variant="outline" size="sm" onClick={() => setFloorPlanMode('upload')}>
-                            <Image className="h-4 w-4 mr-2" />View Full
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                  {event.layout_json && (
-                    <Card className="col-span-full">
-                      <CardContent className="pt-6">
-                        <Button variant="outline" onClick={() => setFloorPlanMode('design')}>
-                          Continue editing existing design
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              )}
+                </TabsContent>
 
-              {floorPlanMode === 'design' && (
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
+                {/* VENDORS TAB */}
+                <TabsContent value="vendors">
+                  <div className="space-y-4">
                     <div>
-                      <CardTitle>Floor Plan Layout</CardTitle>
-                      <CardDescription>Design the floor plan layout for your event.</CardDescription>
+                      <h3 className="font-semibold">Vendor Applications</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Review and manage vendor applications for this event.
+                      </p>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setFloorPlanMode('choose')}>
-                      <X className="h-4 w-4 mr-2" />Back
-                    </Button>
-                  </CardHeader>
-                  <CardContent>
-                    <LayoutDrawingTool
-                      eventId={event.id}
-                      initialLayout={event.layout_json}
-                      onSave={handleSaveLayout}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-
-              {floorPlanMode === 'upload' && event.floor_plan_url && (
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle>Uploaded Floor Plan</CardTitle>
-                      <CardDescription>Your uploaded floor plan image.</CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                        <Upload className="h-4 w-4 mr-2" />Replace
+                    <div className="flex flex-wrap gap-3">
+                      <Button onClick={() => setVendorsDialogOpen(true)}>
+                        <Store className="h-4 w-4 mr-2" />
+                        Manage Vendor Applications
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setFloorPlanMode('choose')}>
-                        <X className="h-4 w-4 mr-2" />Back
+                      <Button variant="outline" onClick={() => setSponsorsDialogOpen(true)}>
+                        <Award className="h-4 w-4 mr-2" />
+                        Manage Sponsors
+                      </Button>
+                      <Button variant="outline" onClick={() => setEventDayDialogOpen(true)}>
+                        <ScanLine className="h-4 w-4 mr-2" />
+                        Event Day Check-in
                       </Button>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <img src={event.floor_plan_url} alt="Floor plan" className="w-full object-contain rounded-md border" />
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
 
-            <TabsContent value="vendor-notes" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Event-Wide Vendor Instructions</CardTitle>
-                  <CardDescription>
-                    Add important notes that all vendors will see when viewing this event. Include details like start times, loading bay information, setup instructions, etc.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="vendorNotes">Vendor Instructions</Label>
-                    <Textarea
-                      id="vendorNotes"
-                      placeholder="Example: Vendor load-in begins at 7:00 AM via the west entrance. All vendors must be set up by 9:00 AM. Loading bay is located at the rear of the building."
-                      value={vendorNotes}
-                      onChange={(e) => setVendorNotes(e.target.value)}
-                      rows={8}
-                      className="min-h-[200px]"
-                    />
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+                      <div className="p-3 rounded-lg bg-muted/50 text-center">
+                        <p className="text-2xl font-bold">{event.total_tables ?? '—'}</p>
+                        <p className="text-xs text-muted-foreground">Total Tables</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted/50 text-center">
+                        <p className="text-2xl font-bold">{event.tables_available ?? event.total_tables ?? '—'}</p>
+                        <p className="text-xs text-muted-foreground">Tables Available</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted/50 text-center">
+                        <p className="text-2xl font-bold">${event.vendor_table_price ?? '—'}</p>
+                        <p className="text-xs text-muted-foreground">Table Price</p>
+                      </div>
+                    </div>
                   </div>
-                  <Button
-                    onClick={handleSaveVendorNotes}
-                    disabled={savingNotes}
-                  >
-                    {savingNotes ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      'Save Vendor Instructions'
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                </TabsContent>
 
-            <TabsContent value="vendors" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Vendor Applications</CardTitle>
-                  <CardDescription>
-                    Review and manage vendor applications for your event.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex gap-3">
-                  <Button onClick={() => setVendorsDialogOpen(true)}>
-                    Manage Vendor Applications
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setEventDayDialogOpen(true)}
-                  >
-                    Event Day Check-in
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                {/* STAFF TAB */}
+                <TabsContent value="staff">
+                  <EventStaffRoles eventId={event.id} />
+                  <div className="mt-6">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Staff Hours Summary
+                    </h3>
+                    <StaffHoursSummary eventId={event.id} />
+                  </div>
+                </TabsContent>
 
-            <TabsContent value="sponsors" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sponsor Applications</CardTitle>
-                  <CardDescription>
-                    Review and manage sponsor applications for your event.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={() => setSponsorsDialogOpen(true)}>
-                    Manage Sponsor Applications
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                {/* VISITORS TAB */}
+                <TabsContent value="visitors">
+                  <AttendeeManagement eventId={event.id} />
+                </TabsContent>
 
-            <TabsContent value="raffles" className="mt-6">
-              <ManageRaffles eventId={event.id} />
-            </TabsContent>
-
-            <TabsContent value="files" className="mt-6">
-              <EventFileManager eventId={event.id} />
-            </TabsContent>
-          </Tabs>
+                {/* MANAGE TAB */}
+                <TabsContent value="manage">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setChecklistOpen(true)}>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <ListChecks className="h-4 w-4" />
+                            Day-of Checklist
+                          </CardTitle>
+                          <CardDescription>Track event day tasks</CardDescription>
+                        </CardHeader>
+                      </Card>
+                      <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setSummaryOpen(true)}>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <BarChart3 className="h-4 w-4" />
+                            Post-Event Summary
+                          </CardTitle>
+                          <CardDescription>Revenue and attendance reports</CardDescription>
+                        </CardHeader>
+                      </Card>
+                      <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setFlyerOpen(true)}>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <ImageIcon className="h-4 w-4" />
+                            Event Flyer
+                          </CardTitle>
+                          <CardDescription>Upload or update flyer</CardDescription>
+                        </CardHeader>
+                      </Card>
+                      <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={openFloorPlan}>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Map className="h-4 w-4" />
+                            Floor Plan
+                          </CardTitle>
+                          <CardDescription>Design your venue layout</CardDescription>
+                        </CardHeader>
+                      </Card>
+                      <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={openVendorNotes}>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            Vendor Instructions
+                          </CardTitle>
+                          <CardDescription>Add notes for vendors</CardDescription>
+                        </CardHeader>
+                      </Card>
+                      <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setRafflesOpen(true)}>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <Gift className="h-4 w-4" />
+                            Raffles
+                          </CardTitle>
+                          <CardDescription>Manage event raffles</CardDescription>
+                        </CardHeader>
+                      </Card>
+                      <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setFilesOpen(true)}>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-2">
+                            <FolderOpen className="h-4 w-4" />
+                            Files
+                          </CardTitle>
+                          <CardDescription>Manage event documents</CardDescription>
+                        </CardHeader>
+                      </Card>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
-      {/* Vendor Applications Dialog */}
+      {/* === Dialogs === */}
+
       <ManageVendorsDialog
         open={vendorsDialogOpen}
         onOpenChange={setVendorsDialogOpen}
         eventId={event.id}
         eventTitle={event.title}
       />
-
-      {/* Sponsor Applications Dialog */}
       <ManageSponsorsDialog
         open={sponsorsDialogOpen}
         onOpenChange={setSponsorsDialogOpen}
         eventId={event.id}
         eventTitle={event.title}
       />
-
-      {/* Event Day Dialog */}
       <EventDayDialog
         open={eventDayDialogOpen}
         onOpenChange={setEventDayDialogOpen}
         eventId={event.id}
         eventTitle={event.title}
       />
+      <EventCheckInDialog
+        open={checkInOpen}
+        onOpenChange={setCheckInOpen}
+        eventId={event.id}
+        eventTitle={event.title}
+      />
+      <StaffCheckInDialog
+        open={staffCheckInOpen}
+        onOpenChange={setStaffCheckInOpen}
+        eventId={event.id}
+        eventTitle={event.title}
+      />
+
+      {/* Checklist Dialog */}
+      <Dialog open={checklistOpen} onOpenChange={setChecklistOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Day-of Checklist</DialogTitle>
+          </DialogHeader>
+          <DayOfChecklist eventId={event.id} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Summary Dialog */}
+      <Dialog open={summaryOpen} onOpenChange={setSummaryOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Post-Event Summary</DialogTitle>
+          </DialogHeader>
+          <PostEventSummary
+            eventId={event.id}
+            eventTitle={event.title}
+            eventDate={event.date}
+            vendorTablePrice={event.vendor_table_price}
+            totalTables={event.total_tables}
+            maxAttendees={event.max_attendees}
+            entryFee={event.entry_fee}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Flyer Dialog */}
+      <Dialog open={flyerOpen} onOpenChange={setFlyerOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Event Flyer</DialogTitle>
+          </DialogHeader>
+          <EventFlyerManager
+            event={event}
+            onEventUpdate={(updated) => setEvent(updated)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Floor Plan Dialog */}
+      <Dialog open={floorPlanOpen} onOpenChange={(open) => { if (!open) setFloorPlanOpen(false); }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Floor Plan</DialogTitle>
+          </DialogHeader>
+          {floorPlanOpen && (
+            <LayoutDrawingTool
+              eventId={event.id}
+              initialLayout={savedLayoutJson}
+              eventData={floorPlanEventData}
+              onSave={async (layoutJson) => {
+                await supabase.from('events').update({ layout_json: layoutJson }).eq('id', event.id);
+                setSavedLayoutJson(layoutJson);
+                toast.success('Floor plan saved!');
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Vendor Instructions Dialog */}
+      <Dialog open={vendorNotesOpen} onOpenChange={setVendorNotesOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Vendor Instructions</DialogTitle>
+          </DialogHeader>
+          {loadingNotes ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Textarea
+                placeholder="Enter instructions for vendors (e.g., load-in times, parking, setup rules)..."
+                value={vendorNotes}
+                onChange={(e) => setVendorNotes(e.target.value)}
+                rows={6}
+              />
+              <Button onClick={handleSaveVendorNotes} disabled={savingNotes} className="w-full">
+                {savingNotes ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                {savingNotes ? 'Saving...' : 'Save Instructions'}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Raffles Dialog */}
+      <Dialog open={rafflesOpen} onOpenChange={setRafflesOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Raffles</DialogTitle>
+          </DialogHeader>
+          <ManageRaffles eventId={event.id} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Files Dialog */}
+      <Dialog open={filesOpen} onOpenChange={setFilesOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Event Files</DialogTitle>
+          </DialogHeader>
+          <EventFileManager eventId={event.id} />
+        </DialogContent>
+      </Dialog>
     </main>
   );
 };
