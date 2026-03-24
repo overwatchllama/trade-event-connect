@@ -415,7 +415,10 @@ const Profile = () => {
                 <Ticket className="w-4 h-4" />
                 My Tickets
               </TabsTrigger>
-              <TabsTrigger value="roles">Roles</TabsTrigger>
+              <TabsTrigger value="account-type" className="gap-1">
+                <UserCog className="w-4 h-4" />
+                Account Type
+              </TabsTrigger>
               {userRoles.includes('vendor') && (
                 <TabsTrigger value="applications" className="gap-1">
                   <FileText className="w-4 h-4" />
@@ -434,10 +437,6 @@ const Profile = () => {
                   Sponsoring
                 </TabsTrigger>
               )}
-              <TabsTrigger value="billing" className="gap-1">
-                <CreditCard className="w-4 h-4" />
-                Billing
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="personal" className="space-y-6">
