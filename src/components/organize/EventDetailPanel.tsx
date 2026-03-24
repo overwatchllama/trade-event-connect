@@ -530,7 +530,44 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
                 </DialogContent>
               </Dialog>
 
-              <div className="pt-2">
+              {/* Post-Event Summary Dialog */}
+              <Dialog open={summaryOpen} onOpenChange={setSummaryOpen}>
+                <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Post-Event Summary</DialogTitle>
+                  </DialogHeader>
+                  <PostEventSummary
+                    eventId={event.id}
+                    eventTitle={event.title}
+                    eventDate={event.date}
+                    vendorTablePrice={event.vendor_table_price}
+                    totalTables={event.total_tables}
+                    maxAttendees={event.max_attendees}
+                    entryFee={event.entry_fee}
+                  />
+                </DialogContent>
+              </Dialog>
+
+              {/* Raffles Dialog */}
+              <Dialog open={rafflesOpen} onOpenChange={setRafflesOpen}>
+                <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Manage Raffles</DialogTitle>
+                  </DialogHeader>
+                  <ManageRaffles eventId={event.id} />
+                </DialogContent>
+              </Dialog>
+
+              {/* Files Dialog */}
+              <Dialog open={filesOpen} onOpenChange={setFilesOpen}>
+                <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Event Files</DialogTitle>
+                  </DialogHeader>
+                  <EventFileManager eventId={event.id} />
+                </DialogContent>
+              </Dialog>
+
                 <Button onClick={() => navigate(`/event/${event.id}/manage`)}>
                   <Settings className="h-4 w-4 mr-2" />
                   Open Full Event Management
