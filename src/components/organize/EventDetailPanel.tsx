@@ -342,7 +342,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
           {/* MANAGE TAB */}
           <TabsContent value="manage">
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => setChecklistOpen(true)}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
