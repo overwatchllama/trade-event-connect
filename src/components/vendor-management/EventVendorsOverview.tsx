@@ -433,6 +433,7 @@ export const EventVendorsOverview = ({
         open={messageDialogOpen}
         onOpenChange={setMessageDialogOpen}
         recipients={messageRecipients}
+        eventId={messageEventId}
         eventTitle={messageEventTitle}
         groupLabel={messageGroupLabel}
       />
