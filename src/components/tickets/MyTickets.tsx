@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Eye, Calendar, MapPin, Clock, ChevronDown, ChevronRight, Ticket, History, CalendarClock, Share2 } from "lucide-react";
+import { Download, Eye, Calendar, MapPin, Clock, ChevronDown, ChevronRight, Ticket, History, CalendarClock, Share2, Send } from "lucide-react";
 import { format, parseISO, isToday, isFuture, isPast, startOfDay } from "date-fns";
 import { toast } from "sonner";
 import TicketQRCode from "./TicketQRCode";
