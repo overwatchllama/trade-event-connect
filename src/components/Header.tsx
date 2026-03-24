@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { User, LogOut, Settings, Store, Bell, Shield, PenTool, Award, Users, Ticket, Megaphone, CreditCard } from "lucide-react";
+import { User, LogOut, Settings, Store, Bell, Shield, PenTool, Award, Users, Ticket, Megaphone, CreditCard, Library } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorProfile } from "@/hooks/useVendorProfile";
@@ -86,16 +86,14 @@ const Header = () => {
             >
               Vendors
             </Link>
-            {!isOrganizer && (
-              <Link 
-                to="/my-collection" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === '/my-collection' ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                My Collection
-              </Link>
-            )}
+            <Link 
+              to="/my-collection" 
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === '/my-collection' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              My Collection
+            </Link>
             {isOrganizer && (
               <Link 
                 to="/organize" 
@@ -172,6 +170,10 @@ const Header = () => {
                   <DropdownMenuItem onClick={() => navigate('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/my-collection')}>
+                    <Library className="mr-2 h-4 w-4" />
+                    My Collection
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {isOrganizer && (
