@@ -434,10 +434,9 @@ const Profile = () => {
                   Sponsoring
                 </TabsTrigger>
               )}
-              <TabsTrigger value="plans">Plans</TabsTrigger>
-              <TabsTrigger value="subscriptions" className="gap-1">
+              <TabsTrigger value="billing" className="gap-1">
                 <CreditCard className="w-4 h-4" />
-                My Subscriptions
+                Billing
               </TabsTrigger>
             </TabsList>
 
