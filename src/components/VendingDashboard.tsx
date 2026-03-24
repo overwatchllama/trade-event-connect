@@ -553,6 +553,19 @@ const VendingDashboard = () => {
           )}
         </TabsContent>
 
+        {/* Raffles Tab */}
+        <TabsContent value="raffles">
+          {vendorId ? (
+            <VendorRaffles vendorId={vendorId} />
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                Set up your vendor profile first to create raffles.
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
         {/* Staff Tab */}
         <TabsContent value="staff">
           {vendorId ? (
