@@ -188,6 +188,12 @@ const EventCard = ({ event, userType = "collector", isMyEvent = false, onCopyEve
                 <Clock className="w-4 h-4 mr-2" />
                 <span>{event.date} at {event.time}</span>
               </div>
+              {ticketCount > 0 && (
+                <div className="flex items-center text-sm font-medium text-primary mt-1">
+                  <Ticket className="w-4 h-4 mr-2" />
+                  <span>{ticketCount} ticket{ticketCount !== 1 ? 's' : ''}</span>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between items-center">
