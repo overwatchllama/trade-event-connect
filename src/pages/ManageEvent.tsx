@@ -478,6 +478,7 @@ const ManageEvent = () => {
         open={eventDayDialogOpen}
         onOpenChange={setEventDayDialogOpen}
         eventId={event.id}
+        eventTitle={event.title}
       />
     </main>
   );
