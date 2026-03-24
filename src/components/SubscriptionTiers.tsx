@@ -300,7 +300,7 @@ const SubscriptionTiers = () => {
                   onClick={() => handleSubscribe(tier)}
                   disabled={loading === tier.id}
                 >
-                  {tier.monthlyPrice === 0 ? 'Get Started Free' : loading === tier.id ? 'Processing...' : `Subscribe to ${tier.name}`}
+                  {tier.monthlyPrice === 0 ? 'Current Plan' : loading === tier.id ? 'Processing...' : `Subscribe to ${tier.name}`}
                 </Button>
               </Card>
             );
