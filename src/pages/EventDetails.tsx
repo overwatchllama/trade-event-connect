@@ -250,25 +250,11 @@ const EventDetails = () => {
         {isOrganizer && (
           <div className="mb-6 flex flex-wrap gap-2">
             <Button
-              onClick={() => setEditDialogOpen(true)}
+              onClick={() => navigate(`/manage-event/${event.id}`)}
               variant="outline"
             >
               <Settings className="w-4 h-4 mr-2" />
-              Edit Event
-            </Button>
-            <Button
-              onClick={() => setManageVendorsOpen(true)}
-              variant="outline"
-            >
-              <Store className="w-4 h-4 mr-2" />
-              Manage Vendors
-            </Button>
-            <Button
-              onClick={() => setManageSponsorsOpen(true)}
-              variant="outline"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Manage Sponsors
+              Manage Event
             </Button>
             <Button
               onClick={() => setScannerOpen(true)}
