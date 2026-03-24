@@ -162,6 +162,7 @@ const ManageEvent = () => {
             <TabsTrigger value="vendor-notes">Vendor Notes</TabsTrigger>
             <TabsTrigger value="vendors">Vendors</TabsTrigger>
             <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
+            <TabsTrigger value="raffles">Raffles</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
           </TabsList>
 
