@@ -74,6 +74,7 @@ const EventDetails = () => {
     fetchTicketCount();
   }, [user, id]);
 
+  useEffect(() => {
     const fetchEvent = async () => {
       if (!id) return;
 
