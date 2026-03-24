@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store, UserCheck, Megaphone, NotebookPen, TableProperties } from "lucide-react";
+import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store, UserCheck, Megaphone, NotebookPen, TableProperties, Gift } from "lucide-react";
 import { VendorApplicationsList } from "@/components/VendorApplicationsList";
 import NearbyEventsPanel from "@/components/vending/NearbyEventsPanel";
 import CreatePersonalEventDialog from "@/components/vending/CreatePersonalEventDialog";
@@ -18,6 +18,7 @@ import VendorStaffRoster from "@/components/vending/VendorStaffRoster";
 import VendorRateOrganizers from "@/components/vending/VendorRateOrganizers";
 import VendorRateVenues from "@/components/vending/VendorRateVenues";
 import VendorRateVendors from "@/components/vending/VendorRateVendors";
+import { VendorRaffles } from "@/components/vending/VendorRaffles";
 
 interface VendingEvent {
   id: string;
@@ -295,6 +296,10 @@ const VendingDashboard = () => {
               <Store className="w-4 h-4" />
               <span className="hidden sm:inline">Table</span> Marketplace
             </TabsTrigger>
+            <TabsTrigger value="raffles" className="gap-2">
+              <Gift className="w-4 h-4" />
+              Raffles
+            </TabsTrigger>
             <TabsTrigger value="staff" className="gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Manage</span> Staff
@@ -543,6 +548,19 @@ const VendingDashboard = () => {
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 Set up your vendor profile first to access the marketplace.
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Raffles Tab */}
+        <TabsContent value="raffles">
+          {vendorId ? (
+            <VendorRaffles vendorId={vendorId} />
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                Set up your vendor profile first to create raffles.
               </CardContent>
             </Card>
           )}

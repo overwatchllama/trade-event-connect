@@ -19,6 +19,8 @@ interface RaffleItem {
   entry_method: string;
   claim_time_seconds: number;
   status: string;
+  vendor_id: string | null;
+  vendor_name?: string;
 }
 
 interface RaffleDraw {
@@ -41,12 +43,16 @@ export const EventRaffles = ({ eventId }: EventRafflesProps) => {
   const fetchData = useCallback(async () => {
     const { data: items } = await supabase
       .from('raffle_items')
-      .select('*')
+      .select('*, vendors:vendor_id(business_name)')
       .eq('event_id', eventId)
       .in('status', ['active', 'drawn', 'claimed'])
       .order('created_at');
 
-    setRaffles(items || []);
+    const mapped = (items || []).map((item: any) => ({
+      ...item,
+      vendor_name: item.vendors?.business_name || null,
+    }));
+    setRaffles(mapped);
 
     if (items && items.length > 0) {
       const ids = items.map(r => r.id);
@@ -138,6 +144,9 @@ export const EventRaffles = ({ eventId }: EventRafflesProps) => {
                 <div className="flex items-center gap-2">
                   <Trophy className="h-4 w-4 text-primary" />
                   <span className="font-medium">{raffle.name}</span>
+                  {raffle.vendor_name && (
+                    <Badge variant="outline" className="text-xs">by {raffle.vendor_name}</Badge>
+                  )}
                   {raffle.status === 'claimed' && (
                     <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Claimed</Badge>
                   )}
