@@ -531,7 +531,7 @@ const EventDetails = () => {
                   </div>
                 )}
 
-                {!event.no_online_ticket_sales && (
+                {!event.no_online_ticket_sales && !isOrganizer && (
                   <Button
                     className="w-full"
                     size="lg"
