@@ -16,6 +16,8 @@ const CartIcon = () => {
   const { items, totalItems, totalPrice, removeItem, updateQuantity, clearCart } = useCart();
   const navigate = useNavigate();
 
+  if (totalItems === 0) return null;
+
   return (
     <Sheet>
       <SheetTrigger asChild>

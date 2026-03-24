@@ -127,7 +127,6 @@ const Header = () => {
           </nav>
 
           <div className="flex items-center space-x-4 min-h-[40px]">
-            <ThemeToggle />
             <CartIcon />
             {loading ? (
               <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
