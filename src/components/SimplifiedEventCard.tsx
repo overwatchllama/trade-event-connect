@@ -160,6 +160,13 @@ const SimplifiedEventCard = ({ event }: SimplifiedEventCardProps) => {
           <MapPin className="w-4 h-4 mr-2 text-primary" />
           <span>{event.city}, {event.state}</span>
         </div>
+
+        {ticketCount > 0 && (
+          <div className="flex items-center text-sm font-medium text-primary">
+            <Ticket className="w-4 h-4 mr-2" />
+            <span>{ticketCount} ticket{ticketCount !== 1 ? 's' : ''}</span>
+          </div>
+        )}
       </div>
     </Card>
   );
