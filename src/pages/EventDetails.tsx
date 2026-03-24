@@ -62,6 +62,18 @@ const EventDetails = () => {
   const canSeeSponsorInfo = hasRole('sponsor');
 
   useEffect(() => {
+    const fetchTicketCount = async () => {
+      if (!user || !id) return;
+      const { count } = await supabase
+        .from('order_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', id)
+        .eq('user_id', user.id);
+      setTicketCount(count || 0);
+    };
+    fetchTicketCount();
+  }, [user, id]);
+
     const fetchEvent = async () => {
       if (!id) return;
 
