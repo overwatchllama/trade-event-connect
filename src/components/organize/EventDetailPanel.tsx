@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format, parseISO } from "date-fns";
 import {
   ChevronRight,
+  ChevronDown,
   Clock,
   Settings,
   BarChart3,
@@ -63,6 +65,7 @@ interface EventDetailPanelProps {
 
 const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
   const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(true);
   const [vendorsDialogOpen, setVendorsDialogOpen] = useState(false);
   const [sponsorsDialogOpen, setSponsorsDialogOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
@@ -178,17 +181,22 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
   };
 
   return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
     <Card className="mt-6">
-      <CardHeader className="pb-3">
+      <CollapsibleTrigger asChild>
+      <CardHeader className="pb-3 cursor-pointer hover:bg-accent/30 transition-colors">
         <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-xl">{event.title}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {format(parseISO(event.date), "EEEE, MMMM d, yyyy")} ·{" "}
-              {event.venue}, {event.city}, {event.state}
-            </p>
+          <div className="flex items-center gap-2">
+            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${isOpen ? '' : '-rotate-90'}`} />
+            <div>
+              <CardTitle className="text-xl">{event.title}</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {format(parseISO(event.date), "EEEE, MMMM d, yyyy")} ·{" "}
+                {event.venue}, {event.city}, {event.state}
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
             <Button
               variant="outline"
               size="sm"
@@ -216,6 +224,8 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
           </div>
         </div>
       </CardHeader>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
       <CardContent>
         <Tabs defaultValue="status" className="space-y-4">
           <TabsList className="grid w-full grid-cols-5">
@@ -505,6 +515,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
           ))}
         </div>
       </CardContent>
+      </CollapsibleContent>
 
       <EventCheckInDialog
         open={checkInOpen}
@@ -519,6 +530,7 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
         eventTitle={event.title}
       />
     </Card>
+    </Collapsible>
   );
 };
 
