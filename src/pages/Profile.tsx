@@ -824,31 +824,15 @@ const Profile = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="plans" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Subscription Plans</CardTitle>
-                  <CardDescription>
-                    View and manage your subscription plan
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button onClick={() => navigate('/subscription')} className="w-full">
-                    View All Plans
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="subscriptions" className="space-y-6">
+            <TabsContent value="billing" className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CreditCard className="h-5 w-5" />
-                    My Subscriptions
+                    Billing & Subscriptions
                   </CardTitle>
                   <CardDescription>
-                    Manage your active subscriptions and billing
+                    View plans and manage your active subscriptions
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
