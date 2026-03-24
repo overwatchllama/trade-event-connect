@@ -5,11 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { CheckCircle, Clock, Ban, DollarSign, ChevronDown, ChevronRight, Calendar, Settings2, Users } from 'lucide-react';
+import { CheckCircle, Clock, Ban, DollarSign, ChevronDown, ChevronRight, Calendar, Settings2, Users, Send, Heart, MessageSquare } from 'lucide-react';
 import { Database } from '@/integrations/supabase/types';
 import { VendorSummaryBar } from './VendorSummaryBar';
+import { VendorMessageDialog } from './VendorMessageDialog';
+import { toast } from 'sonner';
 
 type VendorRow = Database['public']['Tables']['vendors']['Row'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -53,6 +56,11 @@ export const EventVendorsOverview = ({
   const [events, setEvents] = useState<EventWithVendors[]>([]);
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [messageRecipients, setMessageRecipients] = useState<{ userId: string; businessName: string }[]>([]);
+  const [messageEventTitle, setMessageEventTitle] = useState('');
+  const [messageGroupLabel, setMessageGroupLabel] = useState('');
+  const [invitingFavorites, setInvitingFavorites] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchEventData();
@@ -176,6 +184,96 @@ export const EventVendorsOverview = ({
     return <Badge variant="outline">{status}</Badge>;
   };
 
+  const getVendorsByGroup = (event: EventWithVendors, group: string) => {
+    return event.vendors.filter(v => {
+      if (group === 'unpaid') return v.applicationStatus === 'approved' && v.paymentStatus !== 'paid';
+      if (group === 'waitlist') return v.applicationStatus === 'waitlist';
+      if (group === 'paid') return v.applicationStatus === 'approved' && v.paymentStatus === 'paid';
+      return false;
+    });
+  };
+
+  const openGroupMessage = (event: EventWithVendors, group: string, label: string) => {
+    const vendors = getVendorsByGroup(event, group);
+    if (vendors.length === 0) {
+      toast.info(`No ${label.toLowerCase()} to message`);
+      return;
+    }
+    setMessageRecipients(vendors.map(v => ({
+      userId: v.vendor.profiles?.id || v.vendor.user_id,
+      businessName: v.vendor.business_name,
+    })));
+    setMessageEventTitle(event.title);
+    setMessageGroupLabel(label);
+    setMessageDialogOpen(true);
+  };
+
+  const openSingleMessage = (event: EventWithVendors, vendor: VendorProfile) => {
+    setMessageRecipients([{
+      userId: vendor.profiles?.id || vendor.user_id,
+      businessName: vendor.business_name,
+    }]);
+    setMessageEventTitle(event.title);
+    setMessageGroupLabel(vendor.business_name);
+    setMessageDialogOpen(true);
+  };
+
+  const inviteFavorites = async (event: EventWithVendors) => {
+    setInvitingFavorites(event.id);
+    try {
+      // Get organizer's favorited vendors
+      const { data: favorites } = await supabase
+        .from('organizer_vendor_notes')
+        .select('vendor_id')
+        .eq('organizer_id', user!.id)
+        .eq('is_favorite', true);
+
+      if (!favorites || favorites.length === 0) {
+        toast.info('You have no favorited vendors to invite');
+        return;
+      }
+
+      // Filter out vendors already applied to this event
+      const existingVendorIds = new Set(event.vendors.map(v => v.vendor.id));
+      const newFavIds = favorites.filter(f => !existingVendorIds.has(f.vendor_id)).map(f => f.vendor_id);
+
+      if (newFavIds.length === 0) {
+        toast.info('All your favorited vendors have already applied');
+        return;
+      }
+
+      // Get vendor user_ids and names
+      const { data: vendorData } = await supabase
+        .from('vendors')
+        .select('id, user_id, business_name')
+        .in('id', newFavIds);
+
+      if (!vendorData || vendorData.length === 0) {
+        toast.info('No vendors found to invite');
+        return;
+      }
+
+      const notifications = vendorData.map(v => ({
+        user_id: v.user_id,
+        title: 'Event Invitation',
+        message: `You've been invited to participate as a vendor at "${event.title}" on ${event.date}. Check out the event and apply if interested!`,
+        type: 'event_invitation',
+        reference_id: event.id,
+        reference_type: 'event',
+      }));
+
+      const { error } = await supabase.from('notifications').insert(notifications);
+      if (error) throw error;
+
+      toast.success(`Invited ${vendorData.length} favorited vendor${vendorData.length !== 1 ? 's' : ''}!`);
+    } catch (error) {
+      console.error('Error inviting favorites:', error);
+      toast.error('Failed to send invitations');
+    } finally {
+      setInvitingFavorites(null);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Loading events...</div>;
   }
@@ -232,6 +330,52 @@ export const EventVendorsOverview = ({
                       <VendorSummaryBar {...counts} />
                     </div>
                   )}
+
+                  {/* Action buttons */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <MessageSquare className="w-4 h-4 mr-1.5" />
+                          Message Vendors
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        {counts.unpaid > 0 && (
+                          <DropdownMenuItem onClick={() => openGroupMessage(event, 'unpaid', 'Unpaid Vendors')}>
+                            <DollarSign className="w-4 h-4 mr-2 text-amber-600" />
+                            Unpaid Vendors ({counts.unpaid})
+                          </DropdownMenuItem>
+                        )}
+                        {counts.waitlist > 0 && (
+                          <DropdownMenuItem onClick={() => openGroupMessage(event, 'waitlist', 'Waitlisted Vendors')}>
+                            <Clock className="w-4 h-4 mr-2 text-blue-600" />
+                            Waitlisted Vendors ({counts.waitlist})
+                          </DropdownMenuItem>
+                        )}
+                        {counts.paid > 0 && (
+                          <DropdownMenuItem onClick={() => openGroupMessage(event, 'paid', 'Paid Vendors')}>
+                            <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                            Paid Vendors ({counts.paid})
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* Invite favorites - only show if tables not full */}
+                    {(event.total_tables == null || tablesPurchased < event.total_tables) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => inviteFavorites(event)}
+                        disabled={invitingFavorites === event.id}
+                      >
+                        <Heart className="w-4 h-4 mr-1.5 text-destructive" />
+                        {invitingFavorites === event.id ? 'Inviting...' : 'Invite Favorites'}
+                      </Button>
+                    )}
+                  </div>
+
                   {event.vendors.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4">No vendor applications for this event.</p>
                   ) : (
@@ -254,10 +398,21 @@ export const EventVendorsOverview = ({
                             {getStatusBadge(v.applicationStatus, v.paymentStatus)}
                             <Button
                               variant="ghost"
-                              size="sm"
-                              onClick={() => onOpenVendorNotes(v.vendor.id, v.vendor.business_name)}
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => openSingleMessage(event, v.vendor)}
+                              title="Message vendor"
                             >
-                              <Settings2 className="w-4 h-4" />
+                              <Send className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => onOpenVendorNotes(v.vendor.id, v.vendor.business_name)}
+                              title="Vendor notes"
+                            >
+                              <Settings2 className="w-3.5 h-3.5" />
                             </Button>
                           </div>
                         </div>
@@ -270,6 +425,14 @@ export const EventVendorsOverview = ({
           </Collapsible>
         );
       })}
+
+      <VendorMessageDialog
+        open={messageDialogOpen}
+        onOpenChange={setMessageDialogOpen}
+        recipients={messageRecipients}
+        eventTitle={messageEventTitle}
+        groupLabel={messageGroupLabel}
+      />
     </div>
   );
 };
