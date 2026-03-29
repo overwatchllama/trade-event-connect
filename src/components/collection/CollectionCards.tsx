@@ -126,7 +126,7 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, selectedSet, selectedRarity, selectedType, selectedSupertype]);
+  }, [debouncedSearch, selectedSet, selectedRarity, selectedType, selectedSupertype]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
