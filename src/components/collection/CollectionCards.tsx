@@ -474,9 +474,6 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
                         <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">{card.rarity}</Badge>
                         <span className={`inline-block w-2.5 h-2.5 rounded-full ${opColorMap[card.card_color] || 'bg-muted'}`} title={card.card_color} />
                       </div>
-                      {card.market_price != null && (
-                        <span className="text-[10px] font-semibold text-primary">${card.market_price.toFixed(2)}</span>
-                      )}
                     </div>
                   </div>
                 </CardContent>
