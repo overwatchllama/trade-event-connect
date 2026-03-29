@@ -51,6 +51,7 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedSet, setSelectedSet] = useState<string>('all');
   const [selectedRarity, setSelectedRarity] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -59,6 +60,15 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
 
   // Detail dialog
   const [selectedCard, setSelectedCard] = useState<PokemonCard | null>(null);
+
+  // Debounce search input
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchTerm]);
 
   // Load sets on mount
   useEffect(() => {
@@ -73,20 +83,28 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
     if (selectedTcg === 'pokemon') loadSets();
   }, [selectedTcg]);
 
+  // Only fetch when there's a filter applied (set, search, rarity, type, supertype)
+  const hasQuery = debouncedSearch.trim() || selectedSet !== 'all' || selectedRarity !== 'all' || selectedType !== 'all' || selectedSupertype !== 'all';
+
   // Build query and fetch cards
   const fetchCards = useCallback(async () => {
     if (selectedTcg !== 'pokemon') return;
+    if (!hasQuery) {
+      setCards([]);
+      setTotalCount(0);
+      return;
+    }
     setLoading(true);
     try {
       const queryParts: string[] = [];
-      if (searchTerm.trim()) queryParts.push(`name:"*${searchTerm.trim()}*"`);
+      if (debouncedSearch.trim()) queryParts.push(`name:"*${debouncedSearch.trim()}*"`);
       if (selectedSet !== 'all') queryParts.push(`set.id:${selectedSet}`);
       if (selectedRarity !== 'all') queryParts.push(`rarity:"${selectedRarity}"`);
       if (selectedType !== 'all') queryParts.push(`types:${selectedType}`);
       if (selectedSupertype !== 'all') queryParts.push(`supertype:${selectedSupertype}`);
 
       const res = await pokemonTcgApi.searchCards({
-        q: queryParts.length > 0 ? queryParts.join(' ') : undefined,
+        q: queryParts.join(' '),
         page,
         pageSize,
         orderBy: '-set.releaseDate,number',
@@ -99,7 +117,7 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
     } finally {
       setLoading(false);
     }
-  }, [selectedTcg, searchTerm, selectedSet, selectedRarity, selectedType, selectedSupertype, page, pageSize]);
+  }, [selectedTcg, debouncedSearch, selectedSet, selectedRarity, selectedType, selectedSupertype, page, pageSize, hasQuery]);
 
   useEffect(() => {
     fetchCards();
