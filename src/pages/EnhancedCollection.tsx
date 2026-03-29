@@ -48,6 +48,8 @@ const EnhancedCollection = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [conditionFilter, setConditionFilter] = useState('all');
   const [selectedGraders, setSelectedGraders] = useState<string[]>([]);
+  const [slabSearch, setSlabSearch] = useState('');
+  const [slabSearchType, setSlabSearchType] = useState<'name' | 'cert'>('name');
 
   const toggleGrader = (id: string) => {
     setSelectedGraders(prev =>
