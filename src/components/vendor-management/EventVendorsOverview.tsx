@@ -100,9 +100,7 @@ export const EventVendorsOverview = ({
 
         const userIds = vendorData?.map(v => v.user_id) || [];
         const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, full_name, email, avatar_url, role, location_state')
-          .in('id', userIds);
+          .rpc('get_public_vendor_profiles', { user_ids: userIds });
 
         vendorData?.forEach(vendor => {
           const profile = profilesData?.find(p => p.id === vendor.user_id);
