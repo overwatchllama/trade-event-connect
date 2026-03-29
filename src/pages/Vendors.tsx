@@ -570,7 +570,7 @@ const Vendors = () => {
                             </CardTitle>
                             <div className="flex items-center text-sm text-muted-foreground mb-2">
                               <Mail className="h-3 w-3 mr-1" />
-                              {myVendorProfile.profiles?.email}
+                              {myVendorProfile.business_email || user?.email}
                             </div>
                             {myVendorProfile.verified && (
                               <Badge variant="default" className="bg-primary text-primary-foreground">
