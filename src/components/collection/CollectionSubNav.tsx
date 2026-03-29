@@ -23,6 +23,8 @@ const CollectionSubNav = ({
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'sets', label: 'Sets' },
     { id: 'cards', label: 'Cards' },
+    { id: 'sealed', label: 'Sealed' },
+    { id: 'slabs', label: 'Slabs' },
     { id: 'lists', label: 'Lists' },
   ];
 
