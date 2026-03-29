@@ -163,7 +163,7 @@ const EnhancedCollection = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-foreground">Graded Slabs</h2>
-              <AddSlabDialog />
+              <AddSlabDialog selectedTcg={selectedTcg} />
             </div>
 
             {/* Search Bar */}
@@ -232,7 +232,7 @@ const EnhancedCollection = () => {
                 <p className="text-muted-foreground text-sm mb-4">
                   Track your PSA, BGS, CGC, SGC, AGS, and other graded cards here.
                 </p>
-                <AddSlabDialog />
+                <AddSlabDialog selectedTcg={selectedTcg} />
               </CardContent>
             </Card>
           </div>
