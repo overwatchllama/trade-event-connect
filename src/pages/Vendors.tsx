@@ -165,12 +165,10 @@ const Vendors = () => {
 
       if (vendorsError) throw vendorsError;
 
-      // Then get profiles for the vendor users
+      // Then get profiles for the vendor users (using secure RPC that only returns safe public fields)
       const userIds = vendorsData?.map(v => v.user_id) || [];
       const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, avatar_url, role, location_state')
-        .in('id', userIds);
+        .rpc('get_public_vendor_profiles', { user_ids: userIds });
 
       if (profilesError) throw profilesError;
 
