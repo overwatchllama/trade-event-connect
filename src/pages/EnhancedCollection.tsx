@@ -232,7 +232,7 @@ const EnhancedCollection = () => {
                 <p className="text-muted-foreground text-sm mb-4">
                   Track your PSA, BGS, CGC, SGC, AGS, and other graded cards here.
                 </p>
-                <AddSlabDialog />
+                <AddSlabDialog selectedTcg={selectedTcg} />
               </CardContent>
             </Card>
           </div>
