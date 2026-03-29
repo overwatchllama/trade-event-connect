@@ -2386,6 +2386,16 @@ export type Database = {
       }
     }
     Functions: {
+      get_public_vendor_profiles: {
+        Args: { user_ids: string[] }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          id: string
+          location_city: string
+          location_state: string
+        }[]
+      }
       get_user_role: {
         Args: { user_id?: string }
         Returns: Database["public"]["Enums"]["user_role"]
