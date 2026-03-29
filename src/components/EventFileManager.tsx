@@ -61,16 +61,15 @@ export const EventFileManager = ({ eventId }: EventFileManagerProps) => {
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('event-files')
-        .getPublicUrl(fileName);
+      // Store the file path (not public URL) since bucket is private
+      const fileUrl = fileName;
 
       const { error: insertError } = await supabase
         .from('event_files')
         .insert({
           event_id: eventId,
           uploaded_by: user.id,
-          file_url: publicUrl,
+          file_url: fileUrl,
           file_name: selectedFile.name,
           file_type: selectedFile.type,
           file_size: selectedFile.size,
@@ -119,9 +118,10 @@ export const EventFileManager = ({ eventId }: EventFileManagerProps) => {
     if (!confirm('Are you sure you want to delete this file?')) return;
 
     try {
-      // Extract file path from URL
-      const urlParts = fileUrl.split('/');
-      const filePath = urlParts.slice(urlParts.indexOf('event-files') + 1).join('/');
+      // Extract file path - handle both legacy full URLs and new path-only format
+      const filePath = fileUrl.includes('event-files') 
+        ? fileUrl.split('/').slice(fileUrl.split('/').indexOf('event-files') + 1).join('/')
+        : fileUrl;
 
       // Delete from storage
       const { error: storageError } = await supabase.storage
@@ -148,9 +148,10 @@ export const EventFileManager = ({ eventId }: EventFileManagerProps) => {
 
   const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
-      // For private buckets, we need to get a signed URL
-      const urlParts = fileUrl.split('/');
-      const filePath = urlParts.slice(urlParts.indexOf('event-files') + 1).join('/');
+      // Extract file path - handle both legacy full URLs and new path-only format
+      const filePath = fileUrl.includes('event-files') 
+        ? fileUrl.split('/').slice(fileUrl.split('/').indexOf('event-files') + 1).join('/')
+        : fileUrl;
 
       const { data, error } = await supabase.storage
         .from('event-files')

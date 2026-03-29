@@ -27,8 +27,16 @@ import { Database } from '@/integrations/supabase/types';
 type VendorRow = Database['public']['Tables']['vendors']['Row'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
+interface PublicVendorProfile {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  location_city: string | null;
+  location_state: string | null;
+}
+
 interface VendorProfile extends VendorRow {
-  profiles: Pick<ProfileRow, 'id' | 'full_name' | 'email' | 'avatar_url' | 'role' | 'location_state'>;
+  profiles: PublicVendorProfile & { email?: string; role?: string };
 }
 
 const Vendors = () => {
@@ -165,12 +173,10 @@ const Vendors = () => {
 
       if (vendorsError) throw vendorsError;
 
-      // Then get profiles for the vendor users
+      // Then get profiles for the vendor users (using secure RPC that only returns safe public fields)
       const userIds = vendorsData?.map(v => v.user_id) || [];
       const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, avatar_url, role, location_state')
-        .in('id', userIds);
+        .rpc('get_public_vendor_profiles', { user_ids: userIds });
 
       if (profilesError) throw profilesError;
 
@@ -252,12 +258,10 @@ const Vendors = () => {
 
       if (vendorError) throw vendorError;
 
-      // Fetch profiles for vendors
+      // Fetch profiles for vendors (using secure RPC)
       const userIds = vendorData?.map(v => v.user_id) || [];
       const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, avatar_url, role, location_state')
-        .in('id', userIds);
+        .rpc('get_public_vendor_profiles', { user_ids: userIds });
 
       if (profilesError) throw profilesError;
 
@@ -444,7 +448,7 @@ const Vendors = () => {
   const filteredVendors = vendors.filter(vendor => {
     const matchesSearch = vendor.business_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vendor.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vendor.profiles?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.business_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vendor.profiles?.location_state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vendor.business_address?.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -566,7 +570,7 @@ const Vendors = () => {
                             </CardTitle>
                             <div className="flex items-center text-sm text-muted-foreground mb-2">
                               <Mail className="h-3 w-3 mr-1" />
-                              {myVendorProfile.profiles?.email}
+                              {myVendorProfile.business_email || user?.email}
                             </div>
                             {myVendorProfile.verified && (
                               <Badge variant="default" className="bg-primary text-primary-foreground">

@@ -15,10 +15,16 @@ import { VendorMessageDialog } from './VendorMessageDialog';
 import { toast } from 'sonner';
 
 type VendorRow = Database['public']['Tables']['vendors']['Row'];
-type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+interface PublicVendorProfile {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  location_city: string | null;
+  location_state: string | null;
+}
 
 interface VendorProfile extends VendorRow {
-  profiles: Pick<ProfileRow, 'id' | 'full_name' | 'email' | 'avatar_url' | 'role' | 'location_state'>;
+  profiles: PublicVendorProfile & { email?: string; role?: string };
 }
 
 interface EventWithVendors {
@@ -100,9 +106,7 @@ export const EventVendorsOverview = ({
 
         const userIds = vendorData?.map(v => v.user_id) || [];
         const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, full_name, email, avatar_url, role, location_state')
-          .in('id', userIds);
+          .rpc('get_public_vendor_profiles', { user_ids: userIds });
 
         vendorData?.forEach(vendor => {
           const profile = profilesData?.find(p => p.id === vendor.user_id);

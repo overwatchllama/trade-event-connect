@@ -402,13 +402,12 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('event-files')
-        .getPublicUrl(fileName);
+      // Store file path (not public URL) since bucket is private
+      const fileUrl = fileName;
 
       const { error: updateError } = await supabase
         .from('vendor_applications')
-        .update({ file_url: publicUrl })
+        .update({ file_url: fileUrl })
         .eq('id', applicationId);
 
       if (updateError) throw updateError;

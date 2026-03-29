@@ -32,10 +32,11 @@ interface VendorProfile {
   profiles: {
     id: string;
     full_name: string | null;
-    email: string;
+    email?: string;
     avatar_url: string | null;
-    role: string;
-    location_state: string | null;
+    role?: string;
+    location_state?: string | null;
+    location_city?: string | null;
   };
 }
 
