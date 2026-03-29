@@ -496,9 +496,6 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{card.card_color}</Badge>
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0">{card.card_type}</Badge>
-                      {card.market_price != null && (
-                        <span className="text-sm font-semibold text-primary min-w-[60px] text-right">${card.market_price.toFixed(2)}</span>
-                      )}
                     </div>
                   </div>
                 </CardContent>
