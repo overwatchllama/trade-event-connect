@@ -12,6 +12,7 @@ import CollectionDashboard from '@/components/collection/CollectionDashboard';
 import CollectionSets from '@/components/collection/CollectionSets';
 import CollectionCards from '@/components/collection/CollectionCards';
 import AddSlabDialog from '@/components/collection/AddSlabDialog';
+import CollectionSealed from '@/components/collection/CollectionSealed';
 import { CreateCollectionDialog } from '@/components/CreateCollectionDialog';
 import { EnhancedAddItemDialog } from '@/components/EnhancedAddItemDialog';
 import { WishlistDialog } from '@/components/WishlistDialog';
@@ -154,20 +155,7 @@ const EnhancedCollection = () => {
 
         {/* Sealed Tab */}
         {activeTab === 'sealed' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-foreground">Sealed Products</h2>
-            </div>
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Package className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
-                <h3 className="text-lg font-medium text-foreground mb-1">No sealed products yet</h3>
-                <p className="text-muted-foreground text-sm">
-                  Track your sealed booster boxes, ETBs, tins, and other unopened products here.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          <CollectionSealed selectedTcg={selectedTcg} />
         )}
 
         {/* Slabs Tab */}
