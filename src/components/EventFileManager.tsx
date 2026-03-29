@@ -147,9 +147,10 @@ export const EventFileManager = ({ eventId }: EventFileManagerProps) => {
 
   const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
-      // For private buckets, we need to get a signed URL
-      const urlParts = fileUrl.split('/');
-      const filePath = urlParts.slice(urlParts.indexOf('event-files') + 1).join('/');
+      // Extract file path - handle both legacy full URLs and new path-only format
+      const filePath = fileUrl.includes('event-files') 
+        ? fileUrl.split('/').slice(fileUrl.split('/').indexOf('event-files') + 1).join('/')
+        : fileUrl;
 
       const { data, error } = await supabase.storage
         .from('event-files')
