@@ -174,7 +174,40 @@ const EnhancedCollection = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-foreground">Graded Slabs</h2>
+              <AddSlabDialog />
             </div>
+
+            {/* Search Bar */}
+            <Card>
+              <CardContent className="pt-4 pb-3">
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <div className="flex gap-2">
+                      <Select value={slabSearchType} onValueChange={(v: 'name' | 'cert') => setSlabSearchType(v)}>
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="name">Name</SelectItem>
+                          <SelectItem value="cert">Cert #</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          value={slabSearch}
+                          onChange={(e) => setSlabSearch(e.target.value)}
+                          placeholder={slabSearchType === 'cert' ? 'Enter certificate number...' : 'Search by card name...'}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Grading Company Filter */}
             <Card>
               <CardContent className="pt-4 pb-2">
                 <p className="text-sm font-medium text-muted-foreground mb-3">Filter by Grading Company</p>
@@ -201,13 +234,16 @@ const EnhancedCollection = () => {
                 </TooltipProvider>
               </CardContent>
             </Card>
+
+            {/* Empty State */}
             <Card>
               <CardContent className="py-12 text-center">
                 <Package className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
                 <h3 className="text-lg font-medium text-foreground mb-1">No slabs yet</h3>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground text-sm mb-4">
                   Track your PSA, BGS, CGC, SGC, AGS, and other graded cards here.
                 </p>
+                <AddSlabDialog />
               </CardContent>
             </Card>
           </div>
