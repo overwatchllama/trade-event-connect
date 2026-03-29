@@ -61,9 +61,8 @@ export const EventFileManager = ({ eventId }: EventFileManagerProps) => {
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('event-files')
-        .getPublicUrl(fileName);
+      // Store the file path (not public URL) since bucket is private
+      const fileUrl = fileName;
 
       const { error: insertError } = await supabase
         .from('event_files')
