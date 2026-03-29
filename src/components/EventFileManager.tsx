@@ -69,7 +69,7 @@ export const EventFileManager = ({ eventId }: EventFileManagerProps) => {
         .insert({
           event_id: eventId,
           uploaded_by: user.id,
-          file_url: publicUrl,
+          file_url: fileUrl,
           file_name: selectedFile.name,
           file_type: selectedFile.type,
           file_size: selectedFile.size,

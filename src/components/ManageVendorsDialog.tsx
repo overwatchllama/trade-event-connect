@@ -407,7 +407,7 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
 
       const { error: updateError } = await supabase
         .from('vendor_applications')
-        .update({ file_url: publicUrl })
+        .update({ file_url: fileUrl })
         .eq('id', applicationId);
 
       if (updateError) throw updateError;
