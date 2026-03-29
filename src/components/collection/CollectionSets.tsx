@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { pokemonTcgApi, type PokemonSet } from '@/services/pokemonTcgApi';
+import { optcgApi, type OPTCGSet, type OPTCGStarterDeck } from '@/services/optcgApi';
 import { type CollectionItem } from '@/hooks/useCollection';
 import {
   Search,
@@ -22,14 +23,21 @@ interface CollectionSetsProps {
   selectedTcg: string;
 }
 
-// Group sets by series
-interface SeriesGroup {
+// Unified set type for rendering
+interface UnifiedSet {
+  id: string;
+  name: string;
   series: string;
-  sets: PokemonSet[];
+  total: number;
+  releaseDate: string;
+  logoUrl?: string;
+  symbolUrl?: string;
+  code?: string;
 }
 
 const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
-  const [sets, setSets] = useState<PokemonSet[]>([]);
+  const [pokemonSets, setPokemonSets] = useState<PokemonSet[]>([]);
+  const [opSets, setOpSets] = useState<(OPTCGSet | OPTCGStarterDeck)[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'images' | 'list'>('images');
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,25 +46,55 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
   const [activeSeries, setActiveSeries] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setActiveSeries(null);
     if (selectedTcg === 'pokemon') {
-      fetchSets();
+      pokemonTcgApi.getSets({ orderBy: '-releaseDate', pageSize: 250 })
+        .then(res => setPokemonSets(res.data || []))
+        .catch(e => console.error('Failed to fetch Pokemon sets:', e))
+        .finally(() => setLoading(false));
+    } else if (selectedTcg === 'onepiece') {
+      Promise.all([optcgApi.getAllSets(), optcgApi.getAllStarterDecks()])
+        .then(([sets, decks]) => setOpSets([...sets, ...decks]))
+        .catch(e => console.error('Failed to fetch OP sets:', e))
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
   }, [selectedTcg]);
 
-  const fetchSets = async () => {
-    try {
-      setLoading(true);
-      const response = await pokemonTcgApi.getSets({
-        orderBy: '-releaseDate',
-        pageSize: 250,
-      });
-      setSets(response.data || []);
-    } catch (error) {
-      console.error('Failed to fetch sets:', error);
-    } finally {
-      setLoading(false);
+  // Normalize sets into unified format
+  const unifiedSets: UnifiedSet[] = useMemo(() => {
+    if (selectedTcg === 'pokemon') {
+      return pokemonSets.map(s => ({
+        id: s.id,
+        name: s.name,
+        series: s.series || 'Other',
+        total: s.total,
+        releaseDate: s.releaseDate,
+        logoUrl: s.images.logo,
+        symbolUrl: s.images.symbol,
+        code: s.ptcgoCode || s.id.toUpperCase(),
+      }));
     }
-  };
+    if (selectedTcg === 'onepiece') {
+      return opSets.map(s => {
+        const isSet = 'set_id' in s;
+        const id = isSet ? (s as OPTCGSet).set_id : (s as OPTCGStarterDeck).structure_deck_id;
+        const name = isSet ? (s as OPTCGSet).set_name : (s as OPTCGStarterDeck).structure_deck_name;
+        const series = isSet ? 'Booster Sets' : 'Starter Decks';
+        return {
+          id,
+          name,
+          series,
+          total: 0, // API doesn't give total per set in list endpoint
+          releaseDate: '',
+          code: id,
+        };
+      });
+    }
+    return [];
+  }, [selectedTcg, pokemonSets, opSets]);
 
   // Count owned cards per set
   const ownedPerSet = useMemo(() => {
@@ -71,53 +109,51 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
 
   // Group by series
   const seriesGroups = useMemo(() => {
-    let filtered = sets;
+    let filtered = unifiedSets;
     if (searchTerm) {
+      const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
-        (s) =>
-          s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (s.ptcgoCode || '').toLowerCase().includes(searchTerm.toLowerCase())
+        s => s.name.toLowerCase().includes(term) || (s.code || '').toLowerCase().includes(term)
       );
     }
 
-    const groups: Record<string, PokemonSet[]> = {};
+    const groups: Record<string, UnifiedSet[]> = {};
     filtered.forEach((set) => {
-      const series = set.series || 'Other';
-      if (!groups[series]) groups[series] = [];
-      groups[series].push(set);
+      if (!groups[set.series]) groups[set.series] = [];
+      groups[set.series].push(set);
     });
 
     return Object.entries(groups).map(([series, sets]) => ({
       series,
-      sets: sets.sort(
-        (a, b) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime()
-      ),
+      sets: sets.sort((a, b) => {
+        if (a.releaseDate && b.releaseDate) {
+          return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
+        }
+        return a.name.localeCompare(b.name);
+      }),
     }));
-  }, [sets, searchTerm]);
+  }, [unifiedSets, searchTerm]);
 
-  const allSeriesNames = seriesGroups.map((g) => g.series);
+  const allSeriesNames = seriesGroups.map(g => g.series);
 
-  const getOwnedCount = (set: PokemonSet) => {
-    return ownedPerSet[set.name] || 0;
-  };
+  const getOwnedCount = (set: UnifiedSet) => ownedPerSet[set.name] || 0;
 
-  const getCompletion = (set: PokemonSet) => {
+  const getCompletion = (set: UnifiedSet) => {
     const owned = getOwnedCount(set);
     if (set.total === 0) return 0;
     return Math.min(100, Math.round((owned / set.total) * 100));
   };
 
-  const getSetValue = (set: PokemonSet) => {
-    // Sum estimated values of items matching this set name
+  const getSetValue = (set: UnifiedSet) => {
     return items
-      .filter((i) => i.set_name === set.name)
+      .filter(i => i.set_name === set.name)
       .reduce((sum, i) => sum + ((i.current_market_price || 0) * i.quantity), 0);
   };
 
-  if (selectedTcg !== 'pokemon') {
+  if (selectedTcg !== 'pokemon' && selectedTcg !== 'onepiece') {
     return (
       <div className="text-center py-16 text-muted-foreground">
-        <p>Set browsing is currently available for Pokémon TCG.</p>
+        <p>Set browsing is currently available for Pokémon TCG and One Piece TCG.</p>
         <p className="text-sm mt-1">Support for other TCGs coming soon.</p>
       </div>
     );
@@ -201,7 +237,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
 
       {/* Set Count */}
       <p className="text-sm font-medium text-foreground">
-        {sets.length} sets found
+        {unifiedSets.length} sets found
       </p>
 
       {/* Series Tabs */}
@@ -234,7 +270,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
 
       {/* Series Groups */}
       {seriesGroups
-        .filter((g) => !activeSeries || g.series === activeSeries)
+        .filter(g => !activeSeries || g.series === activeSeries)
         .map((group) => (
           <div key={group.series} className="space-y-3">
             <h3 className="flex items-center gap-2 text-lg font-bold text-foreground">
@@ -250,62 +286,54 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
                   const value = getSetValue(set);
 
                   return (
-                    <Card
-                      key={set.id}
-                      className="hover:shadow-md transition-shadow cursor-pointer border-border"
-                    >
+                    <Card key={set.id} className="hover:shadow-md transition-shadow cursor-pointer border-border">
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm text-foreground truncate">
-                              {set.name}
-                            </h4>
-                            <span className="text-xs text-muted-foreground">
-                              {set.ptcgoCode || set.id.toUpperCase()}
-                            </span>
+                            <h4 className="font-semibold text-sm text-foreground truncate">{set.name}</h4>
+                            <span className="text-xs text-muted-foreground">{set.code}</span>
                           </div>
                           <div className="text-right ml-2">
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(set.releaseDate).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })}
-                            </p>
-                            {value > 0 && (
-                              <p className="text-sm font-semibold text-primary">
-                                ${value.toLocaleString()}
+                            {set.releaseDate && (
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(set.releaseDate).toLocaleDateString('en-US', {
+                                  month: 'short', day: 'numeric', year: 'numeric',
+                                })}
                               </p>
+                            )}
+                            {value > 0 && (
+                              <p className="text-sm font-semibold text-primary">${value.toLocaleString()}</p>
                             )}
                           </div>
                         </div>
 
                         {/* Set Logo */}
-                        <div className="flex items-center justify-center h-16 mb-3">
-                          <img
-                            src={set.images.logo}
-                            alt={set.name}
-                            className="max-h-full max-w-full object-contain"
-                            loading="lazy"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        </div>
+                        {set.logoUrl ? (
+                          <div className="flex items-center justify-center h-16 mb-3">
+                            <img
+                              src={set.logoUrl}
+                              alt={set.name}
+                              className="max-h-full max-w-full object-contain"
+                              loading="lazy"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center h-16 mb-3 bg-muted/50 rounded-lg">
+                            <span className="text-xs font-bold text-muted-foreground">{set.code}</span>
+                          </div>
+                        )}
 
                         {/* Progress */}
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">
-                              {owned}/{set.total}
-                            </span>
-                            <span className="text-muted-foreground">{completion}%</span>
+                        {set.total > 0 && (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">{owned}/{set.total}</span>
+                              <span className="text-muted-foreground">{completion}%</span>
+                            </div>
+                            <Progress value={completion} className="h-1.5" />
                           </div>
-                          <Progress
-                            value={completion}
-                            className="h-1.5"
-                          />
-                        </div>
+                        )}
 
                         <div className="flex items-center justify-end gap-1 mt-2">
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
@@ -337,62 +365,50 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
                     >
                       {/* Set Symbol */}
                       <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center">
-                        <img
-                          src={set.images.symbol}
-                          alt=""
-                          className="max-w-full max-h-full object-contain"
-                          loading="lazy"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
+                        {set.symbolUrl ? (
+                          <img
+                            src={set.symbolUrl}
+                            alt=""
+                            className="max-w-full max-h-full object-contain"
+                            loading="lazy"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        ) : (
+                          <span className="text-[10px] font-bold text-muted-foreground">{set.code?.slice(0, 4)}</span>
+                        )}
                       </div>
 
                       {/* Name */}
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium text-primary hover:underline cursor-pointer">
-                          {set.name}
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-2">
-                          {set.ptcgoCode || set.id.toUpperCase()}
-                        </span>
+                        <span className="text-sm font-medium text-primary hover:underline cursor-pointer">{set.name}</span>
+                        <span className="text-xs text-muted-foreground ml-2">{set.code}</span>
                       </div>
 
                       {/* Date */}
-                      <div className="w-32 text-sm text-muted-foreground hidden md:block">
-                        {new Date(set.releaseDate).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </div>
+                      {set.releaseDate && (
+                        <div className="w-32 text-sm text-muted-foreground hidden md:block">
+                          {new Date(set.releaseDate).toLocaleDateString('en-US', {
+                            month: 'short', day: 'numeric', year: 'numeric',
+                          })}
+                        </div>
+                      )}
 
                       {/* Value */}
                       <div className="w-20 text-right text-sm">
                         {value > 0 ? (
-                          <span className="font-medium text-primary">
-                            ${value.toLocaleString()}
-                          </span>
+                          <span className="font-medium text-primary">${value.toLocaleString()}</span>
                         ) : (
                           <span className="text-muted-foreground">$—</span>
                         )}
                       </div>
 
                       {/* Progress */}
-                      <div className="w-32 hidden lg:flex items-center gap-2">
-                        {owned > 0 || set.total > 0 ? (
-                          <>
-                            <span className="text-xs font-medium text-foreground w-16 text-right">
-                              {owned}/{set.total}
-                            </span>
-                            <span className="text-xs text-muted-foreground w-10 text-right">
-                              {completion}%
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </div>
+                      {set.total > 0 && (
+                        <div className="w-32 hidden lg:flex items-center gap-2">
+                          <span className="text-xs font-medium text-foreground w-16 text-right">{owned}/{set.total}</span>
+                          <span className="text-xs text-muted-foreground w-10 text-right">{completion}%</span>
+                        </div>
+                      )}
 
                       {/* Actions */}
                       <div className="flex items-center gap-1">
