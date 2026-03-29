@@ -253,7 +253,7 @@ const AddSlabDialog = ({ selectedTcg = 'pokemon' }: AddSlabDialogProps) => {
                 <Select value={grade} onValueChange={setGrade}>
                   <SelectTrigger><SelectValue placeholder="Grade" /></SelectTrigger>
                   <SelectContent>
-                    {GRADES.map(g => (
+                    {(company === 'psa' ? GRADES_WHOLE : GRADES_FULL).map(g => (
                       <SelectItem key={g} value={g}>{g}</SelectItem>
                     ))}
                   </SelectContent>
