@@ -48,10 +48,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "admin_actions_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "public_vendor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "admin_actions_target_user_id_fkey"
             columns: ["target_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_actions_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_vendor_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2240,10 +2254,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "venue_claims_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "public_vendor_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "venue_claims_claimer_id_fkey"
             columns: ["claimer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_claims_claimer_id_fkey"
+            columns: ["claimer_id"]
+            isOneToOne: false
+            referencedRelation: "public_vendor_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -2321,11 +2349,41 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "venues_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "public_vendor_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      public_vendor_profiles: {
+        Row: {
+          avatar_url: string | null
+          full_name: string | null
+          id: string | null
+          location_city: string | null
+          location_state: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          full_name?: string | null
+          id?: string | null
+          location_city?: string | null
+          location_state?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          full_name?: string | null
+          id?: string | null
+          location_city?: string | null
+          location_state?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_role: {
