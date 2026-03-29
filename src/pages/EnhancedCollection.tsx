@@ -27,6 +27,14 @@ import {
   List,
 } from 'lucide-react';
 
+const GRADING_COMPANIES = [
+  { id: 'psa', acronym: 'PSA', full: 'Professional Sports Authenticator', desc: 'The market leader; recognized for highest resale value and strong brand recognition.' },
+  { id: 'bgs', acronym: 'BGS', full: 'Beckett Grading Services', desc: 'Known for detailed subgrades and prestigious "Black Label" 10s for perfect cards.' },
+  { id: 'sgc', acronym: 'SGC', full: 'Sportscard Guaranty Corporation', desc: 'Popular for fast turnaround times, high-quality slabs, and competitive pricing.' },
+  { id: 'cgc', acronym: 'CGC', full: 'Certified Guaranty Company', desc: 'A leader in comic grading that has become highly popular for TCGs like Pokémon.' },
+  { id: 'ags', acronym: 'AGS', full: 'Automated Grading Systems', desc: 'Known for using AI technology for objective, consistent, and fast grading.' },
+];
+
 const EnhancedCollection = () => {
   const { user, loading: authLoading } = useAuth();
   const { collections, items, loading, fetchCollections, fetchItems } = useCollection();
@@ -38,6 +46,13 @@ const EnhancedCollection = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [conditionFilter, setConditionFilter] = useState('all');
+  const [selectedGraders, setSelectedGraders] = useState<string[]>([]);
+
+  const toggleGrader = (id: string) => {
+    setSelectedGraders(prev =>
+      prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]
+    );
+  };
 
   useEffect(() => {
     if (user) {
