@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Header from '@/components/Header';
 import CollectionSubNav from '@/components/collection/CollectionSubNav';
 import CollectionDashboard from '@/components/collection/CollectionDashboard';
@@ -25,6 +27,14 @@ import {
   List,
 } from 'lucide-react';
 
+const GRADING_COMPANIES = [
+  { id: 'psa', acronym: 'PSA', full: 'Professional Sports Authenticator', desc: 'The market leader; recognized for highest resale value and strong brand recognition.' },
+  { id: 'bgs', acronym: 'BGS', full: 'Beckett Grading Services', desc: 'Known for detailed subgrades and prestigious "Black Label" 10s for perfect cards.' },
+  { id: 'sgc', acronym: 'SGC', full: 'Sportscard Guaranty Corporation', desc: 'Popular for fast turnaround times, high-quality slabs, and competitive pricing.' },
+  { id: 'cgc', acronym: 'CGC', full: 'Certified Guaranty Company', desc: 'A leader in comic grading that has become highly popular for TCGs like Pokémon.' },
+  { id: 'ags', acronym: 'AGS', full: 'Automated Grading Systems', desc: 'Known for using AI technology for objective, consistent, and fast grading.' },
+];
+
 const EnhancedCollection = () => {
   const { user, loading: authLoading } = useAuth();
   const { collections, items, loading, fetchCollections, fetchItems } = useCollection();
@@ -36,6 +46,13 @@ const EnhancedCollection = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [conditionFilter, setConditionFilter] = useState('all');
+  const [selectedGraders, setSelectedGraders] = useState<string[]>([]);
+
+  const toggleGrader = (id: string) => {
+    setSelectedGraders(prev =>
+      prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]
+    );
+  };
 
   useEffect(() => {
     if (user) {
@@ -156,11 +173,37 @@ const EnhancedCollection = () => {
               <h2 className="text-xl font-bold text-foreground">Graded Slabs</h2>
             </div>
             <Card>
+              <CardContent className="pt-4 pb-2">
+                <p className="text-sm font-medium text-muted-foreground mb-3">Filter by Grading Company</p>
+                <TooltipProvider>
+                  <div className="flex flex-wrap gap-4">
+                    {GRADING_COMPANIES.map(company => (
+                      <Tooltip key={company.id}>
+                        <TooltipTrigger asChild>
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <Checkbox
+                              checked={selectedGraders.includes(company.id)}
+                              onCheckedChange={() => toggleGrader(company.id)}
+                            />
+                            <span className="text-sm font-medium text-foreground">{company.acronym}</span>
+                          </label>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-xs">
+                          <p className="font-semibold">{company.full}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{company.desc}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </div>
+                </TooltipProvider>
+              </CardContent>
+            </Card>
+            <Card>
               <CardContent className="py-12 text-center">
                 <Package className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
                 <h3 className="text-lg font-medium text-foreground mb-1">No slabs yet</h3>
                 <p className="text-muted-foreground text-sm">
-                  Track your PSA, BGS, CGC, and other graded cards here.
+                  Track your PSA, BGS, CGC, SGC, AGS, and other graded cards here.
                 </p>
               </CardContent>
             </Card>
