@@ -20,7 +20,8 @@ const GRADING_COMPANIES = [
   { id: 'tcg', acronym: 'TCG', full: 'TCG Grading' },
 ];
 
-const GRADES = ['1', '1.5', '2', '2.5', '3', '3.5', '4', '4.5', '5', '5.5', '6', '6.5', '7', '7.5', '8', '8.5', '9', '9.5', '10'];
+const GRADES_FULL = ['1', '1.5', '2', '2.5', '3', '3.5', '4', '4.5', '5', '5.5', '6', '6.5', '7', '7.5', '8', '8.5', '9', '9.5', '10'];
+const GRADES_WHOLE = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
 interface SelectedCard {
   name: string;
@@ -252,7 +253,7 @@ const AddSlabDialog = ({ selectedTcg = 'pokemon' }: AddSlabDialogProps) => {
                 <Select value={grade} onValueChange={setGrade}>
                   <SelectTrigger><SelectValue placeholder="Grade" /></SelectTrigger>
                   <SelectContent>
-                    {GRADES.map(g => (
+                    {(company === 'psa' ? GRADES_WHOLE : GRADES_FULL).map(g => (
                       <SelectItem key={g} value={g}>{g}</SelectItem>
                     ))}
                   </SelectContent>
