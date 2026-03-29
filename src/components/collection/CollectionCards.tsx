@@ -681,25 +681,6 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
                       </div>
                     )}
 
-                    <Separator />
-
-                    <div>
-                      <span className="text-xs text-muted-foreground uppercase tracking-wide">Market Prices</span>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        {opSelectedCard.market_price != null && (
-                          <div className="bg-muted/50 rounded-lg p-2 text-center">
-                            <p className="text-[10px] text-muted-foreground uppercase">Market</p>
-                            <p className="text-sm font-semibold text-primary">${opSelectedCard.market_price.toFixed(2)}</p>
-                          </div>
-                        )}
-                        {opSelectedCard.inventory_price != null && (
-                          <div className="bg-muted/50 rounded-lg p-2 text-center">
-                            <p className="text-[10px] text-muted-foreground uppercase">Inventory</p>
-                            <p className="text-sm font-semibold text-foreground">${opSelectedCard.inventory_price.toFixed(2)}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 </div>
               </ScrollArea>
