@@ -11,6 +11,7 @@ import CollectionSubNav from '@/components/collection/CollectionSubNav';
 import CollectionDashboard from '@/components/collection/CollectionDashboard';
 import CollectionSets from '@/components/collection/CollectionSets';
 import CollectionCards from '@/components/collection/CollectionCards';
+import AddSlabDialog from '@/components/collection/AddSlabDialog';
 import { CreateCollectionDialog } from '@/components/CreateCollectionDialog';
 import { EnhancedAddItemDialog } from '@/components/EnhancedAddItemDialog';
 import { WishlistDialog } from '@/components/WishlistDialog';
