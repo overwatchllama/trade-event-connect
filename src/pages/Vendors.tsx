@@ -448,7 +448,7 @@ const Vendors = () => {
   const filteredVendors = vendors.filter(vendor => {
     const matchesSearch = vendor.business_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vendor.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vendor.profiles?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.business_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vendor.profiles?.location_state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vendor.business_address?.toLowerCase().includes(searchTerm.toLowerCase());
     
