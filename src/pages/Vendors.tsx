@@ -27,8 +27,16 @@ import { Database } from '@/integrations/supabase/types';
 type VendorRow = Database['public']['Tables']['vendors']['Row'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
+interface PublicVendorProfile {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  location_city: string | null;
+  location_state: string | null;
+}
+
 interface VendorProfile extends VendorRow {
-  profiles: Pick<ProfileRow, 'id' | 'full_name' | 'email' | 'avatar_url' | 'role' | 'location_state'>;
+  profiles: PublicVendorProfile & { email?: string; role?: string };
 }
 
 const Vendors = () => {
