@@ -34,6 +34,7 @@ const GRADING_COMPANIES = [
   { id: 'sgc', acronym: 'SGC', full: 'Sportscard Guaranty Corporation', desc: 'Popular for fast turnaround times, high-quality slabs, and competitive pricing.' },
   { id: 'cgc', acronym: 'CGC', full: 'Certified Guaranty Company', desc: 'A leader in comic grading that has become highly popular for TCGs like Pokémon.' },
   { id: 'ags', acronym: 'AGS', full: 'Automated Grading Systems', desc: 'Known for using AI technology for objective, consistent, and fast grading.' },
+  { id: 'tcg', acronym: 'TCG', full: 'TCG Grading', desc: 'A grading service focused on trading card games with competitive pricing and quality slabs.' },
 ];
 
 const EnhancedCollection = () => {
