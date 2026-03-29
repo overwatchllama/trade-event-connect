@@ -265,7 +265,13 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
       </div>
 
       {/* Card grid/list */}
-      {loading ? (
+      {!hasQuery ? (
+        <div className="text-center py-16">
+          <Search className="h-16 w-16 text-muted-foreground/40 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">Select a set or search to browse cards</h3>
+          <p className="text-muted-foreground">Choose a set from the dropdown or type a card name to get started.</p>
+        </div>
+      ) : loading ? (
         <div className="text-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
           <p className="text-muted-foreground mt-4">Loading cards...</p>
