@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { pokemonTcgApi, type PokemonSet } from '@/services/pokemonTcgApi';
 import { optcgApi, type OPTCGSet, type OPTCGStarterDeck } from '@/services/optcgApi';
 import { type CollectionItem } from '@/hooks/useCollection';
+import SetDetailView from './SetDetailView';
 import {
   Search,
   Grid3X3,
@@ -44,6 +45,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
   const [filterMode, setFilterMode] = useState<'all' | 'in_collection' | 'completed'>('all');
   const [sortBy, setSortBy] = useState('releaseDate');
   const [activeSeries, setActiveSeries] = useState<string | null>(null);
+  const [selectedSetDetail, setSelectedSetDetail] = useState<UnifiedSet | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -156,6 +158,20 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
         <p>Set browsing is currently available for Pokémon TCG and One Piece TCG.</p>
         <p className="text-sm mt-1">Support for other TCGs coming soon.</p>
       </div>
+    );
+  }
+
+  if (selectedSetDetail && selectedTcg === 'pokemon') {
+    return (
+      <SetDetailView
+        setId={selectedSetDetail.id}
+        setName={selectedSetDetail.name}
+        setTotal={selectedSetDetail.total}
+        setLogoUrl={selectedSetDetail.logoUrl}
+        setSymbolUrl={selectedSetDetail.symbolUrl}
+        items={items}
+        onBack={() => setSelectedSetDetail(null)}
+      />
     );
   }
 
@@ -286,7 +302,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
                   const value = getSetValue(set);
 
                   return (
-                    <Card key={set.id} className="hover:shadow-md transition-shadow cursor-pointer border-border">
+                    <Card key={set.id} className="hover:shadow-md transition-shadow cursor-pointer border-border" onClick={() => setSelectedSetDetail(set)}>
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1 min-w-0">
@@ -359,6 +375,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
                   return (
                     <div
                       key={set.id}
+                      onClick={() => setSelectedSetDetail(set)}
                       className={`flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer ${
                         idx !== group.sets.length - 1 ? 'border-b border-border' : ''
                       }`}
