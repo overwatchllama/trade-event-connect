@@ -450,7 +450,9 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
+
     </div>
   );
 };
