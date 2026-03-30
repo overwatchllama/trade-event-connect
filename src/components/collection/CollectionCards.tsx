@@ -502,8 +502,16 @@ const CollectionCards = ({ selectedTcg, items = [] }: CollectionCardsProps) => {
         // === ONE PIECE GRID/LIST ===
         viewMode === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {opCards.map((card, idx) => (
-              <Card key={`${card.card_set_id}-${idx}`} className="hover:shadow-lg transition-all cursor-pointer group border-border hover:border-primary/40" onClick={() => setOpSelectedCard(card)}>
+            {opCards
+              .filter(card => {
+                if (collectionFilter === 'in_collection') return isOwned(card.card_name);
+                if (collectionFilter === 'not_in_collection') return !isOwned(card.card_name);
+                return true;
+              })
+              .map((card, idx) => {
+              const owned = isOwned(card.card_name);
+              return (
+              <Card key={`${card.card_set_id}-${idx}`} className={`hover:shadow-lg transition-all cursor-pointer group border-border hover:border-primary/40 ${!owned ? 'opacity-40 grayscale' : ''}`} onClick={() => setOpSelectedCard(card)}>
                 <CardContent className="p-2">
                   <div className="aspect-[2.5/3.5] rounded-lg overflow-hidden mb-2 bg-muted">
                     <img src={card.card_image} alt={card.card_name} className="w-full h-full object-contain group-hover:scale-105 transition-transform" loading="lazy" />
@@ -520,7 +528,8 @@ const CollectionCards = ({ selectedTcg, items = [] }: CollectionCardsProps) => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="space-y-1.5">
