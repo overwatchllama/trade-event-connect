@@ -287,7 +287,15 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
       {/* Series Groups */}
       {seriesGroups
         .filter(g => !activeSeries || g.series === activeSeries)
-        .map((group) => (
+        .map((group) => {
+          const filteredSets = group.sets.filter(set => {
+            const owned = getOwnedCount(set);
+            if (filterMode === 'in_collection') return owned > 0;
+            if (filterMode === 'not_in_collection') return owned === 0;
+            return true;
+          });
+          if (filteredSets.length === 0) return null;
+          return (
           <div key={group.series} className="space-y-3">
             <h3 className="flex items-center gap-2 text-lg font-bold text-foreground">
               <span className="text-primary">◆</span>
@@ -296,7 +304,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
 
             {viewMode === 'images' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {group.sets.map((set) => {
+                {filteredSets.map((set) => {
                   const owned = getOwnedCount(set);
                   const completion = getCompletion(set);
                   const value = getSetValue(set);
