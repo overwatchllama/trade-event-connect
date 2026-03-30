@@ -123,6 +123,7 @@ const SetDetailView = ({ setId, setName, setTotal, setLogoUrl, setSymbolUrl, ite
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [collectionFilter, setCollectionFilter] = useState<'all' | 'in_collection' | 'not_in_collection'>('all');
   const pageSize = 60;
 
   // Card action states
