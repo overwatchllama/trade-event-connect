@@ -45,13 +45,23 @@ const OP_COLORS = ['Red', 'Blue', 'Green', 'Purple', 'Black', 'Yellow'];
 const OP_TYPES = ['Character', 'Event', 'Leader', 'Stage', 'DON!!'];
 const OP_RARITIES = ['C', 'UC', 'R', 'SR', 'L', 'SEC', 'SP', 'P'];
 
-const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
+const CollectionCards = ({ selectedTcg, items = [] }: CollectionCardsProps) => {
   // Shared state
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [collectionFilter, setCollectionFilter] = useState<'all' | 'in_collection' | 'not_in_collection'>('all');
+
+  // Build set of owned card names for filtering/greying
+  const ownedCardNames = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach(item => set.add(item.name.toLowerCase()));
+    return set;
+  }, [items]);
+
+  const isOwned = (cardName: string) => ownedCardNames.has(cardName.toLowerCase());
 
   // Pokemon state
   const [pokemonCards, setPokemonCards] = useState<PokemonCard[]>([]);
