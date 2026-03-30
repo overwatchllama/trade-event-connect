@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { pokemonTcgApi, type PokemonSet } from '@/services/pokemonTcgApi';
 import { optcgApi, type OPTCGSet, type OPTCGStarterDeck } from '@/services/optcgApi';
 import { type CollectionItem } from '@/hooks/useCollection';
+import SetDetailView from './SetDetailView';
 import {
   Search,
   Grid3X3,
