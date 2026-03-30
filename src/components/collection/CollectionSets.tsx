@@ -212,7 +212,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-sm">
-            {(['all', 'in_collection', 'completed'] as const).map((mode) => (
+            {(['all', 'in_collection', 'not_in_collection'] as const).map((mode) => (
               <label key={mode} className="flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="radio"
@@ -221,8 +221,8 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
                   onChange={() => setFilterMode(mode)}
                   className="accent-primary"
                 />
-                <span className="text-foreground capitalize">
-                  {mode === 'in_collection' ? 'In collection' : mode === 'completed' ? 'Completed' : 'All'}
+                <span className="text-foreground whitespace-nowrap">
+                  {mode === 'in_collection' ? 'In collection' : mode === 'not_in_collection' ? 'Not in collection' : 'All'}
                 </span>
               </label>
             ))}
