@@ -124,6 +124,11 @@ const CollectionSealed = ({ selectedTcg }: CollectionSealedProps) => {
                       alt={product.name}
                       className="w-full h-full object-contain p-2"
                       loading="lazy"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).parentElement?.classList.add('fallback-icon');
+                      }}
                     />
                   ) : (
                     <Package className="h-16 w-16 text-muted-foreground/30" />
