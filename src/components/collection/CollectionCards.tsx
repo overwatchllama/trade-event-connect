@@ -23,6 +23,7 @@ import {
 
 interface CollectionCardsProps {
   selectedTcg: string;
+  items?: import('@/hooks/useCollection').CollectionItem[];
 }
 
 // Pokemon constants
