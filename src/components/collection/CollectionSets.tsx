@@ -42,7 +42,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'images' | 'list'>('images');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterMode, setFilterMode] = useState<'all' | 'in_collection' | 'completed'>('all');
+  const [filterMode, setFilterMode] = useState<'all' | 'in_collection' | 'not_in_collection'>('all');
   const [sortBy, setSortBy] = useState('releaseDate');
   const [activeSeries, setActiveSeries] = useState<string | null>(null);
   const [selectedSetDetail, setSelectedSetDetail] = useState<UnifiedSet | null>(null);
