@@ -375,7 +375,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
             ) : (
               /* List View */
               <div className="border border-border rounded-lg overflow-hidden">
-                {group.sets.map((set, idx) => {
+                {filteredSets.map((set, idx) => {
                   const owned = getOwnedCount(set);
                   const completion = getCompletion(set);
                   const value = getSetValue(set);
