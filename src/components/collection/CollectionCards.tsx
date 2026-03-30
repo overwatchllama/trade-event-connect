@@ -437,10 +437,17 @@ const CollectionCards = ({ selectedTcg, items = [] }: CollectionCardsProps) => {
         // === POKEMON GRID/LIST ===
         viewMode === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {pokemonCards.map(card => {
+            {pokemonCards
+              .filter(card => {
+                if (collectionFilter === 'in_collection') return isOwned(card.name);
+                if (collectionFilter === 'not_in_collection') return !isOwned(card.name);
+                return true;
+              })
+              .map(card => {
               const price = getMarketPrice(card);
+              const owned = isOwned(card.name);
               return (
-                <Card key={card.id} className="hover:shadow-lg transition-all cursor-pointer group border-border hover:border-primary/40" onClick={() => setSelectedCard(card)}>
+                <Card key={card.id} className={`hover:shadow-lg transition-all cursor-pointer group border-border hover:border-primary/40 ${!owned ? 'opacity-40 grayscale' : ''}`} onClick={() => setSelectedCard(card)}>
                   <CardContent className="p-2">
                     <div className="aspect-[2.5/3.5] rounded-lg overflow-hidden mb-2 bg-muted">
                       <img src={card.images.small} alt={card.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform" loading="lazy" />
