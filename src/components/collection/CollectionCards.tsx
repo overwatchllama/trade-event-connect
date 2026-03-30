@@ -533,8 +533,16 @@ const CollectionCards = ({ selectedTcg, items = [] }: CollectionCardsProps) => {
           </div>
         ) : (
           <div className="space-y-1.5">
-            {opCards.map((card, idx) => (
-              <Card key={`${card.card_set_id}-${idx}`} className="hover:shadow-sm transition-shadow cursor-pointer border-border hover:border-primary/40" onClick={() => setOpSelectedCard(card)}>
+            {opCards
+              .filter(card => {
+                if (collectionFilter === 'in_collection') return isOwned(card.card_name);
+                if (collectionFilter === 'not_in_collection') return !isOwned(card.card_name);
+                return true;
+              })
+              .map((card, idx) => {
+              const owned = isOwned(card.card_name);
+              return (
+              <Card key={`${card.card_set_id}-${idx}`} className={`hover:shadow-sm transition-shadow cursor-pointer border-border hover:border-primary/40 ${!owned ? 'opacity-40 grayscale' : ''}`} onClick={() => setOpSelectedCard(card)}>
                 <CardContent className="p-3">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-14 rounded overflow-hidden bg-muted flex-shrink-0">
@@ -551,7 +559,8 @@ const CollectionCards = ({ selectedTcg, items = [] }: CollectionCardsProps) => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )
       )}

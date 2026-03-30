@@ -150,7 +150,7 @@ const EnhancedCollection = () => {
 
         {/* Cards Tab */}
         {activeTab === 'cards' && (
-          <CollectionCards selectedTcg={selectedTcg} />
+          <CollectionCards selectedTcg={selectedTcg} items={items} />
         )}
 
         {/* Sealed Tab */}
