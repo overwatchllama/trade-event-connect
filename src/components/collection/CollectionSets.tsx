@@ -161,6 +161,20 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
     );
   }
 
+  if (selectedSetDetail && selectedTcg === 'pokemon') {
+    return (
+      <SetDetailView
+        setId={selectedSetDetail.id}
+        setName={selectedSetDetail.name}
+        setTotal={selectedSetDetail.total}
+        setLogoUrl={selectedSetDetail.logoUrl}
+        setSymbolUrl={selectedSetDetail.symbolUrl}
+        items={items}
+        onBack={() => setSelectedSetDetail(null)}
+      />
+    );
+  }
+
   if (loading) {
     return (
       <div className="text-center py-16">
