@@ -467,10 +467,17 @@ const CollectionCards = ({ selectedTcg, items = [] }: CollectionCardsProps) => {
           </div>
         ) : (
           <div className="space-y-1.5">
-            {pokemonCards.map(card => {
+            {pokemonCards
+              .filter(card => {
+                if (collectionFilter === 'in_collection') return isOwned(card.name);
+                if (collectionFilter === 'not_in_collection') return !isOwned(card.name);
+                return true;
+              })
+              .map(card => {
               const price = getMarketPrice(card);
+              const owned = isOwned(card.name);
               return (
-                <Card key={card.id} className="hover:shadow-sm transition-shadow cursor-pointer border-border hover:border-primary/40" onClick={() => setSelectedCard(card)}>
+                <Card key={card.id} className={`hover:shadow-sm transition-shadow cursor-pointer border-border hover:border-primary/40 ${!owned ? 'opacity-40 grayscale' : ''}`} onClick={() => setSelectedCard(card)}>
                   <CardContent className="p-3">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-14 rounded overflow-hidden bg-muted flex-shrink-0">
