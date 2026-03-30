@@ -281,7 +281,7 @@ const SetDetailView = ({ setId, setName, setTotal, setLogoUrl, setSymbolUrl, ite
             const owned = ownedMap.get(card.name) || 0;
 
             return (
-              <div key={card.id} className="space-y-1">
+              <div key={card.id} className={`space-y-1 ${owned === 0 ? 'opacity-40 grayscale' : ''}`}>
                 <Card className="hover:shadow-lg transition-all group border-border hover:border-primary/40 overflow-hidden">
                   <CardContent className="p-2">
                     <div className="aspect-[2.5/3.5] rounded-lg overflow-hidden mb-1.5 bg-muted relative">
