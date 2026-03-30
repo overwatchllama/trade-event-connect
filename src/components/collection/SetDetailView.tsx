@@ -203,7 +203,12 @@ const SetDetailView = ({ setId, setName, setTotal, setLogoUrl, setSymbolUrl, ite
     }
   };
 
-  const filteredCards = cards;
+  const filteredCards = cards.filter(card => {
+    const owned = ownedMap.has(card.name);
+    if (collectionFilter === 'in_collection') return owned;
+    if (collectionFilter === 'not_in_collection') return !owned;
+    return true;
+  });
 
   return (
     <div className="space-y-4">
