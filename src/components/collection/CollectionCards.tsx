@@ -325,6 +325,23 @@ const CollectionCards = ({ selectedTcg, items = [] }: CollectionCardsProps) => {
             )}
           </div>
           <div className="flex items-center gap-3">
+            {/* Collection filter radios */}
+            <div className="flex items-center gap-2 text-sm">
+              {(['all', 'in_collection', 'not_in_collection'] as const).map((mode) => (
+                <label key={mode} className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="cardCollectionFilter"
+                    checked={collectionFilter === mode}
+                    onChange={() => setCollectionFilter(mode)}
+                    className="accent-primary"
+                  />
+                  <span className="text-foreground whitespace-nowrap">
+                    {mode === 'in_collection' ? 'In collection' : mode === 'not_in_collection' ? 'Not in collection' : 'All'}
+                  </span>
+                </label>
+              ))}
+            </div>
             <span className="text-sm text-muted-foreground">
               {selectedTcg === 'pokemon'
                 ? `${pokemonTotalCount.toLocaleString()} cards`
