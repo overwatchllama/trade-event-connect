@@ -42,7 +42,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'images' | 'list'>('images');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterMode, setFilterMode] = useState<'all' | 'in_collection' | 'completed'>('all');
+  const [filterMode, setFilterMode] = useState<'all' | 'in_collection' | 'not_in_collection'>('all');
   const [sortBy, setSortBy] = useState('releaseDate');
   const [activeSeries, setActiveSeries] = useState<string | null>(null);
   const [selectedSetDetail, setSelectedSetDetail] = useState<UnifiedSet | null>(null);
@@ -212,7 +212,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-sm">
-            {(['all', 'in_collection', 'completed'] as const).map((mode) => (
+            {(['all', 'in_collection', 'not_in_collection'] as const).map((mode) => (
               <label key={mode} className="flex items-center gap-1.5 cursor-pointer">
                 <input
                   type="radio"
@@ -221,8 +221,8 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
                   onChange={() => setFilterMode(mode)}
                   className="accent-primary"
                 />
-                <span className="text-foreground capitalize">
-                  {mode === 'in_collection' ? 'In collection' : mode === 'completed' ? 'Completed' : 'All'}
+                <span className="text-foreground whitespace-nowrap">
+                  {mode === 'in_collection' ? 'In collection' : mode === 'not_in_collection' ? 'Not in collection' : 'All'}
                 </span>
               </label>
             ))}
@@ -287,7 +287,15 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
       {/* Series Groups */}
       {seriesGroups
         .filter(g => !activeSeries || g.series === activeSeries)
-        .map((group) => (
+        .map((group) => {
+          const filteredSets = group.sets.filter(set => {
+            const owned = getOwnedCount(set);
+            if (filterMode === 'in_collection') return owned > 0;
+            if (filterMode === 'not_in_collection') return owned === 0;
+            return true;
+          });
+          if (filteredSets.length === 0) return null;
+          return (
           <div key={group.series} className="space-y-3">
             <h3 className="flex items-center gap-2 text-lg font-bold text-foreground">
               <span className="text-primary">◆</span>
@@ -296,13 +304,13 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
 
             {viewMode === 'images' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {group.sets.map((set) => {
+                {filteredSets.map((set) => {
                   const owned = getOwnedCount(set);
                   const completion = getCompletion(set);
                   const value = getSetValue(set);
 
                   return (
-                    <Card key={set.id} className="hover:shadow-md transition-shadow cursor-pointer border-border" onClick={() => setSelectedSetDetail(set)}>
+                    <Card key={set.id} className={`hover:shadow-md transition-shadow cursor-pointer border-border ${owned === 0 ? 'opacity-40 grayscale' : ''}`} onClick={() => setSelectedSetDetail(set)}>
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1 min-w-0">
@@ -367,7 +375,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
             ) : (
               /* List View */
               <div className="border border-border rounded-lg overflow-hidden">
-                {group.sets.map((set, idx) => {
+                {filteredSets.map((set, idx) => {
                   const owned = getOwnedCount(set);
                   const completion = getCompletion(set);
                   const value = getSetValue(set);
@@ -376,8 +384,8 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
                     <div
                       key={set.id}
                       onClick={() => setSelectedSetDetail(set)}
-                      className={`flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer ${
-                        idx !== group.sets.length - 1 ? 'border-b border-border' : ''
+                      className={`flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer ${owned === 0 ? 'opacity-40 grayscale' : ''} ${
+                        idx !== filteredSets.length - 1 ? 'border-b border-border' : ''
                       }`}
                     >
                       {/* Set Symbol */}
@@ -442,7 +450,9 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
+
     </div>
   );
 };

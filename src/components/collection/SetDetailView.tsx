@@ -123,6 +123,7 @@ const SetDetailView = ({ setId, setName, setTotal, setLogoUrl, setSymbolUrl, ite
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [collectionFilter, setCollectionFilter] = useState<'all' | 'in_collection' | 'not_in_collection'>('all');
   const pageSize = 60;
 
   // Card action states
@@ -202,7 +203,12 @@ const SetDetailView = ({ setId, setName, setTotal, setLogoUrl, setSymbolUrl, ite
     }
   };
 
-  const filteredCards = cards;
+  const filteredCards = cards.filter(card => {
+    const owned = ownedMap.has(card.name);
+    if (collectionFilter === 'in_collection') return owned;
+    if (collectionFilter === 'not_in_collection') return !owned;
+    return true;
+  });
 
   return (
     <div className="space-y-4">
@@ -235,6 +241,23 @@ const SetDetailView = ({ setId, setName, setTotal, setLogoUrl, setSymbolUrl, ite
               <List className="h-3.5 w-3.5" /> List
             </Button>
           </div>
+          {/* Collection filter radios */}
+          <div className="flex items-center gap-2 text-sm ml-2">
+            {(['all', 'in_collection', 'not_in_collection'] as const).map((mode) => (
+              <label key={mode} className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  name="setDetailCollectionFilter"
+                  checked={collectionFilter === mode}
+                  onChange={() => setCollectionFilter(mode)}
+                  className="accent-primary"
+                />
+                <span className="text-foreground whitespace-nowrap">
+                  {mode === 'in_collection' ? 'In collection' : mode === 'not_in_collection' ? 'Not in collection' : 'All'}
+                </span>
+              </label>
+            ))}
+          </div>
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -258,7 +281,7 @@ const SetDetailView = ({ setId, setName, setTotal, setLogoUrl, setSymbolUrl, ite
             const owned = ownedMap.get(card.name) || 0;
 
             return (
-              <div key={card.id} className="space-y-1">
+              <div key={card.id} className={`space-y-1 ${owned === 0 ? 'opacity-40 grayscale' : ''}`}>
                 <Card className="hover:shadow-lg transition-all group border-border hover:border-primary/40 overflow-hidden">
                   <CardContent className="p-2">
                     <div className="aspect-[2.5/3.5] rounded-lg overflow-hidden mb-1.5 bg-muted relative">
@@ -348,7 +371,7 @@ const SetDetailView = ({ setId, setName, setTotal, setLogoUrl, setSymbolUrl, ite
             const owned = ownedMap.get(card.name) || 0;
 
             return (
-              <div key={card.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 transition-colors">
+              <div key={card.id} className={`flex items-center gap-3 px-3 py-2 hover:bg-muted/50 transition-colors ${owned === 0 ? 'opacity-40 grayscale' : ''}`}>
                 <div className="w-8 h-11 rounded overflow-hidden bg-muted flex-shrink-0">
                   <img src={card.images.small} alt={card.name} className="w-full h-full object-contain" loading="lazy" />
                 </div>

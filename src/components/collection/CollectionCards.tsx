@@ -23,6 +23,7 @@ import {
 
 interface CollectionCardsProps {
   selectedTcg: string;
+  items?: import('@/hooks/useCollection').CollectionItem[];
 }
 
 // Pokemon constants
@@ -44,13 +45,23 @@ const OP_COLORS = ['Red', 'Blue', 'Green', 'Purple', 'Black', 'Yellow'];
 const OP_TYPES = ['Character', 'Event', 'Leader', 'Stage', 'DON!!'];
 const OP_RARITIES = ['C', 'UC', 'R', 'SR', 'L', 'SEC', 'SP', 'P'];
 
-const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
+const CollectionCards = ({ selectedTcg, items = [] }: CollectionCardsProps) => {
   // Shared state
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [collectionFilter, setCollectionFilter] = useState<'all' | 'in_collection' | 'not_in_collection'>('all');
+
+  // Build set of owned card names for filtering/greying
+  const ownedCardNames = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach(item => set.add(item.name.toLowerCase()));
+    return set;
+  }, [items]);
+
+  const isOwned = (cardName: string) => ownedCardNames.has(cardName.toLowerCase());
 
   // Pokemon state
   const [pokemonCards, setPokemonCards] = useState<PokemonCard[]>([]);
@@ -314,6 +325,23 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
             )}
           </div>
           <div className="flex items-center gap-3">
+            {/* Collection filter radios */}
+            <div className="flex items-center gap-2 text-sm">
+              {(['all', 'in_collection', 'not_in_collection'] as const).map((mode) => (
+                <label key={mode} className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="cardCollectionFilter"
+                    checked={collectionFilter === mode}
+                    onChange={() => setCollectionFilter(mode)}
+                    className="accent-primary"
+                  />
+                  <span className="text-foreground whitespace-nowrap">
+                    {mode === 'in_collection' ? 'In collection' : mode === 'not_in_collection' ? 'Not in collection' : 'All'}
+                  </span>
+                </label>
+              ))}
+            </div>
             <span className="text-sm text-muted-foreground">
               {selectedTcg === 'pokemon'
                 ? `${pokemonTotalCount.toLocaleString()} cards`
@@ -409,10 +437,17 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
         // === POKEMON GRID/LIST ===
         viewMode === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {pokemonCards.map(card => {
+            {pokemonCards
+              .filter(card => {
+                if (collectionFilter === 'in_collection') return isOwned(card.name);
+                if (collectionFilter === 'not_in_collection') return !isOwned(card.name);
+                return true;
+              })
+              .map(card => {
               const price = getMarketPrice(card);
+              const owned = isOwned(card.name);
               return (
-                <Card key={card.id} className="hover:shadow-lg transition-all cursor-pointer group border-border hover:border-primary/40" onClick={() => setSelectedCard(card)}>
+                <Card key={card.id} className={`hover:shadow-lg transition-all cursor-pointer group border-border hover:border-primary/40 ${!owned ? 'opacity-40 grayscale' : ''}`} onClick={() => setSelectedCard(card)}>
                   <CardContent className="p-2">
                     <div className="aspect-[2.5/3.5] rounded-lg overflow-hidden mb-2 bg-muted">
                       <img src={card.images.small} alt={card.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform" loading="lazy" />
@@ -432,10 +467,17 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
           </div>
         ) : (
           <div className="space-y-1.5">
-            {pokemonCards.map(card => {
+            {pokemonCards
+              .filter(card => {
+                if (collectionFilter === 'in_collection') return isOwned(card.name);
+                if (collectionFilter === 'not_in_collection') return !isOwned(card.name);
+                return true;
+              })
+              .map(card => {
               const price = getMarketPrice(card);
+              const owned = isOwned(card.name);
               return (
-                <Card key={card.id} className="hover:shadow-sm transition-shadow cursor-pointer border-border hover:border-primary/40" onClick={() => setSelectedCard(card)}>
+                <Card key={card.id} className={`hover:shadow-sm transition-shadow cursor-pointer border-border hover:border-primary/40 ${!owned ? 'opacity-40 grayscale' : ''}`} onClick={() => setSelectedCard(card)}>
                   <CardContent className="p-3">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-14 rounded overflow-hidden bg-muted flex-shrink-0">
@@ -460,8 +502,16 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
         // === ONE PIECE GRID/LIST ===
         viewMode === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-            {opCards.map((card, idx) => (
-              <Card key={`${card.card_set_id}-${idx}`} className="hover:shadow-lg transition-all cursor-pointer group border-border hover:border-primary/40" onClick={() => setOpSelectedCard(card)}>
+            {opCards
+              .filter(card => {
+                if (collectionFilter === 'in_collection') return isOwned(card.card_name);
+                if (collectionFilter === 'not_in_collection') return !isOwned(card.card_name);
+                return true;
+              })
+              .map((card, idx) => {
+              const owned = isOwned(card.card_name);
+              return (
+              <Card key={`${card.card_set_id}-${idx}`} className={`hover:shadow-lg transition-all cursor-pointer group border-border hover:border-primary/40 ${!owned ? 'opacity-40 grayscale' : ''}`} onClick={() => setOpSelectedCard(card)}>
                 <CardContent className="p-2">
                   <div className="aspect-[2.5/3.5] rounded-lg overflow-hidden mb-2 bg-muted">
                     <img src={card.card_image} alt={card.card_name} className="w-full h-full object-contain group-hover:scale-105 transition-transform" loading="lazy" />
@@ -478,12 +528,21 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="space-y-1.5">
-            {opCards.map((card, idx) => (
-              <Card key={`${card.card_set_id}-${idx}`} className="hover:shadow-sm transition-shadow cursor-pointer border-border hover:border-primary/40" onClick={() => setOpSelectedCard(card)}>
+            {opCards
+              .filter(card => {
+                if (collectionFilter === 'in_collection') return isOwned(card.card_name);
+                if (collectionFilter === 'not_in_collection') return !isOwned(card.card_name);
+                return true;
+              })
+              .map((card, idx) => {
+              const owned = isOwned(card.card_name);
+              return (
+              <Card key={`${card.card_set_id}-${idx}`} className={`hover:shadow-sm transition-shadow cursor-pointer border-border hover:border-primary/40 ${!owned ? 'opacity-40 grayscale' : ''}`} onClick={() => setOpSelectedCard(card)}>
                 <CardContent className="p-3">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-14 rounded overflow-hidden bg-muted flex-shrink-0">
@@ -500,7 +559,8 @@ const CollectionCards = ({ selectedTcg }: CollectionCardsProps) => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )
       )}
