@@ -371,7 +371,7 @@ const SetDetailView = ({ setId, setName, setTotal, setLogoUrl, setSymbolUrl, ite
             const owned = ownedMap.get(card.name) || 0;
 
             return (
-              <div key={card.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 transition-colors">
+              <div key={card.id} className={`flex items-center gap-3 px-3 py-2 hover:bg-muted/50 transition-colors ${owned === 0 ? 'opacity-40 grayscale' : ''}`}>
                 <div className="w-8 h-11 rounded overflow-hidden bg-muted flex-shrink-0">
                   <img src={card.images.small} alt={card.name} className="w-full h-full object-contain" loading="lazy" />
                 </div>
