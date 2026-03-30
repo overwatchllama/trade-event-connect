@@ -302,7 +302,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
                   const value = getSetValue(set);
 
                   return (
-                    <Card key={set.id} className="hover:shadow-md transition-shadow cursor-pointer border-border">
+                    <Card key={set.id} className="hover:shadow-md transition-shadow cursor-pointer border-border" onClick={() => setSelectedSetDetail(set)}>
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1 min-w-0">
