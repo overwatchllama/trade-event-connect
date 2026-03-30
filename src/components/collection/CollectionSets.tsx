@@ -375,6 +375,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
                   return (
                     <div
                       key={set.id}
+                      onClick={() => setSelectedSetDetail(set)}
                       className={`flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer ${
                         idx !== group.sets.length - 1 ? 'border-b border-border' : ''
                       }`}
