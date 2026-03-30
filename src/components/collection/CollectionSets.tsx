@@ -45,6 +45,7 @@ const CollectionSets = ({ items, selectedTcg }: CollectionSetsProps) => {
   const [filterMode, setFilterMode] = useState<'all' | 'in_collection' | 'completed'>('all');
   const [sortBy, setSortBy] = useState('releaseDate');
   const [activeSeries, setActiveSeries] = useState<string | null>(null);
+  const [selectedSetDetail, setSelectedSetDetail] = useState<UnifiedSet | null>(null);
 
   useEffect(() => {
     setLoading(true);
