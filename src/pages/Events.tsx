@@ -737,20 +737,20 @@ const Events = () => {
           </div>
 
           {/* Search and Filters */}
-          <div className="space-y-4 mb-6">
+          <div className="space-y-3 md:space-y-4 mb-4 md:mb-6">
             {/* Main Search Bar */}
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Search className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 w-4 md:w-5 h-4 md:h-5 text-muted-foreground" />
               <Input
                 placeholder="Search for Events"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-12 text-lg"
+                className="pl-10 md:pl-12 h-10 md:h-12 text-sm md:text-lg"
               />
             </div>
 
             {/* Quick Filters and View Toggle */}
-            <div className="flex flex-wrap gap-2 items-center justify-between">
+            <div className="flex flex-col gap-2 md:gap-2 md:flex-row md:flex-wrap md:items-center md:justify-between">
               <div className="flex flex-wrap gap-2">
                 {/* Upcoming/Past Tabs */}
                 <div className="flex gap-1 border rounded-md p-1">
