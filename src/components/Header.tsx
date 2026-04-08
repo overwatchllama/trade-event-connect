@@ -231,10 +231,10 @@ const Header = () => {
             </>
             ) : (
               <>
-                <Button variant="outline" size="sm" onClick={() => navigate('/auth')}>
+                <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => navigate('/auth')}>
                   Sign In
                 </Button>
-                <Button variant="hero" size="sm" onClick={() => navigate('/auth')}>
+                <Button variant="hero" size="sm" className="text-xs md:text-sm hidden sm:inline-flex" onClick={() => navigate('/auth')}>
                   Get Started
                 </Button>
               </>
