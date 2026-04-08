@@ -805,7 +805,7 @@ const Events = () => {
                   </SelectContent>
                 </Select>
 
-                <div className="w-48">
+                <div className="w-full sm:w-48">
                   <MultiSelect
                     options={stateOptions}
                     selected={selectedStates}
@@ -815,7 +815,7 @@ const Events = () => {
                   />
                 </div>
 
-                <div className="w-48">
+                <div className="w-full sm:w-48">
                   <MultiSelect
                     options={cardTypeOptions}
                     selected={selectedCardTypes}
@@ -831,11 +831,11 @@ const Events = () => {
                   placeholder="Min Tables"
                   value={minTables}
                   onChange={(e) => setMinTables(e.target.value)}
-                  className="w-28 h-9"
+                  className="w-full sm:w-28 h-9"
                 />
 
                 <Select value={sortBy} onValueChange={(value: "date" | "location" | "popularity" | "distance") => setSortBy(value)}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue placeholder="Sort By" />
                   </SelectTrigger>
                   <SelectContent>
