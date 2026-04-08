@@ -146,4 +146,10 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  .hover-scale {
+    @apply transition-transform duration-200;
+  }
+  .hover-scale:hover {
+    @apply scale-105;
+  }
 }
