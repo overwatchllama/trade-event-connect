@@ -753,7 +753,7 @@ const Events = () => {
             <div className="flex flex-col gap-2 md:gap-2 md:flex-row md:flex-wrap md:items-center md:justify-between">
               <div className="flex flex-wrap gap-2">
                 {/* Upcoming/Past Tabs */}
-                <div className="flex gap-1 border rounded-md p-1">
+                <div className="flex gap-1 border rounded-md p-1 overflow-x-auto scrollbar-hide">
                   <Button
                     variant={eventTimeFilter === "upcoming" && !thisWeekOnly && !thisMonthOnly && !dateRange.from && !dateRange.to ? "default" : "ghost"}
                     size="sm"
