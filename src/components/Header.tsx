@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import CartIcon from "@/components/CartIcon";
+import MobileNav from "@/components/MobileNav";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -62,12 +63,15 @@ const Header = () => {
 
   return (
     <header className="bg-background border-b border-border sticky top-0 z-50 backdrop-blur-sm">
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-3 md:px-4 py-3 md:py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
-            <img src={logo} alt="Collector Companion" className="w-10 h-10 rounded-lg" width={40} height={40} decoding="async" />
-            <span className="text-xl font-bold text-foreground">Collector Companion</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <MobileNav />
+            <Link to="/" className="flex items-center space-x-2">
+              <img src={logo} alt="Collector Companion" className="w-8 h-8 md:w-10 md:h-10 rounded-lg" width={40} height={40} decoding="async" />
+              <span className="text-base md:text-xl font-bold text-foreground hidden sm:inline">Collector Companion</span>
+            </Link>
+          </div>
 
           <nav className="hidden md:flex items-center space-x-8">
             {isOrganizer && (
@@ -126,7 +130,7 @@ const Header = () => {
             </Link>
           </nav>
 
-          <div className="flex items-center space-x-4 min-h-[40px]">
+          <div className="flex items-center space-x-2 md:space-x-4 min-h-[40px]">
             <CartIcon />
             {loading ? (
               <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
@@ -227,10 +231,10 @@ const Header = () => {
             </>
             ) : (
               <>
-                <Button variant="outline" size="sm" onClick={() => navigate('/auth')}>
+                <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={() => navigate('/auth')}>
                   Sign In
                 </Button>
-                <Button variant="hero" size="sm" onClick={() => navigate('/auth')}>
+                <Button variant="hero" size="sm" className="text-xs md:text-sm hidden sm:inline-flex" onClick={() => navigate('/auth')}>
                   Get Started
                 </Button>
               </>

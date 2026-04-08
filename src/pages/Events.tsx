@@ -675,22 +675,23 @@ const Events = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <div className="flex justify-between items-start mb-4">
+      <div className="container mx-auto px-3 md:px-4 py-4 md:py-8">
+        <div className="mb-6 md:mb-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+              <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-1 md:mb-2">
                 Events
               </h1>
-              <p className="text-lg text-muted-foreground">
-                Find Pokemon, MTG, sports cards, and other trading card events near you.
+              <p className="text-sm md:text-lg text-muted-foreground">
+                Find trading card events near you.
               </p>
             </div>
-            <div className="flex flex-col gap-2 items-end">
+            <div className="flex flex-wrap gap-2">
               {canCreateEvents && (
                 <Button
                   onClick={() => setShowCreateEvent(true)}
                   variant="default"
+                  size="sm"
                   className="gap-2"
                 >
                   <Plus className="w-4 h-4" />
@@ -705,7 +706,7 @@ const Events = () => {
                   onClick={() => setShowMyEventsOnly(!showMyEventsOnly)}
                 >
                   <Settings className="w-4 h-4" />
-                  {showMyEventsOnly ? "Show All Events" : "Manage Events"}
+                  {showMyEventsOnly ? "All Events" : "Manage"}
                 </Button>
               )}
               {isVendor && (
@@ -716,7 +717,8 @@ const Events = () => {
                   onClick={() => setShowApplicationsDialog(true)}
                 >
                   <ClipboardList className="w-4 h-4" />
-                  My Applications
+                  <span className="hidden sm:inline">My Applications</span>
+                  <span className="sm:hidden">Apps</span>
                 </Button>
               )}
               {isVenue && (
@@ -727,30 +729,31 @@ const Events = () => {
                   onClick={() => setShowVenueApplicationsDialog(true)}
                 >
                   <ClipboardList className="w-4 h-4" />
-                  Venue Applications
+                  <span className="hidden sm:inline">Venue Applications</span>
+                  <span className="sm:hidden">Venue Apps</span>
                 </Button>
               )}
             </div>
           </div>
 
           {/* Search and Filters */}
-          <div className="space-y-4 mb-6">
+          <div className="space-y-3 md:space-y-4 mb-4 md:mb-6">
             {/* Main Search Bar */}
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Search className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 w-4 md:w-5 h-4 md:h-5 text-muted-foreground" />
               <Input
                 placeholder="Search for Events"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-12 text-lg"
+                className="pl-10 md:pl-12 h-10 md:h-12 text-sm md:text-lg"
               />
             </div>
 
             {/* Quick Filters and View Toggle */}
-            <div className="flex flex-wrap gap-2 items-center justify-between">
+            <div className="flex flex-col gap-2 md:gap-2 md:flex-row md:flex-wrap md:items-center md:justify-between">
               <div className="flex flex-wrap gap-2">
                 {/* Upcoming/Past Tabs */}
-                <div className="flex gap-1 border rounded-md p-1">
+                <div className="flex gap-1 border rounded-md p-1 overflow-x-auto scrollbar-hide">
                   <Button
                     variant={eventTimeFilter === "upcoming" && !thisWeekOnly && !thisMonthOnly && !dateRange.from && !dateRange.to ? "default" : "ghost"}
                     size="sm"
@@ -802,7 +805,7 @@ const Events = () => {
                   </SelectContent>
                 </Select>
 
-                <div className="w-48">
+                <div className="w-full sm:w-48">
                   <MultiSelect
                     options={stateOptions}
                     selected={selectedStates}
@@ -812,7 +815,7 @@ const Events = () => {
                   />
                 </div>
 
-                <div className="w-48">
+                <div className="w-full sm:w-48">
                   <MultiSelect
                     options={cardTypeOptions}
                     selected={selectedCardTypes}
@@ -828,11 +831,11 @@ const Events = () => {
                   placeholder="Min Tables"
                   value={minTables}
                   onChange={(e) => setMinTables(e.target.value)}
-                  className="w-28 h-9"
+                  className="w-full sm:w-28 h-9"
                 />
 
                 <Select value={sortBy} onValueChange={(value: "date" | "location" | "popularity" | "distance") => setSortBy(value)}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full sm:w-40">
                     <SelectValue placeholder="Sort By" />
                   </SelectTrigger>
                   <SelectContent>
