@@ -675,22 +675,23 @@ const Events = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <div className="flex justify-between items-start mb-4">
+      <div className="container mx-auto px-3 md:px-4 py-4 md:py-8">
+        <div className="mb-6 md:mb-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+              <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-1 md:mb-2">
                 Events
               </h1>
-              <p className="text-lg text-muted-foreground">
-                Find Pokemon, MTG, sports cards, and other trading card events near you.
+              <p className="text-sm md:text-lg text-muted-foreground">
+                Find trading card events near you.
               </p>
             </div>
-            <div className="flex flex-col gap-2 items-end">
+            <div className="flex flex-wrap gap-2">
               {canCreateEvents && (
                 <Button
                   onClick={() => setShowCreateEvent(true)}
                   variant="default"
+                  size="sm"
                   className="gap-2"
                 >
                   <Plus className="w-4 h-4" />
@@ -705,7 +706,7 @@ const Events = () => {
                   onClick={() => setShowMyEventsOnly(!showMyEventsOnly)}
                 >
                   <Settings className="w-4 h-4" />
-                  {showMyEventsOnly ? "Show All Events" : "Manage Events"}
+                  {showMyEventsOnly ? "All Events" : "Manage"}
                 </Button>
               )}
               {isVendor && (
@@ -716,7 +717,8 @@ const Events = () => {
                   onClick={() => setShowApplicationsDialog(true)}
                 >
                   <ClipboardList className="w-4 h-4" />
-                  My Applications
+                  <span className="hidden sm:inline">My Applications</span>
+                  <span className="sm:hidden">Apps</span>
                 </Button>
               )}
               {isVenue && (
@@ -727,7 +729,8 @@ const Events = () => {
                   onClick={() => setShowVenueApplicationsDialog(true)}
                 >
                   <ClipboardList className="w-4 h-4" />
-                  Venue Applications
+                  <span className="hidden sm:inline">Venue Applications</span>
+                  <span className="sm:hidden">Venue Apps</span>
                 </Button>
               )}
             </div>
