@@ -130,7 +130,7 @@ const Header = () => {
             </Link>
           </nav>
 
-          <div className="flex items-center space-x-4 min-h-[40px]">
+          <div className="flex items-center space-x-2 md:space-x-4 min-h-[40px]">
             <CartIcon />
             {loading ? (
               <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />

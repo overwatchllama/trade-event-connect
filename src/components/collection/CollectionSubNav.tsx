@@ -29,15 +29,16 @@ const CollectionSubNav = ({
   ];
 
   return (
-    <div className="bg-card border-b border-border sticky top-16 z-30">
-      <div className="container mx-auto px-4 max-w-7xl">
-        <div className="flex items-center justify-between h-12">
-          <div className="flex items-center gap-1">
+    <div className="bg-card border-b border-border sticky top-14 md:top-16 z-30">
+      <div className="container mx-auto px-3 md:px-4 max-w-7xl">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 py-2 md:py-0 md:h-12">
+          {/* Tabs - horizontally scrollable on mobile */}
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide -mx-1 px-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -48,9 +49,10 @@ const CollectionSubNav = ({
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Controls */}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             <Select value={selectedTcg} onValueChange={onTcgChange}>
-              <SelectTrigger className="w-44 h-8 text-sm">
+              <SelectTrigger className="w-32 md:w-44 h-8 text-xs md:text-sm flex-shrink-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -64,7 +66,7 @@ const CollectionSubNav = ({
             </Select>
 
             <Select value={selectedLanguage} onValueChange={onLanguageChange}>
-              <SelectTrigger className="w-36 h-8 text-sm">
+              <SelectTrigger className="w-28 md:w-36 h-8 text-xs md:text-sm flex-shrink-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -87,9 +89,10 @@ const CollectionSubNav = ({
               </SelectContent>
             </Select>
 
-            <Button variant="outline" size="sm" className="h-8">
+            <Button variant="outline" size="sm" className="h-8 text-xs md:text-sm flex-shrink-0">
               <Share2 className="h-3.5 w-3.5 mr-1.5" />
-              Share my collection
+              <span className="hidden sm:inline">Share my collection</span>
+              <span className="sm:hidden">Share</span>
             </Button>
           </div>
         </div>
