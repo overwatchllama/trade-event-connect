@@ -63,12 +63,15 @@ const Header = () => {
 
   return (
     <header className="bg-background border-b border-border sticky top-0 z-50 backdrop-blur-sm">
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-3 md:px-4 py-3 md:py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
-            <img src={logo} alt="Collector Companion" className="w-10 h-10 rounded-lg" width={40} height={40} decoding="async" />
-            <span className="text-xl font-bold text-foreground">Collector Companion</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <MobileNav />
+            <Link to="/" className="flex items-center space-x-2">
+              <img src={logo} alt="Collector Companion" className="w-8 h-8 md:w-10 md:h-10 rounded-lg" width={40} height={40} decoding="async" />
+              <span className="text-base md:text-xl font-bold text-foreground hidden sm:inline">Collector Companion</span>
+            </Link>
+          </div>
 
           <nav className="hidden md:flex items-center space-x-8">
             {isOrganizer && (
