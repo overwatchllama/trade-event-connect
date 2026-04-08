@@ -111,21 +111,21 @@ const Index = () => {
       <Hero />
 
       {/* Featured Events Section */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+      <section className="py-10 md:py-20 bg-background">
+        <div className="container mx-auto px-3 md:px-4">
+          <div className="text-center mb-6 md:mb-8">
+            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-2 md:mb-4">
               Popular Events
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto">
               Discover trending trading card events happening near you.
             </p>
           </div>
 
           {loading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-[340px] bg-muted rounded-lg animate-pulse" />
+                <div key={i} className="h-[300px] md:h-[340px] bg-muted rounded-lg animate-pulse" />
               ))}
             </div>
           ) : popularEvents.length === 0 ? (
@@ -159,7 +159,7 @@ const Index = () => {
                   No events found in {selectedState}.
                 </div>
               ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   {filteredEvents.map((event) => (
                     <SimplifiedEventCard key={event.id} event={event} />
                   ))}
@@ -173,20 +173,20 @@ const Index = () => {
       
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-primary text-primary-foreground">
+      <section className="py-10 md:py-20 bg-gradient-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-2xl md:text-4xl font-bold mb-3 md:mb-4">
             Ready to Get Started?
           </h2>
-          <p className="text-xl opacity-90 max-w-2xl mx-auto mb-8">
+          <p className="text-base md:text-xl opacity-90 max-w-2xl mx-auto mb-6 md:mb-8">
             Join thousands of collectors, vendors, and organizers in the ultimate 
             trading card marketplace.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="secondary" size="lg" className="text-lg px-8" onClick={() => navigate('/auth')}>
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
+            <Button variant="secondary" size="lg" className="text-base md:text-lg px-6 md:px-8" onClick={() => navigate('/auth')}>
               Sign Up Free
             </Button>
-            <Button variant="secondary" size="lg" className="text-lg px-8" onClick={() => navigate('/events')}>
+            <Button variant="secondary" size="lg" className="text-base md:text-lg px-6 md:px-8" onClick={() => navigate('/events')}>
               Browse Events
             </Button>
           </div>
