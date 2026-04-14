@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -14,6 +16,25 @@ interface ScrapedEvent {
   description: string | null;
   address: string | null;
   entry_fee: number | null;
+}
+
+// Allowlisted domains for scraping
+const ALLOWED_DOMAINS = [
+  'ontreasure.com',
+  'www.ontreasure.com',
+];
+
+function isAllowedUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    // Block non-HTTP(S) schemes
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    // Check against allowlist
+    const hostname = parsed.hostname.toLowerCase();
+    return ALLOWED_DOMAINS.some(domain => hostname === domain || hostname.endsWith('.' + domain));
+  } catch {
+    return false;
+  }
 }
 
 function parseEventsFromHtml(html: string, baseUrl: string): ScrapedEvent[] {
@@ -163,6 +184,30 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Authenticate the caller
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { url } = await req.json();
 
     if (!url) {
@@ -173,8 +218,22 @@ Deno.serve(async (req) => {
     }
 
     let formattedUrl = url.trim();
+    if (formattedUrl.length > 2048) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'URL too long' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
       formattedUrl = `https://${formattedUrl}`;
+    }
+
+    // Validate URL against allowlist to prevent SSRF
+    if (!isAllowedUrl(formattedUrl)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'URL domain is not allowed. Only supported event platforms can be scraped.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('Fetching URL:', formattedUrl);
