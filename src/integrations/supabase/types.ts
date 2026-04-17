@@ -2386,14 +2386,6 @@ export type Database = {
       }
     }
     Functions: {
-      get_event_contact_info: {
-        Args: { _event_id: string }
-        Returns: {
-          contact_email: string
-          contact_phone: string
-          preferred_contact_method: string
-        }[]
-      }
       get_public_vendor_profiles: {
         Args: { user_ids: string[] }
         Returns: {
