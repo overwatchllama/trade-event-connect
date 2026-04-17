@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -86,10 +86,9 @@ const CardScanner = () => {
     [user],
   );
 
-  if (!authLoading && !user) {
-    navigate("/auth");
-    return null;
-  }
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/auth");
+  }, [authLoading, user, navigate]);
 
   const onPickCard = async (idx: number) => {
     setActiveIdx(idx);
