@@ -134,7 +134,7 @@ const Header = () => {
                 location.pathname === '/scanner' || location.pathname === '/deal-list' ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
-              Scanner
+              Pricing
             </Link>
           </nav>
 
@@ -188,7 +188,7 @@ const Header = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/scanner')}>
                     <ScanLine className="mr-2 h-4 w-4" />
-                    Card Scanner
+                    Pricing
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {isOrganizer && (

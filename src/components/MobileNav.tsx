@@ -123,7 +123,7 @@ const MobileNav = () => {
             </button>
             <button onClick={() => handleNavigate('/scanner')} className={navLinkClass('/scanner')}>
               <ScanLine className="h-4 w-4" />
-              Card Scanner
+              Pricing
             </button>
           </div>
 

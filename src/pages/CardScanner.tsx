@@ -140,7 +140,7 @@ const CardScanner = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Card Scanner | Collector Companion</title>
+        <title>Pricing | Collector Companion</title>
         <meta name="description" content="Snap a photo of multiple trading cards to instantly identify and price them. Build a Deal List then save to your collection." />
       </Helmet>
       <Header />
@@ -150,7 +150,7 @@ const CardScanner = () => {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
               <ScanLine className="h-7 w-7 text-primary" />
-              Card Scanner
+              Pricing
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
               Snap a photo of one or many cards. Tap each detected card to see TCGplayer & eBay pricing.
