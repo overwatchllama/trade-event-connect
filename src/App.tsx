@@ -33,6 +33,8 @@ const Organize = lazy(() => import("./pages/Organize"));
 const Vending = lazy(() => import("./pages/Vending"));
 const StaffCheckIn = lazy(() => import("./pages/StaffCheckIn"));
 const OrganizeVenue = lazy(() => import("./pages/OrganizeVenue"));
+const CardScanner = lazy(() => import("./pages/CardScanner"));
+const DealList = lazy(() => import("./pages/DealList"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -106,6 +108,16 @@ const App = () => (
             <Route path="/organize-venue" element={
               <ProtectedRoute>
                 <OrganizeVenue />
+              </ProtectedRoute>
+            } />
+            <Route path="/scanner" element={
+              <ProtectedRoute>
+                <CardScanner />
+              </ProtectedRoute>
+            } />
+            <Route path="/deal-list" element={
+              <ProtectedRoute>
+                <DealList />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

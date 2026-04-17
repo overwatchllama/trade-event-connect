@@ -35,11 +35,6 @@ const CardScanner = () => {
   const [matches, setMatches] = useState<ResolvedCard[]>([]);
   const [matchLoading, setMatchLoading] = useState(false);
 
-  if (!authLoading && !user) {
-    navigate("/auth");
-    return null;
-  }
-
   const handleFile = useCallback(
     async (file: File) => {
       if (!user) return;
@@ -90,6 +85,11 @@ const CardScanner = () => {
     },
     [user],
   );
+
+  if (!authLoading && !user) {
+    navigate("/auth");
+    return null;
+  }
 
   const onPickCard = async (idx: number) => {
     setActiveIdx(idx);
