@@ -88,30 +88,7 @@ const EventDetails = () => {
 
         if (error) throw error;
 
-        // Security: strip organizer contact fields for anonymous viewers,
-        // then fetch them via a secure RPC if the viewer is authenticated.
-        let eventData: Event = {
-          ...data,
-          contact_email: null,
-          contact_phone: null,
-          preferred_contact_method: null,
-        };
-
-        if (user) {
-          const { data: contactData } = await supabase
-            .rpc('get_event_contact_info', { _event_id: id });
-          const contact = Array.isArray(contactData) ? contactData[0] : null;
-          if (contact) {
-            eventData = {
-              ...eventData,
-              contact_email: contact.contact_email ?? null,
-              contact_phone: contact.contact_phone ?? null,
-              preferred_contact_method: contact.preferred_contact_method ?? null,
-            };
-          }
-        }
-
-        setEvent(eventData);
+        setEvent(data as Event);
         setIsOrganizer(user?.id === data.organizer_id);
 
         // Fetch organizer email
