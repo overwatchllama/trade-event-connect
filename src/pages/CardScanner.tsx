@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -86,10 +86,9 @@ const CardScanner = () => {
     [user],
   );
 
-  if (!authLoading && !user) {
-    navigate("/auth");
-    return null;
-  }
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/auth");
+  }, [authLoading, user, navigate]);
 
   const onPickCard = async (idx: number) => {
     setActiveIdx(idx);
@@ -211,35 +210,42 @@ const CardScanner = () => {
                   className="absolute inset-0 w-full h-full"
                 >
                   {detected.map((c, i) => (
-                    <g key={i}>
-                      <rect
-                        x={c.bbox.x * 100}
-                        y={c.bbox.y * 100}
-                        width={c.bbox.w * 100}
-                        height={c.bbox.h * 100}
-                        fill={activeIdx === i ? "hsl(var(--primary) / 0.15)" : "transparent"}
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={activeIdx === i ? 0.6 : 0.35}
-                        vectorEffect="non-scaling-stroke"
-                        className="cursor-pointer transition-all"
-                        onClick={() => onPickCard(i)}
-                        style={{ pointerEvents: "auto" }}
-                      />
-                      <text
-                        x={c.bbox.x * 100 + 0.8}
-                        y={c.bbox.y * 100 + 3}
-                        fontSize="2.5"
-                        fill="hsl(var(--primary-foreground))"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth="0.15"
-                        paintOrder="stroke"
-                        className="pointer-events-none font-bold"
-                      >
-                        {i + 1}
-                      </text>
-                    </g>
+                    <rect
+                      key={i}
+                      x={c.bbox.x * 100}
+                      y={c.bbox.y * 100}
+                      width={c.bbox.w * 100}
+                      height={c.bbox.h * 100}
+                      fill={activeIdx === i ? "hsl(var(--primary) / 0.15)" : "transparent"}
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={activeIdx === i ? 2.5 : 1.5}
+                      vectorEffect="non-scaling-stroke"
+                      className="cursor-pointer transition-all"
+                      onClick={() => onPickCard(i)}
+                      style={{ pointerEvents: "auto" }}
+                    />
                   ))}
                 </svg>
+                {/* Number badges as HTML so they stay legible regardless of image aspect ratio */}
+                {detected.map((c, i) => (
+                  <button
+                    key={`badge-${i}`}
+                    type="button"
+                    onClick={() => onPickCard(i)}
+                    className={`absolute h-6 w-6 rounded-full text-xs font-bold flex items-center justify-center shadow-md ring-2 ring-background transition-transform ${
+                      activeIdx === i
+                        ? "bg-primary text-primary-foreground scale-110"
+                        : "bg-primary/90 text-primary-foreground hover:scale-110"
+                    }`}
+                    style={{
+                      left: `calc(${c.bbox.x * 100}% + 4px)`,
+                      top: `calc(${c.bbox.y * 100}% + 4px)`,
+                    }}
+                    aria-label={`Card ${i + 1}`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
 
                 {scanning && (
                   <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex flex-col items-center justify-center gap-2">
