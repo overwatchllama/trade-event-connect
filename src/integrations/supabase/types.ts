@@ -168,6 +168,72 @@ export type Database = {
         }
         Relationships: []
       }
+      deal_list_items: {
+        Row: {
+          bbox: Json | null
+          card_name: string
+          card_number: string | null
+          condition: string
+          created_at: string
+          ebay_search_url: string | null
+          external_id: string | null
+          game: string
+          id: string
+          image_url: string | null
+          notes: string | null
+          quantity: number
+          rarity: string | null
+          scan_image_url: string | null
+          set_name: string | null
+          tcgplayer_market_price: number | null
+          tcgplayer_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bbox?: Json | null
+          card_name: string
+          card_number?: string | null
+          condition?: string
+          created_at?: string
+          ebay_search_url?: string | null
+          external_id?: string | null
+          game?: string
+          id?: string
+          image_url?: string | null
+          notes?: string | null
+          quantity?: number
+          rarity?: string | null
+          scan_image_url?: string | null
+          set_name?: string | null
+          tcgplayer_market_price?: number | null
+          tcgplayer_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bbox?: Json | null
+          card_name?: string
+          card_number?: string | null
+          condition?: string
+          created_at?: string
+          ebay_search_url?: string | null
+          external_id?: string | null
+          game?: string
+          id?: string
+          image_url?: string | null
+          notes?: string | null
+          quantity?: number
+          rarity?: string | null
+          scan_image_url?: string | null
+          set_name?: string | null
+          tcgplayer_market_price?: number | null
+          tcgplayer_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       event_announcements: {
         Row: {
           created_at: string
