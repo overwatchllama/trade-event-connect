@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { User, LogOut, Settings, Store, Bell, Shield, PenTool, Award, Users, Ticket, Megaphone, CreditCard, Library } from "lucide-react";
+import { User, LogOut, Settings, Store, Bell, Shield, PenTool, Award, Users, Ticket, Megaphone, CreditCard, Library, ScanLine } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorProfile } from "@/hooks/useVendorProfile";
@@ -128,6 +128,14 @@ const Header = () => {
             >
               My Collection
             </Link>
+            <Link 
+              to="/scanner" 
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === '/scanner' || location.pathname === '/deal-list' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              Scanner
+            </Link>
           </nav>
 
           <div className="flex items-center space-x-2 md:space-x-4 min-h-[40px]">
@@ -177,6 +185,10 @@ const Header = () => {
                   <DropdownMenuItem onClick={() => navigate('/my-collection')}>
                     <Library className="mr-2 h-4 w-4" />
                     My Collection
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/scanner')}>
+                    <ScanLine className="mr-2 h-4 w-4" />
+                    Card Scanner
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {isOrganizer && (

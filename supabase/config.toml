@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.staff-check-in]
 verify_jwt = false
+
+[functions.scan-cards]
+verify_jwt = true

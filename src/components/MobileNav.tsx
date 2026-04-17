@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, User, LogOut, Settings, Store, Bell, Shield, PenTool, Award, Users, Ticket, Megaphone, Library, Home, Calendar, ShoppingBag } from "lucide-react";
+import { Menu, User, LogOut, Settings, Store, Bell, Shield, PenTool, Award, Users, Ticket, Megaphone, Library, Home, Calendar, ShoppingBag, ScanLine } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useVendorProfile } from "@/hooks/useVendorProfile";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -120,6 +120,10 @@ const MobileNav = () => {
             <button onClick={() => handleNavigate('/my-collection')} className={navLinkClass('/my-collection')}>
               <Library className="h-4 w-4" />
               My Collection
+            </button>
+            <button onClick={() => handleNavigate('/scanner')} className={navLinkClass('/scanner')}>
+              <ScanLine className="h-4 w-4" />
+              Card Scanner
             </button>
           </div>
 
