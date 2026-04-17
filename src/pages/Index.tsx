@@ -24,25 +24,20 @@ const Index = () => {
   useEffect(() => {
     const fetchPopularEvents = async () => {
       try {
+        // Single query with embedded event_days to eliminate sequential round-trip
         const { data: eventsData } = await supabase
           .from('events')
-          .select('*')
+          .select('*, event_days(event_id, day_date, day_number)')
           .order('created_at', { ascending: false })
           .limit(6);
 
         if (eventsData) {
-          const eventIds = eventsData.map(e => e.id);
-          const { data: eventDaysData } = await supabase
-            .from('event_days')
-            .select('event_id, day_date')
-            .in('event_id', eventIds)
-            .order('day_number', { ascending: true });
-
           const eventDaysMap = new Map<string, any[]>();
-          eventDaysData?.forEach(day => {
-            const days = eventDaysMap.get(day.event_id) || [];
-            days.push(day);
-            eventDaysMap.set(day.event_id, days);
+          eventsData.forEach((event: any) => {
+            const days = (event.event_days || [])
+              .slice()
+              .sort((a: any, b: any) => a.day_number - b.day_number);
+            eventDaysMap.set(event.id, days);
           });
 
           const today = new Date();
