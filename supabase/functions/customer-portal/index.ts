@@ -18,8 +18,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = newRequestId();
   try {
-    logStep("Function started");
+    logStep("Function started", { requestId });
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
