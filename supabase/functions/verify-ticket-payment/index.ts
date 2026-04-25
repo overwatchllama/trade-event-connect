@@ -111,6 +111,7 @@ serve(async (req) => {
         const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
         
+        // @ts-ignore - EdgeRuntime is a Supabase Edge Runtime global
         EdgeRuntime.waitUntil(
           fetch(`${supabaseUrl}/functions/v1/send-ticket-confirmation`, {
             method: "POST",
