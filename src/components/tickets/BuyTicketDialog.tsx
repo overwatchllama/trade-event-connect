@@ -200,28 +200,70 @@ const BuyTicketDialog = ({
       }
 
       // For paid tickets, redirect to Stripe checkout
+      const checkoutBody = {
+        orderId: order.id,
+        eventId,
+        eventTitle,
+        quantity: tickets.length,
+        unitPrice: totalAmount / tickets.length,
+        totalAmount,
+      };
+
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
         "create-ticket-checkout",
-        {
-          body: {
-            orderId: order.id,
-            eventId,
-            eventTitle,
-            quantity: tickets.length,
-            unitPrice: totalAmount / tickets.length,
-            totalAmount,
-          },
-        }
+        { body: checkoutBody }
       );
 
-      if (checkoutError) throw checkoutError;
+      // Surface the typed error message returned by the edge function.
+      // FunctionsHttpError exposes the JSON body via `context.json()`.
+      if (checkoutError) {
+        let serverMessage: string | undefined;
+        let serverErrorType: string | undefined;
+        try {
+          const ctx = (checkoutError as { context?: Response }).context;
+          if (ctx && typeof (ctx as Response).json === "function") {
+            const parsed = await (ctx as Response).clone().json();
+            serverMessage = parsed?.error;
+            serverErrorType = parsed?.errorType;
+          }
+        } catch {
+          // ignore body parse failures and fall back to generic message
+        }
+
+        // Retryable error types that warrant a one-shot automatic retry
+        const retryableTypes = new Set([
+          "NetworkError",
+          "FetchError",
+          "TimeoutError",
+        ]);
+
+        if (serverErrorType && retryableTypes.has(serverErrorType)) {
+          toast.message("Network hiccup — retrying checkout…");
+          const retry = await supabase.functions.invoke("create-ticket-checkout", {
+            body: checkoutBody,
+          });
+          if (!retry.error && retry.data?.url) {
+            window.location.href = retry.data.url;
+            return;
+          }
+          throw retry.error ?? new Error(serverMessage ?? "Checkout retry failed");
+        }
+
+        toast.error(serverMessage ?? "Failed to process purchase. Please try again.", {
+          description: serverErrorType ? `Error type: ${serverErrorType}` : undefined,
+        });
+        return;
+      }
 
       if (checkoutData?.url) {
         window.location.href = checkoutData.url;
+      } else {
+        toast.error("Checkout session was created but no redirect URL was returned.");
       }
     } catch (error) {
       console.error("Purchase error:", error);
-      toast.error("Failed to process purchase. Please try again.");
+      const message = error instanceof Error ? error.message : "Failed to process purchase. Please try again.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
