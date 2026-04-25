@@ -14,6 +14,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = newRequestId();
   try {
     // Authenticate the user
     const authHeader = req.headers.get("Authorization");
