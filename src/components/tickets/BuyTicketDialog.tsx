@@ -219,12 +219,14 @@ const BuyTicketDialog = ({
       if (checkoutError) {
         let serverMessage: string | undefined;
         let serverErrorType: string | undefined;
+        let serverRequestId: string | undefined;
         try {
           const ctx = (checkoutError as { context?: Response }).context;
           if (ctx && typeof (ctx as Response).json === "function") {
             const parsed = await (ctx as Response).clone().json();
             serverMessage = parsed?.error;
             serverErrorType = parsed?.errorType;
+            serverRequestId = parsed?.requestId;
           }
         } catch {
           // ignore body parse failures and fall back to generic message
@@ -249,8 +251,13 @@ const BuyTicketDialog = ({
           throw retry.error ?? new Error(serverMessage ?? "Checkout retry failed");
         }
 
+        const descriptionParts = [
+          serverErrorType ? `Type: ${serverErrorType}` : null,
+          serverRequestId ? `Ref: ${serverRequestId}` : null,
+        ].filter(Boolean);
+
         toast.error(serverMessage ?? "Failed to process purchase. Please try again.", {
-          description: serverErrorType ? `Error type: ${serverErrorType}` : undefined,
+          description: descriptionParts.length > 0 ? descriptionParts.join(" • ") : undefined,
         });
         return;
       }
