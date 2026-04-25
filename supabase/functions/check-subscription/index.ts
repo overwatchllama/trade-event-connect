@@ -24,6 +24,7 @@ serve(async (req) => {
     { auth: { persistSession: false } }
   );
 
+  const requestId = newRequestId();
   try {
     logStep("Function started");
 
