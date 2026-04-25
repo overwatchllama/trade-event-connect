@@ -146,13 +146,12 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error verifying payment:", error);
-    return new Response(
-      JSON.stringify({ error: "Payment verification failed" }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    );
+    console.error(`[verify-ticket-payment][${requestId}] Error verifying payment:`, error);
+    return errorResponse(error, {
+      status: 400,
+      defaultType: "VerifyTicketPaymentError",
+      requestId,
+      headers: corsHeaders,
+    });
   }
 });
