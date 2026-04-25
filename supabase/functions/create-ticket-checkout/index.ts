@@ -99,14 +99,12 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error creating checkout:", error);
-    const { message, errorType } = normalizeError(error, "TicketCheckoutError");
-    return new Response(
-      JSON.stringify({ success: false, error: message, errorType }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    console.error(`[create-ticket-checkout][${requestId}] Error creating checkout:`, error);
+    return errorResponse(error, {
+      status: 400,
+      defaultType: "TicketCheckoutError",
+      requestId,
+      headers: corsHeaders,
+    });
   }
 });
