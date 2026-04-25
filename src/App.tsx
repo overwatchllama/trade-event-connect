@@ -35,7 +35,10 @@ const StaffCheckIn = lazy(() => import("./pages/StaffCheckIn"));
 const OrganizeVenue = lazy(() => import("./pages/OrganizeVenue"));
 const CardScanner = lazy(() => import("./pages/CardScanner"));
 const DealList = lazy(() => import("./pages/DealList"));
+const Demo = lazy(() => import("./pages/Demo"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+
+import { DemoBanner } from "@/components/DemoBanner";
 
 const queryClient = new QueryClient();
 
