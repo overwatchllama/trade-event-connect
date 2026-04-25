@@ -170,11 +170,15 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    const { message, errorType } = normalizeError(error, "CreateCheckoutError");
-    logStep("ERROR in create-checkout", { message, errorType });
-    return new Response(JSON.stringify({ success: false, error: message, errorType }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    logStep("ERROR in create-checkout", {
+      requestId,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return errorResponse(error, {
       status: 500,
+      defaultType: "CreateCheckoutError",
+      requestId,
+      headers: corsHeaders,
     });
   }
 });
