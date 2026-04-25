@@ -223,11 +223,15 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in check-subscription", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    logStep("ERROR in check-subscription", {
+      requestId,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return errorResponse(error, {
       status: 500,
+      defaultType: "CheckSubscriptionError",
+      requestId,
+      headers: corsHeaders,
     });
   }
 });
