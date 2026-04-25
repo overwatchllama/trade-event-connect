@@ -35,7 +35,10 @@ const StaffCheckIn = lazy(() => import("./pages/StaffCheckIn"));
 const OrganizeVenue = lazy(() => import("./pages/OrganizeVenue"));
 const CardScanner = lazy(() => import("./pages/CardScanner"));
 const DealList = lazy(() => import("./pages/DealList"));
+const Demo = lazy(() => import("./pages/Demo"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+
+import { DemoBanner } from "@/components/DemoBanner";
 
 const queryClient = new QueryClient();
 
@@ -48,9 +51,11 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+          <DemoBanner />
           <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/demo" element={<Demo />} />
             <Route path="/events" element={<Events />} />
             <Route path="/event/:id" element={<EventDetails />} />
             <Route path="/auth" element={<Auth />} />

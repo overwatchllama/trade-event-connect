@@ -234,6 +234,30 @@ export type Database = {
         }
         Relationships: []
       }
+      demo_snapshots: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          is_active: boolean
+          label: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          id?: string
+          is_active?: boolean
+          label: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          is_active?: boolean
+          label?: string
+        }
+        Relationships: []
+      }
       event_announcements: {
         Row: {
           created_at: string
@@ -2474,6 +2498,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { user_id?: string }; Returns: boolean }
+      is_demo_email: { Args: { _email: string }; Returns: boolean }
       is_vendor_manager: {
         Args: { _user_id?: string; _vendor_id: string }
         Returns: boolean
