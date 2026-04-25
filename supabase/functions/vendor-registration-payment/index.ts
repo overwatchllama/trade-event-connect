@@ -177,11 +177,15 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in vendor-registration-payment", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    logStep("ERROR in vendor-registration-payment", {
+      requestId,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return errorResponse(error, {
       status: 500,
+      defaultType: "VendorRegistrationPaymentError",
+      requestId,
+      headers: corsHeaders,
     });
   }
 });
