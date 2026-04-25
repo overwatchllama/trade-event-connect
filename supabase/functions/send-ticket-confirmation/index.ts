@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@3.2.0";
+import { createResendClient } from "../_shared/resend.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const resend = createResendClient(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { Resend } from "npm:resend@3.2.0";
+import { createResendClient } from "../_shared/resend.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -114,7 +114,7 @@ const handler = async (req: Request): Promise<Response> => {
     const pricePerTable = event.vendor_table_price || 0;
     const totalAmount = pricePerTable * tableCount;
 
-    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+    const resend = createResendClient(Deno.env.get("RESEND_API_KEY"));
 
     console.log("Sending invoice for application:", applicationId);
 

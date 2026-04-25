@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { normalizeError } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -168,9 +169,9 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in create-checkout", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    const { message, errorType } = normalizeError(error, "CreateCheckoutError");
+    logStep("ERROR in create-checkout", { message, errorType });
+    return new Response(JSON.stringify({ success: false, error: message, errorType }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
