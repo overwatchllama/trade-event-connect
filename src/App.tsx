@@ -51,9 +51,11 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+          <DemoBanner />
           <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/demo" element={<Demo />} />
             <Route path="/events" element={<Events />} />
             <Route path="/event/:id" element={<EventDetails />} />
             <Route path="/auth" element={<Auth />} />
