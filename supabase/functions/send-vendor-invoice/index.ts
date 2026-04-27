@@ -172,15 +172,13 @@ const handler = async (req: Request): Promise<Response> => {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-  } catch (error: unknown) {
-    console.error("Error in send-vendor-invoice function:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to send invoice" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+  } catch (error) {
+    console.error(`[send-vendor-invoice][${requestId}] Error:`, error);
+    return errorResponse(error, {
+      defaultType: "SendVendorInvoiceError",
+      requestId,
+      headers: corsHeaders,
+    });
   }
 };
 
