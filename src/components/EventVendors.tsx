@@ -31,7 +31,7 @@ const EventVendors = ({ eventId, maxDisplay = 3 }: EventVendorsProps) => {
       try {
         // Get vendor applications for this event
         const { data: applications, error: appError } = await supabase
-          .from('vendor_applications')
+          .from('public_vendor_applications')
           .select(`
             vendor_id,
             vendors!inner (
@@ -45,9 +45,7 @@ const EventVendors = ({ eventId, maxDisplay = 3 }: EventVendorsProps) => {
               verified
             )
           `)
-          .eq('event_id', eventId)
-          .eq('application_status', 'approved')
-          .eq('payment_status', 'paid');
+          .eq('event_id', eventId);
 
         if (appError) throw appError;
 

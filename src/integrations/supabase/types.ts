@@ -2119,6 +2119,13 @@ export type Database = {
             foreignKeyName: "vendor_table_listings_vendor_application_id_fkey"
             columns: ["vendor_application_id"]
             isOneToOne: false
+            referencedRelation: "public_vendor_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_table_listings_vendor_application_id_fkey"
+            columns: ["vendor_application_id"]
+            isOneToOne: false
             referencedRelation: "vendor_applications"
             referencedColumns: ["id"]
           },
@@ -2450,6 +2457,81 @@ export type Database = {
       }
     }
     Views: {
+      public_vendor_applications: {
+        Row: {
+          application_date: string | null
+          application_status:
+            | Database["public"]["Enums"]["vendor_application_status"]
+            | null
+          approved_date: string | null
+          approved_tables: number | null
+          checked_in: boolean | null
+          checked_in_at: string | null
+          created_at: string | null
+          event_id: string | null
+          hide_from_calendar: boolean | null
+          id: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"] | null
+          requested_tables: number | null
+          table_number: string | null
+          updated_at: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          application_date?: string | null
+          application_status?:
+            | Database["public"]["Enums"]["vendor_application_status"]
+            | null
+          approved_date?: string | null
+          approved_tables?: number | null
+          checked_in?: boolean | null
+          checked_in_at?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          hide_from_calendar?: boolean | null
+          id?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          requested_tables?: number | null
+          table_number?: string | null
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          application_date?: string | null
+          application_status?:
+            | Database["public"]["Enums"]["vendor_application_status"]
+            | null
+          approved_date?: string | null
+          approved_tables?: number | null
+          checked_in?: boolean | null
+          checked_in_at?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          hide_from_calendar?: boolean | null
+          id?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          requested_tables?: number | null
+          table_number?: string | null
+          updated_at?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_vendor_applications_vendor_id"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_applications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_vendor_profiles: {
         Row: {
           avatar_url: string | null
