@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { errorResponse, newRequestId } from "../_shared/errors.ts";
+import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,24 +28,29 @@ serve(async (req) => {
     );
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-    
+    if (!authHeader) throw new HttpError("MissingAuthHeader", "No authorization header provided", 401);
+
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated");
+    if (!user?.email) throw new HttpError("Unauthorized", "User not authenticated", 401);
 
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const requestBody = await req.json();
-    
+    let requestBody: any;
+    try {
+      requestBody = await req.json();
+    } catch {
+      throw new HttpError("InvalidJson", "Request body is not valid JSON", 400);
+    }
+
     // Check if this is a subscription or one-time payment
     if (requestBody.priceAmount !== undefined) {
       // One-time payment (e.g., event tickets)
       const { priceAmount, successUrl, cancelUrl, metadata } = requestBody;
-      
+
       if (priceAmount === undefined) {
-        throw new Error("Missing priceAmount for one-time payment");
+        throw new HttpError("MissingFields", "Missing priceAmount for one-time payment", 400);
       }
 
       logStep("One-time payment request", { priceAmount, metadata });
@@ -96,7 +101,7 @@ serve(async (req) => {
     // Subscription payment
     const { tier, billing_period } = requestBody;
     if (!tier || !billing_period) {
-      throw new Error("Missing tier or billing_period");
+      throw new HttpError("MissingFields", "Missing tier or billing_period", 400);
     }
 
     logStep("Request data", { tier, billing_period });
@@ -130,12 +135,12 @@ serve(async (req) => {
 
     const pricing = pricingConfig[tier as keyof typeof pricingConfig];
     if (!pricing) {
-      throw new Error("Invalid subscription tier");
+      throw new HttpError("InvalidInput", "Invalid subscription tier", 400);
     }
 
     const priceData = pricing[billing_period as keyof typeof pricing];
     if (!priceData) {
-      throw new Error("Invalid billing period");
+      throw new HttpError("InvalidInput", "Invalid billing period", 400);
     }
 
     logStep("Pricing configured", { tier, billing_period, priceData });
@@ -175,7 +180,6 @@ serve(async (req) => {
       message: error instanceof Error ? error.message : String(error),
     });
     return errorResponse(error, {
-      status: 500,
       defaultType: "CreateCheckoutError",
       requestId,
       headers: corsHeaders,
