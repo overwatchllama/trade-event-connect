@@ -405,13 +405,11 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Error seeding test data:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    console.error(`[seed-test-users][${requestId}] Error:`, error);
+    return errorResponse(error, {
+      defaultType: "SeedTestUsersError",
+      requestId,
+      headers: corsHeaders,
+    });
   }
 });
