@@ -179,14 +179,12 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-  } catch (error: any) {
-    console.error("Error in share-ticket-email:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to send email" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+  } catch (error) {
+    console.error(`[share-ticket-email][${requestId}] Error:`, error);
+    return errorResponse(error, {
+      defaultType: "ShareTicketEmailError",
+      requestId,
+      headers: corsHeaders,
+    });
   }
 });
