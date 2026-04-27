@@ -91,11 +91,9 @@ const PersonalCalendar = ({ defaultTab, visibleTabs, tabLabels }: PersonalCalend
       let vendorApplicationsMap = new Map<string, string>();
       if (favoriteVendorIds.length > 0) {
         const { data: vendorApps } = await supabase
-          .from('vendor_applications')
+          .from('public_vendor_applications')
           .select('event_id, vendors!inner(business_name)')
-          .in('vendor_id', favoriteVendorIds)
-          .eq('application_status', 'approved')
-          .eq('payment_status', 'paid');
+          .in('vendor_id', favoriteVendorIds);
 
         vendorApps?.forEach(app => {
           allEventIds.push(app.event_id);
