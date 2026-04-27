@@ -1,48 +1,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { errorResponse, newRequestId } from "../_shared/errors.ts";
+import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
-
-/**
- * Typed error class. Each known failure path throws one of these so the
- * handler can map `name` -> HTTP status and return the canonical JSON body.
- */
-class CheckoutError extends Error {
-  status: number;
-  constructor(name: string, message: string, status: number) {
-    super(message);
-    this.name = name;
-    this.status = status;
-  }
-}
-
-// Map known error names to HTTP status codes. Unknown errors default to 500.
-const ERROR_STATUS_MAP: Record<string, number> = {
-  MissingAuthHeader: 401,
-  Unauthorized: 401,
-  InvalidJson: 400,
-  MissingFields: 400,
-  InvalidQuantity: 422,
-  InvalidUnitPrice: 422,
-  StripeConfigError: 500,
-  StripeCustomerError: 502,
-  StripeSessionError: 502,
-  OrderUpdateError: 500,
-};
-
-function statusFor(error: unknown): number {
-  if (error instanceof CheckoutError) return error.status;
-  if (error instanceof Error && ERROR_STATUS_MAP[error.name]) {
-    return ERROR_STATUS_MAP[error.name];
-  }
-  return 500;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
