@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,17 +21,21 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = newRequestId();
   try {
-    const { imageUrl } = await req.json();
+    let body: { imageUrl?: string };
+    try {
+      body = await req.json();
+    } catch {
+      throw new HttpError("InvalidJson", "Request body is not valid JSON", 400);
+    }
+    const { imageUrl } = body;
     if (!imageUrl || typeof imageUrl !== "string") {
-      return new Response(
-        JSON.stringify({ error: "imageUrl (string) is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      throw new HttpError("MissingFields", "imageUrl (string) is required", 400);
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    if (!LOVABLE_API_KEY) throw new HttpError("ConfigError", "LOVABLE_API_KEY is not configured", 500);
 
     const systemPrompt = `You are a trading card detector. Given a photo containing one or more trading cards (Pokémon TCG or One Piece TCG), detect each individual card and return its bounding box and any visible identifying info.
 
@@ -130,23 +135,18 @@ Only return cards that are clearly visible. Do not invent cards. If text is unre
 
     if (!aiResp.ok) {
       if (aiResp.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limits exceeded, please try again later." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+        throw new HttpError("RateLimited", "Rate limits exceeded, please try again later.", 429);
       }
       if (aiResp.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Lovable AI credits required. Please add funds in Settings → Workspace → Usage." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        throw new HttpError(
+          "PaymentRequired",
+          "Lovable AI credits required. Please add funds in Settings → Workspace → Usage.",
+          402,
         );
       }
       const errText = await aiResp.text();
-      console.error("AI gateway error:", aiResp.status, errText);
-      return new Response(
-        JSON.stringify({ error: "AI gateway error", detail: errText }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      console.error(`[scan-cards][${requestId}] AI gateway error:`, aiResp.status, errText);
+      throw new HttpError("UpstreamError", `AI gateway error: ${errText}`, 502);
     }
 
     const data = await aiResp.json();
@@ -161,12 +161,11 @@ Only return cards that are clearly visible. Do not invent cards. If text is unre
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("scan-cards error:", e);
-    return new Response(
-      JSON.stringify({
-        error: e instanceof Error ? e.message : "Unknown error",
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    console.error(`[scan-cards][${requestId}] error:`, e);
+    return errorResponse(e, {
+      defaultType: "ScanCardsError",
+      requestId,
+      headers: corsHeaders,
+    });
   }
 });
