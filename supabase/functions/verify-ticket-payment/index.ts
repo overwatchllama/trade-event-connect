@@ -64,10 +64,7 @@ serve(async (req) => {
       .single();
 
     if (orderCheckError || !orderCheck || orderCheck.user_id !== user.id) {
-      return new Response(
-        JSON.stringify({ error: "Order not found or unauthorized" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new HttpError("Forbidden", "Order not found or unauthorized", 403);
     }
 
     // Update order payment status
@@ -82,7 +79,7 @@ serve(async (req) => {
 
     if (updateError) {
       console.error("Error updating order:", updateError);
-      throw new Error("Failed to update order");
+      throw new HttpError("OrderUpdateError", "Failed to update order", 500);
     }
 
     // Get user email from order
@@ -142,7 +139,6 @@ serve(async (req) => {
   } catch (error) {
     console.error(`[verify-ticket-payment][${requestId}] Error verifying payment:`, error);
     return errorResponse(error, {
-      status: 400,
       defaultType: "VerifyTicketPaymentError",
       requestId,
       headers: corsHeaders,
