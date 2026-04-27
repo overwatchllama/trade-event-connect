@@ -130,11 +130,9 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    const status = statusFor(error);
-    console.error(`[create-ticket-checkout][${requestId}] Error (${status}):`, error);
+    console.error(`[create-ticket-checkout][${requestId}] Error:`, error);
     return errorResponse(error, {
-      status,
-      defaultType: "TicketHttpError",
+      defaultType: "TicketCheckoutError",
       requestId,
       headers: corsHeaders,
     });
