@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { createResendClient } from "../_shared/resend.ts";
+import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const resend = createResendClient(Deno.env.get("RESEND_API_KEY"));
 
@@ -47,14 +48,12 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const requestId = newRequestId();
   try {
     // Authenticate the caller
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new HttpError("MissingAuthHeader", "Unauthorized", 401);
     }
 
     const supabase = createClient(
@@ -66,33 +65,30 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
     if (userError || !userData?.user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new HttpError("Unauthorized", "Unauthorized", 401);
     }
 
     const { recipientEmail, ticketCode, eventTitle, eventDate, shareUrl }: ShareTicketRequest = await req.json();
 
     // Validate required fields
     if (!recipientEmail || !ticketCode || !eventTitle || !shareUrl) {
-      throw new Error("Missing required fields");
+      throw new HttpError("MissingFields", "Missing required fields", 400);
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(recipientEmail) || recipientEmail.length > 255) {
-      throw new Error("Invalid email address");
+      throw new HttpError("InvalidEmail", "Invalid email address", 400);
     }
 
     // Validate shareUrl is from our domain
     if (!isValidShareUrl(shareUrl)) {
-      throw new Error("Invalid share URL");
+      throw new HttpError("InvalidUrl", "Invalid share URL", 400);
     }
 
     // Validate field lengths
     if (eventTitle.length > 500 || ticketCode.length > 100 || (eventDate && eventDate.length > 100)) {
-      throw new Error("Field value too long");
+      throw new HttpError("ValidationError", "Field value too long", 400);
     }
 
     // Escape all user-supplied values for HTML embedding
