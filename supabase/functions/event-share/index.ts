@@ -76,8 +76,12 @@ serve(async (req) => {
       status: 200,
     });
   } catch (e) {
+    // event-share returns HTML for OG crawlers; keep plaintext error body but
+    // tag it with a request ID so logs can be correlated.
+    const requestId = crypto.randomUUID();
     const msg = e instanceof Error ? e.message : String(e);
-    return new Response(`Error: ${msg}` , { status: 500, headers: corsHeaders });
+    console.error(`[event-share][${requestId}] Error:`, e);
+    return new Response(`Error [${requestId}]: ${msg}`, { status: 500, headers: corsHeaders });
   }
 });
 
