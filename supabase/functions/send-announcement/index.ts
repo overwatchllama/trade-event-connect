@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,11 +31,12 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = newRequestId();
   try {
     // Get authorization header
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      throw new Error("No authorization header");
+      throw new HttpError("MissingAuthHeader", "No authorization header", 401);
     }
 
     // Create Supabase client
@@ -45,10 +47,10 @@ const handler = async (req: Request): Promise<Response> => {
     // Verify the user is an admin
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+
     if (authError || !user) {
-      console.error("[SEND-ANNOUNCEMENT] Auth error:", authError);
-      throw new Error("Unauthorized");
+      console.error(`[send-announcement][${requestId}] Auth error:`, authError);
+      throw new HttpError("Unauthorized", "Unauthorized", 401);
     }
 
     // Check if user is admin
@@ -56,25 +58,25 @@ const handler = async (req: Request): Promise<Response> => {
       .rpc("is_admin", { user_id: user.id });
 
     if (adminCheckError || !isAdminResult) {
-      console.error("[SEND-ANNOUNCEMENT] Not an admin:", user.id);
-      throw new Error("Unauthorized - Admin access required");
+      console.error(`[send-announcement][${requestId}] Not an admin:`, user.id);
+      throw new HttpError("AdminRequired", "Unauthorized - Admin access required", 403);
     }
 
-    console.log("[SEND-ANNOUNCEMENT] Admin verified:", user.id);
+    console.log(`[send-announcement][${requestId}] Admin verified:`, user.id);
 
     // Parse request body
     const { subject, message, roles }: AnnouncementRequest = await req.json();
 
     if (!subject || !message || !roles || roles.length === 0) {
-      throw new Error("Missing required fields: subject, message, and roles");
+      throw new HttpError("MissingFields", "Missing required fields: subject, message, and roles", 400);
     }
 
     // Validate input lengths
     if (subject.length > 200) {
-      throw new Error("Subject must be 200 characters or less");
+      throw new HttpError("ValidationError", "Subject must be 200 characters or less", 400);
     }
     if (message.length > 10000) {
-      throw new Error("Message must be 10000 characters or less");
+      throw new HttpError("ValidationError", "Message must be 10000 characters or less", 400);
     }
 
     console.log("[SEND-ANNOUNCEMENT] Sending to roles:", roles);
@@ -197,21 +199,13 @@ const handler = async (req: Request): Promise<Response> => {
         },
       }
     );
-  } catch (error: unknown) {
-    console.error("[SEND-ANNOUNCEMENT] Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    return new Response(
-      JSON.stringify({
-        error: errorMessage,
-      }),
-      {
-        status: errorMessage === "Unauthorized" || errorMessage === "Unauthorized - Admin access required" ? 403 : 500,
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders,
-        },
-      }
-    );
+  } catch (error) {
+    console.error(`[send-announcement][${requestId}] Error:`, error);
+    return errorResponse(error, {
+      defaultType: "SendAnnouncementError",
+      requestId,
+      headers: corsHeaders,
+    });
   }
 };
 

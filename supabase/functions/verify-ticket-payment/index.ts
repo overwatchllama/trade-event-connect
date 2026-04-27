@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { errorResponse, newRequestId } from "../_shared/errors.ts";
+import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,10 +19,7 @@ serve(async (req) => {
     // Authenticate the user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new HttpError("MissingAuthHeader", "Unauthorized", 401);
     }
 
     const supabaseAnon = createClient(
@@ -33,16 +30,13 @@ serve(async (req) => {
 
     const { data: { user }, error: authError } = await supabaseAnon.auth.getUser();
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new HttpError("Unauthorized", "Unauthorized", 401);
     }
 
     const { sessionId, orderId } = await req.json();
 
     if (!sessionId || !orderId) {
-      throw new Error("Missing session ID or order ID");
+      throw new HttpError("MissingFields", "Missing session ID or order ID", 400);
     }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -52,7 +46,7 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status !== "paid") {
-      throw new Error("Payment not completed");
+      throw new HttpError("PaymentRequired", "Payment not completed", 402);
     }
 
     // Use service role to update order
@@ -70,10 +64,7 @@ serve(async (req) => {
       .single();
 
     if (orderCheckError || !orderCheck || orderCheck.user_id !== user.id) {
-      return new Response(
-        JSON.stringify({ error: "Order not found or unauthorized" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new HttpError("Forbidden", "Order not found or unauthorized", 403);
     }
 
     // Update order payment status
@@ -88,7 +79,7 @@ serve(async (req) => {
 
     if (updateError) {
       console.error("Error updating order:", updateError);
-      throw new Error("Failed to update order");
+      throw new HttpError("OrderUpdateError", "Failed to update order", 500);
     }
 
     // Get user email from order
@@ -148,7 +139,6 @@ serve(async (req) => {
   } catch (error) {
     console.error(`[verify-ticket-payment][${requestId}] Error verifying payment:`, error);
     return errorResponse(error, {
-      status: 400,
       defaultType: "VerifyTicketPaymentError",
       requestId,
       headers: corsHeaders,

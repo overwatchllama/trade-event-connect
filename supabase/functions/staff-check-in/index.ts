@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = newRequestId();
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -23,10 +25,7 @@ Deno.serve(async (req) => {
     if (req.method === "GET") {
       const token = url.searchParams.get("token");
       if (!token || token.length < 10) {
-        return new Response(
-          JSON.stringify({ error: "Invalid token" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        throw new HttpError("InvalidInput", "Invalid token", 400);
       }
 
       const { data: assignment, error } = await supabase
@@ -36,13 +35,9 @@ Deno.serve(async (req) => {
         .single();
 
       if (error || !assignment) {
-        return new Response(
-          JSON.stringify({ error: "Staff assignment not found" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        throw new HttpError("NotFound", "Staff assignment not found", 404);
       }
 
-      // Get event info
       const { data: event } = await supabase
         .from("events")
         .select("title, date, venue, city, state")
@@ -77,20 +72,13 @@ Deno.serve(async (req) => {
       const { token, action } = body;
 
       if (!token || token.length < 10) {
-        return new Response(
-          JSON.stringify({ error: "Invalid token" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        throw new HttpError("InvalidInput", "Invalid token", 400);
       }
 
       if (!["check_in", "check_out"].includes(action)) {
-        return new Response(
-          JSON.stringify({ error: "Invalid action" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        throw new HttpError("InvalidInput", "Invalid action", 400);
       }
 
-      // Fetch current state
       const { data: assignment, error: fetchError } = await supabase
         .from("event_staff_assignments")
         .select("id, checked_in")
@@ -98,20 +86,14 @@ Deno.serve(async (req) => {
         .single();
 
       if (fetchError || !assignment) {
-        return new Response(
-          JSON.stringify({ error: "Staff assignment not found" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        throw new HttpError("NotFound", "Staff assignment not found", 404);
       }
 
       const now = new Date().toISOString();
 
       if (action === "check_in") {
         if (assignment.checked_in) {
-          return new Response(
-            JSON.stringify({ error: "Already checked in" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          throw new HttpError("AlreadyCheckedIn", "Already checked in", 409);
         }
 
         const { error: updateError } = await supabase
@@ -119,7 +101,7 @@ Deno.serve(async (req) => {
           .update({ checked_in: true, checked_in_at: now, checked_out_at: null })
           .eq("id", assignment.id);
 
-        if (updateError) throw updateError;
+        if (updateError) throw new HttpError("DatabaseError", updateError.message, 500);
 
         return new Response(
           JSON.stringify({ success: true, checked_in: true, checked_in_at: now }),
@@ -129,10 +111,7 @@ Deno.serve(async (req) => {
 
       if (action === "check_out") {
         if (!assignment.checked_in) {
-          return new Response(
-            JSON.stringify({ error: "Not checked in" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          throw new HttpError("NotCheckedIn", "Not checked in", 409);
         }
 
         const { error: updateError } = await supabase
@@ -140,7 +119,7 @@ Deno.serve(async (req) => {
           .update({ checked_in: false, checked_out_at: now })
           .eq("id", assignment.id);
 
-        if (updateError) throw updateError;
+        if (updateError) throw new HttpError("DatabaseError", updateError.message, 500);
 
         return new Response(
           JSON.stringify({ success: true, checked_in: false, checked_out_at: now }),
@@ -149,15 +128,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({ error: "Method not allowed" }),
-      { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    throw new HttpError("MethodNotAllowed", "Method not allowed", 405);
   } catch (error) {
-    console.error("Staff check-in error:", error);
-    return new Response(
-      JSON.stringify({ error: "An unexpected error occurred" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error(`[staff-check-in][${requestId}] Error:`, error);
+    return errorResponse(error, {
+      defaultType: "StaffCheckInError",
+      requestId,
+      headers: corsHeaders,
+    });
   }
 });

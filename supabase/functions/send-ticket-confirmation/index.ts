@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createResendClient } from "../_shared/resend.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const resend = createResendClient(Deno.env.get("RESEND_API_KEY"));
 
@@ -21,14 +22,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = newRequestId();
   try {
     const { orderId, userEmail, userName }: TicketConfirmationRequest = await req.json();
 
     if (!orderId || !userEmail) {
-      throw new Error("Missing required fields: orderId and userEmail");
+      throw new HttpError("MissingFields", "Missing required fields: orderId and userEmail", 400);
     }
 
-    console.log("Sending ticket confirmation to:", userEmail, "for order:", orderId);
+    console.log(`[send-ticket-confirmation][${requestId}] Sending to:`, userEmail, "for order:", orderId);
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -48,8 +50,8 @@ serve(async (req) => {
       .eq("order_id", orderId);
 
     if (itemsError || !orderItems || orderItems.length === 0) {
-      console.error("Error fetching order items:", itemsError);
-      throw new Error("Could not find tickets for this order");
+      console.error(`[send-ticket-confirmation][${requestId}] Error fetching order items:`, itemsError);
+      throw new HttpError("NotFound", "Could not find tickets for this order", 404);
     }
 
     // Get event details with branding
@@ -61,8 +63,8 @@ serve(async (req) => {
       .single();
 
     if (eventError || !event) {
-      console.error("Error fetching event:", eventError);
-      throw new Error("Could not find event details");
+      console.error(`[send-ticket-confirmation][${requestId}] Error fetching event:`, eventError);
+      throw new HttpError("NotFound", "Could not find event details", 404);
     }
 
     // Use custom branding or defaults
@@ -174,15 +176,12 @@ serve(async (req) => {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-  } catch (error: unknown) {
-    console.error("Error in send-ticket-confirmation function:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+  } catch (error) {
+    console.error(`[send-ticket-confirmation][${requestId}] Error:`, error);
+    return errorResponse(error, {
+      defaultType: "SendTicketConfirmationError",
+      requestId,
+      headers: corsHeaders,
+    });
   }
 });

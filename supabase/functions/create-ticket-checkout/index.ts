@@ -1,48 +1,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { errorResponse, newRequestId } from "../_shared/errors.ts";
+import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
-
-/**
- * Typed error class. Each known failure path throws one of these so the
- * handler can map `name` -> HTTP status and return the canonical JSON body.
- */
-class CheckoutError extends Error {
-  status: number;
-  constructor(name: string, message: string, status: number) {
-    super(message);
-    this.name = name;
-    this.status = status;
-  }
-}
-
-// Map known error names to HTTP status codes. Unknown errors default to 500.
-const ERROR_STATUS_MAP: Record<string, number> = {
-  MissingAuthHeader: 401,
-  Unauthorized: 401,
-  InvalidJson: 400,
-  MissingFields: 400,
-  InvalidQuantity: 422,
-  InvalidUnitPrice: 422,
-  StripeConfigError: 500,
-  StripeCustomerError: 502,
-  StripeSessionError: 502,
-  OrderUpdateError: 500,
-};
-
-function statusFor(error: unknown): number {
-  if (error instanceof CheckoutError) return error.status;
-  if (error instanceof Error && ERROR_STATUS_MAP[error.name]) {
-    return ERROR_STATUS_MAP[error.name];
-  }
-  return 500;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -58,37 +23,37 @@ serve(async (req) => {
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      throw new CheckoutError("MissingAuthHeader", "Missing Authorization header", 401);
+      throw new HttpError("MissingAuthHeader", "Missing Authorization header", 401);
     }
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
 
     if (userError || !userData.user) {
-      throw new CheckoutError("Unauthorized", userError?.message || "Unauthorized", 401);
+      throw new HttpError("Unauthorized", userError?.message || "Unauthorized", 401);
     }
 
     let body: { orderId?: string; eventId?: string; eventTitle?: string; quantity?: number; unitPrice?: number };
     try {
       body = await req.json();
     } catch (_e) {
-      throw new CheckoutError("InvalidJson", "Request body is not valid JSON", 400);
+      throw new HttpError("InvalidJson", "Request body is not valid JSON", 400);
     }
 
     const { orderId, eventId, eventTitle, quantity, unitPrice } = body;
 
     if (!orderId || !eventId || !eventTitle || quantity === undefined || unitPrice === undefined) {
-      throw new CheckoutError("MissingFields", "Missing required fields: orderId, eventId, eventTitle, quantity, unitPrice", 400);
+      throw new HttpError("MissingFields", "Missing required fields: orderId, eventId, eventTitle, quantity, unitPrice", 400);
     }
     if (typeof quantity !== "number" || !Number.isFinite(quantity) || quantity <= 0 || !Number.isInteger(quantity)) {
-      throw new CheckoutError("InvalidQuantity", "quantity must be a positive integer", 422);
+      throw new HttpError("InvalidQuantity", "quantity must be a positive integer", 422);
     }
     if (typeof unitPrice !== "number" || !Number.isFinite(unitPrice) || unitPrice < 0) {
-      throw new CheckoutError("InvalidUnitPrice", "unitPrice must be a non-negative number", 422);
+      throw new HttpError("InvalidUnitPrice", "unitPrice must be a non-negative number", 422);
     }
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
-      throw new CheckoutError("StripeConfigError", "Stripe is not configured on the server", 500);
+      throw new HttpError("StripeConfigError", "Stripe is not configured on the server", 500);
     }
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
@@ -110,7 +75,7 @@ serve(async (req) => {
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to resolve Stripe customer";
-      throw new CheckoutError("StripeCustomerError", msg, 502);
+      throw new HttpError("StripeCustomerError", msg, 502);
     }
 
     const origin = req.headers.get("origin") || "https://trade-event-connect.lovable.app";
@@ -145,7 +110,7 @@ serve(async (req) => {
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to create Stripe checkout session";
-      throw new CheckoutError("StripeSessionError", msg, 502);
+      throw new HttpError("StripeSessionError", msg, 502);
     }
 
     // Update order with Stripe session ID
@@ -155,7 +120,7 @@ serve(async (req) => {
       .eq("id", orderId);
 
     if (updateError) {
-      throw new CheckoutError("OrderUpdateError", `Failed to attach session to order: ${updateError.message}`, 500);
+      throw new HttpError("OrderUpdateError", `Failed to attach session to order: ${updateError.message}`, 500);
     }
 
     console.log(`[create-ticket-checkout][${requestId}] Created checkout session:`, session.id);
@@ -165,10 +130,8 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    const status = statusFor(error);
-    console.error(`[create-ticket-checkout][${requestId}] Error (${status}):`, error);
+    console.error(`[create-ticket-checkout][${requestId}] Error:`, error);
     return errorResponse(error, {
-      status,
       defaultType: "TicketCheckoutError",
       requestId,
       headers: corsHeaders,

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { createResendClient } from "../_shared/resend.ts";
+import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,14 +28,12 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = newRequestId();
   try {
     // Require authentication
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      throw new HttpError("MissingAuthHeader", "Unauthorized", 401);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -46,19 +45,13 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      throw new HttpError("Unauthorized", "Unauthorized", 401);
     }
 
     const { applicationId }: InvoiceRequest = await req.json();
 
     if (!applicationId || typeof applicationId !== "string") {
-      return new Response(JSON.stringify({ error: "Application ID is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      throw new HttpError("MissingFields", "Application ID is required", 400);
     }
 
     // Fetch the application with vendor and event data, and verify the caller is the event organizer
@@ -73,11 +66,8 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (appError || !application) {
-      console.error("Application not found:", appError);
-      return new Response(JSON.stringify({ error: "Application not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      console.error(`[send-vendor-invoice][${requestId}] Application not found:`, appError);
+      throw new HttpError("NotFound", "Application not found", 404);
     }
 
     // Authorization: only the event organizer can send invoices
@@ -85,26 +75,17 @@ const handler = async (req: Request): Promise<Response> => {
     const vendor = application.vendor as any;
 
     if (event.organizer_id !== user.id) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      throw new HttpError("Forbidden", "Forbidden", 403);
     }
 
     // Validate application state
     if (application.application_status !== "approved") {
-      return new Response(JSON.stringify({ error: "Application must be approved to send invoice" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      throw new HttpError("Conflict", "Application must be approved to send invoice", 409);
     }
 
     const vendorEmail = vendor.business_email;
     if (!vendorEmail) {
-      return new Response(JSON.stringify({ error: "Vendor has no email configured" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      throw new HttpError("ValidationError", "Vendor has no email configured", 400);
     }
 
     // Compute invoice values server-side
@@ -191,15 +172,13 @@ const handler = async (req: Request): Promise<Response> => {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-  } catch (error: unknown) {
-    console.error("Error in send-vendor-invoice function:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to send invoice" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+  } catch (error) {
+    console.error(`[send-vendor-invoice][${requestId}] Error:`, error);
+    return errorResponse(error, {
+      defaultType: "SendVendorInvoiceError",
+      requestId,
+      headers: corsHeaders,
+    });
   }
 };
 

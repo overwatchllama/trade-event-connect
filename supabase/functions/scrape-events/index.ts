@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -183,14 +184,12 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = newRequestId();
   try {
     // Authenticate the caller
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new HttpError("MissingAuthHeader", "Unauthorized", 401);
     }
 
     const supabase = createClient(
@@ -202,27 +201,18 @@ Deno.serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new HttpError("Unauthorized", "Unauthorized", 401);
     }
 
     const { url } = await req.json();
 
     if (!url) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'URL is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new HttpError("MissingFields", "URL is required", 400);
     }
 
     let formattedUrl = url.trim();
     if (formattedUrl.length > 2048) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'URL too long' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new HttpError("ValidationError", "URL too long", 400);
     }
     if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
       formattedUrl = `https://${formattedUrl}`;
@@ -230,13 +220,14 @@ Deno.serve(async (req) => {
 
     // Validate URL against allowlist to prevent SSRF
     if (!isAllowedUrl(formattedUrl)) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'URL domain is not allowed. Only supported event platforms can be scraped.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      throw new HttpError(
+        "UrlNotAllowed",
+        "URL domain is not allowed. Only supported event platforms can be scraped.",
+        400,
       );
     }
 
-    console.log('Fetching URL:', formattedUrl);
+    console.log(`[scrape-events][${requestId}] Fetching URL:`, formattedUrl);
 
     const response = await fetch(formattedUrl, {
       headers: {
@@ -246,27 +237,24 @@ Deno.serve(async (req) => {
     });
 
     if (!response.ok) {
-      return new Response(
-        JSON.stringify({ success: false, error: `Failed to fetch URL (${response.status})` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new HttpError("UpstreamError", `Failed to fetch URL (${response.status})`, 502);
     }
 
     const html = await response.text();
     const events = parseEventsFromHtml(html, formattedUrl);
 
-    console.log(`Found ${events.length} events from ${formattedUrl}`);
+    console.log(`[scrape-events][${requestId}] Found ${events.length} events from ${formattedUrl}`);
 
     return new Response(
       JSON.stringify({ success: true, events, source_url: formattedUrl }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error scraping events:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to scrape events';
-    return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.error(`[scrape-events][${requestId}] Error:`, error);
+    return errorResponse(error, {
+      defaultType: "ScrapeEventsError",
+      requestId,
+      headers: corsHeaders,
+    });
   }
 });
