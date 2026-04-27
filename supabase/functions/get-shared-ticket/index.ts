@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,25 +8,31 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const requestId = newRequestId();
   try {
-    const { ticketCode } = await req.json();
+    let body: { ticketCode?: string };
+    try {
+      body = await req.json();
+    } catch {
+      throw new HttpError("InvalidJson", "Request body is not valid JSON", 400);
+    }
 
+    const { ticketCode } = body;
     if (!ticketCode || typeof ticketCode !== 'string') {
-      throw new Error("Ticket code is required");
+      throw new HttpError("MissingFields", "Ticket code is required", 400);
     }
 
     // Validate ticket code format (alphanumeric, reasonable length)
     const sanitizedCode = ticketCode.trim();
     if (sanitizedCode.length < 4 || sanitizedCode.length > 64 || !/^[a-zA-Z0-9_-]+$/.test(sanitizedCode)) {
-      throw new Error("Invalid ticket code format");
+      throw new HttpError("InvalidInput", "Invalid ticket code format", 400);
     }
 
-    console.log("Fetching shared ticket with validated code");
+    console.log(`[get-shared-ticket][${requestId}] Fetching shared ticket`);
 
     // Use service role to bypass RLS for public ticket viewing
     const supabaseAdmin = createClient(
@@ -33,7 +40,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    // Fetch the ticket with event and day info
     const { data: ticket, error } = await supabaseAdmin
       .from("order_items")
       .select(`
@@ -50,34 +56,26 @@ serve(async (req) => {
       .single();
 
     if (error || !ticket) {
-      console.error("Ticket not found:", error);
-      throw new Error("Ticket not found");
+      console.error(`[get-shared-ticket][${requestId}] Ticket not found:`, error);
+      throw new HttpError("NotFound", "Ticket not found", 404);
     }
 
-    // Transform the data (handle array vs object from Supabase)
     const transformedTicket = {
       ...ticket,
       event: Array.isArray(ticket.event) ? ticket.event[0] : ticket.event,
-      event_day: Array.isArray(ticket.event_day) ? ticket.event_day[0] : ticket.event_day
+      event_day: Array.isArray(ticket.event_day) ? ticket.event_day[0] : ticket.event_day,
     };
-
-    console.log("Ticket found successfully");
 
     return new Response(
       JSON.stringify({ ticket: transformedTicket }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error: any) {
-    console.error("Error in get-shared-ticket:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to retrieve ticket" }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+  } catch (error) {
+    console.error(`[get-shared-ticket][${requestId}] Error:`, error);
+    return errorResponse(error, {
+      defaultType: "GetSharedTicketError",
+      requestId,
+      headers: corsHeaders,
+    });
   }
 });
