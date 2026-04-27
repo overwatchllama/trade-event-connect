@@ -23,37 +23,37 @@ serve(async (req) => {
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      throw new CheckoutError("MissingAuthHeader", "Missing Authorization header", 401);
+      throw new HttpError("MissingAuthHeader", "Missing Authorization header", 401);
     }
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
 
     if (userError || !userData.user) {
-      throw new CheckoutError("Unauthorized", userError?.message || "Unauthorized", 401);
+      throw new HttpError("Unauthorized", userError?.message || "Unauthorized", 401);
     }
 
     let body: { orderId?: string; eventId?: string; eventTitle?: string; quantity?: number; unitPrice?: number };
     try {
       body = await req.json();
     } catch (_e) {
-      throw new CheckoutError("InvalidJson", "Request body is not valid JSON", 400);
+      throw new HttpError("InvalidJson", "Request body is not valid JSON", 400);
     }
 
     const { orderId, eventId, eventTitle, quantity, unitPrice } = body;
 
     if (!orderId || !eventId || !eventTitle || quantity === undefined || unitPrice === undefined) {
-      throw new CheckoutError("MissingFields", "Missing required fields: orderId, eventId, eventTitle, quantity, unitPrice", 400);
+      throw new HttpError("MissingFields", "Missing required fields: orderId, eventId, eventTitle, quantity, unitPrice", 400);
     }
     if (typeof quantity !== "number" || !Number.isFinite(quantity) || quantity <= 0 || !Number.isInteger(quantity)) {
-      throw new CheckoutError("InvalidQuantity", "quantity must be a positive integer", 422);
+      throw new HttpError("InvalidQuantity", "quantity must be a positive integer", 422);
     }
     if (typeof unitPrice !== "number" || !Number.isFinite(unitPrice) || unitPrice < 0) {
-      throw new CheckoutError("InvalidUnitPrice", "unitPrice must be a non-negative number", 422);
+      throw new HttpError("InvalidUnitPrice", "unitPrice must be a non-negative number", 422);
     }
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
-      throw new CheckoutError("StripeConfigError", "Stripe is not configured on the server", 500);
+      throw new HttpError("StripeConfigError", "Stripe is not configured on the server", 500);
     }
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
@@ -75,7 +75,7 @@ serve(async (req) => {
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to resolve Stripe customer";
-      throw new CheckoutError("StripeCustomerError", msg, 502);
+      throw new HttpError("StripeCustomerError", msg, 502);
     }
 
     const origin = req.headers.get("origin") || "https://trade-event-connect.lovable.app";
@@ -110,7 +110,7 @@ serve(async (req) => {
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to create Stripe checkout session";
-      throw new CheckoutError("StripeSessionError", msg, 502);
+      throw new HttpError("StripeSessionError", msg, 502);
     }
 
     // Update order with Stripe session ID
@@ -120,7 +120,7 @@ serve(async (req) => {
       .eq("id", orderId);
 
     if (updateError) {
-      throw new CheckoutError("OrderUpdateError", `Failed to attach session to order: ${updateError.message}`, 500);
+      throw new HttpError("OrderUpdateError", `Failed to attach session to order: ${updateError.message}`, 500);
     }
 
     console.log(`[create-ticket-checkout][${requestId}] Created checkout session:`, session.id);
@@ -134,7 +134,7 @@ serve(async (req) => {
     console.error(`[create-ticket-checkout][${requestId}] Error (${status}):`, error);
     return errorResponse(error, {
       status,
-      defaultType: "TicketCheckoutError",
+      defaultType: "TicketHttpError",
       requestId,
       headers: corsHeaders,
     });
