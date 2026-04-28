@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { Shield, Eye, EyeOff, Lock, CheckCircle2, AlertTriangle, FileLock2, KeyRound, ShieldCheck, Copy, Check, HelpCircle, Download } from "lucide-react";
+import { Shield, Eye, EyeOff, Lock, CheckCircle2, AlertTriangle, FileLock2, KeyRound, ShieldCheck, Copy, Check, HelpCircle, Download, ExternalLink, Database, FolderLock, ServerCog } from "lucide-react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -33,88 +33,170 @@ function VBadge({ v }: { v: Visibility }) {
   );
 }
 
-type Row = { field: string; visibility: Visibility; note?: string };
+// Backend enforcement reference shown inline next to each row.
+// Links jump to the exact place in the Supabase dashboard so technically-minded
+// readers (and auditors) can verify the rule themselves.
+const SUPABASE_PROJECT_REF = "gsjwamfnoezhwlhkqzdn";
+
+type SourceKind = "table" | "view" | "function" | "storage" | "server";
+
+type Source = {
+  kind: SourceKind;
+  name: string;
+  policy?: string;
+};
+
+function sourceHref(s: Source): string | null {
+  const base = `https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}`;
+  switch (s.kind) {
+    case "table":
+      return `${base}/auth/policies?schema=public&search=${encodeURIComponent(s.name)}`;
+    case "view":
+      return `${base}/database/tables?schema=public&search=${encodeURIComponent(s.name)}`;
+    case "function":
+      return `${base}/database/functions?schema=public&search=${encodeURIComponent(s.name)}`;
+    case "storage":
+      return `${base}/storage/buckets/${encodeURIComponent(s.name)}`;
+    case "server":
+      return null;
+  }
+}
+
+const sourceKindMeta: Record<SourceKind, { label: string; icon: typeof Database }> = {
+  table: { label: "RLS policy", icon: Database },
+  view: { label: "Public view", icon: Eye },
+  function: { label: "Security function", icon: ServerCog },
+  storage: { label: "Storage policy", icon: FolderLock },
+  server: { label: "Server-only", icon: Lock },
+};
+
+function SourceLink({ source }: { source: Source }) {
+  const meta = sourceKindMeta[source.kind];
+  const Icon = meta.icon;
+  const href = sourceHref(source);
+  const label = source.policy ? `${source.name} · ${source.policy}` : source.name;
+  const title = `${meta.label}: ${label}`;
+
+  const inner = (
+    <>
+      <Icon className="h-3 w-3 shrink-0" aria-hidden />
+      <span className="font-mono">{source.name}</span>
+      {source.policy && (
+        <>
+          <span className="opacity-50">·</span>
+          <span className="truncate">{source.policy}</span>
+        </>
+      )}
+      {href && <ExternalLink className="h-3 w-3 shrink-0 opacity-60" aria-hidden />}
+    </>
+  );
+
+  const className =
+    "inline-flex items-center gap-1.5 max-w-full text-[11px] leading-none px-2 py-1 rounded-md border border-border bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors";
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={className}
+        title={title}
+        aria-label={`Open ${title} in Supabase dashboard`}
+      >
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <span className={className} title={title} aria-label={title}>
+      {inner}
+    </span>
+  );
+}
+
+type Row = { field: string; visibility: Visibility; note?: string; source: Source };
 
 const sections: { title: string; description: string; rows: Row[] }[] = [
   {
     title: "Your account profile",
     description: "What other people can and cannot see about you.",
     rows: [
-      { field: "Display name & avatar", visibility: "signed-in", note: "Visible to other signed-in members in vendor and event contexts." },
-      { field: "City & state (general location)", visibility: "signed-in", note: "Used for distance sorting and vendor cards." },
-      { field: "Email address", visibility: "owner", note: "Only you and platform admins can see your email." },
-      { field: "Street address & ZIP", visibility: "owner" },
-      { field: "Birthday", visibility: "owner" },
-      { field: "Phone number", visibility: "owner" },
-      { field: "Communication preferences", visibility: "owner" },
-      { field: "Account status / block reason", visibility: "admin" },
+      { field: "Display name & avatar", visibility: "signed-in", note: "Visible to other signed-in members in vendor and event contexts.", source: { kind: "function", name: "get_public_vendor_profiles" } },
+      { field: "City & state (general location)", visibility: "signed-in", note: "Used for distance sorting and vendor cards.", source: { kind: "function", name: "get_public_vendor_profiles" } },
+      { field: "Email address", visibility: "owner", note: "Only you and platform admins can see your email.", source: { kind: "table", name: "profiles", policy: "Users can view profiles" } },
+      { field: "Street address & ZIP", visibility: "owner", source: { kind: "table", name: "profiles", policy: "Users can view profiles" } },
+      { field: "Birthday", visibility: "owner", source: { kind: "table", name: "profiles", policy: "Users can view profiles" } },
+      { field: "Phone number", visibility: "owner", source: { kind: "table", name: "profiles", policy: "Users can view profiles" } },
+      { field: "Communication preferences", visibility: "owner", source: { kind: "table", name: "profiles", policy: "Users can update profiles" } },
+      { field: "Account status / block reason", visibility: "admin", source: { kind: "function", name: "is_admin" } },
     ],
   },
   {
     title: "Events",
     description: "Event listings are public by design so collectors can discover shows.",
     rows: [
-      { field: "Title, date, venue, address, flyer", visibility: "public" },
-      { field: "Pricing, ticket info, age pricing notes", visibility: "public" },
-      { field: "Vendor & sponsor counts", visibility: "public", note: "Aggregated through a restricted public view." },
-      { field: "Organizer contact email/phone", visibility: "public", note: "Only if the organizer chose to display it." },
-      { field: "Vendor instruction notes", visibility: "organizer", note: "Shared only with approved & paid vendors." },
-      { field: "Day-of checklist", visibility: "organizer" },
-      { field: "Uploaded contracts & receipts", visibility: "organizer", note: "Private storage bucket, signed-URL access only." },
+      { field: "Title, date, venue, address, flyer", visibility: "public", source: { kind: "table", name: "events", policy: "Public can view events" } },
+      { field: "Pricing, ticket info, age pricing notes", visibility: "public", source: { kind: "table", name: "events", policy: "Public can view events" } },
+      { field: "Vendor & sponsor counts", visibility: "public", note: "Aggregated through a restricted public view.", source: { kind: "view", name: "public_vendor_applications" } },
+      { field: "Organizer contact email/phone", visibility: "public", note: "Only if the organizer chose to display it.", source: { kind: "table", name: "events", policy: "Public can view events" } },
+      { field: "Vendor instruction notes", visibility: "organizer", note: "Shared only with approved & paid vendors.", source: { kind: "table", name: "events", policy: "Organizers can update their own events" } },
+      { field: "Day-of checklist", visibility: "organizer", source: { kind: "table", name: "event_checklist_items", policy: "Event organizers can manage their checklist items" } },
+      { field: "Uploaded contracts & receipts", visibility: "organizer", note: "Private storage bucket, signed-URL access only.", source: { kind: "storage", name: "event-files" } },
     ],
   },
   {
     title: "Vendor applications",
     description: "Vendors only appear publicly on an event after they are approved AND paid.",
     rows: [
-      { field: "Business name & logo (approved + paid)", visibility: "public" },
-      { field: "Approved table count (aggregate)", visibility: "public" },
-      { field: "Application status before approval/payment", visibility: "owner", note: "Hidden from the public; only the vendor and event organizer see it." },
-      { field: "Stripe session ID & payment metadata", visibility: "never", note: "Never exposed to the browser. Server-side only." },
-      { field: "Organizer's private notes about a vendor", visibility: "organizer" },
-      { field: "Uploaded files (contracts, receipts)", visibility: "organizer" },
-      { field: "Private 1–5 star vendor ratings", visibility: "organizer", note: "Only the rating organizer can see their own notes." },
+      { field: "Business name & logo (approved + paid)", visibility: "public", source: { kind: "view", name: "public_vendor_applications" } },
+      { field: "Approved table count (aggregate)", visibility: "public", source: { kind: "view", name: "public_vendor_applications" } },
+      { field: "Application status before approval/payment", visibility: "owner", note: "Hidden from the public; only the vendor and event organizer see it.", source: { kind: "table", name: "vendor_applications", policy: "Vendors can view their own applications" } },
+      { field: "Stripe session ID & payment metadata", visibility: "never", note: "Never exposed to the browser. Server-side only.", source: { kind: "server", name: "edge: stripe-webhook" } },
+      { field: "Organizer's private notes about a vendor", visibility: "organizer", source: { kind: "table", name: "organizer_vendor_notes", policy: "Organizers can view their own vendor notes" } },
+      { field: "Uploaded files (contracts, receipts)", visibility: "organizer", source: { kind: "storage", name: "event-files" } },
+      { field: "Private 1–5 star vendor ratings", visibility: "organizer", note: "Only the rating organizer can see their own notes.", source: { kind: "table", name: "organizer_vendor_notes", policy: "Organizers can view their own vendor notes" } },
     ],
   },
   {
     title: "Tickets & orders",
     description: "Your purchases stay yours.",
     rows: [
-      { field: "Your tickets and QR codes", visibility: "owner" },
-      { field: "Order totals & promo code used", visibility: "owner" },
-      { field: "Ticket scan / check-in status", visibility: "organizer", note: "Shown to the event organizer for the relevant event only." },
-      { field: "Stripe payment intent IDs", visibility: "never" },
-      { field: "Shared ticket link (you generate)", visibility: "public", note: "Only people with the unguessable link can view." },
+      { field: "Your tickets and QR codes", visibility: "owner", source: { kind: "table", name: "order_items", policy: "Users can view their own tickets" } },
+      { field: "Order totals & promo code used", visibility: "owner", source: { kind: "table", name: "orders", policy: "Users can view their own orders" } },
+      { field: "Ticket scan / check-in status", visibility: "organizer", note: "Shown to the event organizer for the relevant event only.", source: { kind: "table", name: "order_items", policy: "Event organizers can view tickets for their events" } },
+      { field: "Stripe payment intent IDs", visibility: "never", source: { kind: "server", name: "edge: create-checkout" } },
+      { field: "Shared ticket link (you generate)", visibility: "public", note: "Only people with the unguessable link can view.", source: { kind: "table", name: "order_items", policy: "Users can view their own tickets" } },
     ],
   },
   {
     title: "Subscriptions & billing",
     description: "Billing data is locked down to you and our payment processor.",
     rows: [
-      { field: "Subscription tier & renewal date", visibility: "owner" },
-      { field: "Stripe customer ID", visibility: "never", note: "Stored server-side; never returned to the browser." },
-      { field: "Payment card details", visibility: "never", note: "Handled entirely by Stripe — Collector Companion never stores them." },
+      { field: "Subscription tier & renewal date", visibility: "owner", source: { kind: "table", name: "subscribers", policy: "Owners can view their subscription" } },
+      { field: "Stripe customer ID", visibility: "never", note: "Stored server-side; never returned to the browser.", source: { kind: "server", name: "edge: check-subscription" } },
+      { field: "Payment card details", visibility: "never", note: "Handled entirely by Stripe — Collector Companion never stores them.", source: { kind: "server", name: "Stripe (PCI)" } },
     ],
   },
   {
     title: "Your collection & wishlist",
     description: "Personal collection data is private unless you choose to share.",
     rows: [
-      { field: "Cards, sealed product, slabs you own", visibility: "owner" },
-      { field: "Estimated value & purchase prices", visibility: "owner" },
-      { field: "Deal list / want list", visibility: "owner" },
-      { field: "Card scan images", visibility: "owner", note: "Stored in a private bucket scoped to your user ID." },
+      { field: "Cards, sealed product, slabs you own", visibility: "owner", source: { kind: "table", name: "collection_items", policy: "Users can view their own collection items" } },
+      { field: "Estimated value & purchase prices", visibility: "owner", source: { kind: "table", name: "collection_items", policy: "Users can view their own collection items" } },
+      { field: "Deal list / want list", visibility: "owner", source: { kind: "table", name: "deal_list_items", policy: "Users view their own deal items" } },
+      { field: "Card scan images", visibility: "owner", note: "Stored in a private bucket scoped to your user ID.", source: { kind: "storage", name: "card-scans" } },
     ],
   },
   {
     title: "Staff & raffles",
     description: "Operational data tied to a specific event.",
     rows: [
-      { field: "Staff assignment (your own)", visibility: "owner" },
-      { field: "Other staff members' contact info", visibility: "organizer" },
-      { field: "Staff check-in tokens", visibility: "never", note: "Single-purpose tokens used only by the check-in flow." },
-      { field: "Raffle entries (yours)", visibility: "owner" },
-      { field: "Raffle winners list", visibility: "organizer" },
+      { field: "Staff assignment (your own)", visibility: "owner", source: { kind: "table", name: "event_staff_assignments", policy: "Staff view their own assignment" } },
+      { field: "Other staff members' contact info", visibility: "organizer", source: { kind: "table", name: "event_staff_assignments", policy: "Organizers manage their event staff" } },
+      { field: "Staff check-in tokens", visibility: "never", note: "Single-purpose tokens used only by the check-in flow.", source: { kind: "server", name: "edge: staff-checkin" } },
+      { field: "Raffle entries (yours)", visibility: "owner", source: { kind: "table", name: "raffle_entries", policy: "Users can view their own raffle entries" } },
+      { field: "Raffle winners list", visibility: "organizer", source: { kind: "table", name: "raffle_draws", policy: "Organizers can manage raffle draws" } },
     ],
   },
 ];
@@ -270,11 +352,14 @@ export default function Security() {
                       <ul className="divide-y divide-border">
                         {s.rows.map((r) => (
                           <li key={r.field} className="py-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                            <div className="min-w-0">
+                            <div className="min-w-0 space-y-1.5">
                               <div className="font-medium">{r.field}</div>
                               {r.note && (
                                 <div className="text-sm text-muted-foreground">{r.note}</div>
                               )}
+                              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                <SourceLink source={r.source} />
+                              </div>
                             </div>
                             <div className="shrink-0">
                               <VBadge v={r.visibility} />
@@ -300,9 +385,10 @@ export default function Security() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-1/3">Information</TableHead>
+                            <TableHead className="w-1/4">Information</TableHead>
                             <TableHead>Who can see it</TableHead>
                             <TableHead>Notes</TableHead>
+                            <TableHead>Enforced by</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -311,6 +397,7 @@ export default function Security() {
                               <TableCell className="font-medium">{r.field}</TableCell>
                               <TableCell><VBadge v={r.visibility} /></TableCell>
                               <TableCell className="text-muted-foreground text-sm">{r.note ?? "—"}</TableCell>
+                              <TableCell><SourceLink source={r.source} /></TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -476,19 +563,21 @@ async function generateSecurityPdf() {
     autoTable(doc, {
       startY: cursorY,
       margin: { left: margin, right: margin },
-      head: [["Information", "Who can see it", "Notes"]],
+      head: [["Information", "Who can see it", "Notes", "Enforced by"]],
       body: section.rows.map((r) => [
         r.field,
         visibilityMeta[r.visibility].label,
         r.note ?? "—",
+        `${sourceKindMeta[r.source.kind].label}: ${r.source.name}${r.source.policy ? ` · ${r.source.policy}` : ""}`,
       ]),
       styles: { fontSize: 9, cellPadding: 6, valign: "top" },
       headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold" },
       alternateRowStyles: { fillColor: [248, 250, 252] },
       columnStyles: {
-        0: { cellWidth: 170, fontStyle: "bold" },
-        1: { cellWidth: 110 },
+        0: { cellWidth: 130, fontStyle: "bold" },
+        1: { cellWidth: 90 },
         2: { cellWidth: "auto", textColor: 80 },
+        3: { cellWidth: 150, textColor: 80, font: "courier", fontSize: 8 },
       },
       didDrawPage: () => {
         doc.setFontSize(8);
