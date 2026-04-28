@@ -352,11 +352,14 @@ export default function Security() {
                       <ul className="divide-y divide-border">
                         {s.rows.map((r) => (
                           <li key={r.field} className="py-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-                            <div className="min-w-0">
+                            <div className="min-w-0 space-y-1.5">
                               <div className="font-medium">{r.field}</div>
                               {r.note && (
                                 <div className="text-sm text-muted-foreground">{r.note}</div>
                               )}
+                              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                <SourceLink source={r.source} />
+                              </div>
                             </div>
                             <div className="shrink-0">
                               <VBadge v={r.visibility} />
