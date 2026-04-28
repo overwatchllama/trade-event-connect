@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { Shield, Eye, EyeOff, Lock, CheckCircle2, AlertTriangle, FileLock2, KeyRound, ShieldCheck, Copy, Check, HelpCircle, Download, ExternalLink, Database, FolderLock, ServerCog } from "lucide-react";
+import { Shield, Eye, EyeOff, Lock, CheckCircle2, AlertTriangle, FileLock2, KeyRound, ShieldCheck, Copy, Check, HelpCircle, Download, ExternalLink, Database, FolderLock, ServerCog, Globe, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 type Visibility = "public" | "signed-in" | "owner" | "organizer" | "admin" | "never";
 
@@ -116,6 +117,30 @@ function SourceLink({ source }: { source: Source }) {
 }
 
 type Row = { field: string; visibility: Visibility; note?: string; source: Source };
+
+// Persona preview: simulates what a browser would actually receive over the wire
+// for a viewer in the given role. "Public" = no session token. "Signed-in" = a
+// generic authenticated user who is NOT the owner, organizer, or admin of the row.
+type Persona = "public" | "signed-in";
+
+function visibleToPersona(v: Visibility, persona: Persona): boolean {
+  if (persona === "public") return v === "public";
+  // signed-in (generic, not owner/organizer/admin)
+  return v === "public" || v === "signed-in";
+}
+
+const personaMeta: Record<Persona, { label: string; icon: typeof Globe; description: string }> = {
+  public: {
+    label: "Public visitor",
+    icon: Globe,
+    description: "Not signed in. Browsing collectorcompanion.com without a session.",
+  },
+  "signed-in": {
+    label: "Signed-in user",
+    icon: UserCheck,
+    description: "Authenticated, but not the owner, organizer, or admin of this data.",
+  },
+};
 
 const sections: { title: string; description: string; rows: Row[] }[] = [
   {
@@ -235,6 +260,16 @@ const principles = [
 ];
 
 export default function Security() {
+  const [persona, setPersona] = useState<Persona>("public");
+  const PersonaIcon = personaMeta[persona].icon;
+
+  // For each section, count how many rows the current persona would actually see.
+  const sectionVisibleCounts = sections.map(
+    (s) => s.rows.filter((r) => visibleToPersona(r.visibility, persona)).length,
+  );
+  const totalRows = sections.reduce((n, s) => n + s.rows.length, 0);
+  const totalVisible = sectionVisibleCounts.reduce((n, c) => n + c, 0);
+
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
@@ -328,6 +363,61 @@ export default function Security() {
             Browse by area. Each row shows where a piece of information appears and who can see it.
           </p>
 
+          {/* Persona preview toggle */}
+          <Card className="mb-6 border-primary/20 bg-primary/5">
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold flex items-center gap-2">
+                    <Eye className="h-4 w-4 text-primary" aria-hidden />
+                    Preview as…
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    See exactly which fields the browser would receive for each kind of viewer.
+                  </p>
+                </div>
+                <ToggleGroup
+                  type="single"
+                  value={persona}
+                  onValueChange={(v) => v && setPersona(v as Persona)}
+                  className="bg-background rounded-md border p-1 self-start sm:self-auto"
+                  aria-label="Preview the page as a different kind of viewer"
+                >
+                  <ToggleGroupItem
+                    value="public"
+                    className="gap-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                    aria-label="Preview as public visitor"
+                  >
+                    <Globe className="h-4 w-4" aria-hidden />
+                    Public visitor
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="signed-in"
+                    className="gap-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                    aria-label="Preview as signed-in user"
+                  >
+                    <UserCheck className="h-4 w-4" aria-hidden />
+                    Signed-in user
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+              <div
+                className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm border-t pt-4"
+                aria-live="polite"
+              >
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  <PersonaIcon className="h-4 w-4 text-primary" aria-hidden />
+                  Showing what a {personaMeta[persona].label.toLowerCase()} can see
+                </span>
+                <span className="text-muted-foreground">{personaMeta[persona].description}</span>
+                <span className="ml-auto text-muted-foreground">
+                  <strong className="text-foreground tabular-nums">{totalVisible}</strong> of{" "}
+                  <span className="tabular-nums">{totalRows}</span> fields visible
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
           <Tabs defaultValue="cards" className="w-full">
             <TabsList className="grid w-full grid-cols-2 max-w-xs mb-4">
               <TabsTrigger value="cards">Card view</TabsTrigger>
@@ -336,26 +426,58 @@ export default function Security() {
 
             <TabsContent value="cards" className="space-y-4">
               <Accordion type="multiple" defaultValue={[sections[0].title]} className="space-y-3">
-                {sections.map((s) => (
+                {sections.map((s, sIdx) => {
+                  const visibleCount = sectionVisibleCounts[sIdx];
+                  return (
                   <AccordionItem
                     key={s.title}
                     value={s.title}
                     className="border rounded-lg px-4 bg-card"
                   >
                     <AccordionTrigger className="hover:no-underline">
-                      <div className="text-left">
-                        <div className="font-semibold">{s.title}</div>
+                      <div className="text-left flex-1 min-w-0 pr-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold">{s.title}</span>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] font-normal h-5"
+                            aria-label={`${visibleCount} of ${s.rows.length} fields visible to ${personaMeta[persona].label.toLowerCase()}`}
+                          >
+                            {visibleCount}/{s.rows.length} visible
+                          </Badge>
+                        </div>
                         <div className="text-sm text-muted-foreground font-normal">{s.description}</div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
                       <ul className="divide-y divide-border">
-                        {s.rows.map((r) => (
-                          <li key={r.field} className="py-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                        {s.rows.map((r) => {
+                          const visible = visibleToPersona(r.visibility, persona);
+                          return (
+                          <li
+                            key={r.field}
+                            className={`py-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 ${visible ? "" : "opacity-60"}`}
+                            aria-label={visible ? undefined : `${r.field} — hidden from ${personaMeta[persona].label.toLowerCase()}`}
+                          >
                             <div className="min-w-0 space-y-1.5">
-                              <div className="font-medium">{r.field}</div>
-                              {r.note && (
-                                <div className="text-sm text-muted-foreground">{r.note}</div>
+                              <div className="font-medium flex items-center gap-2">
+                                {visible ? (
+                                  <Eye className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden />
+                                ) : (
+                                  <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+                                )}
+                                <span className={visible ? "" : "line-through decoration-muted-foreground/50"}>
+                                  {r.field}
+                                </span>
+                              </div>
+                              {visible ? (
+                                r.note && (
+                                  <div className="text-sm text-muted-foreground">{r.note}</div>
+                                )
+                              ) : (
+                                <div className="text-sm text-muted-foreground italic">
+                                  Blocked for this viewer — the browser receives nothing for this field.
+                                </div>
                               )}
                               <div className="flex flex-wrap gap-1.5 pt-0.5">
                                 <SourceLink source={r.source} />
@@ -365,11 +487,13 @@ export default function Security() {
                               <VBadge v={r.visibility} />
                             </div>
                           </li>
-                        ))}
+                          );
+                        })}
                       </ul>
                     </AccordionContent>
                   </AccordionItem>
-                ))}
+                  );
+                })}
               </Accordion>
             </TabsContent>
 
@@ -387,19 +511,36 @@ export default function Security() {
                           <TableRow>
                             <TableHead className="w-1/4">Information</TableHead>
                             <TableHead>Who can see it</TableHead>
+                            <TableHead>Preview</TableHead>
                             <TableHead>Notes</TableHead>
                             <TableHead>Enforced by</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {s.rows.map((r) => (
-                            <TableRow key={r.field}>
-                              <TableCell className="font-medium">{r.field}</TableCell>
+                          {s.rows.map((r) => {
+                            const visible = visibleToPersona(r.visibility, persona);
+                            return (
+                            <TableRow key={r.field} className={visible ? "" : "opacity-60"}>
+                              <TableCell className={`font-medium ${visible ? "" : "line-through decoration-muted-foreground/50"}`}>
+                                {r.field}
+                              </TableCell>
                               <TableCell><VBadge v={r.visibility} /></TableCell>
+                              <TableCell>
+                                {visible ? (
+                                  <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
+                                    <Eye className="h-3 w-3" aria-hidden /> Visible
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-muted-foreground text-xs">
+                                    <EyeOff className="h-3 w-3" aria-hidden /> Blocked
+                                  </span>
+                                )}
+                              </TableCell>
                               <TableCell className="text-muted-foreground text-sm">{r.note ?? "—"}</TableCell>
                               <TableCell><SourceLink source={r.source} /></TableCell>
                             </TableRow>
-                          ))}
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </CardContent>
