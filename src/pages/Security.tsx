@@ -260,6 +260,16 @@ const principles = [
 ];
 
 export default function Security() {
+  const [persona, setPersona] = useState<Persona>("public");
+  const PersonaIcon = personaMeta[persona].icon;
+
+  // For each section, count how many rows the current persona would actually see.
+  const sectionVisibleCounts = sections.map(
+    (s) => s.rows.filter((r) => visibleToPersona(r.visibility, persona)).length,
+  );
+  const totalRows = sections.reduce((n, s) => n + s.rows.length, 0);
+  const totalVisible = sectionVisibleCounts.reduce((n, c) => n + c, 0);
+
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
