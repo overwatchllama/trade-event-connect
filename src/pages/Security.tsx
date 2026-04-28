@@ -385,9 +385,10 @@ export default function Security() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-1/3">Information</TableHead>
+                            <TableHead className="w-1/4">Information</TableHead>
                             <TableHead>Who can see it</TableHead>
                             <TableHead>Notes</TableHead>
+                            <TableHead>Enforced by</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -396,6 +397,7 @@ export default function Security() {
                               <TableCell className="font-medium">{r.field}</TableCell>
                               <TableCell><VBadge v={r.visibility} /></TableCell>
                               <TableCell className="text-muted-foreground text-sm">{r.note ?? "—"}</TableCell>
+                              <TableCell><SourceLink source={r.source} /></TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
