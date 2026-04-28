@@ -363,6 +363,61 @@ export default function Security() {
             Browse by area. Each row shows where a piece of information appears and who can see it.
           </p>
 
+          {/* Persona preview toggle */}
+          <Card className="mb-6 border-primary/20 bg-primary/5">
+            <CardContent className="pt-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold flex items-center gap-2">
+                    <Eye className="h-4 w-4 text-primary" aria-hidden />
+                    Preview as…
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    See exactly which fields the browser would receive for each kind of viewer.
+                  </p>
+                </div>
+                <ToggleGroup
+                  type="single"
+                  value={persona}
+                  onValueChange={(v) => v && setPersona(v as Persona)}
+                  className="bg-background rounded-md border p-1 self-start sm:self-auto"
+                  aria-label="Preview the page as a different kind of viewer"
+                >
+                  <ToggleGroupItem
+                    value="public"
+                    className="gap-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                    aria-label="Preview as public visitor"
+                  >
+                    <Globe className="h-4 w-4" aria-hidden />
+                    Public visitor
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="signed-in"
+                    className="gap-2 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                    aria-label="Preview as signed-in user"
+                  >
+                    <UserCheck className="h-4 w-4" aria-hidden />
+                    Signed-in user
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+              <div
+                className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm border-t pt-4"
+                aria-live="polite"
+              >
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  <PersonaIcon className="h-4 w-4 text-primary" aria-hidden />
+                  Showing what a {personaMeta[persona].label.toLowerCase()} can see
+                </span>
+                <span className="text-muted-foreground">{personaMeta[persona].description}</span>
+                <span className="ml-auto text-muted-foreground">
+                  <strong className="text-foreground tabular-nums">{totalVisible}</strong> of{" "}
+                  <span className="tabular-nums">{totalRows}</span> fields visible
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
           <Tabs defaultValue="cards" className="w-full">
             <TabsList className="grid w-full grid-cols-2 max-w-xs mb-4">
               <TabsTrigger value="cards">Card view</TabsTrigger>
@@ -371,7 +426,7 @@ export default function Security() {
 
             <TabsContent value="cards" className="space-y-4">
               <Accordion type="multiple" defaultValue={[sections[0].title]} className="space-y-3">
-                {sections.map((s) => (
+                {sections.map((s, sIdx) => (
                   <AccordionItem
                     key={s.title}
                     value={s.title}
