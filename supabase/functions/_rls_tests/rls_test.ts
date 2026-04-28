@@ -46,7 +46,7 @@ Deno.test("vendor_applications: anon cannot read PII columns", async () => {
     // Either the column read is rejected by RLS (data empty) or the request
     // errors. Either way, no row containing that column may come back.
     if (data && data.length > 0) {
-      const row = data[0] as Record<string, unknown>;
+      const row = data[0] as unknown as Record<string, unknown>;
       assert(
         row[col] === undefined || row[col] === null,
         `anon unexpectedly read vendor_applications.${col}: ${JSON.stringify(row)}`,
