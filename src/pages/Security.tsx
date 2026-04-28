@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { Shield, Eye, EyeOff, Lock, CheckCircle2, AlertTriangle, FileLock2, KeyRound, ShieldCheck } from "lucide-react";
+import { Shield, Eye, EyeOff, Lock, CheckCircle2, AlertTriangle, FileLock2, KeyRound, ShieldCheck, Copy, Check, HelpCircle } from "lucide-react";
+import { toast } from "sonner";
 import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -366,11 +368,136 @@ export default function Security() {
           </Card>
         </section>
 
+        {/* Privacy FAQ */}
+        <PrivacyFAQ />
+
         <p className="text-xs text-muted-foreground text-center">
           This page describes how Collector Companion handles your data today. We may improve protections over time —
           we'll never reduce them without telling you.
         </p>
       </main>
     </div>
+  );
+}
+
+const faqs: { q: string; a: string }[] = [
+  {
+    q: "Who can see my email address?",
+    a: "Only you and platform admins. Other members — including event organizers and vendors — never see your email through the app.",
+  },
+  {
+    q: "When does my vendor application become public?",
+    a: "Only after it is BOTH approved by the organizer AND marked paid. Pending, rejected, or unpaid applications stay private to you and the organizer.",
+  },
+  {
+    q: "Does Collector Companion store my credit card?",
+    a: "No. All card data is handled by Stripe. We only store a Stripe customer reference on the server, which is never sent to your browser.",
+  },
+  {
+    q: "Can organizers see my home address or phone number?",
+    a: "No. Organizers only see information you explicitly provide on a vendor application or ticket purchase, and never your full account profile.",
+  },
+  {
+    q: "Is my collection visible to anyone else?",
+    a: "No. Your cards, sealed product, slabs, want list, and card scans are private to your account.",
+  },
+  {
+    q: "What happens to my data if I delete my account?",
+    a: "Your profile, collection, and personal data are removed. Records required for legal/financial reasons (like paid orders) may be retained in a de-identified form.",
+  },
+  {
+    q: "Are there automated checks to make sure private data stays private?",
+    a: "Yes. A Row Level Security test suite re-runs after every change and verifies that PII fields stay blocked and public views only expose safe columns.",
+  },
+  {
+    q: "Where can I report a security concern?",
+    a: "Email security@collectorcompanion.com with details. We triage every report and respond within two business days.",
+  },
+];
+
+function PrivacyFAQ() {
+  const [copied, setCopied] = useState(false);
+
+  const buildSummary = () => {
+    const lines = [
+      "Collector Companion — Privacy Summary",
+      `Verified: ${new Date(__SECURITY_VERIFIED_AT__).toISOString()} (build ${__SECURITY_VERIFIED_COMMIT__})`,
+      "Source: https://collectorcompanion.com/security",
+      "",
+      "Key guarantees:",
+      "• Email, phone, address, and birthday are visible only to the account owner and admins.",
+      "• Vendor applications become public only after approved AND paid.",
+      "• Stripe IDs and payment metadata are never sent to the browser.",
+      "• Collections, want lists, and card scans are private to the owner.",
+      "• Organizer notes, contracts, and uploaded files are restricted to the event organizer.",
+      "• Storage buckets for files and card scans are private and require authenticated, scoped access.",
+      "• Row Level Security regression tests run after every change.",
+      "",
+      "FAQ:",
+      ...faqs.flatMap((f) => [`Q: ${f.q}`, `A: ${f.a}`, ""]),
+    ];
+    return lines.join("\n");
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(buildSummary());
+      setCopied(true);
+      toast.success("Privacy summary copied to clipboard");
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      toast.error("Couldn't copy. Please try selecting the text manually.");
+    }
+  };
+
+  return (
+    <section className="mb-12">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-2xl font-semibold flex items-center gap-2">
+            <HelpCircle className="h-6 w-6 text-primary" aria-hidden />
+            Privacy FAQ
+          </h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            Quick answers to the questions we hear most often.
+          </p>
+        </div>
+        <Button
+          onClick={handleCopy}
+          variant="outline"
+          size="sm"
+          aria-label="Copy privacy summary to clipboard for support tickets"
+        >
+          {copied ? (
+            <>
+              <Check className="h-4 w-4 mr-2" aria-hidden />
+              Copied
+            </>
+          ) : (
+            <>
+              <Copy className="h-4 w-4 mr-2" aria-hidden />
+              Copy summary for support
+            </>
+          )}
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent className="pt-6">
+          <Accordion type="single" collapsible className="w-full">
+            {faqs.map((f, i) => (
+              <AccordionItem key={f.q} value={`faq-${i}`}>
+                <AccordionTrigger className="text-left hover:no-underline">
+                  {f.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  {f.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
+    </section>
   );
 }
