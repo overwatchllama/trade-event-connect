@@ -16,7 +16,8 @@
  *   deno test --allow-net --allow-env supabase/functions/_rls_tests/rls_test.ts
  */
 
-import "https://deno.land/std@0.224.0/dotenv/load.ts";
+import { load } from "https://deno.land/std@0.224.0/dotenv/mod.ts";
+await load({ export: true, allowEmptyValues: true, examplePath: null });
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
