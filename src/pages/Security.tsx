@@ -426,26 +426,58 @@ export default function Security() {
 
             <TabsContent value="cards" className="space-y-4">
               <Accordion type="multiple" defaultValue={[sections[0].title]} className="space-y-3">
-                {sections.map((s, sIdx) => (
+                {sections.map((s, sIdx) => {
+                  const visibleCount = sectionVisibleCounts[sIdx];
+                  return (
                   <AccordionItem
                     key={s.title}
                     value={s.title}
                     className="border rounded-lg px-4 bg-card"
                   >
                     <AccordionTrigger className="hover:no-underline">
-                      <div className="text-left">
-                        <div className="font-semibold">{s.title}</div>
+                      <div className="text-left flex-1 min-w-0 pr-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold">{s.title}</span>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] font-normal h-5"
+                            aria-label={`${visibleCount} of ${s.rows.length} fields visible to ${personaMeta[persona].label.toLowerCase()}`}
+                          >
+                            {visibleCount}/{s.rows.length} visible
+                          </Badge>
+                        </div>
                         <div className="text-sm text-muted-foreground font-normal">{s.description}</div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
                       <ul className="divide-y divide-border">
-                        {s.rows.map((r) => (
-                          <li key={r.field} className="py-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                        {s.rows.map((r) => {
+                          const visible = visibleToPersona(r.visibility, persona);
+                          return (
+                          <li
+                            key={r.field}
+                            className={`py-3 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 ${visible ? "" : "opacity-60"}`}
+                            aria-label={visible ? undefined : `${r.field} — hidden from ${personaMeta[persona].label.toLowerCase()}`}
+                          >
                             <div className="min-w-0 space-y-1.5">
-                              <div className="font-medium">{r.field}</div>
-                              {r.note && (
-                                <div className="text-sm text-muted-foreground">{r.note}</div>
+                              <div className="font-medium flex items-center gap-2">
+                                {visible ? (
+                                  <Eye className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden />
+                                ) : (
+                                  <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+                                )}
+                                <span className={visible ? "" : "line-through decoration-muted-foreground/50"}>
+                                  {r.field}
+                                </span>
+                              </div>
+                              {visible ? (
+                                r.note && (
+                                  <div className="text-sm text-muted-foreground">{r.note}</div>
+                                )
+                              ) : (
+                                <div className="text-sm text-muted-foreground italic">
+                                  Blocked for this viewer — the browser receives nothing for this field.
+                                </div>
                               )}
                               <div className="flex flex-wrap gap-1.5 pt-0.5">
                                 <SourceLink source={r.source} />
@@ -455,11 +487,13 @@ export default function Security() {
                               <VBadge v={r.visibility} />
                             </div>
                           </li>
-                        ))}
+                          );
+                        })}
                       </ul>
                     </AccordionContent>
                   </AccordionItem>
-                ))}
+                  );
+                })}
               </Accordion>
             </TabsContent>
 
@@ -477,19 +511,36 @@ export default function Security() {
                           <TableRow>
                             <TableHead className="w-1/4">Information</TableHead>
                             <TableHead>Who can see it</TableHead>
+                            <TableHead>Preview</TableHead>
                             <TableHead>Notes</TableHead>
                             <TableHead>Enforced by</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {s.rows.map((r) => (
-                            <TableRow key={r.field}>
-                              <TableCell className="font-medium">{r.field}</TableCell>
+                          {s.rows.map((r) => {
+                            const visible = visibleToPersona(r.visibility, persona);
+                            return (
+                            <TableRow key={r.field} className={visible ? "" : "opacity-60"}>
+                              <TableCell className={`font-medium ${visible ? "" : "line-through decoration-muted-foreground/50"}`}>
+                                {r.field}
+                              </TableCell>
                               <TableCell><VBadge v={r.visibility} /></TableCell>
+                              <TableCell>
+                                {visible ? (
+                                  <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
+                                    <Eye className="h-3 w-3" aria-hidden /> Visible
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-muted-foreground text-xs">
+                                    <EyeOff className="h-3 w-3" aria-hidden /> Blocked
+                                  </span>
+                                )}
+                              </TableCell>
                               <TableCell className="text-muted-foreground text-sm">{r.note ?? "—"}</TableCell>
                               <TableCell><SourceLink source={r.source} /></TableCell>
                             </TableRow>
-                          ))}
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </CardContent>
