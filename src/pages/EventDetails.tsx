@@ -104,11 +104,9 @@ const EventDetails = () => {
 
         // Fetch vendor count and tables sold
         const { data: vendorApps, error: vendorError } = await supabase
-          .from('vendor_applications')
+          .from('public_vendor_applications')
           .select('approved_tables')
-          .eq('event_id', id)
-          .eq('application_status', 'approved')
-          .eq('payment_status', 'paid');
+          .eq('event_id', id);
 
         if (!vendorError && vendorApps) {
           setVendorCount(vendorApps.length);
