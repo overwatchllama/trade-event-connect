@@ -368,6 +368,9 @@ export default function Security() {
           </Card>
         </section>
 
+        {/* Privacy FAQ */}
+        <PrivacyFAQ />
+
         <p className="text-xs text-muted-foreground text-center">
           This page describes how Collector Companion handles your data today. We may improve protections over time —
           we'll never reduce them without telling you.
