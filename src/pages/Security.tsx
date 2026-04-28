@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { Shield, Eye, EyeOff, Lock, CheckCircle2, AlertTriangle, FileLock2, KeyRound, ShieldCheck, Copy, Check, HelpCircle } from "lucide-react";
+import { Shield, Eye, EyeOff, Lock, CheckCircle2, AlertTriangle, FileLock2, KeyRound, ShieldCheck, Copy, Check, HelpCircle, Download } from "lucide-react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -415,6 +415,100 @@ const faqs: { q: string; a: string }[] = [
   },
 ];
 
+async function generateSecurityPdf() {
+  const [{ default: jsPDF }, autoTableMod] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+  const autoTable = (autoTableMod as { default: typeof import("jspdf-autotable").default }).default;
+
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 48;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.text("Collector Companion", margin, 64);
+  doc.setFontSize(14);
+  doc.text("Security & Data Visibility Summary", margin, 86);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(110);
+  const verifiedAt = new Date(__SECURITY_VERIFIED_AT__).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  doc.text(
+    `Last verified: ${verifiedAt}  •  Build: ${__SECURITY_VERIFIED_COMMIT__}  •  Generated: ${new Date().toLocaleString()}`,
+    margin,
+    104,
+  );
+  doc.setTextColor(0);
+
+  doc.setFontSize(10);
+  const intro =
+    "This document summarizes which fields in Collector Companion are public, which are restricted to specific roles (owner, organizer, admin), and which are never exposed outside our servers. Restrictions are enforced at the database level via Row Level Security (RLS) policies and dedicated public views.";
+  const introLines = doc.splitTextToSize(intro, pageWidth - margin * 2);
+  doc.text(introLines, margin, 124);
+
+  let cursorY = 124 + introLines.length * 13 + 8;
+
+  for (const section of sections) {
+    if (cursorY > 700) {
+      doc.addPage();
+      cursorY = 64;
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text(section.title, margin, cursorY);
+    cursorY += 16;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(110);
+    const descLines = doc.splitTextToSize(section.description, pageWidth - margin * 2);
+    doc.text(descLines, margin, cursorY);
+    cursorY += descLines.length * 11 + 4;
+    doc.setTextColor(0);
+
+    autoTable(doc, {
+      startY: cursorY,
+      margin: { left: margin, right: margin },
+      head: [["Information", "Who can see it", "Notes"]],
+      body: section.rows.map((r) => [
+        r.field,
+        visibilityMeta[r.visibility].label,
+        r.note ?? "—",
+      ]),
+      styles: { fontSize: 9, cellPadding: 6, valign: "top" },
+      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      columnStyles: {
+        0: { cellWidth: 170, fontStyle: "bold" },
+        1: { cellWidth: 110 },
+        2: { cellWidth: "auto", textColor: 80 },
+      },
+      didDrawPage: () => {
+        doc.setFontSize(8);
+        doc.setTextColor(140);
+        doc.text(
+          "collectorcompanion.com/security  •  Summary provided in good faith.",
+          margin,
+          doc.internal.pageSize.getHeight() - 24,
+        );
+        doc.setTextColor(0);
+      },
+    });
+
+    // @ts-expect-error autoTable attaches lastAutoTable to the doc instance
+    cursorY = (doc.lastAutoTable?.finalY ?? cursorY) + 22;
+  }
+
+  doc.save(`collector-companion-security-${__SECURITY_VERIFIED_COMMIT__}.pdf`);
+}
+
 function PrivacyFAQ() {
   const [copied, setCopied] = useState(false);
 
@@ -450,6 +544,16 @@ function PrivacyFAQ() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    try {
+      await generateSecurityPdf();
+      toast.success("Security summary PDF downloaded");
+    } catch (err) {
+      console.error("PDF generation failed", err);
+      toast.error("Couldn't generate PDF. Please try again.");
+    }
+  };
+
   return (
     <section className="mb-12">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
@@ -462,24 +566,35 @@ function PrivacyFAQ() {
             Quick answers to the questions we hear most often.
           </p>
         </div>
-        <Button
-          onClick={handleCopy}
-          variant="outline"
-          size="sm"
-          aria-label="Copy privacy summary to clipboard for support tickets"
-        >
-          {copied ? (
-            <>
-              <Check className="h-4 w-4 mr-2" aria-hidden />
-              Copied
-            </>
-          ) : (
-            <>
-              <Copy className="h-4 w-4 mr-2" aria-hidden />
-              Copy summary for support
-            </>
-          )}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={handleDownloadPdf}
+            variant="default"
+            size="sm"
+            aria-label="Download security summary as PDF"
+          >
+            <Download className="h-4 w-4 mr-2" aria-hidden />
+            Download PDF
+          </Button>
+          <Button
+            onClick={handleCopy}
+            variant="outline"
+            size="sm"
+            aria-label="Copy privacy summary to clipboard for support tickets"
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4 mr-2" aria-hidden />
+                Copied
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4 mr-2" aria-hidden />
+                Copy for support
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       <Card>
