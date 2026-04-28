@@ -450,6 +450,16 @@ function PrivacyFAQ() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    try {
+      await generateSecurityPdf();
+      toast.success("Security summary PDF downloaded");
+    } catch (err) {
+      console.error("PDF generation failed", err);
+      toast.error("Couldn't generate PDF. Please try again.");
+    }
+  };
+
   return (
     <section className="mb-12">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
