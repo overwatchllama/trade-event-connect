@@ -118,6 +118,30 @@ function SourceLink({ source }: { source: Source }) {
 
 type Row = { field: string; visibility: Visibility; note?: string; source: Source };
 
+// Persona preview: simulates what a browser would actually receive over the wire
+// for a viewer in the given role. "Public" = no session token. "Signed-in" = a
+// generic authenticated user who is NOT the owner, organizer, or admin of the row.
+type Persona = "public" | "signed-in";
+
+function visibleToPersona(v: Visibility, persona: Persona): boolean {
+  if (persona === "public") return v === "public";
+  // signed-in (generic, not owner/organizer/admin)
+  return v === "public" || v === "signed-in";
+}
+
+const personaMeta: Record<Persona, { label: string; icon: typeof Globe; description: string }> = {
+  public: {
+    label: "Public visitor",
+    icon: Globe,
+    description: "Not signed in. Browsing collectorcompanion.com without a session.",
+  },
+  "signed-in": {
+    label: "Signed-in user",
+    icon: UserCheck,
+    description: "Authenticated, but not the owner, organizer, or admin of this data.",
+  },
+};
+
 const sections: { title: string; description: string; rows: Row[] }[] = [
   {
     title: "Your account profile",
