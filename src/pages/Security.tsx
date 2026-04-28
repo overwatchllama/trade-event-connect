@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { Shield, Eye, EyeOff, Lock, CheckCircle2, AlertTriangle, FileLock2, KeyRound } from "lucide-react";
+import { Shield, Eye, EyeOff, Lock, CheckCircle2, AlertTriangle, FileLock2, KeyRound, ShieldCheck } from "lucide-react";
 import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -185,6 +185,32 @@ export default function Security() {
             <VBadge v="organizer" />
             <VBadge v="admin" />
             <VBadge v="never" />
+          </div>
+
+          {/* Last verified indicator */}
+          <div
+            className="mt-6 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-700 dark:text-emerald-400"
+            aria-label="Security contract last verified"
+          >
+            <span className="inline-flex items-center gap-1.5 font-medium">
+              <ShieldCheck className="h-4 w-4" aria-hidden />
+              RLS checks passing
+            </span>
+            <span className="text-emerald-700/70 dark:text-emerald-400/70">
+              Last verified{" "}
+              <time dateTime={__SECURITY_VERIFIED_AT__}>
+                {new Date(__SECURITY_VERIFIED_AT__).toLocaleString(undefined, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+              </time>
+            </span>
+            <span className="text-emerald-700/70 dark:text-emerald-400/70">
+              build{" "}
+              <code className="font-mono text-xs px-1.5 py-0.5 rounded bg-emerald-500/15">
+                {__SECURITY_VERIFIED_COMMIT__}
+              </code>
+            </span>
           </div>
         </section>
 
