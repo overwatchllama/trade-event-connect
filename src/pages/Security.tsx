@@ -563,19 +563,21 @@ async function generateSecurityPdf() {
     autoTable(doc, {
       startY: cursorY,
       margin: { left: margin, right: margin },
-      head: [["Information", "Who can see it", "Notes"]],
+      head: [["Information", "Who can see it", "Notes", "Enforced by"]],
       body: section.rows.map((r) => [
         r.field,
         visibilityMeta[r.visibility].label,
         r.note ?? "—",
+        `${sourceKindMeta[r.source.kind].label}: ${r.source.name}${r.source.policy ? ` · ${r.source.policy}` : ""}`,
       ]),
       styles: { fontSize: 9, cellPadding: 6, valign: "top" },
       headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold" },
       alternateRowStyles: { fillColor: [248, 250, 252] },
       columnStyles: {
-        0: { cellWidth: 170, fontStyle: "bold" },
-        1: { cellWidth: 110 },
+        0: { cellWidth: 130, fontStyle: "bold" },
+        1: { cellWidth: 90 },
         2: { cellWidth: "auto", textColor: 80 },
+        3: { cellWidth: 150, textColor: 80, font: "courier", fontSize: 8 },
       },
       didDrawPage: () => {
         doc.setFontSize(8);
