@@ -415,6 +415,100 @@ const faqs: { q: string; a: string }[] = [
   },
 ];
 
+async function generateSecurityPdf() {
+  const [{ default: jsPDF }, autoTableMod] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+  const autoTable = (autoTableMod as { default: typeof import("jspdf-autotable").default }).default;
+
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 48;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.text("Collector Companion", margin, 64);
+  doc.setFontSize(14);
+  doc.text("Security & Data Visibility Summary", margin, 86);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(110);
+  const verifiedAt = new Date(__SECURITY_VERIFIED_AT__).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  doc.text(
+    `Last verified: ${verifiedAt}  •  Build: ${__SECURITY_VERIFIED_COMMIT__}  •  Generated: ${new Date().toLocaleString()}`,
+    margin,
+    104,
+  );
+  doc.setTextColor(0);
+
+  doc.setFontSize(10);
+  const intro =
+    "This document summarizes which fields in Collector Companion are public, which are restricted to specific roles (owner, organizer, admin), and which are never exposed outside our servers. Restrictions are enforced at the database level via Row Level Security (RLS) policies and dedicated public views.";
+  const introLines = doc.splitTextToSize(intro, pageWidth - margin * 2);
+  doc.text(introLines, margin, 124);
+
+  let cursorY = 124 + introLines.length * 13 + 8;
+
+  for (const section of sections) {
+    if (cursorY > 700) {
+      doc.addPage();
+      cursorY = 64;
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text(section.title, margin, cursorY);
+    cursorY += 16;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(110);
+    const descLines = doc.splitTextToSize(section.description, pageWidth - margin * 2);
+    doc.text(descLines, margin, cursorY);
+    cursorY += descLines.length * 11 + 4;
+    doc.setTextColor(0);
+
+    autoTable(doc, {
+      startY: cursorY,
+      margin: { left: margin, right: margin },
+      head: [["Information", "Who can see it", "Notes"]],
+      body: section.rows.map((r) => [
+        r.field,
+        visibilityMeta[r.visibility].label,
+        r.note ?? "—",
+      ]),
+      styles: { fontSize: 9, cellPadding: 6, valign: "top" },
+      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      columnStyles: {
+        0: { cellWidth: 170, fontStyle: "bold" },
+        1: { cellWidth: 110 },
+        2: { cellWidth: "auto", textColor: 80 },
+      },
+      didDrawPage: () => {
+        doc.setFontSize(8);
+        doc.setTextColor(140);
+        doc.text(
+          "collectorcompanion.com/security  •  Summary provided in good faith.",
+          margin,
+          doc.internal.pageSize.getHeight() - 24,
+        );
+        doc.setTextColor(0);
+      },
+    });
+
+    // @ts-expect-error autoTable attaches lastAutoTable to the doc instance
+    cursorY = (doc.lastAutoTable?.finalY ?? cursorY) + 22;
+  }
+
+  doc.save(`collector-companion-security-${__SECURITY_VERIFIED_COMMIT__}.pdf`);
+}
+
 function PrivacyFAQ() {
   const [copied, setCopied] = useState(false);
 
