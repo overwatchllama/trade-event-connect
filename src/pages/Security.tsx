@@ -462,24 +462,35 @@ function PrivacyFAQ() {
             Quick answers to the questions we hear most often.
           </p>
         </div>
-        <Button
-          onClick={handleCopy}
-          variant="outline"
-          size="sm"
-          aria-label="Copy privacy summary to clipboard for support tickets"
-        >
-          {copied ? (
-            <>
-              <Check className="h-4 w-4 mr-2" aria-hidden />
-              Copied
-            </>
-          ) : (
-            <>
-              <Copy className="h-4 w-4 mr-2" aria-hidden />
-              Copy summary for support
-            </>
-          )}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={handleDownloadPdf}
+            variant="default"
+            size="sm"
+            aria-label="Download security summary as PDF"
+          >
+            <Download className="h-4 w-4 mr-2" aria-hidden />
+            Download PDF
+          </Button>
+          <Button
+            onClick={handleCopy}
+            variant="outline"
+            size="sm"
+            aria-label="Copy privacy summary to clipboard for support tickets"
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4 mr-2" aria-hidden />
+                Copied
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4 mr-2" aria-hidden />
+                Copy for support
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       <Card>
