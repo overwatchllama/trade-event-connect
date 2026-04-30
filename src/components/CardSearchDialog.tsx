@@ -314,14 +314,33 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                 })}
               </SelectContent>
             </Select>
-            <Input
-              placeholder="Card # (e.g. 25)"
-              value={cardNumberQuery}
-              onChange={(e) => setCardNumberQuery(e.target.value)}
-              onKeyPress={handleKeyPress}
-              aria-label="Card number"
-              inputMode="numeric"
-            />
+            <div className="flex flex-col gap-1">
+              <Input
+                placeholder="Card # (e.g. 25 or 25/102)"
+                value={cardNumberQuery}
+                onChange={(e) => {
+                  setCardNumberQuery(e.target.value);
+                  if (cardNumberError) setCardNumberError(null);
+                }}
+                onKeyPress={handleKeyPress}
+                aria-label="Card number"
+                aria-invalid={!!showInlineCardNumberError || !!cardNumberError}
+                aria-describedby={
+                  showInlineCardNumberError || cardNumberError ? 'card-number-error' : undefined
+                }
+                inputMode="text"
+                className={
+                  showInlineCardNumberError || cardNumberError
+                    ? 'border-destructive focus-visible:ring-destructive'
+                    : undefined
+                }
+              />
+              {(showInlineCardNumberError || cardNumberError) && (
+                <p id="card-number-error" className="text-[11px] text-destructive leading-tight">
+                  {cardNumberError ?? showInlineCardNumberError}
+                </p>
+              )}
+            </div>
             <Button onClick={handleSearch} disabled={loading}>
               {loading ? (
                 <>
