@@ -63,6 +63,26 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       // ignore storage errors (private mode, quota, etc.)
     }
   }, [exactOnly, exactOnlyStorageKey]);
+
+  // When exact mode is on, optionally expand from a single printing to ALL printings that share the
+  // same card name + collector number (across sets) so users can compare pricing per printing.
+  const allPrintingsStorageKey = `card-search:all-printings:${game}`;
+  const [showAllPrintings, setShowAllPrintings] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage.getItem(allPrintingsStorageKey) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(allPrintingsStorageKey, showAllPrintings ? '1' : '0');
+    } catch {
+      // ignore storage errors
+    }
+  }, [showAllPrintings, allPrintingsStorageKey]);
   const cardNumberInputRef = useRef<HTMLInputElement>(null);
 
   // When the user flips on exact mode and a set is already chosen, jump focus to the
