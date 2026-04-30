@@ -868,11 +868,34 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                       }
                     });
 
+                    const totalGroups = sortedGroups.length;
+                    const totalPages = Math.max(1, Math.ceil(totalGroups / ALL_PRINTINGS_PAGE_SIZE));
+                    const safePage = Math.min(allPrintingsPage, totalPages);
+                    const pageStart = (safePage - 1) * ALL_PRINTINGS_PAGE_SIZE;
+                    const pageGroups = sortedGroups.slice(pageStart, pageStart + ALL_PRINTINGS_PAGE_SIZE);
+                    const capHit = searchResults.length >= allPrintingsCap;
+
                     return (
                       <div className="space-y-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <label htmlFor="all-printings-sort" className="text-xs text-muted-foreground">
-                            Sort printings
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <label htmlFor="all-printings-cap" className="text-xs text-muted-foreground">
+                            Max printings
+                          </label>
+                          <Select
+                            value={String(allPrintingsCap)}
+                            onValueChange={(v) => setAllPrintingsCap(Number(v) as AllPrintingsCap)}
+                          >
+                            <SelectTrigger id="all-printings-cap" className="h-8 w-[90px] text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ALL_PRINTINGS_CAP_OPTIONS.map((n) => (
+                                <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <label htmlFor="all-printings-sort" className="text-xs text-muted-foreground ml-2">
+                            Sort
                           </label>
                           <Select
                             value={allPrintingsSort}
@@ -889,7 +912,13 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                             </SelectContent>
                           </Select>
                         </div>
-                        {sortedGroups.map(([label, cards]) => (
+                        {capHit && (
+                          <p className="text-[11px] text-muted-foreground">
+                            Showing the first {allPrintingsCap} printings (cap reached). Raise the limit above
+                            to fetch more — higher caps take longer to load.
+                          </p>
+                        )}
+                        {pageGroups.map(([label, cards]) => (
                           <div key={label} className="space-y-2">
                             <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b pb-1">
                               {label}{' '}
@@ -902,6 +931,31 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                             </div>
                           </div>
                         ))}
+                        {totalPages > 1 && (
+                          <div className="flex items-center justify-between gap-2 pt-2 border-t">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={safePage <= 1}
+                              onClick={() => setAllPrintingsPage((p) => Math.max(1, p - 1))}
+                            >
+                              Previous
+                            </Button>
+                            <span className="text-xs text-muted-foreground">
+                              Page {safePage} of {totalPages} • {totalGroups} printing group{totalGroups === 1 ? '' : 's'}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={safePage >= totalPages}
+                              onClick={() => setAllPrintingsPage((p) => Math.min(totalPages, p + 1))}
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     );
                   }
