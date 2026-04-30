@@ -36,6 +36,28 @@ interface CardSearchDialogProps {
   trigger?: React.ReactNode;
 }
 
+// Dedupe printings returned by the "all printings" expansion. APIs occasionally return
+// the same printing twice (reprints indexed under multiple promo codes, language variants
+// sharing identifiers, etc). We collapse on a stable key: set id + collector number, with
+// the card id as a final fallback. First occurrence wins (results are pre-sorted newest first).
+function dedupePrintings<T extends PokemonCard | ScryfallCard>(cards: T[], game: 'pokemon' | 'mtg'): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const c of cards) {
+    const setId = game === 'pokemon'
+      ? (c as PokemonCard).set?.id ?? ''
+      : (c as ScryfallCard).set ?? '';
+    const number = game === 'pokemon'
+      ? (c as PokemonCard).number ?? ''
+      : (c as ScryfallCard).collector_number ?? '';
+    const key = setId && number ? `${setId}::${number}` : `id::${(c as any).id ?? ''}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(c);
+  }
+  return out;
+}
+
 export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCardSelect, trigger }) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -257,7 +279,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
               pageSize: 50,
               orderBy: '-set.releaseDate',
             });
-            if (allResp.data.length > 0) results = allResp.data;
+            if (allResp.data.length > 0) results = dedupePrintings(allResp.data, 'pokemon');
           } finally {
             setExpandingPrintings(false);
           }
@@ -287,7 +309,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
               `!"${baseName}" cn:${leftNumber}`,
               { order: 'released', dir: 'desc' },
             );
-            if (allResp.data.length > 0) results = allResp.data;
+            if (allResp.data.length > 0) results = dedupePrintings(allResp.data, 'mtg');
           } finally {
             setExpandingPrintings(false);
           }
