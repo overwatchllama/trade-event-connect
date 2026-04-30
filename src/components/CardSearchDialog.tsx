@@ -319,6 +319,51 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
             </span>
           </p>
 
+          {/* Quick picks — recent searches saved per browser */}
+          {historyGame && history.length > 0 && (
+            <div className="rounded-md border bg-muted/30 px-3 py-2 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <History className="h-3.5 w-3.5" />
+                  Recent searches
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearHistory}
+                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Clear search history"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {history.map((entry) => (
+                  <div
+                    key={`${entry.game}-${entry.setId}-${entry.name}-${entry.cardNumber}-${entry.lastUsedAt}`}
+                    className="group inline-flex items-center gap-1 rounded-full border bg-background pl-2.5 pr-1 py-0.5 text-xs hover:bg-accent hover:text-accent-foreground transition-colors"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => runHistoryEntry(entry)}
+                      className="truncate max-w-[200px] text-left"
+                      title={summarizeEntry(entry)}
+                    >
+                      {summarizeEntry(entry)}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleRemoveHistory(e, entry)}
+                      className="rounded-full p-0.5 opacity-50 group-hover:opacity-100 hover:bg-background/80"
+                      aria-label={`Remove "${summarizeEntry(entry)}" from recent searches`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Results */}
           <div className="overflow-y-auto max-h-[60vh] pr-2">
             {loading ? (
