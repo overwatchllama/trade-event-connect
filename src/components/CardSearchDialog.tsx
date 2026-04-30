@@ -306,10 +306,12 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
             const baseName = results[0].name.replace(/"/g, '');
             const allResp = await pokemonTcgApi.searchCards({
               q: `name:"${baseName}" number:${leftNumber}`,
-              pageSize: 50,
+              pageSize: allPrintingsCap,
               orderBy: '-set.releaseDate',
             });
-            if (allResp.data.length > 0) results = dedupePrintings(allResp.data, 'pokemon');
+            if (allResp.data.length > 0) {
+              results = dedupePrintings(allResp.data, 'pokemon').slice(0, allPrintingsCap);
+            }
           } finally {
             setExpandingPrintings(false);
           }
