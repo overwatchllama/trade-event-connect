@@ -7,7 +7,8 @@ import { SetCombobox } from '@/components/cards/SetCombobox';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Plus, Loader2, Info, History, X } from 'lucide-react';
+import { Search, Plus, Loader2, Info, History, X, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { pokemonTcgApi, type PokemonCard } from '@/services/pokemonTcgApi';
 import { scryfallApi, type ScryfallCard } from '@/services/scryfallApi';
 import {
@@ -443,41 +444,69 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                 you can ignore the slash and just enter the left number.
               </span>
             </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <label
-                htmlFor="exact-only-toggle"
-                className="flex items-center gap-2 text-xs font-medium cursor-pointer select-none rounded-md border bg-muted/30 px-2.5 py-1.5"
-                title="Force a single exact printing match using set + card number. Name is ignored."
-              >
-                <Switch
-                  id="exact-only-toggle"
-                  checked={exactOnly}
-                  onCheckedChange={setExactOnly}
-                  aria-label="Exact set and number only"
-                />
-                <span>Exact set + # only</span>
-              </label>
-              <label
-                htmlFor="all-printings-toggle"
-                className={`flex items-center gap-2 text-xs font-medium select-none rounded-md border px-2.5 py-1.5 transition-opacity ${
-                  exactOnly ? 'cursor-pointer bg-muted/30' : 'cursor-not-allowed bg-muted/10 opacity-50'
-                }`}
-                title={
-                  exactOnly
-                    ? 'Expand to all printings of this card across sets for fuller pricing comparison.'
-                    : 'Turn on Exact set + # only first.'
-                }
-              >
-                <Switch
-                  id="all-printings-toggle"
-                  checked={showAllPrintings}
-                  onCheckedChange={setShowAllPrintings}
-                  disabled={!exactOnly}
-                  aria-label="Show all printings of this card"
-                />
-                <span>Show all printings</span>
-              </label>
-            </div>
+            <TooltipProvider delayDuration={150}>
+              <div className="flex flex-wrap items-start gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <label
+                      htmlFor="exact-only-toggle"
+                      className="flex items-center gap-2 text-xs font-medium cursor-pointer select-none rounded-md border bg-muted/30 px-2.5 py-1.5"
+                    >
+                      <Switch
+                        id="exact-only-toggle"
+                        checked={exactOnly}
+                        onCheckedChange={setExactOnly}
+                        aria-label="Exact set and number only"
+                        aria-describedby="exact-only-help"
+                      />
+                      <span>Exact set + # only</span>
+                    </label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label="What does Exact set + # only do?"
+                        >
+                          <HelpCircle className="h-3.5 w-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+                        <p className="font-medium mb-1">Card name matching is disabled</p>
+                        <p>
+                          Results are matched only by the <strong>set</strong> and <strong>card number</strong> from
+                          the bottom of the card. The name field is ignored so a typo or alt-form name can't filter
+                          out the exact printing you're pricing.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <p id="exact-only-help" className="text-[11px] text-muted-foreground pl-1">
+                    Name is ignored — uses set + card # only.
+                  </p>
+                </div>
+                <label
+                  htmlFor="all-printings-toggle"
+                  className={`flex items-center gap-2 text-xs font-medium select-none rounded-md border px-2.5 py-1.5 transition-opacity ${
+                    exactOnly ? 'cursor-pointer bg-muted/30' : 'cursor-not-allowed bg-muted/10 opacity-50'
+                  }`}
+                  title={
+                    exactOnly
+                      ? 'Expand to all printings of this card across sets for fuller pricing comparison.'
+                      : 'Turn on Exact set + # only first.'
+                  }
+                >
+                  <Switch
+                    id="all-printings-toggle"
+                    checked={showAllPrintings}
+                    onCheckedChange={setShowAllPrintings}
+                    disabled={!exactOnly}
+                    aria-label="Show all printings of this card"
+                  />
+                  <span>Show all printings</span>
+                </label>
+              </div>
+            </TooltipProvider>
           </div>
 
           {/* Quick picks — recent searches saved per browser */}
