@@ -272,19 +272,26 @@ serve(async (req) => {
       },
     });
 
-    // Authentication: require admin user
+    // Authentication: require admin user OR service-role bypass for internal calls
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       throw new HttpError("MissingAuthHeader", "No authorization header", 401);
     }
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
-    if (userError || !userData.user) {
-      throw new HttpError("Unauthorized", "Unauthorized", 401);
-    }
-    const { data: isAdminResult } = await supabaseAdmin.rpc("is_admin", { user_id: userData.user.id });
-    if (!isAdminResult) {
-      throw new HttpError("AdminRequired", "Admin access required", 403);
+
+    // Internal bypass: callers (e.g. reset-demo-data) may pass the service-role
+    // key directly. We compare against the env value rather than decoding JWT.
+    const isServiceRoleCall = token === serviceRoleKey;
+
+    if (!isServiceRoleCall) {
+      const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
+      if (userError || !userData.user) {
+        throw new HttpError("Unauthorized", "Unauthorized", 401);
+      }
+      const { data: isAdminResult } = await supabaseAdmin.rpc("is_admin", { user_id: userData.user.id });
+      if (!isAdminResult) {
+        throw new HttpError("AdminRequired", "Admin access required", 403);
+      }
     }
 
     const results: { email: string; success: boolean; error?: string }[] = [];
