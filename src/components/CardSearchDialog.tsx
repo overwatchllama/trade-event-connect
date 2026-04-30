@@ -139,6 +139,11 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const ALL_PRINTINGS_PAGE_SIZE = 12;
   const [allPrintingsPage, setAllPrintingsPage] = useState(1);
 
+  // Reset to first page whenever the underlying dataset, sort, or cap changes.
+  useEffect(() => {
+    setAllPrintingsPage(1);
+  }, [searchResults, allPrintingsSort, allPrintingsCap]);
+
   // Dismissable inline note shown above results when exact-only mode is active.
   // Persisted so power users who already understand the rule don't have to keep dismissing it.
   const exactNoteDismissedKey = 'card-search:exact-note-dismissed';
