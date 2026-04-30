@@ -22,6 +22,7 @@ import {
   summarizeEntry,
   type CardSearchHistoryEntry,
 } from '@/services/cardSearchHistory';
+import { validateCardNumber } from '@/services/cardNumberValidation';
 import { toast } from '@/hooks/use-toast';
 import type { CardCategory } from '@/hooks/useCollection';
 
@@ -40,6 +41,16 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const [selectedSet, setSelectedSet] = useState<string>('all');
   const [sets, setSets] = useState<any[]>([]);
   const [history, setHistory] = useState<CardSearchHistoryEntry[]>([]);
+  const [cardNumberError, setCardNumberError] = useState<string | null>(null);
+
+  // Live-validate the card number field but only show errors after the user has typed something.
+  const cardNumberValidation = cardNumberQuery.trim()
+    ? validateCardNumber(cardNumberQuery)
+    : null;
+  const showInlineCardNumberError =
+    cardNumberValidation && cardNumberValidation.ok === false
+      ? cardNumberValidation.error
+      : null;
 
   // Only Pokémon and MTG are persisted to history; the dialog skips it for other catalogs.
   const historyGame: CardSearchHistoryEntry['game'] | null =
@@ -77,8 +88,28 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
     const trimmedNumber = cardNumberQuery.trim();
     const hasSet = selectedSet !== 'all';
 
+    // Validate the card # field if anything was typed — even if name is also present.
+    let leftNumber: string | null = null;
+    if (trimmedNumber) {
+      const result = validateCardNumber(trimmedNumber);
+      if (result.ok === false) {
+        const message = result.error;
+        setCardNumberError(message);
+        toast({
+          title: 'Invalid card number',
+          description: `${message} Examples: 25, 25/102, TG01/TG30.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+      leftNumber = result.left;
+      setCardNumberError(null);
+    } else {
+      setCardNumberError(null);
+    }
+
     // New rule: a search is valid if EITHER a name is present, OR (set + number) are present.
-    if (!trimmedName && !(hasSet && trimmedNumber)) {
+    if (!trimmedName && !(hasSet && leftNumber)) {
       toast({
         title: 'Search needs more info',
         description: 'Enter a card name, or pick a set and enter the card number from the bottom of the card.',
@@ -93,11 +124,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
         const parts: string[] = [];
         if (trimmedName) parts.push(`name:${trimmedName}*`);
         if (hasSet) parts.push(`set.id:${selectedSet}`);
-        if (trimmedNumber) {
-          // Card numbers are usually printed like "25/102" — only the left portion is the actual number.
-          const numericPart = trimmedNumber.split('/')[0].trim();
-          parts.push(`number:${numericPart}`);
-        }
+        if (leftNumber) parts.push(`number:${leftNumber}`);
 
         const response = await pokemonTcgApi.searchCards({
           q: parts.join(' '),
@@ -109,7 +136,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
         const parts: string[] = [];
         if (trimmedName) parts.push(trimmedName);
         if (hasSet) parts.push(`set:${selectedSet}`);
-        if (trimmedNumber) parts.push(`cn:${trimmedNumber.split('/')[0].trim()}`);
+        if (leftNumber) parts.push(`cn:${leftNumber}`);
 
         const response = await scryfallApi.searchCards(parts.join(' '), { order: 'released', dir: 'desc' });
         setSearchResults(response.data);
@@ -287,14 +314,33 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                 })}
               </SelectContent>
             </Select>
-            <Input
-              placeholder="Card # (e.g. 25)"
-              value={cardNumberQuery}
-              onChange={(e) => setCardNumberQuery(e.target.value)}
-              onKeyPress={handleKeyPress}
-              aria-label="Card number"
-              inputMode="numeric"
-            />
+            <div className="flex flex-col gap-1">
+              <Input
+                placeholder="Card # (e.g. 25 or 25/102)"
+                value={cardNumberQuery}
+                onChange={(e) => {
+                  setCardNumberQuery(e.target.value);
+                  if (cardNumberError) setCardNumberError(null);
+                }}
+                onKeyPress={handleKeyPress}
+                aria-label="Card number"
+                aria-invalid={!!showInlineCardNumberError || !!cardNumberError}
+                aria-describedby={
+                  showInlineCardNumberError || cardNumberError ? 'card-number-error' : undefined
+                }
+                inputMode="text"
+                className={
+                  showInlineCardNumberError || cardNumberError
+                    ? 'border-destructive focus-visible:ring-destructive'
+                    : undefined
+                }
+              />
+              {(showInlineCardNumberError || cardNumberError) && (
+                <p id="card-number-error" className="text-[11px] text-destructive leading-tight">
+                  {cardNumberError ?? showInlineCardNumberError}
+                </p>
+              )}
+            </div>
             <Button onClick={handleSearch} disabled={loading}>
               {loading ? (
                 <>
