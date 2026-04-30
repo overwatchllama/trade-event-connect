@@ -121,28 +121,49 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       return;
     }
 
+    // Exact-only mode requires BOTH a set and a card number — name is ignored to guarantee a single printing.
+    if (exactOnly && !(hasSet && leftNumber)) {
+      toast({
+        title: 'Exact match needs set + number',
+        description: 'Pick a set and enter the card number to lock onto a single printing for pricing.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       if (game === 'pokemon') {
         const parts: string[] = [];
-        if (trimmedName) parts.push(`name:${trimmedName}*`);
-        if (hasSet) parts.push(`set.id:${selectedSet}`);
-        if (leftNumber) parts.push(`number:${leftNumber}`);
+        if (exactOnly) {
+          // Drop the name to avoid filtering away the exact printing if the name guess is off.
+          parts.push(`set.id:${selectedSet}`);
+          parts.push(`number:${leftNumber}`);
+        } else {
+          if (trimmedName) parts.push(`name:${trimmedName}*`);
+          if (hasSet) parts.push(`set.id:${selectedSet}`);
+          if (leftNumber) parts.push(`number:${leftNumber}`);
+        }
 
         const response = await pokemonTcgApi.searchCards({
           q: parts.join(' '),
-          pageSize: 50,
+          pageSize: exactOnly ? 1 : 50,
           orderBy: '-set.releaseDate',
         });
         setSearchResults(response.data);
       } else if (game === 'mtg') {
         const parts: string[] = [];
-        if (trimmedName) parts.push(trimmedName);
-        if (hasSet) parts.push(`set:${selectedSet}`);
-        if (leftNumber) parts.push(`cn:${leftNumber}`);
+        if (exactOnly) {
+          parts.push(`set:${selectedSet}`);
+          parts.push(`cn:${leftNumber}`);
+        } else {
+          if (trimmedName) parts.push(trimmedName);
+          if (hasSet) parts.push(`set:${selectedSet}`);
+          if (leftNumber) parts.push(`cn:${leftNumber}`);
+        }
 
         const response = await scryfallApi.searchCards(parts.join(' '), { order: 'released', dir: 'desc' });
-        setSearchResults(response.data);
+        setSearchResults(exactOnly ? response.data.slice(0, 1) : response.data);
       }
     } catch (error: any) {
       console.error('Search error:', error);
