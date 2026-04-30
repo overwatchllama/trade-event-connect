@@ -327,6 +327,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
     }
 
     setLoading(true);
+    setAllPrintingsTotal(null);
     try {
       if (game === 'pokemon') {
         const parts: string[] = [];
