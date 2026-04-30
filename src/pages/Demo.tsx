@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ResetDemoDataCard } from "@/components/demo/ResetDemoDataCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
@@ -236,6 +237,13 @@ const Demo = () => {
               ),
             )}
           </div>
+        </section>
+
+        <section aria-labelledby="reset-demo-heading" className="mt-10">
+          <h2 id="reset-demo-heading" className="sr-only">
+            Reset demo data
+          </h2>
+          <ResetDemoDataCard />
         </section>
 
         <p className="mt-12 text-center text-xs text-muted-foreground">
