@@ -294,6 +294,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       return;
     } finally {
       setLoading(false);
+      setExpandingPrintings(false);
     }
 
     // Persist this search as a quick pick for next time.
