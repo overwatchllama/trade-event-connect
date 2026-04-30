@@ -26,6 +26,7 @@ import {
   type CardSearchHistoryEntry,
 } from '@/services/cardSearchHistory';
 import { validateCardNumber } from '@/services/cardNumberValidation';
+import { trackCardSearchEvent } from '@/services/cardSearchAnalytics';
 import { toast } from '@/hooks/use-toast';
 import type { CardCategory } from '@/hooks/useCollection';
 
