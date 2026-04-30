@@ -771,6 +771,13 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                     variant="outline"
                     size="sm"
                     onClick={() => {
+                      if (historyGame) {
+                        trackCardSearchEvent('card_search.exact_recovery_clicked', {
+                          game: historyGame,
+                          source: 'empty-state',
+                          ignoredName: searchQuery.trim() || undefined,
+                        });
+                      }
                       setExactOnly(false);
                       setTimeout(() => handleSearch(), 0);
                     }}
