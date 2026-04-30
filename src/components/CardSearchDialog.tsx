@@ -331,6 +331,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
             />
             <div className="flex flex-col gap-1">
               <Input
+                ref={cardNumberInputRef}
                 placeholder="Card # (e.g. 25 or 25/102)"
                 value={cardNumberQuery}
                 onChange={(e) => {
