@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import { TryTheDemoSection } from "@/components/demo/TryTheDemoSection";
 
 import SimplifiedEventCard from "@/components/SimplifiedEventCard";
 import { Button } from "@/components/ui/button";
@@ -104,6 +105,7 @@ const Index = () => {
     <main className="min-h-screen bg-background">
       <Header />
       <Hero />
+      <TryTheDemoSection />
 
       {/* Featured Events Section */}
       <section className="py-10 md:py-20 bg-background">
