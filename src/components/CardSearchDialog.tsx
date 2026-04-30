@@ -203,12 +203,31 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
 
   // Client-side paging over grouped printings (page size matches the cap so each page fits the cap).
   const ALL_PRINTINGS_PAGE_SIZE = 12;
-  const [allPrintingsPage, setAllPrintingsPage] = useState(1);
+  // Persist current page per-game so reopening the dialog restores the user's spot.
+  // We intentionally DON'T reset on new search results — only when sort/cap changes (those
+  // re-order the dataset so the old page index is meaningless).
+  const allPrintingsPageKey = `card-search:all-printings-page:${game}`;
+  const [allPrintingsPage, setAllPrintingsPage] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1;
+    try {
+      const raw = Number(window.localStorage.getItem(allPrintingsPageKey));
+      return Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 1;
+    } catch {
+      return 1;
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(allPrintingsPageKey, String(allPrintingsPage));
+    } catch {
+      // ignore
+    }
+  }, [allPrintingsPage, allPrintingsPageKey]);
 
-  // Reset to first page whenever the underlying dataset, sort, or cap changes.
+  // Reset to first page when the sort or cap changes (the dataset re-orders).
   useEffect(() => {
     setAllPrintingsPage(1);
-  }, [searchResults, allPrintingsSort, allPrintingsCap]);
+  }, [allPrintingsSort, allPrintingsCap]);
 
   // Dismissable inline note shown above results when exact-only mode is active.
   // Persisted so power users who already understand the rule don't have to keep dismissing it.
