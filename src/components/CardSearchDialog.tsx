@@ -443,19 +443,41 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                 you can ignore the slash and just enter the left number.
               </span>
             </p>
-            <label
-              htmlFor="exact-only-toggle"
-              className="flex items-center gap-2 text-xs font-medium cursor-pointer select-none rounded-md border bg-muted/30 px-2.5 py-1.5"
-              title="Force a single exact printing match using set + card number. Name is ignored."
-            >
-              <Switch
-                id="exact-only-toggle"
-                checked={exactOnly}
-                onCheckedChange={setExactOnly}
-                aria-label="Exact set and number only"
-              />
-              <span>Exact set + # only</span>
-            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <label
+                htmlFor="exact-only-toggle"
+                className="flex items-center gap-2 text-xs font-medium cursor-pointer select-none rounded-md border bg-muted/30 px-2.5 py-1.5"
+                title="Force a single exact printing match using set + card number. Name is ignored."
+              >
+                <Switch
+                  id="exact-only-toggle"
+                  checked={exactOnly}
+                  onCheckedChange={setExactOnly}
+                  aria-label="Exact set and number only"
+                />
+                <span>Exact set + # only</span>
+              </label>
+              <label
+                htmlFor="all-printings-toggle"
+                className={`flex items-center gap-2 text-xs font-medium select-none rounded-md border px-2.5 py-1.5 transition-opacity ${
+                  exactOnly ? 'cursor-pointer bg-muted/30' : 'cursor-not-allowed bg-muted/10 opacity-50'
+                }`}
+                title={
+                  exactOnly
+                    ? 'Expand to all printings of this card across sets for fuller pricing comparison.'
+                    : 'Turn on Exact set + # only first.'
+                }
+              >
+                <Switch
+                  id="all-printings-toggle"
+                  checked={showAllPrintings}
+                  onCheckedChange={setShowAllPrintings}
+                  disabled={!exactOnly}
+                  aria-label="Show all printings of this card"
+                />
+                <span>Show all printings</span>
+              </label>
+            </div>
           </div>
 
           {/* Quick picks — recent searches saved per browser */}
