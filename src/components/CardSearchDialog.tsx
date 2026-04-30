@@ -550,64 +550,96 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                     )}
                   </div>
                 )}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {searchResults.map((card) => {
-                  const info = getCardInfo(card);
-                  const priceSource = getPriceSource(card);
-                  const image = getCardImage(card);
-                  const symbol = getSetSymbolUrl(card);
+                {(() => {
+                  const renderCard = (card: PokemonCard | ScryfallCard) => {
+                    const info = getCardInfo(card);
+                    const priceSource = getPriceSource(card);
+                    const image = getCardImage(card);
+                    const symbol = getSetSymbolUrl(card);
+                    return (
+                      <Card
+                        key={card.id}
+                        className="cursor-pointer hover:shadow-lg transition-shadow group"
+                        onClick={() => handleCardClick(card)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="aspect-[2/3] bg-muted rounded-lg mb-2 overflow-hidden relative">
+                            {image ? (
+                              <img
+                                src={image}
+                                alt={info.name}
+                                referrerPolicy="no-referrer"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                No Image
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Plus className="h-8 w-8 text-white" />
+                            </div>
+                          </div>
+                          <h4 className="font-medium text-sm line-clamp-2 mb-1">{info.name}</h4>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            {symbol && (
+                              <img
+                                src={symbol}
+                                alt={`${info.set} symbol`}
+                                referrerPolicy="no-referrer"
+                                className="h-4 w-4 object-contain shrink-0"
+                              />
+                            )}
+                            <p className="text-xs text-muted-foreground truncate">
+                              {info.set} • #{info.number}
+                            </p>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <Badge variant="secondary" className="text-xs shrink-0">
+                              {info.rarity}
+                            </Badge>
+                            <PriceSourceBadge source={priceSource} size="sm" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  };
+
+                  // When showing all printings in exact mode, group cards by "Set name • #number"
+                  // so users can scan price differences between printings of the same card.
+                  if (exactOnly && showAllPrintings) {
+                    const groups = new Map<string, (PokemonCard | ScryfallCard)[]>();
+                    for (const card of searchResults) {
+                      const info = getCardInfo(card);
+                      const key = `${info.set} • #${info.number}`;
+                      if (!groups.has(key)) groups.set(key, []);
+                      groups.get(key)!.push(card);
+                    }
+                    return (
+                      <div className="space-y-4">
+                        {Array.from(groups.entries()).map(([label, cards]) => (
+                          <div key={label} className="space-y-2">
+                            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b pb-1">
+                              {label}{' '}
+                              <span className="font-normal normal-case tracking-normal text-[11px]">
+                                ({cards.length} printing{cards.length === 1 ? '' : 's'})
+                              </span>
+                            </h5>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                              {cards.map(renderCard)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
 
                   return (
-                    <Card
-                      key={card.id}
-                      className="cursor-pointer hover:shadow-lg transition-shadow group"
-                      onClick={() => handleCardClick(card)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="aspect-[2/3] bg-muted rounded-lg mb-2 overflow-hidden relative">
-                          {image ? (
-                            <img
-                              src={image}
-                              alt={info.name}
-                              referrerPolicy="no-referrer"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                              No Image
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Plus className="h-8 w-8 text-white" />
-                          </div>
-                        </div>
-                        <h4 className="font-medium text-sm line-clamp-2 mb-1">
-                          {info.name}
-                        </h4>
-                        <div className="flex items-center gap-1.5 mb-2">
-                          {symbol && (
-                            <img
-                              src={symbol}
-                              alt={`${info.set} symbol`}
-                              referrerPolicy="no-referrer"
-                              className="h-4 w-4 object-contain shrink-0"
-                            />
-                          )}
-                          <p className="text-xs text-muted-foreground truncate">
-                            {info.set} • #{info.number}
-                          </p>
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <Badge variant="secondary" className="text-xs shrink-0">
-                            {info.rarity}
-                          </Badge>
-                          <PriceSourceBadge source={priceSource} size="sm" />
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {searchResults.map(renderCard)}
+                    </div>
                   );
-                })}
-                </div>
+                })()}
               </div>
             ) : (searchQuery || cardNumberQuery) && !loading ? (
               exactOnly ? (
