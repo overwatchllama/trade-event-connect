@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Plus, Loader2, Info } from 'lucide-react';
+import { Search, Plus, Loader2, Info, History, X } from 'lucide-react';
 import { pokemonTcgApi, type PokemonCard } from '@/services/pokemonTcgApi';
 import { scryfallApi, type ScryfallCard } from '@/services/scryfallApi';
 import {
@@ -14,6 +14,14 @@ import {
   type PriceSource,
 } from '@/services/cardPriceSource';
 import { PriceSourceBadge } from '@/components/pricing/PriceSourceBadge';
+import {
+  getCardSearchHistory,
+  recordCardSearch,
+  removeCardSearch,
+  clearCardSearchHistory,
+  summarizeEntry,
+  type CardSearchHistoryEntry,
+} from '@/services/cardSearchHistory';
 import { toast } from '@/hooks/use-toast';
 import type { CardCategory } from '@/hooks/useCollection';
 
@@ -31,12 +39,20 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const [loading, setLoading] = useState(false);
   const [selectedSet, setSelectedSet] = useState<string>('all');
   const [sets, setSets] = useState<any[]>([]);
+  const [history, setHistory] = useState<CardSearchHistoryEntry[]>([]);
+
+  // Only Pokémon and MTG are persisted to history; the dialog skips it for other catalogs.
+  const historyGame: CardSearchHistoryEntry['game'] | null =
+    game === 'pokemon' ? 'pokemon' : game === 'mtg' ? 'mtg' : null;
 
   useEffect(() => {
     if (open) {
       loadSets();
+      if (historyGame) {
+        setHistory(getCardSearchHistory(historyGame));
+      }
     }
-  }, [open, game]);
+  }, [open, game, historyGame]);
 
   const loadSets = async () => {
     try {
@@ -51,6 +67,10 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       console.error('Error loading sets:', error);
     }
   };
+
+  const refreshHistory = useCallback(() => {
+    if (historyGame) setHistory(getCardSearchHistory(historyGame));
+  }, [historyGame]);
 
   const handleSearch = async () => {
     const trimmedName = searchQuery.trim();
@@ -102,9 +122,50 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
         variant: 'destructive',
       });
       setSearchResults([]);
+      return;
     } finally {
       setLoading(false);
     }
+
+    // Persist this search as a quick pick for next time.
+    if (historyGame) {
+      const setOption = sets.find((s) => {
+        const value = game === 'pokemon' ? s.id : s.code;
+        return value === selectedSet;
+      });
+      recordCardSearch({
+        game: historyGame,
+        name: trimmedName,
+        setId: selectedSet,
+        setLabel: setOption?.name ?? null,
+        cardNumber: trimmedNumber,
+      });
+      refreshHistory();
+    }
+  };
+
+  /** Re-run a saved search by populating inputs and firing handleSearch on the next tick. */
+  const runHistoryEntry = (entry: CardSearchHistoryEntry) => {
+    setSearchQuery(entry.name);
+    setCardNumberQuery(entry.cardNumber);
+    setSelectedSet(entry.setId);
+    // Defer so the controlled inputs commit before we read state in handleSearch.
+    setTimeout(() => handleSearch(), 0);
+  };
+
+  const handleRemoveHistory = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    entry: CardSearchHistoryEntry,
+  ) => {
+    e.stopPropagation();
+    removeCardSearch(entry);
+    refreshHistory();
+  };
+
+  const handleClearHistory = () => {
+    if (!historyGame) return;
+    clearCardSearchHistory(historyGame);
+    refreshHistory();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
