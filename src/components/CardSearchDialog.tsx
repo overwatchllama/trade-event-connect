@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +46,17 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const [cardNumberError, setCardNumberError] = useState<string | null>(null);
   // When on, force a single exact printing match (set + number, both required).
   const [exactOnly, setExactOnly] = useState(false);
+  const cardNumberInputRef = useRef<HTMLInputElement>(null);
+
+  // When the user flips on exact mode and a set is already chosen, jump focus to the
+  // card # input so they can immediately type the number from the bottom of the card.
+  useEffect(() => {
+    if (exactOnly && selectedSet !== 'all' && !cardNumberQuery.trim()) {
+      cardNumberInputRef.current?.focus();
+    }
+    // Intentionally only react to exactOnly toggling on — not to set changes — to avoid stealing focus.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exactOnly]);
 
   // Live-validate the card number field but only show errors after the user has typed something.
   const cardNumberValidation = cardNumberQuery.trim()
