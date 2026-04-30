@@ -973,7 +973,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                           </div>
                         ))}
                         {totalPages > 1 && (
-                          <div className="flex items-center justify-between gap-2 pt-2 border-t">
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t">
                             <Button
                               type="button"
                               variant="outline"
@@ -986,6 +986,26 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                             <span className="text-xs text-muted-foreground">
                               Page {safePage} of {totalPages} • {totalGroups} printing group{totalGroups === 1 ? '' : 's'}
                             </span>
+                            <div className="flex items-center gap-1">
+                              <label htmlFor="all-printings-jump" className="text-xs text-muted-foreground">
+                                Jump to
+                              </label>
+                              <Input
+                                id="all-printings-jump"
+                                type="number"
+                                min={1}
+                                max={totalPages}
+                                inputMode="numeric"
+                                value={safePage}
+                                onChange={(e) => {
+                                  const n = Number(e.target.value);
+                                  if (!Number.isFinite(n)) return;
+                                  setAllPrintingsPage(Math.min(totalPages, Math.max(1, Math.floor(n))));
+                                }}
+                                className="h-8 w-16 text-xs"
+                                aria-label={`Jump to page (1 to ${totalPages})`}
+                              />
+                            </div>
                             <Button
                               type="button"
                               variant="outline"
