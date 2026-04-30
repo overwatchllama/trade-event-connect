@@ -84,6 +84,26 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       // ignore storage errors
     }
   }, [showAllPrintings, allPrintingsStorageKey]);
+
+  // Dismissable inline note shown above results when exact-only mode is active.
+  // Persisted so power users who already understand the rule don't have to keep dismissing it.
+  const exactNoteDismissedKey = 'card-search:exact-note-dismissed';
+  const [exactNoteDismissed, setExactNoteDismissed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage.getItem(exactNoteDismissedKey) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const dismissExactNote = () => {
+    setExactNoteDismissed(true);
+    try {
+      window.localStorage.setItem(exactNoteDismissedKey, '1');
+    } catch {
+      // ignore
+    }
+  };
   const cardNumberInputRef = useRef<HTMLInputElement>(null);
 
   // When the user flips on exact mode and a set is already chosen, jump focus to the
@@ -562,7 +582,10 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
               </div>
             ) : searchResults.length > 0 ? (
               <div className="space-y-3">
-                {exactOnly && (showAllPrintings || searchQuery.trim()) && (
+                {exactOnly &&
+                  (showAllPrintings || searchQuery.trim()) &&
+                  // The plain (non-all-printings) note is dismissible; the all-printings summary always shows.
+                  (showAllPrintings || !exactNoteDismissed) && (
                   <div className="flex items-start gap-2 rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                     <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                     <div className="flex-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
@@ -595,6 +618,17 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                         </>
                       )}
                     </div>
+                    {!showAllPrintings && (
+                      <button
+                        type="button"
+                        onClick={dismissExactNote}
+                        className="shrink-0 rounded p-0.5 text-muted-foreground/70 hover:text-foreground hover:bg-background/60 transition-colors"
+                        aria-label="Dismiss exact-mode notice (won't show again)"
+                        title="Don't show this again"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                 )}
                 {(() => {
