@@ -203,6 +203,17 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       return;
     }
 
+    // "Show all printings" expands the exact match across sets by re-querying by card name.
+    // Without a name we have nothing to expand on, so require it up front with a clear message.
+    if (exactOnly && showAllPrintings && !trimmedName) {
+      toast({
+        title: 'Card name required to show all printings',
+        description: 'Enter the card name so we can find every printing across sets. Or turn off "Show all printings" to look up just this set + number.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Track when exact mode is about to silently ignore a typed name. Helps us measure
     // how often users hit the recovery flows (notice button, empty-state CTA).
     if (exactOnly && trimmedName && historyGame) {
