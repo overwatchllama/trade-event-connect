@@ -65,6 +65,8 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const [searchResults, setSearchResults] = useState<(PokemonCard | ScryfallCard)[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandingPrintings, setExpandingPrintings] = useState(false);
+  type AllPrintingsSort = 'release-desc' | 'release-asc' | 'price-asc' | 'price-desc';
+  const [allPrintingsSort, setAllPrintingsSort] = useState<AllPrintingsSort>('release-desc');
   const [selectedSet, setSelectedSet] = useState<string>('all');
   const [sets, setSets] = useState<any[]>([]);
   const [history, setHistory] = useState<CardSearchHistoryEntry[]>([]);
@@ -773,9 +775,84 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                       if (!groups.has(key)) groups.set(key, []);
                       groups.get(key)!.push(card);
                     }
+
+                    // Per-group representative for sorting: cheapest priced printing in the group,
+                    // and the newest release date among its printings.
+                    const getReleaseTime = (card: PokemonCard | ScryfallCard): number => {
+                      const raw = (card as PokemonCard).set?.releaseDate
+                        ?? (card as ScryfallCard).released_at
+                        ?? null;
+                      if (!raw) return 0;
+                      const t = new Date(raw).getTime();
+                      return Number.isFinite(t) ? t : 0;
+                    };
+                    const getMinPrice = (cards: (PokemonCard | ScryfallCard)[]): number | null => {
+                      let min: number | null = null;
+                      for (const c of cards) {
+                        const p = getPriceSource(c)?.price;
+                        if (typeof p === 'number' && p > 0 && (min === null || p < min)) min = p;
+                      }
+                      return min;
+                    };
+                    const getMaxPrice = (cards: (PokemonCard | ScryfallCard)[]): number | null => {
+                      let max: number | null = null;
+                      for (const c of cards) {
+                        const p = getPriceSource(c)?.price;
+                        if (typeof p === 'number' && p > 0 && (max === null || p > max)) max = p;
+                      }
+                      return max;
+                    };
+                    const getMaxRelease = (cards: (PokemonCard | ScryfallCard)[]): number =>
+                      cards.reduce((acc, c) => Math.max(acc, getReleaseTime(c)), 0);
+
+                    const sortedGroups = Array.from(groups.entries()).sort(([, a], [, b]) => {
+                      switch (allPrintingsSort) {
+                        case 'release-asc':
+                          return getMaxRelease(a) - getMaxRelease(b);
+                        case 'price-asc': {
+                          const pa = getMinPrice(a);
+                          const pb = getMinPrice(b);
+                          if (pa === null && pb === null) return 0;
+                          if (pa === null) return 1; // unpriced last
+                          if (pb === null) return -1;
+                          return pa - pb;
+                        }
+                        case 'price-desc': {
+                          const pa = getMaxPrice(a);
+                          const pb = getMaxPrice(b);
+                          if (pa === null && pb === null) return 0;
+                          if (pa === null) return 1;
+                          if (pb === null) return -1;
+                          return pb - pa;
+                        }
+                        case 'release-desc':
+                        default:
+                          return getMaxRelease(b) - getMaxRelease(a);
+                      }
+                    });
+
                     return (
                       <div className="space-y-4">
-                        {Array.from(groups.entries()).map(([label, cards]) => (
+                        <div className="flex items-center justify-end gap-2">
+                          <label htmlFor="all-printings-sort" className="text-xs text-muted-foreground">
+                            Sort printings
+                          </label>
+                          <Select
+                            value={allPrintingsSort}
+                            onValueChange={(v) => setAllPrintingsSort(v as AllPrintingsSort)}
+                          >
+                            <SelectTrigger id="all-printings-sort" className="h-8 w-[200px] text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="release-desc">Newest release first</SelectItem>
+                              <SelectItem value="release-asc">Oldest release first</SelectItem>
+                              <SelectItem value="price-asc">Lowest price first</SelectItem>
+                              <SelectItem value="price-desc">Highest price first</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {sortedGroups.map(([label, cards]) => (
                           <div key={label} className="space-y-2">
                             <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b pb-1">
                               {label}{' '}
