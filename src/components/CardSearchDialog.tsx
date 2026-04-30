@@ -362,7 +362,10 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
             if (allResp.data.length > 0) {
               results = dedupePrintings(allResp.data, 'pokemon').slice(0, allPrintingsCap);
             }
-          } finally {
+            // totalCount reflects the full server-side match count (pre-cap, pre-dedupe).
+            if (typeof allResp.totalCount === 'number') {
+              setAllPrintingsTotal(allResp.totalCount);
+            }
             setExpandingPrintings(false);
           }
         }
