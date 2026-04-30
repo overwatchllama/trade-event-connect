@@ -398,6 +398,10 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
             if (allResp.data.length > 0) {
               results = dedupePrintings(allResp.data, 'mtg').slice(0, allPrintingsCap);
             }
+            // Scryfall returns total_cards for the full server-side match count.
+            if (typeof allResp.total_cards === 'number') {
+              setAllPrintingsTotal(allResp.total_cards);
+            }
           } finally {
             setExpandingPrintings(false);
           }
