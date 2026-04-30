@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Plus, Loader2, Info } from 'lucide-react';
+import { Search, Plus, Loader2, Info, History, X } from 'lucide-react';
 import { pokemonTcgApi, type PokemonCard } from '@/services/pokemonTcgApi';
 import { scryfallApi, type ScryfallCard } from '@/services/scryfallApi';
 import {
@@ -14,6 +14,14 @@ import {
   type PriceSource,
 } from '@/services/cardPriceSource';
 import { PriceSourceBadge } from '@/components/pricing/PriceSourceBadge';
+import {
+  getCardSearchHistory,
+  recordCardSearch,
+  removeCardSearch,
+  clearCardSearchHistory,
+  summarizeEntry,
+  type CardSearchHistoryEntry,
+} from '@/services/cardSearchHistory';
 import { toast } from '@/hooks/use-toast';
 import type { CardCategory } from '@/hooks/useCollection';
 
@@ -31,12 +39,20 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const [loading, setLoading] = useState(false);
   const [selectedSet, setSelectedSet] = useState<string>('all');
   const [sets, setSets] = useState<any[]>([]);
+  const [history, setHistory] = useState<CardSearchHistoryEntry[]>([]);
+
+  // Only Pokémon and MTG are persisted to history; the dialog skips it for other catalogs.
+  const historyGame: CardSearchHistoryEntry['game'] | null =
+    game === 'pokemon' ? 'pokemon' : game === 'mtg' ? 'mtg' : null;
 
   useEffect(() => {
     if (open) {
       loadSets();
+      if (historyGame) {
+        setHistory(getCardSearchHistory(historyGame));
+      }
     }
-  }, [open, game]);
+  }, [open, game, historyGame]);
 
   const loadSets = async () => {
     try {
@@ -51,6 +67,10 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       console.error('Error loading sets:', error);
     }
   };
+
+  const refreshHistory = useCallback(() => {
+    if (historyGame) setHistory(getCardSearchHistory(historyGame));
+  }, [historyGame]);
 
   const handleSearch = async () => {
     const trimmedName = searchQuery.trim();
@@ -102,9 +122,50 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
         variant: 'destructive',
       });
       setSearchResults([]);
+      return;
     } finally {
       setLoading(false);
     }
+
+    // Persist this search as a quick pick for next time.
+    if (historyGame) {
+      const setOption = sets.find((s) => {
+        const value = game === 'pokemon' ? s.id : s.code;
+        return value === selectedSet;
+      });
+      recordCardSearch({
+        game: historyGame,
+        name: trimmedName,
+        setId: selectedSet,
+        setLabel: setOption?.name ?? null,
+        cardNumber: trimmedNumber,
+      });
+      refreshHistory();
+    }
+  };
+
+  /** Re-run a saved search by populating inputs and firing handleSearch on the next tick. */
+  const runHistoryEntry = (entry: CardSearchHistoryEntry) => {
+    setSearchQuery(entry.name);
+    setCardNumberQuery(entry.cardNumber);
+    setSelectedSet(entry.setId);
+    // Defer so the controlled inputs commit before we read state in handleSearch.
+    setTimeout(() => handleSearch(), 0);
+  };
+
+  const handleRemoveHistory = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    entry: CardSearchHistoryEntry,
+  ) => {
+    e.stopPropagation();
+    removeCardSearch(entry);
+    refreshHistory();
+  };
+
+  const handleClearHistory = () => {
+    if (!historyGame) return;
+    clearCardSearchHistory(historyGame);
+    refreshHistory();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -257,6 +318,51 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
               you can ignore the slash and just enter the left number.
             </span>
           </p>
+
+          {/* Quick picks — recent searches saved per browser */}
+          {historyGame && history.length > 0 && (
+            <div className="rounded-md border bg-muted/30 px-3 py-2 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <History className="h-3.5 w-3.5" />
+                  Recent searches
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearHistory}
+                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Clear search history"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {history.map((entry) => (
+                  <div
+                    key={`${entry.game}-${entry.setId}-${entry.name}-${entry.cardNumber}-${entry.lastUsedAt}`}
+                    className="group inline-flex items-center gap-1 rounded-full border bg-background pl-2.5 pr-1 py-0.5 text-xs hover:bg-accent hover:text-accent-foreground transition-colors"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => runHistoryEntry(entry)}
+                      className="truncate max-w-[200px] text-left"
+                      title={summarizeEntry(entry)}
+                    >
+                      {summarizeEntry(entry)}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleRemoveHistory(e, entry)}
+                      className="rounded-full p-0.5 opacity-50 group-hover:opacity-100 hover:bg-background/80"
+                      aria-label={`Remove "${summarizeEntry(entry)}" from recent searches`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Results */}
           <div className="overflow-y-auto max-h-[60vh] pr-2">
