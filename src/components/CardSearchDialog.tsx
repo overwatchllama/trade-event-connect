@@ -257,7 +257,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
               pageSize: 50,
               orderBy: '-set.releaseDate',
             });
-            if (allResp.data.length > 0) results = allResp.data;
+            if (allResp.data.length > 0) results = dedupePrintings(allResp.data, 'pokemon');
           } finally {
             setExpandingPrintings(false);
           }
