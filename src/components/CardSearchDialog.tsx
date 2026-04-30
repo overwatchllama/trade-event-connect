@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search, Plus, Loader2 } from 'lucide-react';
+import { Search, Plus, Loader2, Info } from 'lucide-react';
 import { pokemonTcgApi, type PokemonCard } from '@/services/pokemonTcgApi';
 import { scryfallApi, type ScryfallCard } from '@/services/scryfallApi';
 import { toast } from '@/hooks/use-toast';
@@ -20,6 +20,7 @@ interface CardSearchDialogProps {
 export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCardSelect, trigger }) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [cardNumberQuery, setCardNumberQuery] = useState('');
   const [searchResults, setSearchResults] = useState<(PokemonCard | ScryfallCard)[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedSet, setSelectedSet] = useState<string>('all');
@@ -46,10 +47,15 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) {
+    const trimmedName = searchQuery.trim();
+    const trimmedNumber = cardNumberQuery.trim();
+    const hasSet = selectedSet !== 'all';
+
+    // New rule: a search is valid if EITHER a name is present, OR (set + number) are present.
+    if (!trimmedName && !(hasSet && trimmedNumber)) {
       toast({
-        title: 'Search Required',
-        description: 'Please enter a card name to search.',
+        title: 'Search needs more info',
+        description: 'Enter a card name, or pick a set and enter the card number from the bottom of the card.',
         variant: 'destructive',
       });
       return;
@@ -58,24 +64,28 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
     setLoading(true);
     try {
       if (game === 'pokemon') {
-        let query = `name:${searchQuery}*`;
-        if (selectedSet !== 'all') {
-          query += ` set.id:${selectedSet}`;
+        const parts: string[] = [];
+        if (trimmedName) parts.push(`name:${trimmedName}*`);
+        if (hasSet) parts.push(`set.id:${selectedSet}`);
+        if (trimmedNumber) {
+          // Card numbers are usually printed like "25/102" — only the left portion is the actual number.
+          const numericPart = trimmedNumber.split('/')[0].trim();
+          parts.push(`number:${numericPart}`);
         }
 
         const response = await pokemonTcgApi.searchCards({
-          q: query,
+          q: parts.join(' '),
           pageSize: 50,
           orderBy: '-set.releaseDate',
         });
         setSearchResults(response.data);
       } else if (game === 'mtg') {
-        let query = searchQuery;
-        if (selectedSet !== 'all') {
-          query = `${searchQuery} set:${selectedSet}`;
-        }
+        const parts: string[] = [];
+        if (trimmedName) parts.push(trimmedName);
+        if (hasSet) parts.push(`set:${selectedSet}`);
+        if (trimmedNumber) parts.push(`cn:${trimmedNumber.split('/')[0].trim()}`);
 
-        const response = await scryfallApi.searchCards(query, { order: 'released', dir: 'desc' });
+        const response = await scryfallApi.searchCards(parts.join(' '), { order: 'released', dir: 'desc' });
         setSearchResults(response.data);
       }
     } catch (error: any) {
@@ -101,6 +111,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
     onCardSelect(card);
     setOpen(false);
     setSearchQuery('');
+    setCardNumberQuery('');
     setSearchResults([]);
   };
 
@@ -114,6 +125,15 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
     } else {
       return card.image_uris?.normal || card.image_uris?.small || '';
     }
+  };
+
+  const getSetSymbolUrl = (card: PokemonCard | ScryfallCard): string | null => {
+    if (isPokemonCard(card)) {
+      return card.set?.images?.symbol ?? null;
+    }
+    // Scryfall provides set codes; symbols served from Scryfall's set endpoint
+    const code = (card as ScryfallCard).set;
+    return code ? `https://svgs.scryfall.io/sets/${code}.svg` : null;
   };
 
   const getCardInfo = (card: PokemonCard | ScryfallCard): { name: string; set: string; number: string; rarity: string } => {
@@ -158,36 +178,59 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
         <DialogHeader>
           <DialogTitle>Search {game === 'pokemon' ? 'Pokémon' : game.toUpperCase()} Cards</DialogTitle>
           <DialogDescription>
-            Search the card database to add cards to your collection
+            Search by name, or pinpoint a card by its set and card number for exact pricing.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* Search Controls */}
-          <div className="flex gap-2">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_220px_140px_auto] gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Enter card name..."
+                placeholder="Card name (optional if set + # provided)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="pl-10"
+                aria-label="Card name"
               />
             </div>
             <Select value={selectedSet} onValueChange={setSelectedSet}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger aria-label="Filter by set">
                 <SelectValue placeholder="All Sets" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Sets</SelectItem>
-                {sets.map((set) => (
-                  <SelectItem key={set.id} value={game === 'pokemon' ? set.id : set.code}>
-                    {set.name}
-                  </SelectItem>
-                ))}
+                {sets.map((set) => {
+                  const symbol = game === 'pokemon' ? set.images?.symbol : null;
+                  const value = game === 'pokemon' ? set.id : set.code;
+                  return (
+                    <SelectItem key={set.id ?? set.code} value={value}>
+                      <span className="flex items-center gap-2">
+                        {symbol && (
+                          <img
+                            src={symbol}
+                            alt=""
+                            referrerPolicy="no-referrer"
+                            className="h-4 w-4 object-contain"
+                          />
+                        )}
+                        <span className="truncate">{set.name}</span>
+                      </span>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
+            <Input
+              placeholder="Card # (e.g. 25)"
+              value={cardNumberQuery}
+              onChange={(e) => setCardNumberQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
+              aria-label="Card number"
+              inputMode="numeric"
+            />
             <Button onClick={handleSearch} disabled={loading}>
               {loading ? (
                 <>
@@ -203,6 +246,15 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
             </Button>
           </div>
 
+          <p className="flex items-start gap-2 text-xs text-muted-foreground">
+            <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <span>
+              The <strong>set symbol</strong> is the small icon in the bottom-right of the card art, and the{' '}
+              <strong>card number</strong> (e.g. <code>25/102</code>) sits next to it. Match those for exact pricing —
+              you can ignore the slash and just enter the left number.
+            </span>
+          </p>
+
           {/* Results */}
           <div className="overflow-y-auto max-h-[60vh] pr-2">
             {loading ? (
@@ -215,6 +267,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                   const info = getCardInfo(card);
                   const price = getCardPrice(card);
                   const image = getCardImage(card);
+                  const symbol = getSetSymbolUrl(card);
 
                   return (
                     <Card
@@ -223,15 +276,16 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                       onClick={() => handleCardClick(card)}
                     >
                       <CardContent className="p-3">
-                        <div className="aspect-[2/3] bg-slate-100 dark:bg-slate-800 rounded-lg mb-2 overflow-hidden relative">
+                        <div className="aspect-[2/3] bg-muted rounded-lg mb-2 overflow-hidden relative">
                           {image ? (
                             <img
                               src={image}
                               alt={info.name}
+                              referrerPolicy="no-referrer"
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-400">
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                               No Image
                             </div>
                           )}
@@ -239,12 +293,22 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                             <Plus className="h-8 w-8 text-white" />
                           </div>
                         </div>
-                        <h4 className="font-medium text-sm text-slate-900 dark:text-white line-clamp-2 mb-1">
+                        <h4 className="font-medium text-sm line-clamp-2 mb-1">
                           {info.name}
                         </h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                          {info.set} • #{info.number}
-                        </p>
+                        <div className="flex items-center gap-1.5 mb-2">
+                          {symbol && (
+                            <img
+                              src={symbol}
+                              alt={`${info.set} symbol`}
+                              referrerPolicy="no-referrer"
+                              className="h-4 w-4 object-contain shrink-0"
+                            />
+                          )}
+                          <p className="text-xs text-muted-foreground truncate">
+                            {info.set} • #{info.number}
+                          </p>
+                        </div>
                         <div className="flex items-center justify-between">
                           <Badge variant="secondary" className="text-xs">
                             {info.rarity}
@@ -258,15 +322,15 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                   );
                 })}
               </div>
-            ) : searchQuery && !loading ? (
-              <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+            ) : (searchQuery || cardNumberQuery) && !loading ? (
+              <div className="text-center py-12 text-muted-foreground">
                 <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No cards found. Try a different search term.</p>
+                <p>No cards found. Double-check the set symbol and card number.</p>
               </div>
             ) : (
-              <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+              <div className="text-center py-12 text-muted-foreground">
                 <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>Enter a card name and click Search to find cards</p>
+                <p>Search by name, or by set + card number for an exact match.</p>
               </div>
             )}
           </div>
