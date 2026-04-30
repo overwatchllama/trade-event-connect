@@ -40,6 +40,7 @@ const Security = lazy(() => import("./pages/Security"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import { DemoBanner } from "@/components/DemoBanner";
+import { DemoTourOverlay } from "@/components/demo/DemoTourOverlay";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
           <DemoBanner />
+          <DemoTourOverlay />
           <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <Routes>
             <Route path="/" element={<Index />} />
