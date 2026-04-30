@@ -45,7 +45,24 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const [history, setHistory] = useState<CardSearchHistoryEntry[]>([]);
   const [cardNumberError, setCardNumberError] = useState<string | null>(null);
   // When on, force a single exact printing match (set + number, both required).
-  const [exactOnly, setExactOnly] = useState(false);
+  // Persisted across sessions per-game so power users keep their preferred mode.
+  const exactOnlyStorageKey = `card-search:exact-only:${game}`;
+  const [exactOnly, setExactOnly] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage.getItem(exactOnlyStorageKey) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(exactOnlyStorageKey, exactOnly ? '1' : '0');
+    } catch {
+      // ignore storage errors (private mode, quota, etc.)
+    }
+  }, [exactOnly, exactOnlyStorageKey]);
   const cardNumberInputRef = useRef<HTMLInputElement>(null);
 
   // When the user flips on exact mode and a set is already chosen, jump focus to the
