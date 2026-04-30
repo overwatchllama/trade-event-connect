@@ -114,10 +114,12 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   }, [showAllPrintings, allPrintingsStorageKey]);
 
   // Cap on how many printings the "Show all printings" expansion fetches and renders.
-  // Persisted per browser. Lower caps keep the dialog snappy on slow connections / cheap devices.
+  // Persisted per browser AND synced to the user's profile (when signed in) so the preference
+  // follows them across devices. Lower caps keep the dialog snappy on slow connections.
   const ALL_PRINTINGS_CAP_OPTIONS = [10, 25, 50, 100] as const;
   type AllPrintingsCap = typeof ALL_PRINTINGS_CAP_OPTIONS[number];
   const allPrintingsCapKey = 'card-search:all-printings-cap';
+  const { user } = useAuth();
   const [allPrintingsCap, setAllPrintingsCap] = useState<AllPrintingsCap>(() => {
     if (typeof window === 'undefined') return 25;
     try {
@@ -129,13 +131,50 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       return 25;
     }
   });
+  // Track whether we've hydrated from the profile yet so we don't overwrite the
+  // server value with the local default on first render.
+  const profileCapHydrated = useRef(false);
+
+  // Hydrate cap from the user's profile on sign-in / dialog open.
+  useEffect(() => {
+    if (!user) {
+      profileCapHydrated.current = false;
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('all_printings_cap')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const remote = (data as any)?.all_printings_cap;
+      if (!error && (ALL_PRINTINGS_CAP_OPTIONS as readonly number[]).includes(Number(remote))) {
+        setAllPrintingsCap(Number(remote) as AllPrintingsCap);
+      }
+      profileCapHydrated.current = true;
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
   useEffect(() => {
     try {
       window.localStorage.setItem(allPrintingsCapKey, String(allPrintingsCap));
     } catch {
       // ignore
     }
-  }, [allPrintingsCap]);
+    // Persist to profile when signed in (after initial hydration to avoid clobbering).
+    if (user && profileCapHydrated.current) {
+      supabase
+        .from('profiles')
+        .update({ all_printings_cap: allPrintingsCap } as any)
+        .eq('id', user.id)
+        .then(({ error }) => {
+          if (error) console.warn('Failed to sync all-printings cap to profile:', error.message);
+        });
+    }
+  }, [allPrintingsCap, user]);
 
   // Client-side paging over grouped printings (page size matches the cap so each page fits the cap).
   const ALL_PRINTINGS_PAGE_SIZE = 12;
