@@ -8,6 +8,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Search, Plus, Loader2, Info } from 'lucide-react';
 import { pokemonTcgApi, type PokemonCard } from '@/services/pokemonTcgApi';
 import { scryfallApi, type ScryfallCard } from '@/services/scryfallApi';
+import {
+  getPokemonPriceSource,
+  getScryfallPriceSource,
+  type PriceSource,
+} from '@/services/cardPriceSource';
+import { PriceSourceBadge } from '@/components/pricing/PriceSourceBadge';
 import { toast } from '@/hooks/use-toast';
 import type { CardCategory } from '@/hooks/useCollection';
 
@@ -154,14 +160,11 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
     }
   };
 
-  const getCardPrice = (card: PokemonCard | ScryfallCard): string => {
+  const getPriceSource = (card: PokemonCard | ScryfallCard): PriceSource | null => {
     if (isPokemonCard(card)) {
-      const price = pokemonTcgApi.getCardPrice(card, 'normal');
-      return price ? `$${price.toFixed(2)}` : 'N/A';
-    } else {
-      const price = scryfallApi.getCardPrice(card, 'usd');
-      return price ? `$${price.toFixed(2)}` : 'N/A';
+      return getPokemonPriceSource(card);
     }
+    return getScryfallPriceSource(card);
   };
 
   return (
@@ -265,7 +268,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {searchResults.map((card) => {
                   const info = getCardInfo(card);
-                  const price = getCardPrice(card);
+                  const priceSource = getPriceSource(card);
                   const image = getCardImage(card);
                   const symbol = getSetSymbolUrl(card);
 
@@ -309,13 +312,11 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                             {info.set} • #{info.number}
                           </p>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <Badge variant="secondary" className="text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <Badge variant="secondary" className="text-xs shrink-0">
                             {info.rarity}
                           </Badge>
-                          <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                            {price}
-                          </span>
+                          <PriceSourceBadge source={priceSource} size="sm" />
                         </div>
                       </CardContent>
                     </Card>
