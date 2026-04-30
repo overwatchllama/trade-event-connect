@@ -63,6 +63,26 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       // ignore storage errors (private mode, quota, etc.)
     }
   }, [exactOnly, exactOnlyStorageKey]);
+
+  // When exact mode is on, optionally expand from a single printing to ALL printings that share the
+  // same card name + collector number (across sets) so users can compare pricing per printing.
+  const allPrintingsStorageKey = `card-search:all-printings:${game}`;
+  const [showAllPrintings, setShowAllPrintings] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage.getItem(allPrintingsStorageKey) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(allPrintingsStorageKey, showAllPrintings ? '1' : '0');
+    } catch {
+      // ignore storage errors
+    }
+  }, [showAllPrintings, allPrintingsStorageKey]);
   const cardNumberInputRef = useRef<HTMLInputElement>(null);
 
   // When the user flips on exact mode and a set is already chosen, jump focus to the
@@ -176,10 +196,23 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
 
         const response = await pokemonTcgApi.searchCards({
           q: parts.join(' '),
-          pageSize: exactOnly ? 1 : 50,
+          pageSize: exactOnly && !showAllPrintings ? 1 : 50,
           orderBy: '-set.releaseDate',
         });
-        setSearchResults(response.data);
+        let results = response.data;
+
+        // Expand: if exact + show-all, do a second query for all printings sharing this card's
+        // name + collector number across every set. Sorted newest first for easier price comparison.
+        if (exactOnly && showAllPrintings && results[0]) {
+          const baseName = results[0].name.replace(/"/g, '');
+          const allResp = await pokemonTcgApi.searchCards({
+            q: `name:"${baseName}" number:${leftNumber}`,
+            pageSize: 50,
+            orderBy: '-set.releaseDate',
+          });
+          if (allResp.data.length > 0) results = allResp.data;
+        }
+        setSearchResults(results);
       } else if (game === 'mtg') {
         const parts: string[] = [];
         if (exactOnly) {
@@ -192,7 +225,19 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
         }
 
         const response = await scryfallApi.searchCards(parts.join(' '), { order: 'released', dir: 'desc' });
-        setSearchResults(exactOnly ? response.data.slice(0, 1) : response.data);
+        let results = response.data;
+        if (exactOnly && !showAllPrintings) {
+          results = results.slice(0, 1);
+        } else if (exactOnly && showAllPrintings && results[0]) {
+          // Scryfall: re-query by exact name + collector number across all sets/printings.
+          const baseName = results[0].name.replace(/"/g, '\\"');
+          const allResp = await scryfallApi.searchCards(
+            `!"${baseName}" cn:${leftNumber}`,
+            { order: 'released', dir: 'desc' },
+          );
+          if (allResp.data.length > 0) results = allResp.data;
+        }
+        setSearchResults(results);
       }
     } catch (error: any) {
       console.error('Search error:', error);
@@ -398,19 +443,41 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                 you can ignore the slash and just enter the left number.
               </span>
             </p>
-            <label
-              htmlFor="exact-only-toggle"
-              className="flex items-center gap-2 text-xs font-medium cursor-pointer select-none rounded-md border bg-muted/30 px-2.5 py-1.5"
-              title="Force a single exact printing match using set + card number. Name is ignored."
-            >
-              <Switch
-                id="exact-only-toggle"
-                checked={exactOnly}
-                onCheckedChange={setExactOnly}
-                aria-label="Exact set and number only"
-              />
-              <span>Exact set + # only</span>
-            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <label
+                htmlFor="exact-only-toggle"
+                className="flex items-center gap-2 text-xs font-medium cursor-pointer select-none rounded-md border bg-muted/30 px-2.5 py-1.5"
+                title="Force a single exact printing match using set + card number. Name is ignored."
+              >
+                <Switch
+                  id="exact-only-toggle"
+                  checked={exactOnly}
+                  onCheckedChange={setExactOnly}
+                  aria-label="Exact set and number only"
+                />
+                <span>Exact set + # only</span>
+              </label>
+              <label
+                htmlFor="all-printings-toggle"
+                className={`flex items-center gap-2 text-xs font-medium select-none rounded-md border px-2.5 py-1.5 transition-opacity ${
+                  exactOnly ? 'cursor-pointer bg-muted/30' : 'cursor-not-allowed bg-muted/10 opacity-50'
+                }`}
+                title={
+                  exactOnly
+                    ? 'Expand to all printings of this card across sets for fuller pricing comparison.'
+                    : 'Turn on Exact set + # only first.'
+                }
+              >
+                <Switch
+                  id="all-printings-toggle"
+                  checked={showAllPrintings}
+                  onCheckedChange={setShowAllPrintings}
+                  disabled={!exactOnly}
+                  aria-label="Show all printings of this card"
+                />
+                <span>Show all printings</span>
+              </label>
+            </div>
           </div>
 
           {/* Quick picks — recent searches saved per browser */}
@@ -466,73 +533,113 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
               </div>
             ) : searchResults.length > 0 ? (
               <div className="space-y-3">
-                {exactOnly && searchQuery.trim() && (
+                {exactOnly && (showAllPrintings || searchQuery.trim()) && (
                   <div className="flex items-start gap-2 rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                     <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                    <span>
-                      Exact mode is on, so the card name was ignored — results are matched only by{' '}
-                      <strong>set + card number</strong> to lock onto a single printing.
-                    </span>
+                    {showAllPrintings ? (
+                      <span>
+                        Showing <strong>{searchResults.length} printing{searchResults.length === 1 ? '' : 's'}</strong>{' '}
+                        of this card across sets, grouped by set+number for easier price comparison. Pick the printing
+                        that matches your copy.
+                      </span>
+                    ) : (
+                      <span>
+                        Exact mode is on, so the card name was ignored — results are matched only by{' '}
+                        <strong>set + card number</strong> to lock onto a single printing.
+                      </span>
+                    )}
                   </div>
                 )}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {searchResults.map((card) => {
-                  const info = getCardInfo(card);
-                  const priceSource = getPriceSource(card);
-                  const image = getCardImage(card);
-                  const symbol = getSetSymbolUrl(card);
+                {(() => {
+                  const renderCard = (card: PokemonCard | ScryfallCard) => {
+                    const info = getCardInfo(card);
+                    const priceSource = getPriceSource(card);
+                    const image = getCardImage(card);
+                    const symbol = getSetSymbolUrl(card);
+                    return (
+                      <Card
+                        key={card.id}
+                        className="cursor-pointer hover:shadow-lg transition-shadow group"
+                        onClick={() => handleCardClick(card)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="aspect-[2/3] bg-muted rounded-lg mb-2 overflow-hidden relative">
+                            {image ? (
+                              <img
+                                src={image}
+                                alt={info.name}
+                                referrerPolicy="no-referrer"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                No Image
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Plus className="h-8 w-8 text-white" />
+                            </div>
+                          </div>
+                          <h4 className="font-medium text-sm line-clamp-2 mb-1">{info.name}</h4>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            {symbol && (
+                              <img
+                                src={symbol}
+                                alt={`${info.set} symbol`}
+                                referrerPolicy="no-referrer"
+                                className="h-4 w-4 object-contain shrink-0"
+                              />
+                            )}
+                            <p className="text-xs text-muted-foreground truncate">
+                              {info.set} • #{info.number}
+                            </p>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <Badge variant="secondary" className="text-xs shrink-0">
+                              {info.rarity}
+                            </Badge>
+                            <PriceSourceBadge source={priceSource} size="sm" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  };
+
+                  // When showing all printings in exact mode, group cards by "Set name • #number"
+                  // so users can scan price differences between printings of the same card.
+                  if (exactOnly && showAllPrintings) {
+                    const groups = new Map<string, (PokemonCard | ScryfallCard)[]>();
+                    for (const card of searchResults) {
+                      const info = getCardInfo(card);
+                      const key = `${info.set} • #${info.number}`;
+                      if (!groups.has(key)) groups.set(key, []);
+                      groups.get(key)!.push(card);
+                    }
+                    return (
+                      <div className="space-y-4">
+                        {Array.from(groups.entries()).map(([label, cards]) => (
+                          <div key={label} className="space-y-2">
+                            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b pb-1">
+                              {label}{' '}
+                              <span className="font-normal normal-case tracking-normal text-[11px]">
+                                ({cards.length} printing{cards.length === 1 ? '' : 's'})
+                              </span>
+                            </h5>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                              {cards.map(renderCard)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
 
                   return (
-                    <Card
-                      key={card.id}
-                      className="cursor-pointer hover:shadow-lg transition-shadow group"
-                      onClick={() => handleCardClick(card)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="aspect-[2/3] bg-muted rounded-lg mb-2 overflow-hidden relative">
-                          {image ? (
-                            <img
-                              src={image}
-                              alt={info.name}
-                              referrerPolicy="no-referrer"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                              No Image
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Plus className="h-8 w-8 text-white" />
-                          </div>
-                        </div>
-                        <h4 className="font-medium text-sm line-clamp-2 mb-1">
-                          {info.name}
-                        </h4>
-                        <div className="flex items-center gap-1.5 mb-2">
-                          {symbol && (
-                            <img
-                              src={symbol}
-                              alt={`${info.set} symbol`}
-                              referrerPolicy="no-referrer"
-                              className="h-4 w-4 object-contain shrink-0"
-                            />
-                          )}
-                          <p className="text-xs text-muted-foreground truncate">
-                            {info.set} • #{info.number}
-                          </p>
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <Badge variant="secondary" className="text-xs shrink-0">
-                            {info.rarity}
-                          </Badge>
-                          <PriceSourceBadge source={priceSource} size="sm" />
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {searchResults.map(renderCard)}
+                    </div>
                   );
-                })}
-                </div>
+                })()}
               </div>
             ) : (searchQuery || cardNumberQuery) && !loading ? (
               exactOnly ? (
