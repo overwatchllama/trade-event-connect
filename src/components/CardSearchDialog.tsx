@@ -287,33 +287,12 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                 aria-label="Card name"
               />
             </div>
-            <Select value={selectedSet} onValueChange={setSelectedSet}>
-              <SelectTrigger aria-label="Filter by set">
-                <SelectValue placeholder="All Sets" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sets</SelectItem>
-                {sets.map((set) => {
-                  const symbol = game === 'pokemon' ? set.images?.symbol : null;
-                  const value = game === 'pokemon' ? set.id : set.code;
-                  return (
-                    <SelectItem key={set.id ?? set.code} value={value}>
-                      <span className="flex items-center gap-2">
-                        {symbol && (
-                          <img
-                            src={symbol}
-                            alt=""
-                            referrerPolicy="no-referrer"
-                            className="h-4 w-4 object-contain"
-                          />
-                        )}
-                        <span className="truncate">{set.name}</span>
-                      </span>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            <SetCombobox
+              sets={sets}
+              game={game}
+              value={selectedSet}
+              onChange={setSelectedSet}
+            />
             <div className="flex flex-col gap-1">
               <Input
                 placeholder="Card # (e.g. 25 or 25/102)"
