@@ -48,7 +48,9 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
     ? validateCardNumber(cardNumberQuery)
     : null;
   const showInlineCardNumberError =
-    cardNumberValidation && !cardNumberValidation.ok ? cardNumberValidation.error : null;
+    cardNumberValidation && cardNumberValidation.ok === false
+      ? cardNumberValidation.error
+      : null;
 
   // Only Pokémon and MTG are persisted to history; the dialog skips it for other catalogs.
   const historyGame: CardSearchHistoryEntry['game'] | null =
