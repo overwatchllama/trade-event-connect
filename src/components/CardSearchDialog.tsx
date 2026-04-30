@@ -540,26 +540,34 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                     Name is ignored — uses set + card # only.
                   </p>
                 </div>
-                <label
-                  htmlFor="all-printings-toggle"
-                  className={`flex items-center gap-2 text-xs font-medium select-none rounded-md border px-2.5 py-1.5 transition-opacity ${
-                    exactOnly ? 'cursor-pointer bg-muted/30' : 'cursor-not-allowed bg-muted/10 opacity-50'
-                  }`}
-                  title={
-                    exactOnly
-                      ? 'Expand to all printings of this card across sets for fuller pricing comparison.'
-                      : 'Turn on Exact set + # only first.'
-                  }
-                >
-                  <Switch
-                    id="all-printings-toggle"
-                    checked={showAllPrintings}
-                    onCheckedChange={setShowAllPrintings}
-                    disabled={!exactOnly}
-                    aria-label="Show all printings of this card"
-                  />
-                  <span>Show all printings</span>
-                </label>
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="all-printings-toggle"
+                    className={`flex items-center gap-2 text-xs font-medium select-none rounded-md border px-2.5 py-1.5 transition-opacity ${
+                      exactOnly ? 'cursor-pointer bg-muted/30' : 'cursor-not-allowed bg-muted/10 opacity-50'
+                    }`}
+                    title={
+                      exactOnly
+                        ? 'Expand to all printings of this card across sets for fuller pricing comparison. Requires a card name.'
+                        : 'Turn on Exact set + # only first.'
+                    }
+                  >
+                    <Switch
+                      id="all-printings-toggle"
+                      checked={showAllPrintings}
+                      onCheckedChange={setShowAllPrintings}
+                      disabled={!exactOnly}
+                      aria-describedby="all-printings-help"
+                      aria-label="Show all printings of this card"
+                    />
+                    <span>Show all printings</span>
+                  </label>
+                  {exactOnly && showAllPrintings && (
+                    <p id="all-printings-help" className="text-[11px] text-muted-foreground pl-1">
+                      Card name required to match printings across sets.
+                    </p>
+                  )}
+                </div>
               </div>
             </TooltipProvider>
           </div>
