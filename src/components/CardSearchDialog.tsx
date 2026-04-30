@@ -601,8 +601,13 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
           {/* Results */}
           <div className="overflow-y-auto max-h-[60vh] pr-2">
             {loading ? (
-              <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                {expandingPrintings && (
+                  <p className="text-xs text-muted-foreground max-w-xs" role="status" aria-live="polite">
+                    Expanding to all printings to pull pricing across sets…
+                  </p>
+                )}
               </div>
             ) : searchResults.length > 0 ? (
               <div className="space-y-3">
