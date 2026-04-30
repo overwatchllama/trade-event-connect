@@ -12,7 +12,11 @@ interface DetectedCard {
   game: "pokemon" | "onepiece" | "unknown";
   guess_name: string | null;
   guess_set: string | null;
+  guess_set_code: string | null;
+  guess_set_symbol_description: string | null;
   guess_number: string | null;
+  guess_total: string | null;
+  confidence_basis: "number_and_set" | "number_only" | "set_only" | "name_only" | "low" | null;
   notes: string | null;
 }
 
@@ -37,21 +41,38 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new HttpError("ConfigError", "LOVABLE_API_KEY is not configured", 500);
 
-    const systemPrompt = `You are a trading card detector. Given a photo containing one or more trading cards (Pokémon TCG or One Piece TCG), detect each individual card and return its bounding box and any visible identifying info.
+    const systemPrompt = `You are a trading card identifier specialized in Pokémon TCG and One Piece TCG.
+
+A card's NAME alone is unreliable for pricing — the same Pokémon (e.g. Charizard, Pikachu) is reprinted in dozens of sets at very different values. The TWO markers that uniquely identify a printing are printed together at the BOTTOM of the card:
+
+  1. SET SYMBOL — a small icon (lightning bolt, crown, sword, etc.) usually in the BOTTOM-RIGHT of the card art (just above the card number). Modern Pokémon cards also print a 3-letter SET CODE next to it (e.g. "SVI", "PAL", "OBF", "BRS", "SIT", "PAR", "TEF", "TWM").
+  2. CARD NUMBER — printed as "<num>/<total>" or just "<num>/SV" — for example "025/198", "199/091", "SWSH284". The number on the LEFT of the slash is the collector number; the number on the RIGHT is the set's printed total.
+
+YOUR PRIORITY when reading each card is, in order:
+  a) Read the CARD NUMBER (digits + slash) — this is usually clearly printed in small black/white text in the bottom-left or bottom-right.
+  b) Read the SET CODE (3-4 uppercase letters) — printed right next to the card number on modern Pokémon cards.
+  c) Describe the SET SYMBOL shape if you can see it (e.g. "lightning bolt in a circle", "crown", "sword and shield"), even if you can't read a code.
+  d) Only THEN read the card name from the top.
 
 Return bounding boxes in NORMALIZED coordinates (0..1) relative to the full image:
 - x, y = top-left corner
 - w, h = width / height
 
-Only return cards that are clearly visible. Do not invent cards. If text is unreadable, leave the field null.`;
+Only return cards that are clearly visible. Do not invent details. If text is unreadable, leave the field null — do NOT guess. A confident "null" is more useful than a wrong guess.`;
 
     const userPrompt = `Detect every trading card in this photo. For each card, return:
 - bbox { x, y, w, h } normalized 0..1
 - game: "pokemon" | "onepiece" | "unknown"
-- guess_name: card name visible on the card, or null
-- guess_set: set symbol/name if visible, or null
-- guess_number: card number like "025/198" if visible, or null
-- notes: any extra hint to identify it (rarity symbol, color, etc.)`;
+- guess_name: card name printed at the TOP of the card, or null
+- guess_set: full set name if you recognize it (e.g. "Scarlet & Violet—Paldea Evolved"), or null
+- guess_set_code: the 3-4 letter SET CODE printed near the card number (e.g. "SVI", "PAL", "OP01"), or null
+- guess_set_symbol_description: a short description of the set symbol shape/style if visible (e.g. "lightning bolt", "crown silhouette"), or null
+- guess_number: ONLY the collector number on the LEFT of the slash (e.g. "25" from "025/198"), or null. Strip leading zeros.
+- guess_total: the number on the RIGHT of the slash (e.g. "198"), or null
+- confidence_basis: which markers you actually read — "number_and_set" (best), "number_only", "set_only", "name_only", or "low"
+- notes: any extra hint (rarity symbol, holo pattern, edition stamp, etc.)
+
+Reminder: prioritize the bottom-of-card markers (number + set code/symbol) over the name. They are what makes pricing accurate.`;
 
     const aiResp = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -104,7 +125,14 @@ Only return cards that are clearly visible. Do not invent cards. If text is unre
                           },
                           guess_name: { type: ["string", "null"] },
                           guess_set: { type: ["string", "null"] },
+                          guess_set_code: { type: ["string", "null"] },
+                          guess_set_symbol_description: { type: ["string", "null"] },
                           guess_number: { type: ["string", "null"] },
+                          guess_total: { type: ["string", "null"] },
+                          confidence_basis: {
+                            type: ["string", "null"],
+                            enum: ["number_and_set", "number_only", "set_only", "name_only", "low", null],
+                          },
                           notes: { type: ["string", "null"] },
                         },
                         required: [
@@ -112,7 +140,11 @@ Only return cards that are clearly visible. Do not invent cards. If text is unre
                           "game",
                           "guess_name",
                           "guess_set",
+                          "guess_set_code",
+                          "guess_set_symbol_description",
                           "guess_number",
+                          "guess_total",
+                          "confidence_basis",
                           "notes",
                         ],
                         additionalProperties: false,
