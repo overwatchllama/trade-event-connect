@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sparkles, X, LogOut, Users } from "lucide-react";
+import { Sparkles, X, LogOut, Users, GraduationCap } from "lucide-react";
 import { useDemoSession } from "@/hooks/useDemoSession";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { DEMO_TOUR_OPEN_EVENT } from "@/components/demo/DemoTourOverlay";
+import { personaFromEmail } from "@/components/demo/demoTours";
 
 /**
  * Persistent banner shown across the app when the active session
@@ -37,6 +39,17 @@ export const DemoBanner = () => {
           </span>
         </div>
         <div className="flex items-center gap-1.5">
+          {personaFromEmail(email) && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs"
+              onClick={() => window.dispatchEvent(new Event(DEMO_TOUR_OPEN_EVENT))}
+            >
+              <GraduationCap className="mr-1 h-3 w-3" />
+              Restart tour
+            </Button>
+          )}
           <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs">
             <Link to="/demo">
               <Users className="mr-1 h-3 w-3" />
