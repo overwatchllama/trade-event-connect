@@ -726,13 +726,28 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
               exactOnly ? (
                 <div className="text-center py-12 text-muted-foreground space-y-3">
                   <Search className="h-12 w-12 mx-auto opacity-50" />
-                  <div>
-                    <p className="font-medium text-foreground">No exact match found</p>
-                    <p className="text-sm mt-1">
-                      No printing matches that set + card number exactly. The number might be off by a digit, or the
-                      printing may live in a different set (promos, special editions, etc.).
-                    </p>
-                  </div>
+                  {searchQuery.trim() ? (
+                    // User typed a name AND has exact mode on. Their name was ignored — call that out
+                    // explicitly so they know to either turn off exact mode or fix the set/#.
+                    <div>
+                      <p className="font-medium text-foreground">No exact match for that set + #</p>
+                      <p className="text-sm mt-1">
+                        Exact mode ignored the name <strong>"{searchQuery.trim()}"</strong> and matched only on the
+                        set + card number — and nothing came back. Double-check the card # against the bottom of the
+                        card, or turn off exact mode to search by name across all sets.
+                      </p>
+                    </div>
+                  ) : (
+                    // Pure set + # lookup with no name hint at all.
+                    <div>
+                      <p className="font-medium text-foreground">No printing at this set + #</p>
+                      <p className="text-sm mt-1">
+                        That set doesn't have a card numbered <strong>{cardNumberQuery.trim() || '—'}</strong>. The
+                        printing may live in a different set (promos, secret rares, alt-arts, etc.) — try removing
+                        the set or adding the card name.
+                      </p>
+                    </div>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -741,7 +756,9 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                       setTimeout(() => handleSearch(), 0);
                     }}
                   >
-                    Turn off exact mode & search nearby printings
+                    {searchQuery.trim()
+                      ? 'Search by name across all sets'
+                      : 'Turn off exact mode & search nearby printings'}
                   </Button>
                 </div>
               ) : (
