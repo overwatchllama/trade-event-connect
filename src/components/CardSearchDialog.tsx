@@ -42,6 +42,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const [cardNumberQuery, setCardNumberQuery] = useState('');
   const [searchResults, setSearchResults] = useState<(PokemonCard | ScryfallCard)[]>([]);
   const [loading, setLoading] = useState(false);
+  const [expandingPrintings, setExpandingPrintings] = useState(false);
   const [selectedSet, setSelectedSet] = useState<string>('all');
   const [sets, setSets] = useState<any[]>([]);
   const [history, setHistory] = useState<CardSearchHistoryEntry[]>([]);
@@ -237,13 +238,18 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
         // Expand: if exact + show-all, do a second query for all printings sharing this card's
         // name + collector number across every set. Sorted newest first for easier price comparison.
         if (exactOnly && showAllPrintings && results[0]) {
-          const baseName = results[0].name.replace(/"/g, '');
-          const allResp = await pokemonTcgApi.searchCards({
-            q: `name:"${baseName}" number:${leftNumber}`,
-            pageSize: 50,
-            orderBy: '-set.releaseDate',
-          });
-          if (allResp.data.length > 0) results = allResp.data;
+          setExpandingPrintings(true);
+          try {
+            const baseName = results[0].name.replace(/"/g, '');
+            const allResp = await pokemonTcgApi.searchCards({
+              q: `name:"${baseName}" number:${leftNumber}`,
+              pageSize: 50,
+              orderBy: '-set.releaseDate',
+            });
+            if (allResp.data.length > 0) results = allResp.data;
+          } finally {
+            setExpandingPrintings(false);
+          }
         }
         setSearchResults(results);
       } else if (game === 'mtg') {
@@ -263,12 +269,17 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
           results = results.slice(0, 1);
         } else if (exactOnly && showAllPrintings && results[0]) {
           // Scryfall: re-query by exact name + collector number across all sets/printings.
-          const baseName = results[0].name.replace(/"/g, '\\"');
-          const allResp = await scryfallApi.searchCards(
-            `!"${baseName}" cn:${leftNumber}`,
-            { order: 'released', dir: 'desc' },
-          );
-          if (allResp.data.length > 0) results = allResp.data;
+          setExpandingPrintings(true);
+          try {
+            const baseName = results[0].name.replace(/"/g, '\\"');
+            const allResp = await scryfallApi.searchCards(
+              `!"${baseName}" cn:${leftNumber}`,
+              { order: 'released', dir: 'desc' },
+            );
+            if (allResp.data.length > 0) results = allResp.data;
+          } finally {
+            setExpandingPrintings(false);
+          }
         }
         setSearchResults(results);
       }
@@ -283,6 +294,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       return;
     } finally {
       setLoading(false);
+      setExpandingPrintings(false);
     }
 
     // Persist this search as a quick pick for next time.
@@ -589,8 +601,13 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
           {/* Results */}
           <div className="overflow-y-auto max-h-[60vh] pr-2">
             {loading ? (
-              <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                {expandingPrintings && (
+                  <p className="text-xs text-muted-foreground max-w-xs" role="status" aria-live="polite">
+                    Expanding to all printings to pull pricing across sets…
+                  </p>
+                )}
               </div>
             ) : searchResults.length > 0 ? (
               <div className="space-y-3">
