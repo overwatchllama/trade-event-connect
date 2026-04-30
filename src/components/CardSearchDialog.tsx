@@ -196,10 +196,23 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
 
         const response = await pokemonTcgApi.searchCards({
           q: parts.join(' '),
-          pageSize: exactOnly ? 1 : 50,
+          pageSize: exactOnly && !showAllPrintings ? 1 : 50,
           orderBy: '-set.releaseDate',
         });
-        setSearchResults(response.data);
+        let results = response.data;
+
+        // Expand: if exact + show-all, do a second query for all printings sharing this card's
+        // name + collector number across every set. Sorted newest first for easier price comparison.
+        if (exactOnly && showAllPrintings && results[0]) {
+          const baseName = results[0].name.replace(/"/g, '');
+          const allResp = await pokemonTcgApi.searchCards({
+            q: `name:"${baseName}" number:${leftNumber}`,
+            pageSize: 50,
+            orderBy: '-set.releaseDate',
+          });
+          if (allResp.data.length > 0) results = allResp.data;
+        }
+        setSearchResults(results);
       } else if (game === 'mtg') {
         const parts: string[] = [];
         if (exactOnly) {
@@ -212,7 +225,19 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
         }
 
         const response = await scryfallApi.searchCards(parts.join(' '), { order: 'released', dir: 'desc' });
-        setSearchResults(exactOnly ? response.data.slice(0, 1) : response.data);
+        let results = response.data;
+        if (exactOnly && !showAllPrintings) {
+          results = results.slice(0, 1);
+        } else if (exactOnly && showAllPrintings && results[0]) {
+          // Scryfall: re-query by exact name + collector number across all sets/printings.
+          const baseName = results[0].name.replace(/"/g, '\\"');
+          const allResp = await scryfallApi.searchCards(
+            `!"${baseName}" cn:${leftNumber}`,
+            { order: 'released', dir: 'desc' },
+          );
+          if (allResp.data.length > 0) results = allResp.data;
+        }
+        setSearchResults(results);
       }
     } catch (error: any) {
       console.error('Search error:', error);
