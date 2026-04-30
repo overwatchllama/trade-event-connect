@@ -465,7 +465,17 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : searchResults.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="space-y-3">
+                {exactOnly && searchQuery.trim() && (
+                  <div className="flex items-start gap-2 rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                    <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <span>
+                      Exact mode is on, so the card name was ignored — results are matched only by{' '}
+                      <strong>set + card number</strong> to lock onto a single printing.
+                    </span>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {searchResults.map((card) => {
                   const info = getCardInfo(card);
                   const priceSource = getPriceSource(card);
