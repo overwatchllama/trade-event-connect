@@ -84,6 +84,26 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       // ignore storage errors
     }
   }, [showAllPrintings, allPrintingsStorageKey]);
+
+  // Dismissable inline note shown above results when exact-only mode is active.
+  // Persisted so power users who already understand the rule don't have to keep dismissing it.
+  const exactNoteDismissedKey = 'card-search:exact-note-dismissed';
+  const [exactNoteDismissed, setExactNoteDismissed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage.getItem(exactNoteDismissedKey) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const dismissExactNote = () => {
+    setExactNoteDismissed(true);
+    try {
+      window.localStorage.setItem(exactNoteDismissedKey, '1');
+    } catch {
+      // ignore
+    }
+  };
   const cardNumberInputRef = useRef<HTMLInputElement>(null);
 
   // When the user flips on exact mode and a set is already chosen, jump focus to the
