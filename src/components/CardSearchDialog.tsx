@@ -111,6 +111,34 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
     }
   }, [showAllPrintings, allPrintingsStorageKey]);
 
+  // Cap on how many printings the "Show all printings" expansion fetches and renders.
+  // Persisted per browser. Lower caps keep the dialog snappy on slow connections / cheap devices.
+  const ALL_PRINTINGS_CAP_OPTIONS = [10, 25, 50, 100] as const;
+  type AllPrintingsCap = typeof ALL_PRINTINGS_CAP_OPTIONS[number];
+  const allPrintingsCapKey = 'card-search:all-printings-cap';
+  const [allPrintingsCap, setAllPrintingsCap] = useState<AllPrintingsCap>(() => {
+    if (typeof window === 'undefined') return 25;
+    try {
+      const raw = Number(window.localStorage.getItem(allPrintingsCapKey));
+      return (ALL_PRINTINGS_CAP_OPTIONS as readonly number[]).includes(raw)
+        ? (raw as AllPrintingsCap)
+        : 25;
+    } catch {
+      return 25;
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(allPrintingsCapKey, String(allPrintingsCap));
+    } catch {
+      // ignore
+    }
+  }, [allPrintingsCap]);
+
+  // Client-side paging over grouped printings (page size matches the cap so each page fits the cap).
+  const ALL_PRINTINGS_PAGE_SIZE = 12;
+  const [allPrintingsPage, setAllPrintingsPage] = useState(1);
+
   // Dismissable inline note shown above results when exact-only mode is active.
   // Persisted so power users who already understand the rule don't have to keep dismissing it.
   const exactNoteDismissedKey = 'card-search:exact-note-dismissed';
