@@ -67,6 +67,9 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const [searchResults, setSearchResults] = useState<(PokemonCard | ScryfallCard)[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandingPrintings, setExpandingPrintings] = useState(false);
+  // Server-reported total of matching printings for the last "show all printings" expansion.
+  // Used to display "Showing N of ~M" and how many are hidden by the cap. Null = no expansion done yet.
+  const [allPrintingsTotal, setAllPrintingsTotal] = useState<number | null>(null);
   type AllPrintingsSort = 'release-desc' | 'release-asc' | 'price-asc' | 'price-desc';
   const [allPrintingsSort, setAllPrintingsSort] = useState<AllPrintingsSort>('release-desc');
   const [selectedSet, setSelectedSet] = useState<string>('all');
