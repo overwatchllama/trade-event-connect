@@ -17,7 +17,17 @@ interface DetectedCard {
   game: "pokemon" | "onepiece" | "unknown";
   guess_name: string | null;
   guess_set: string | null;
+  guess_set_code: string | null;
+  guess_set_symbol_description: string | null;
   guess_number: string | null;
+  guess_total: string | null;
+  confidence_basis:
+    | "number_and_set"
+    | "number_only"
+    | "set_only"
+    | "name_only"
+    | "low"
+    | null;
   notes: string | null;
 }
 
@@ -101,6 +111,7 @@ const CardScanner = () => {
         name: card.guess_name,
         number: card.guess_number,
         setHint: card.guess_set,
+        setCode: card.guess_set_code,
       });
       setMatches(results);
       if (results.length === 0) {
