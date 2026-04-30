@@ -43,6 +43,8 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const [sets, setSets] = useState<any[]>([]);
   const [history, setHistory] = useState<CardSearchHistoryEntry[]>([]);
   const [cardNumberError, setCardNumberError] = useState<string | null>(null);
+  // When on, force a single exact printing match (set + number, both required).
+  const [exactOnly, setExactOnly] = useState(false);
 
   // Live-validate the card number field but only show errors after the user has typed something.
   const cardNumberValidation = cardNumberQuery.trim()
