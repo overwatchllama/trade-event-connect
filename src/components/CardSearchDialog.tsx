@@ -965,12 +965,26 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                             </SelectContent>
                           </Select>
                         </div>
-                        {capHit && (
-                          <p className="text-[11px] text-muted-foreground">
-                            Showing the first {allPrintingsCap} printings (cap reached). Raise the limit above
-                            to fetch more — higher caps take longer to load.
-                          </p>
-                        )}
+                        {(allPrintingsTotal !== null || capHit) && (() => {
+                          const shown = searchResults.length;
+                          const total = allPrintingsTotal;
+                          const hidden = total !== null ? Math.max(0, total - shown) : null;
+                          return (
+                            <p className="text-[11px] text-muted-foreground">
+                              {total !== null ? (
+                                <>Showing {shown} of ~{total} matching printing{total === 1 ? '' : 's'}</>
+                              ) : (
+                                <>Showing the first {shown} printings</>
+                              )}
+                              {hidden !== null && hidden > 0 && (
+                                <> · <span className="font-medium text-foreground">{hidden} hidden by cap</span></>
+                              )}
+                              {(capHit || (hidden !== null && hidden > 0)) && (
+                                <> — raise the Max printings limit above to fetch more (slower).</>
+                              )}
+                            </p>
+                          );
+                        })()}
                         {pageGroups.map(([label, cards]) => (
                           <div key={label} className="space-y-2">
                             <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b pb-1">
