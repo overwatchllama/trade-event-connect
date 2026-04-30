@@ -359,14 +359,29 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
             </Button>
           </div>
 
-          <p className="flex items-start gap-2 text-xs text-muted-foreground">
-            <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <span>
-              The <strong>set symbol</strong> is the small icon in the bottom-right of the card art, and the{' '}
-              <strong>card number</strong> (e.g. <code>25/102</code>) sits next to it. Match those for exact pricing —
-              you can ignore the slash and just enter the left number.
-            </span>
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="flex items-start gap-2 text-xs text-muted-foreground flex-1 min-w-[240px]">
+              <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>
+                The <strong>set symbol</strong> is the small icon in the bottom-right of the card art, and the{' '}
+                <strong>card number</strong> (e.g. <code>25/102</code>) sits next to it. Match those for exact pricing —
+                you can ignore the slash and just enter the left number.
+              </span>
+            </p>
+            <label
+              htmlFor="exact-only-toggle"
+              className="flex items-center gap-2 text-xs font-medium cursor-pointer select-none rounded-md border bg-muted/30 px-2.5 py-1.5"
+              title="Force a single exact printing match using set + card number. Name is ignored."
+            >
+              <Switch
+                id="exact-only-toggle"
+                checked={exactOnly}
+                onCheckedChange={setExactOnly}
+                aria-label="Exact set and number only"
+              />
+              <span>Exact set + # only</span>
+            </label>
+          </div>
 
           {/* Quick picks — recent searches saved per browser */}
           {historyGame && history.length > 0 && (
