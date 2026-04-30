@@ -88,8 +88,27 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
     const trimmedNumber = cardNumberQuery.trim();
     const hasSet = selectedSet !== 'all';
 
+    // Validate the card # field if anything was typed — even if name is also present.
+    let leftNumber: string | null = null;
+    if (trimmedNumber) {
+      const result = validateCardNumber(trimmedNumber);
+      if (!result.ok) {
+        setCardNumberError(result.error);
+        toast({
+          title: 'Invalid card number',
+          description: `${result.error} Examples: 25, 25/102, TG01/TG30.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+      leftNumber = result.left;
+      setCardNumberError(null);
+    } else {
+      setCardNumberError(null);
+    }
+
     // New rule: a search is valid if EITHER a name is present, OR (set + number) are present.
-    if (!trimmedName && !(hasSet && trimmedNumber)) {
+    if (!trimmedName && !(hasSet && leftNumber)) {
       toast({
         title: 'Search needs more info',
         description: 'Enter a card name, or pick a set and enter the card number from the bottom of the card.',
@@ -104,11 +123,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
         const parts: string[] = [];
         if (trimmedName) parts.push(`name:${trimmedName}*`);
         if (hasSet) parts.push(`set.id:${selectedSet}`);
-        if (trimmedNumber) {
-          // Card numbers are usually printed like "25/102" — only the left portion is the actual number.
-          const numericPart = trimmedNumber.split('/')[0].trim();
-          parts.push(`number:${numericPart}`);
-        }
+        if (leftNumber) parts.push(`number:${leftNumber}`);
 
         const response = await pokemonTcgApi.searchCards({
           q: parts.join(' '),
@@ -120,7 +135,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
         const parts: string[] = [];
         if (trimmedName) parts.push(trimmedName);
         if (hasSet) parts.push(`set:${selectedSet}`);
-        if (trimmedNumber) parts.push(`cn:${trimmedNumber.split('/')[0].trim()}`);
+        if (leftNumber) parts.push(`cn:${leftNumber}`);
 
         const response = await scryfallApi.searchCards(parts.join(' '), { order: 'released', dir: 'desc' });
         setSearchResults(response.data);
