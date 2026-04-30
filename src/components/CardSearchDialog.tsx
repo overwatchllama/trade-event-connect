@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SetCombobox } from '@/components/cards/SetCombobox';
+import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Plus, Loader2, Info, History, X } from 'lucide-react';
@@ -43,6 +44,8 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const [sets, setSets] = useState<any[]>([]);
   const [history, setHistory] = useState<CardSearchHistoryEntry[]>([]);
   const [cardNumberError, setCardNumberError] = useState<string | null>(null);
+  // When on, force a single exact printing match (set + number, both required).
+  const [exactOnly, setExactOnly] = useState(false);
 
   // Live-validate the card number field but only show errors after the user has typed something.
   const cardNumberValidation = cardNumberQuery.trim()
@@ -119,28 +122,49 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       return;
     }
 
+    // Exact-only mode requires BOTH a set and a card number — name is ignored to guarantee a single printing.
+    if (exactOnly && !(hasSet && leftNumber)) {
+      toast({
+        title: 'Exact match needs set + number',
+        description: 'Pick a set and enter the card number to lock onto a single printing for pricing.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       if (game === 'pokemon') {
         const parts: string[] = [];
-        if (trimmedName) parts.push(`name:${trimmedName}*`);
-        if (hasSet) parts.push(`set.id:${selectedSet}`);
-        if (leftNumber) parts.push(`number:${leftNumber}`);
+        if (exactOnly) {
+          // Drop the name to avoid filtering away the exact printing if the name guess is off.
+          parts.push(`set.id:${selectedSet}`);
+          parts.push(`number:${leftNumber}`);
+        } else {
+          if (trimmedName) parts.push(`name:${trimmedName}*`);
+          if (hasSet) parts.push(`set.id:${selectedSet}`);
+          if (leftNumber) parts.push(`number:${leftNumber}`);
+        }
 
         const response = await pokemonTcgApi.searchCards({
           q: parts.join(' '),
-          pageSize: 50,
+          pageSize: exactOnly ? 1 : 50,
           orderBy: '-set.releaseDate',
         });
         setSearchResults(response.data);
       } else if (game === 'mtg') {
         const parts: string[] = [];
-        if (trimmedName) parts.push(trimmedName);
-        if (hasSet) parts.push(`set:${selectedSet}`);
-        if (leftNumber) parts.push(`cn:${leftNumber}`);
+        if (exactOnly) {
+          parts.push(`set:${selectedSet}`);
+          parts.push(`cn:${leftNumber}`);
+        } else {
+          if (trimmedName) parts.push(trimmedName);
+          if (hasSet) parts.push(`set:${selectedSet}`);
+          if (leftNumber) parts.push(`cn:${leftNumber}`);
+        }
 
         const response = await scryfallApi.searchCards(parts.join(' '), { order: 'released', dir: 'desc' });
-        setSearchResults(response.data);
+        setSearchResults(exactOnly ? response.data.slice(0, 1) : response.data);
       }
     } catch (error: any) {
       console.error('Search error:', error);
@@ -336,14 +360,29 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
             </Button>
           </div>
 
-          <p className="flex items-start gap-2 text-xs text-muted-foreground">
-            <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <span>
-              The <strong>set symbol</strong> is the small icon in the bottom-right of the card art, and the{' '}
-              <strong>card number</strong> (e.g. <code>25/102</code>) sits next to it. Match those for exact pricing —
-              you can ignore the slash and just enter the left number.
-            </span>
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="flex items-start gap-2 text-xs text-muted-foreground flex-1 min-w-[240px]">
+              <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>
+                The <strong>set symbol</strong> is the small icon in the bottom-right of the card art, and the{' '}
+                <strong>card number</strong> (e.g. <code>25/102</code>) sits next to it. Match those for exact pricing —
+                you can ignore the slash and just enter the left number.
+              </span>
+            </p>
+            <label
+              htmlFor="exact-only-toggle"
+              className="flex items-center gap-2 text-xs font-medium cursor-pointer select-none rounded-md border bg-muted/30 px-2.5 py-1.5"
+              title="Force a single exact printing match using set + card number. Name is ignored."
+            >
+              <Switch
+                id="exact-only-toggle"
+                checked={exactOnly}
+                onCheckedChange={setExactOnly}
+                aria-label="Exact set and number only"
+              />
+              <span>Exact set + # only</span>
+            </label>
+          </div>
 
           {/* Quick picks — recent searches saved per browser */}
           {historyGame && history.length > 0 && (
