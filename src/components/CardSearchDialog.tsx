@@ -238,13 +238,18 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
         // Expand: if exact + show-all, do a second query for all printings sharing this card's
         // name + collector number across every set. Sorted newest first for easier price comparison.
         if (exactOnly && showAllPrintings && results[0]) {
-          const baseName = results[0].name.replace(/"/g, '');
-          const allResp = await pokemonTcgApi.searchCards({
-            q: `name:"${baseName}" number:${leftNumber}`,
-            pageSize: 50,
-            orderBy: '-set.releaseDate',
-          });
-          if (allResp.data.length > 0) results = allResp.data;
+          setExpandingPrintings(true);
+          try {
+            const baseName = results[0].name.replace(/"/g, '');
+            const allResp = await pokemonTcgApi.searchCards({
+              q: `name:"${baseName}" number:${leftNumber}`,
+              pageSize: 50,
+              orderBy: '-set.releaseDate',
+            });
+            if (allResp.data.length > 0) results = allResp.data;
+          } finally {
+            setExpandingPrintings(false);
+          }
         }
         setSearchResults(results);
       } else if (game === 'mtg') {
