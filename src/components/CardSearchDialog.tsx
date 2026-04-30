@@ -208,7 +208,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       trackCardSearchEvent('card_search.exact_disabled_name', {
         game: historyGame,
         ignoredName: trimmedName,
-        hadSet,
+        hadSet: hasSet,
         hadNumber: !!leftNumber,
       });
     }
