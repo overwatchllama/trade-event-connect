@@ -366,6 +366,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
             if (typeof allResp.totalCount === 'number') {
               setAllPrintingsTotal(allResp.totalCount);
             }
+          } finally {
             setExpandingPrintings(false);
           }
         }
