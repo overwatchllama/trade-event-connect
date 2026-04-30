@@ -495,10 +495,33 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                 })}
               </div>
             ) : (searchQuery || cardNumberQuery) && !loading ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No cards found. Double-check the set symbol and card number.</p>
-              </div>
+              exactOnly ? (
+                <div className="text-center py-12 text-muted-foreground space-y-3">
+                  <Search className="h-12 w-12 mx-auto opacity-50" />
+                  <div>
+                    <p className="font-medium text-foreground">No exact match found</p>
+                    <p className="text-sm mt-1">
+                      No printing matches that set + card number exactly. The number might be off by a digit, or the
+                      printing may live in a different set (promos, special editions, etc.).
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setExactOnly(false);
+                      setTimeout(() => handleSearch(), 0);
+                    }}
+                  >
+                    Turn off exact mode & search nearby printings
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No cards found. Double-check the set symbol and card number.</p>
+                </div>
+              )
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
