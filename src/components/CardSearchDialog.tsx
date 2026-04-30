@@ -111,6 +111,39 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
     }
   }, [showAllPrintings, allPrintingsStorageKey]);
 
+  // Cap on how many printings the "Show all printings" expansion fetches and renders.
+  // Persisted per browser. Lower caps keep the dialog snappy on slow connections / cheap devices.
+  const ALL_PRINTINGS_CAP_OPTIONS = [10, 25, 50, 100] as const;
+  type AllPrintingsCap = typeof ALL_PRINTINGS_CAP_OPTIONS[number];
+  const allPrintingsCapKey = 'card-search:all-printings-cap';
+  const [allPrintingsCap, setAllPrintingsCap] = useState<AllPrintingsCap>(() => {
+    if (typeof window === 'undefined') return 25;
+    try {
+      const raw = Number(window.localStorage.getItem(allPrintingsCapKey));
+      return (ALL_PRINTINGS_CAP_OPTIONS as readonly number[]).includes(raw)
+        ? (raw as AllPrintingsCap)
+        : 25;
+    } catch {
+      return 25;
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(allPrintingsCapKey, String(allPrintingsCap));
+    } catch {
+      // ignore
+    }
+  }, [allPrintingsCap]);
+
+  // Client-side paging over grouped printings (page size matches the cap so each page fits the cap).
+  const ALL_PRINTINGS_PAGE_SIZE = 12;
+  const [allPrintingsPage, setAllPrintingsPage] = useState(1);
+
+  // Reset to first page whenever the underlying dataset, sort, or cap changes.
+  useEffect(() => {
+    setAllPrintingsPage(1);
+  }, [searchResults, allPrintingsSort, allPrintingsCap]);
+
   // Dismissable inline note shown above results when exact-only mode is active.
   // Persisted so power users who already understand the rule don't have to keep dismissing it.
   const exactNoteDismissedKey = 'card-search:exact-note-dismissed';
@@ -278,10 +311,12 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
             const baseName = results[0].name.replace(/"/g, '');
             const allResp = await pokemonTcgApi.searchCards({
               q: `name:"${baseName}" number:${leftNumber}`,
-              pageSize: 50,
+              pageSize: allPrintingsCap,
               orderBy: '-set.releaseDate',
             });
-            if (allResp.data.length > 0) results = dedupePrintings(allResp.data, 'pokemon');
+            if (allResp.data.length > 0) {
+              results = dedupePrintings(allResp.data, 'pokemon').slice(0, allPrintingsCap);
+            }
           } finally {
             setExpandingPrintings(false);
           }
@@ -311,7 +346,9 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
               `!"${baseName}" cn:${leftNumber}`,
               { order: 'released', dir: 'desc' },
             );
-            if (allResp.data.length > 0) results = dedupePrintings(allResp.data, 'mtg');
+            if (allResp.data.length > 0) {
+              results = dedupePrintings(allResp.data, 'mtg').slice(0, allPrintingsCap);
+            }
           } finally {
             setExpandingPrintings(false);
           }
@@ -831,11 +868,34 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                       }
                     });
 
+                    const totalGroups = sortedGroups.length;
+                    const totalPages = Math.max(1, Math.ceil(totalGroups / ALL_PRINTINGS_PAGE_SIZE));
+                    const safePage = Math.min(allPrintingsPage, totalPages);
+                    const pageStart = (safePage - 1) * ALL_PRINTINGS_PAGE_SIZE;
+                    const pageGroups = sortedGroups.slice(pageStart, pageStart + ALL_PRINTINGS_PAGE_SIZE);
+                    const capHit = searchResults.length >= allPrintingsCap;
+
                     return (
                       <div className="space-y-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <label htmlFor="all-printings-sort" className="text-xs text-muted-foreground">
-                            Sort printings
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <label htmlFor="all-printings-cap" className="text-xs text-muted-foreground">
+                            Max printings
+                          </label>
+                          <Select
+                            value={String(allPrintingsCap)}
+                            onValueChange={(v) => setAllPrintingsCap(Number(v) as AllPrintingsCap)}
+                          >
+                            <SelectTrigger id="all-printings-cap" className="h-8 w-[90px] text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ALL_PRINTINGS_CAP_OPTIONS.map((n) => (
+                                <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <label htmlFor="all-printings-sort" className="text-xs text-muted-foreground ml-2">
+                            Sort
                           </label>
                           <Select
                             value={allPrintingsSort}
@@ -852,7 +912,13 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                             </SelectContent>
                           </Select>
                         </div>
-                        {sortedGroups.map(([label, cards]) => (
+                        {capHit && (
+                          <p className="text-[11px] text-muted-foreground">
+                            Showing the first {allPrintingsCap} printings (cap reached). Raise the limit above
+                            to fetch more — higher caps take longer to load.
+                          </p>
+                        )}
+                        {pageGroups.map(([label, cards]) => (
                           <div key={label} className="space-y-2">
                             <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b pb-1">
                               {label}{' '}
@@ -865,6 +931,31 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                             </div>
                           </div>
                         ))}
+                        {totalPages > 1 && (
+                          <div className="flex items-center justify-between gap-2 pt-2 border-t">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={safePage <= 1}
+                              onClick={() => setAllPrintingsPage((p) => Math.max(1, p - 1))}
+                            >
+                              Previous
+                            </Button>
+                            <span className="text-xs text-muted-foreground">
+                              Page {safePage} of {totalPages} • {totalGroups} printing group{totalGroups === 1 ? '' : 's'}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={safePage >= totalPages}
+                              onClick={() => setAllPrintingsPage((p) => Math.min(totalPages, p + 1))}
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     );
                   }
