@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ExternalLink, Plus, ImageOff, Hash, Sparkles } from "lucide-react";
 import type { ResolvedCard } from "@/services/cardLookup";
+import { PriceSourceBadge } from "@/components/pricing/PriceSourceBadge";
 
 interface DetectedCard {
   bbox: { x: number; y: number; w: number; h: number };
@@ -169,23 +170,12 @@ export const CardMatchPanel = ({ activeIdx, detected, matches, loading, onAdd }:
                 >
                   {matchedOnLabel[m.matchedOn]}
                 </Badge>
-                {m.tcgplayerMarketPrice != null && (
-                  <Badge variant="secondary" className="text-[10px]">
-                    TCG ${m.tcgplayerMarketPrice.toFixed(2)}
-                  </Badge>
-                )}
+                <PriceSourceBadge source={m.priceSource} size="sm" />
                 {m.rarity && (
                   <Badge variant="outline" className="text-[10px]">{m.rarity}</Badge>
                 )}
               </div>
               <div className="flex flex-wrap gap-1 pt-1">
-                {m.tcgplayerUrl && (
-                  <Button asChild size="sm" variant="outline" className="h-7 text-xs">
-                    <a href={m.tcgplayerUrl} target="_blank" rel="noreferrer">
-                      TCG <ExternalLink className="h-3 w-3 ml-1" />
-                    </a>
-                  </Button>
-                )}
                 <Button asChild size="sm" variant="outline" className="h-7 text-xs">
                   <a href={m.ebaySearchUrl} target="_blank" rel="noreferrer">
                     eBay sold <ExternalLink className="h-3 w-3 ml-1" />
