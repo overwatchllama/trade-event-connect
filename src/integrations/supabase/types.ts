@@ -1105,6 +1105,7 @@ export type Database = {
           address_line2: string | null
           address_state: string | null
           address_zip_code: string | null
+          all_printings_cap: number | null
           avatar_url: string | null
           birthday: string | null
           block_reason: string | null
@@ -1132,6 +1133,7 @@ export type Database = {
           address_line2?: string | null
           address_state?: string | null
           address_zip_code?: string | null
+          all_printings_cap?: number | null
           avatar_url?: string | null
           birthday?: string | null
           block_reason?: string | null
@@ -1159,6 +1161,7 @@ export type Database = {
           address_line2?: string | null
           address_state?: string | null
           address_zip_code?: string | null
+          all_printings_cap?: number | null
           avatar_url?: string | null
           birthday?: string | null
           block_reason?: string | null
