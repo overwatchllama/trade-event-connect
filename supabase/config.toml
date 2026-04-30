@@ -50,3 +50,6 @@ verify_jwt = true
 
 [functions.demo-login]
 verify_jwt = false
+
+[functions.reset-demo-data]
+verify_jwt = false
