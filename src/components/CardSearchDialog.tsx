@@ -67,6 +67,9 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const [searchResults, setSearchResults] = useState<(PokemonCard | ScryfallCard)[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandingPrintings, setExpandingPrintings] = useState(false);
+  // Server-reported total of matching printings for the last "show all printings" expansion.
+  // Used to display "Showing N of ~M" and how many are hidden by the cap. Null = no expansion done yet.
+  const [allPrintingsTotal, setAllPrintingsTotal] = useState<number | null>(null);
   type AllPrintingsSort = 'release-desc' | 'release-asc' | 'price-asc' | 'price-desc';
   const [allPrintingsSort, setAllPrintingsSort] = useState<AllPrintingsSort>('release-desc');
   const [selectedSet, setSelectedSet] = useState<string>('all');
@@ -324,6 +327,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
     }
 
     setLoading(true);
+    setAllPrintingsTotal(null);
     try {
       if (game === 'pokemon') {
         const parts: string[] = [];
@@ -358,6 +362,10 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
             if (allResp.data.length > 0) {
               results = dedupePrintings(allResp.data, 'pokemon').slice(0, allPrintingsCap);
             }
+            // totalCount reflects the full server-side match count (pre-cap, pre-dedupe).
+            if (typeof allResp.totalCount === 'number') {
+              setAllPrintingsTotal(allResp.totalCount);
+            }
           } finally {
             setExpandingPrintings(false);
           }
@@ -389,6 +397,10 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
             );
             if (allResp.data.length > 0) {
               results = dedupePrintings(allResp.data, 'mtg').slice(0, allPrintingsCap);
+            }
+            // Scryfall returns total_cards for the full server-side match count.
+            if (typeof allResp.total_cards === 'number') {
+              setAllPrintingsTotal(allResp.total_cards);
             }
           } finally {
             setExpandingPrintings(false);
@@ -953,12 +965,26 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                             </SelectContent>
                           </Select>
                         </div>
-                        {capHit && (
-                          <p className="text-[11px] text-muted-foreground">
-                            Showing the first {allPrintingsCap} printings (cap reached). Raise the limit above
-                            to fetch more — higher caps take longer to load.
-                          </p>
-                        )}
+                        {(allPrintingsTotal !== null || capHit) && (() => {
+                          const shown = searchResults.length;
+                          const total = allPrintingsTotal;
+                          const hidden = total !== null ? Math.max(0, total - shown) : null;
+                          return (
+                            <p className="text-[11px] text-muted-foreground">
+                              {total !== null ? (
+                                <>Showing {shown} of ~{total} matching printing{total === 1 ? '' : 's'}</>
+                              ) : (
+                                <>Showing the first {shown} printings</>
+                              )}
+                              {hidden !== null && hidden > 0 && (
+                                <> · <span className="font-medium text-foreground">{hidden} hidden by cap</span></>
+                              )}
+                              {(capHit || (hidden !== null && hidden > 0)) && (
+                                <> — raise the Max printings limit above to fetch more (slower).</>
+                              )}
+                            </p>
+                          );
+                        })()}
                         {pageGroups.map(([label, cards]) => (
                           <div key={label} className="space-y-2">
                             <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b pb-1">
