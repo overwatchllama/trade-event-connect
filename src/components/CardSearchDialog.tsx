@@ -735,16 +735,52 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
 
           {/* Results */}
           <div className="overflow-y-auto max-h-[60vh] pr-2">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                {expandingPrintings && (
-                  <p className="text-xs text-muted-foreground max-w-xs" role="status" aria-live="polite">
-                    Expanding to all printings to pull pricing across sets…
-                  </p>
-                )}
-              </div>
-            ) : searchResults.length > 0 ? (
+            {loading ? (() => {
+              // Skeleton count: when expanding, mirror the cap (clamped) so the layout previews
+              // the incoming all-printings grid. Otherwise show a small generic placeholder grid.
+              const isAllPrintingsFetch = exactOnly && showAllPrintings;
+              const skeletonCount = isAllPrintingsFetch
+                ? Math.min(allPrintingsCap, 12)
+                : 8;
+              // Two-phase progress: ~40% after the initial query, ~90% while the expansion
+              // call is in-flight. We can't measure server progress, so this is indicative only.
+              const progressValue = expandingPrintings ? 90 : 40;
+              return (
+                <div className="space-y-4 py-2" role="status" aria-live="polite" aria-busy="true">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium">
+                        {expandingPrintings
+                          ? `Expanding to all printings (up to ${allPrintingsCap})…`
+                          : isAllPrintingsFetch
+                            ? 'Locating exact printing…'
+                            : 'Searching cards…'}
+                      </p>
+                      {isAllPrintingsFetch && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {expandingPrintings
+                            ? 'Pulling pricing across every set — this can take a few seconds.'
+                            : 'Step 1 of 2: finding your card in the chosen set.'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {isAllPrintingsFetch && (
+                    <Progress value={progressValue} className="h-1.5" />
+                  )}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {Array.from({ length: skeletonCount }).map((_, i) => (
+                      <div key={i} className="space-y-2">
+                        <Skeleton className="aspect-[2.5/3.5] w-full rounded-md" />
+                        <Skeleton className="h-3 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })() : searchResults.length > 0 ? (
               <div className="space-y-3">
                 {exactOnly &&
                   (showAllPrintings || searchQuery.trim()) &&
