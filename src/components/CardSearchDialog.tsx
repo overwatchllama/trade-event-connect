@@ -532,6 +532,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                     </Card>
                   );
                 })}
+                </div>
               </div>
             ) : (searchQuery || cardNumberQuery) && !loading ? (
               exactOnly ? (
