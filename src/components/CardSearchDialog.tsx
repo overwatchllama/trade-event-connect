@@ -41,6 +41,14 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const [selectedSet, setSelectedSet] = useState<string>('all');
   const [sets, setSets] = useState<any[]>([]);
   const [history, setHistory] = useState<CardSearchHistoryEntry[]>([]);
+  const [cardNumberError, setCardNumberError] = useState<string | null>(null);
+
+  // Live-validate the card number field but only show errors after the user has typed something.
+  const cardNumberValidation = cardNumberQuery.trim()
+    ? validateCardNumber(cardNumberQuery)
+    : null;
+  const showInlineCardNumberError =
+    cardNumberValidation && !cardNumberValidation.ok ? cardNumberValidation.error : null;
 
   // Only Pokémon and MTG are persisted to history; the dialog skips it for other catalogs.
   const historyGame: CardSearchHistoryEntry['game'] | null =
