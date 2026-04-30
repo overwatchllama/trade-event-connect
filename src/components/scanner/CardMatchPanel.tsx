@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ExternalLink, Plus, ImageOff } from "lucide-react";
+import { Loader2, ExternalLink, Plus, ImageOff, Hash, Sparkles } from "lucide-react";
 import type { ResolvedCard } from "@/services/cardLookup";
 
 interface DetectedCard {
@@ -9,7 +9,17 @@ interface DetectedCard {
   game: "pokemon" | "onepiece" | "unknown";
   guess_name: string | null;
   guess_set: string | null;
+  guess_set_code: string | null;
+  guess_set_symbol_description: string | null;
   guess_number: string | null;
+  guess_total: string | null;
+  confidence_basis:
+    | "number_and_set"
+    | "number_only"
+    | "set_only"
+    | "name_only"
+    | "low"
+    | null;
   notes: string | null;
 }
 
@@ -21,8 +31,36 @@ interface Props {
   onAdd: (m: ResolvedCard) => void;
 }
 
+const matchedOnLabel: Record<ResolvedCard["matchedOn"], string> = {
+  "set+number": "Exact: set + #",
+  number: "By card #",
+  "set+name": "By set + name",
+  name: "By name only",
+  unknown: "Unknown",
+};
+
+const matchedOnVariant: Record<
+  ResolvedCard["matchedOn"],
+  "default" | "secondary" | "outline"
+> = {
+  "set+number": "default",
+  number: "secondary",
+  "set+name": "secondary",
+  name: "outline",
+  unknown: "outline",
+};
+
 export const CardMatchPanel = ({ activeIdx, detected, matches, loading, onAdd }: Props) => {
   const active = activeIdx !== null ? detected[activeIdx] : null;
+
+  // Compose printed-card-style "25/102" from what the AI saw
+  const printedNumber = active
+    ? active.guess_number
+      ? active.guess_total
+        ? `${active.guess_number}/${active.guess_total}`
+        : active.guess_number
+      : null
+    : null;
 
   return (
     <Card className="p-4 space-y-4 lg:sticky lg:top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
@@ -31,13 +69,46 @@ export const CardMatchPanel = ({ activeIdx, detected, matches, loading, onAdd }:
           {active ? `Card #${(activeIdx as number) + 1}` : "Pick a card"}
         </h2>
         {active ? (
-          <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-            <p>AI guess: {active.guess_name ?? "—"}</p>
-            {active.guess_set && <p>Set: {active.guess_set}</p>}
-            {active.guess_number && <p>#: {active.guess_number}</p>}
-            <Badge variant="outline" className="mt-1 text-[10px]">
-              {active.game}
-            </Badge>
+          <div className="mt-2 space-y-2">
+            {/* Primary identifiers — what the AI read off the BOTTOM of the card */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {printedNumber && (
+                <Badge variant="default" className="text-[11px] gap-1">
+                  <Hash className="h-3 w-3" />
+                  {printedNumber}
+                </Badge>
+              )}
+              {active.guess_set_code && (
+                <Badge variant="default" className="text-[11px] gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  {active.guess_set_code}
+                </Badge>
+              )}
+              <Badge variant="outline" className="text-[10px]">
+                {active.game}
+              </Badge>
+            </div>
+
+            {/* Secondary context */}
+            <div className="text-xs text-muted-foreground space-y-0.5">
+              {active.guess_name && <p>Name: {active.guess_name}</p>}
+              {active.guess_set && <p>Set: {active.guess_set}</p>}
+              {active.guess_set_symbol_description &&
+                !active.guess_set_code && (
+                  <p>Set symbol: {active.guess_set_symbol_description}</p>
+                )}
+            </div>
+
+            {/* Tell the user when we couldn't read the bottom-of-card markers */}
+            {(active.confidence_basis === "name_only" ||
+              active.confidence_basis === "low" ||
+              (!active.guess_number && !active.guess_set_code)) && (
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 leading-snug">
+                Could not read the set symbol or card number on the bottom of
+                the card — pricing may be off across reprints. Try a sharper,
+                straight-on photo.
+              </p>
+            )}
           </div>
         ) : (
           <p className="text-xs text-muted-foreground mt-1">
@@ -76,10 +147,28 @@ export const CardMatchPanel = ({ activeIdx, detected, matches, loading, onAdd }:
             </div>
             <div className="flex-1 min-w-0 space-y-1">
               <p className="text-sm font-medium truncate" title={m.name}>{m.name}</p>
-              <p className="text-xs text-muted-foreground truncate">
-                {m.setName ?? "—"} {m.number ? `· ${m.number}` : ""}
-              </p>
+              <div className="flex items-center gap-1.5">
+                {m.setSymbolUrl && (
+                  <img
+                    src={m.setSymbolUrl}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    className="h-3.5 w-3.5 object-contain shrink-0"
+                  />
+                )}
+                <p className="text-xs text-muted-foreground truncate">
+                  {m.setName ?? "—"} {m.number ? `· #${m.number}` : ""}
+                  {m.setCode ? ` · ${m.setCode}` : ""}
+                </p>
+              </div>
               <div className="flex flex-wrap items-center gap-1">
+                <Badge
+                  variant={matchedOnVariant[m.matchedOn]}
+                  className="text-[10px]"
+                  title="How this match was found"
+                >
+                  {matchedOnLabel[m.matchedOn]}
+                </Badge>
                 {m.tcgplayerMarketPrice != null && (
                   <Badge variant="secondary" className="text-[10px]">
                     TCG ${m.tcgplayerMarketPrice.toFixed(2)}
