@@ -29,6 +29,8 @@ import { validateCardNumber } from '@/services/cardNumberValidation';
 import { trackCardSearchEvent } from '@/services/cardSearchAnalytics';
 import { toast } from '@/hooks/use-toast';
 import type { CardCategory } from '@/hooks/useCollection';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CardSearchDialogProps {
   game: CardCategory;
