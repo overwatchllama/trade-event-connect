@@ -202,6 +202,17 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
       return;
     }
 
+    // Track when exact mode is about to silently ignore a typed name. Helps us measure
+    // how often users hit the recovery flows (notice button, empty-state CTA).
+    if (exactOnly && trimmedName && historyGame) {
+      trackCardSearchEvent('card_search.exact_disabled_name', {
+        game: historyGame,
+        ignoredName: trimmedName,
+        hadSet,
+        hadNumber: !!leftNumber,
+      });
+    }
+
     setLoading(true);
     try {
       if (game === 'pokemon') {
