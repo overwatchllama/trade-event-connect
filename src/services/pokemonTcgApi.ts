@@ -57,6 +57,7 @@ export interface PokemonCard {
     total: number;
     legalities: Record<string, string>;
     releaseDate: string;
+    ptcgoCode?: string;
     images: {
       symbol: string;
       logo: string;
