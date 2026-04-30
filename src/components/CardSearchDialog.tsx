@@ -565,18 +565,36 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                 {exactOnly && (showAllPrintings || searchQuery.trim()) && (
                   <div className="flex items-start gap-2 rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                     <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                    {showAllPrintings ? (
-                      <span>
-                        Showing <strong>{searchResults.length} printing{searchResults.length === 1 ? '' : 's'}</strong>{' '}
-                        of this card across sets, grouped by set+number for easier price comparison. Pick the printing
-                        that matches your copy.
-                      </span>
-                    ) : (
-                      <span>
-                        Exact mode is on, so the card name was ignored — results are matched only by{' '}
-                        <strong>set + card number</strong> to lock onto a single printing.
-                      </span>
-                    )}
+                    <div className="flex-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                      {showAllPrintings ? (
+                        <span>
+                          Showing <strong>{searchResults.length} printing{searchResults.length === 1 ? '' : 's'}</strong>{' '}
+                          of this card across sets, grouped by set+number for easier price comparison. Pick the
+                          printing that matches your copy.
+                        </span>
+                      ) : (
+                        <>
+                          <span>
+                            Exact mode is on, so the card name was ignored — results are matched only by{' '}
+                            <strong>set + card number</strong> to lock onto a single printing.
+                          </span>
+                          {searchQuery.trim() && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-6 px-2 text-[11px]"
+                              onClick={() => {
+                                setExactOnly(false);
+                                setTimeout(() => handleSearch(), 0);
+                              }}
+                            >
+                              Search with name too
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
                 {(() => {
