@@ -92,11 +92,12 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
     let leftNumber: string | null = null;
     if (trimmedNumber) {
       const result = validateCardNumber(trimmedNumber);
-      if (!result.ok) {
-        setCardNumberError(result.error);
+      if (result.ok === false) {
+        const message = result.error;
+        setCardNumberError(message);
         toast({
           title: 'Invalid card number',
-          description: `${result.error} Examples: 25, 25/102, TG01/TG30.`,
+          description: `${message} Examples: 25, 25/102, TG01/TG30.`,
           variant: 'destructive',
         });
         return;
