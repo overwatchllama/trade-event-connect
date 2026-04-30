@@ -42,6 +42,7 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   const [cardNumberQuery, setCardNumberQuery] = useState('');
   const [searchResults, setSearchResults] = useState<(PokemonCard | ScryfallCard)[]>([]);
   const [loading, setLoading] = useState(false);
+  const [expandingPrintings, setExpandingPrintings] = useState(false);
   const [selectedSet, setSelectedSet] = useState<string>('all');
   const [sets, setSets] = useState<any[]>([]);
   const [history, setHistory] = useState<CardSearchHistoryEntry[]>([]);
