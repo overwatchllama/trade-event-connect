@@ -73,7 +73,27 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   // Used to display "Showing N of ~M" and how many are hidden by the cap. Null = no expansion done yet.
   const [allPrintingsTotal, setAllPrintingsTotal] = useState<number | null>(null);
   type AllPrintingsSort = 'release-desc' | 'release-asc' | 'price-asc' | 'price-desc';
-  const [allPrintingsSort, setAllPrintingsSort] = useState<AllPrintingsSort>('release-desc');
+  const ALL_PRINTINGS_SORT_OPTIONS: readonly AllPrintingsSort[] = [
+    'release-desc', 'release-asc', 'price-asc', 'price-desc',
+  ];
+  // Persist sort preference per-game so reopening the dialog returns to the user's last choice.
+  const allPrintingsSortKey = `card-search:all-printings-sort:${game}`;
+  const [allPrintingsSort, setAllPrintingsSort] = useState<AllPrintingsSort>(() => {
+    if (typeof window === 'undefined') return 'release-desc';
+    try {
+      const raw = window.localStorage.getItem(allPrintingsSortKey) as AllPrintingsSort | null;
+      return raw && ALL_PRINTINGS_SORT_OPTIONS.includes(raw) ? raw : 'release-desc';
+    } catch {
+      return 'release-desc';
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(allPrintingsSortKey, allPrintingsSort);
+    } catch {
+      // ignore
+    }
+  }, [allPrintingsSort, allPrintingsSortKey]);
   const [selectedSet, setSelectedSet] = useState<string>('all');
   const [sets, setSets] = useState<any[]>([]);
   const [history, setHistory] = useState<CardSearchHistoryEntry[]>([]);
