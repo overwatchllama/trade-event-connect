@@ -73,7 +73,27 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
   // Used to display "Showing N of ~M" and how many are hidden by the cap. Null = no expansion done yet.
   const [allPrintingsTotal, setAllPrintingsTotal] = useState<number | null>(null);
   type AllPrintingsSort = 'release-desc' | 'release-asc' | 'price-asc' | 'price-desc';
-  const [allPrintingsSort, setAllPrintingsSort] = useState<AllPrintingsSort>('release-desc');
+  const ALL_PRINTINGS_SORT_OPTIONS: readonly AllPrintingsSort[] = [
+    'release-desc', 'release-asc', 'price-asc', 'price-desc',
+  ];
+  // Persist sort preference per-game so reopening the dialog returns to the user's last choice.
+  const allPrintingsSortKey = `card-search:all-printings-sort:${game}`;
+  const [allPrintingsSort, setAllPrintingsSort] = useState<AllPrintingsSort>(() => {
+    if (typeof window === 'undefined') return 'release-desc';
+    try {
+      const raw = window.localStorage.getItem(allPrintingsSortKey) as AllPrintingsSort | null;
+      return raw && ALL_PRINTINGS_SORT_OPTIONS.includes(raw) ? raw : 'release-desc';
+    } catch {
+      return 'release-desc';
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(allPrintingsSortKey, allPrintingsSort);
+    } catch {
+      // ignore
+    }
+  }, [allPrintingsSort, allPrintingsSortKey]);
   const [selectedSet, setSelectedSet] = useState<string>('all');
   const [sets, setSets] = useState<any[]>([]);
   const [history, setHistory] = useState<CardSearchHistoryEntry[]>([]);
@@ -183,12 +203,31 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
 
   // Client-side paging over grouped printings (page size matches the cap so each page fits the cap).
   const ALL_PRINTINGS_PAGE_SIZE = 12;
-  const [allPrintingsPage, setAllPrintingsPage] = useState(1);
+  // Persist current page per-game so reopening the dialog restores the user's spot.
+  // We intentionally DON'T reset on new search results — only when sort/cap changes (those
+  // re-order the dataset so the old page index is meaningless).
+  const allPrintingsPageKey = `card-search:all-printings-page:${game}`;
+  const [allPrintingsPage, setAllPrintingsPage] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1;
+    try {
+      const raw = Number(window.localStorage.getItem(allPrintingsPageKey));
+      return Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 1;
+    } catch {
+      return 1;
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(allPrintingsPageKey, String(allPrintingsPage));
+    } catch {
+      // ignore
+    }
+  }, [allPrintingsPage, allPrintingsPageKey]);
 
-  // Reset to first page whenever the underlying dataset, sort, or cap changes.
+  // Reset to first page when the sort or cap changes (the dataset re-orders).
   useEffect(() => {
     setAllPrintingsPage(1);
-  }, [searchResults, allPrintingsSort, allPrintingsCap]);
+  }, [allPrintingsSort, allPrintingsCap]);
 
   // Dismissable inline note shown above results when exact-only mode is active.
   // Persisted so power users who already understand the rule don't have to keep dismissing it.
