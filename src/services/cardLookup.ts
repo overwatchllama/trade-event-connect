@@ -14,6 +14,7 @@
  */
 import { pokemonTcgApi, type PokemonCard } from "./pokemonTcgApi";
 import { optcgApi, type OPTCGCard } from "./optcgApi";
+import { getPokemonPriceSource, type PriceSource } from "./cardPriceSource";
 
 export interface ResolvedCard {
   game: "pokemon" | "onepiece";
@@ -27,6 +28,8 @@ export interface ResolvedCard {
   imageUrl: string | null;
   tcgplayerMarketPrice: number | null;
   tcgplayerUrl: string | null;
+  /** Provenance for the displayed price (TCGplayer / Cardmarket / Scryfall). */
+  priceSource: PriceSource | null;
   ebaySearchUrl: string;
   /** How this match was found — drives the "matched on..." badge in the UI. */
   matchedOn: "set+number" | "number" | "set+name" | "name" | "unknown";
@@ -41,11 +44,7 @@ const pokemonToResolved = (
   c: PokemonCard,
   matchedOn: ResolvedCard["matchedOn"],
 ): ResolvedCard => {
-  const market =
-    c.tcgplayer?.prices?.holofoil?.market ??
-    c.tcgplayer?.prices?.normal?.market ??
-    c.tcgplayer?.prices?.reverseHolofoil?.market ??
-    null;
+  const priceSource = getPokemonPriceSource(c);
   return {
     game: "pokemon",
     externalId: c.id,
@@ -56,8 +55,11 @@ const pokemonToResolved = (
     number: c.number ?? null,
     rarity: c.rarity ?? null,
     imageUrl: c.images?.small ?? null,
-    tcgplayerMarketPrice: market,
+    // Keep the legacy numeric fields for back-compat with deal_list_items inserts.
+    tcgplayerMarketPrice:
+      priceSource?.source === "tcgplayer" ? priceSource.price : null,
     tcgplayerUrl: c.tcgplayer?.url ?? null,
+    priceSource,
     ebaySearchUrl: buildEbaySearch([
       c.name,
       c.set?.name ?? "",
@@ -83,6 +85,7 @@ const opToResolved = (
   imageUrl: c.card_image ?? null,
   tcgplayerMarketPrice: null, // user preference: no market price for One Piece
   tcgplayerUrl: null,
+  priceSource: null,
   ebaySearchUrl: buildEbaySearch([c.card_name, c.set_name ?? "", "one piece tcg"]),
   matchedOn,
 });
