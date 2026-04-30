@@ -26,6 +26,7 @@ import {
   type CardSearchHistoryEntry,
 } from '@/services/cardSearchHistory';
 import { validateCardNumber } from '@/services/cardNumberValidation';
+import { trackCardSearchEvent } from '@/services/cardSearchAnalytics';
 import { toast } from '@/hooks/use-toast';
 import type { CardCategory } from '@/hooks/useCollection';
 
@@ -199,6 +200,17 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
         variant: 'destructive',
       });
       return;
+    }
+
+    // Track when exact mode is about to silently ignore a typed name. Helps us measure
+    // how often users hit the recovery flows (notice button, empty-state CTA).
+    if (exactOnly && trimmedName && historyGame) {
+      trackCardSearchEvent('card_search.exact_disabled_name', {
+        game: historyGame,
+        ignoredName: trimmedName,
+        hadSet: hasSet,
+        hadNumber: !!leftNumber,
+      });
     }
 
     setLoading(true);
@@ -608,6 +620,13 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                               size="sm"
                               className="h-6 px-2 text-[11px]"
                               onClick={() => {
+                                if (historyGame) {
+                                  trackCardSearchEvent('card_search.exact_recovery_clicked', {
+                                    game: historyGame,
+                                    source: 'results-note',
+                                    ignoredName: searchQuery.trim(),
+                                  });
+                                }
                                 setExactOnly(false);
                                 setTimeout(() => handleSearch(), 0);
                               }}
@@ -752,6 +771,13 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
                     variant="outline"
                     size="sm"
                     onClick={() => {
+                      if (historyGame) {
+                        trackCardSearchEvent('card_search.exact_recovery_clicked', {
+                          game: historyGame,
+                          source: 'empty-state',
+                          ignoredName: searchQuery.trim() || undefined,
+                        });
+                      }
                       setExactOnly(false);
                       setTimeout(() => handleSearch(), 0);
                     }}
