@@ -341,7 +341,9 @@ export const CardSearchDialog: React.FC<CardSearchDialogProps> = ({ game, onCard
               `!"${baseName}" cn:${leftNumber}`,
               { order: 'released', dir: 'desc' },
             );
-            if (allResp.data.length > 0) results = dedupePrintings(allResp.data, 'mtg');
+            if (allResp.data.length > 0) {
+              results = dedupePrintings(allResp.data, 'mtg').slice(0, allPrintingsCap);
+            }
           } finally {
             setExpandingPrintings(false);
           }
