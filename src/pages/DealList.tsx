@@ -78,7 +78,20 @@ const DealList = () => {
         supabase.from("collections").select("id, name, category").order("created_at", { ascending: false }),
       ]);
       if (itemsRes.error) toast({ title: "Failed to load", description: itemsRes.error.message, variant: "destructive" });
-      else setItems(itemsRes.data as DealItem[]);
+      else {
+        // Map legacy non-TCGplayer condition values to the closest TCGplayer-style equivalent
+        // so the Select always reflects a valid option.
+        const legacyMap: Record<string, string> = {
+          mint: "near_mint",
+          excellent: "light_play",
+          good: "moderate_play",
+        };
+        const normalized = (itemsRes.data as DealItem[]).map((it) => ({
+          ...it,
+          condition: legacyMap[it.condition] ?? it.condition,
+        }));
+        setItems(normalized);
+      }
       if (colsRes.data) setCollections(colsRes.data as typeof collections);
       setLoading(false);
     })();
