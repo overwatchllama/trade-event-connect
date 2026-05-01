@@ -208,17 +208,18 @@ export async function searchCards(opts: {
 
   const applyGrade = (results: ResolvedCard[]): ResolvedCard[] => {
     if (!gradeQuery) return results;
-    const suffix = ` ${gradeQuery}`;
-    return results.map((r) => ({
-      ...r,
-      ebaySearchUrl: r.ebaySearchUrl.replace(
-        /([?&]_nkw=)([^&]*)/,
-        (_m, p1, p2) => `${p1}${p2}${encodeURIComponent(suffix)}`,
-      ),
-      // For graded cards, raw market price is no longer representative.
-      tcgplayerMarketPrice: null,
-      priceSource: null,
-    }));
+    return results.map((r) => {
+      // Format: "GRADE NAME NUMBER" — e.g. "PSA 10 Reshiram 170"
+      const num = r.number ? r.number.replace(/^0+/, "") : "";
+      const newQ = [gradeQuery, r.name, num].filter(Boolean).join(" ");
+      return {
+        ...r,
+        ebaySearchUrl: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(newQ)}&LH_Sold=1&LH_Complete=1`,
+        // For graded cards, raw market price is no longer representative.
+        tcgplayerMarketPrice: null,
+        priceSource: null,
+      };
+    });
   };
 
   if (game === "pokemon") return applyGrade(await tryPokemon());

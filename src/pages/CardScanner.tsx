@@ -77,15 +77,19 @@ const buildGradeQuery = (c: DetectedCard): string | null => {
  * when we want PSA 10. We also include set + number which dramatically
  * narrows reprint noise.
  */
+/**
+ * eBay query format: "GRADE NAME NUMBER" — e.g. "PSA 10 Reshiram 170".
+ * This mirrors how graded slab listings are titled on eBay and gives the
+ * tightest sold-comp match. Set name is omitted to avoid over-narrowing.
+ */
 const buildSlabEbayQuery = (
   m: ResolvedCard,
   gradeQuery: string,
 ): string => {
   const parts = [
+    gradeQuery,
     m.name,
-    m.number ? `#${m.number}` : "",
-    m.setName ?? "",
-    `"${gradeQuery}"`,
+    m.number ? m.number.replace(/^0+/, "") : "",
   ].filter(Boolean);
   return parts.join(" ");
 };
@@ -141,7 +145,17 @@ const CardScanner = () => {
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
-        const cards: DetectedCard[] = data?.cards ?? [];
+        const rawCards: DetectedCard[] = data?.cards ?? [];
+        // Sort by visual reading order (top-to-bottom, then left-to-right)
+        // so badge "#1" maps to the top-left card the user sees, "#2" next, etc.
+        // Without this the AI's array order is arbitrary and the overlay numbers
+        // feel like they're "on the wrong card".
+        const cards = [...rawCards].sort((a, b) => {
+          const rowA = Math.floor((a.bbox.y + a.bbox.h / 2) * 4);
+          const rowB = Math.floor((b.bbox.y + b.bbox.h / 2) * 4);
+          if (rowA !== rowB) return rowA - rowB;
+          return a.bbox.x - b.bbox.x;
+        });
         setDetected(cards);
         if (cards.length === 0) {
           toast({ title: "No cards detected", description: "Try a clearer photo with better lighting." });
