@@ -181,6 +181,7 @@ export type Database = {
           id: string
           image_url: string | null
           notes: string | null
+          price_override: number | null
           quantity: number
           rarity: string | null
           scan_image_url: string | null
@@ -202,6 +203,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           notes?: string | null
+          price_override?: number | null
           quantity?: number
           rarity?: string | null
           scan_image_url?: string | null
@@ -223,6 +225,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           notes?: string | null
+          price_override?: number | null
           quantity?: number
           rarity?: string | null
           scan_image_url?: string | null
