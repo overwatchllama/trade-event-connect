@@ -46,7 +46,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new HttpError("ConfigError", "LOVABLE_API_KEY is not configured", 500);
 
-    const systemPrompt = `You are a trading card identifier specialized in Pokémon TCG and One Piece TCG.
+    const systemPrompt = `You are a trading card identifier specialized in Pokémon TCG and One Piece TCG. You also identify GRADED SLABS (cards encased in hard plastic by PSA, BGS/Beckett, CGC, SGC, TAG, HGA, GMA, etc.).
 
 A card's NAME alone is unreliable for pricing — the same Pokémon (e.g. Charizard, Pikachu) is reprinted in dozens of sets at very different values. The TWO markers that uniquely identify a printing are printed together at the BOTTOM of the card:
 
@@ -54,30 +54,39 @@ A card's NAME alone is unreliable for pricing — the same Pokémon (e.g. Chariz
   2. CARD NUMBER — printed as "<num>/<total>" or just "<num>/SV" — for example "025/198", "199/091", "SWSH284". The number on the LEFT of the slash is the collector number; the number on the RIGHT is the set's printed total.
 
 YOUR PRIORITY when reading each card is, in order:
-  a) Read the CARD NUMBER (digits + slash) — this is usually clearly printed in small black/white text in the bottom-left or bottom-right.
-  b) Read the SET CODE (3-4 uppercase letters) — printed right next to the card number on modern Pokémon cards.
-  c) Describe the SET SYMBOL shape if you can see it (e.g. "lightning bolt in a circle", "crown", "sword and shield"), even if you can't read a code.
+  a) Read the CARD NUMBER (digits + slash).
+  b) Read the SET CODE (3-4 uppercase letters) printed right next to the card number.
+  c) Describe the SET SYMBOL shape if you can see it.
   d) Only THEN read the card name from the top.
+
+SLABS (graded cards):
+  - A slab is a card sealed inside a clear hard-plastic case with a colored LABEL bar across the top of the case.
+  - The label shows: the GRADING COMPANY logo (PSA, BGS, CGC, SGC, TAG, HGA, GMA), the card's name/set/year, and a numeric GRADE (e.g. "10", "9.5", "9", "8.5", "BGS 9.5", "GEM MT 10", "MINT 9"). BGS uses sub-grades and a "Black Label" for perfect 10s.
+  - The CERT NUMBER is the long serial number on the label (or barcode area).
+  - When the card is in a slab, set is_slab=true and fill grading_company + grade. The card image is still visible BELOW the label — keep reading number/set/name through the case as best you can.
+  - The bbox should cover the WHOLE SLAB (label + card area), not just the card window.
 
 Return bounding boxes in NORMALIZED coordinates (0..1) relative to the full image:
 - x, y = top-left corner
 - w, h = width / height
+- Make boxes TIGHT around each card/slab — no large margins, no overlap with neighbors.
 
 Only return cards that are clearly visible. Do not invent details. If text is unreadable, leave the field null — do NOT guess. A confident "null" is more useful than a wrong guess.`;
 
-    const userPrompt = `Detect every trading card in this photo. For each card, return:
-- bbox { x, y, w, h } normalized 0..1
+    const userPrompt = `Detect every trading card AND every graded slab in this photo. For each, return:
+- bbox { x, y, w, h } normalized 0..1 — TIGHT to the card/slab edges
 - game: "pokemon" | "onepiece" | "unknown"
-- guess_name: card name printed at the TOP of the card, or null
-- guess_set: full set name if you recognize it (e.g. "Scarlet & Violet—Paldea Evolved"), or null
-- guess_set_code: the 3-4 letter SET CODE printed near the card number (e.g. "SVI", "PAL", "OP01"), or null
-- guess_set_symbol_description: a short description of the set symbol shape/style if visible (e.g. "lightning bolt", "crown silhouette"), or null
-- guess_number: ONLY the collector number on the LEFT of the slash (e.g. "25" from "025/198"), or null. Strip leading zeros.
-- guess_total: the number on the RIGHT of the slash (e.g. "198"), or null
-- confidence_basis: which markers you actually read — "number_and_set" (best), "number_only", "set_only", "name_only", or "low"
+- guess_name, guess_set, guess_set_code, guess_set_symbol_description
+- guess_number: collector number LEFT of slash, leading zeros stripped, or null
+- guess_total: number RIGHT of slash, or null
+- confidence_basis: "number_and_set" | "number_only" | "set_only" | "name_only" | "low"
 - notes: any extra hint (rarity symbol, holo pattern, edition stamp, etc.)
+- is_slab: true if encased in a graded slab, false if raw, null if unsure
+- grading_company: "PSA" | "BGS" | "CGC" | "SGC" | "TAG" | "HGA" | "GMA" | "OTHER" or null
+- grade: the printed numeric grade as a string ("10", "9.5", "BGS 9.5 Black Label", "GEM MT 10"), or null
+- cert_number: the serial/cert number on the slab label, or null
 
-Reminder: prioritize the bottom-of-card markers (number + set code/symbol) over the name. They are what makes pricing accurate.`;
+Reminder: prioritize bottom-of-card markers (number + set code/symbol) over the name. For slabs, also read the label.`;
 
     const aiResp = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
