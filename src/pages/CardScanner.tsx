@@ -145,7 +145,17 @@ const CardScanner = () => {
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
-        const cards: DetectedCard[] = data?.cards ?? [];
+        const rawCards: DetectedCard[] = data?.cards ?? [];
+        // Sort by visual reading order (top-to-bottom, then left-to-right)
+        // so badge "#1" maps to the top-left card the user sees, "#2" next, etc.
+        // Without this the AI's array order is arbitrary and the overlay numbers
+        // feel like they're "on the wrong card".
+        const cards = [...rawCards].sort((a, b) => {
+          const rowA = Math.floor((a.bbox.y + a.bbox.h / 2) * 4);
+          const rowB = Math.floor((b.bbox.y + b.bbox.h / 2) * 4);
+          if (rowA !== rowB) return rowA - rowB;
+          return a.bbox.x - b.bbox.x;
+        });
         setDetected(cards);
         if (cards.length === 0) {
           toast({ title: "No cards detected", description: "Try a clearer photo with better lighting." });
