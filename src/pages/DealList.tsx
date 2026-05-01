@@ -29,7 +29,30 @@ interface DealItem {
   created_at: string;
 }
 
-const CONDITIONS = ["mint", "near_mint", "excellent", "good", "light_play", "moderate_play", "heavy_play", "damaged"];
+// TCGplayer-style conditions. The DB enum value is on the left, the user-facing label and
+// price multiplier (vs. Near Mint market) are derived from typical TCGplayer condition discounts.
+const CONDITION_OPTIONS: Array<{ value: string; label: string; multiplier: number }> = [
+  { value: "near_mint", label: "Near Mint", multiplier: 1.0 },
+  { value: "light_play", label: "Lightly Played", multiplier: 0.85 },
+  { value: "moderate_play", label: "Moderately Played", multiplier: 0.65 },
+  { value: "heavy_play", label: "Heavily Played", multiplier: 0.45 },
+  { value: "damaged", label: "Damaged", multiplier: 0.3 },
+];
+
+const CONDITION_MULTIPLIERS: Record<string, number> = Object.fromEntries(
+  CONDITION_OPTIONS.map((c) => [c.value, c.multiplier]),
+);
+
+const CONDITION_LABELS: Record<string, string> = Object.fromEntries(
+  CONDITION_OPTIONS.map((c) => [c.value, c.label]),
+);
+
+/** Treat the stored TCGplayer market price as the Near Mint baseline and scale by condition. */
+const adjustedPrice = (nmPrice: number | null, condition: string): number | null => {
+  if (nmPrice == null) return null;
+  const mult = CONDITION_MULTIPLIERS[condition] ?? 1;
+  return Math.round(nmPrice * mult * 100) / 100;
+};
 
 const DealList = () => {
   const { user, loading: authLoading } = useAuth();
@@ -55,14 +78,27 @@ const DealList = () => {
         supabase.from("collections").select("id, name, category").order("created_at", { ascending: false }),
       ]);
       if (itemsRes.error) toast({ title: "Failed to load", description: itemsRes.error.message, variant: "destructive" });
-      else setItems(itemsRes.data as DealItem[]);
+      else {
+        // Map legacy non-TCGplayer condition values to the closest TCGplayer-style equivalent
+        // so the Select always reflects a valid option.
+        const legacyMap: Record<string, string> = {
+          mint: "near_mint",
+          excellent: "light_play",
+          good: "moderate_play",
+        };
+        const normalized = (itemsRes.data as DealItem[]).map((it) => ({
+          ...it,
+          condition: legacyMap[it.condition] ?? it.condition,
+        }));
+        setItems(normalized);
+      }
       if (colsRes.data) setCollections(colsRes.data as typeof collections);
       setLoading(false);
     })();
   }, [user]);
 
   const totalValue = items.reduce(
-    (sum, i) => sum + (i.tcgplayer_market_price ?? 0) * i.quantity,
+    (sum, i) => sum + (adjustedPrice(i.tcgplayer_market_price, i.condition) ?? 0) * i.quantity,
     0,
   );
 
@@ -94,8 +130,8 @@ const DealList = () => {
         rarity: i.rarity,
         condition: i.condition as "mint" | "near_mint" | "excellent" | "good" | "light_play" | "moderate_play" | "heavy_play" | "damaged",
         quantity: i.quantity,
-        current_market_price: i.tcgplayer_market_price,
-        estimated_value: i.tcgplayer_market_price != null ? i.tcgplayer_market_price * i.quantity : null,
+        current_market_price: adjustedPrice(i.tcgplayer_market_price, i.condition),
+        estimated_value: adjustedPrice(i.tcgplayer_market_price, i.condition) != null ? (adjustedPrice(i.tcgplayer_market_price, i.condition) as number) * i.quantity : null,
         image_url: i.image_url,
         notes: i.notes,
       }));
@@ -171,9 +207,22 @@ const DealList = () => {
                     <div className="flex flex-wrap items-center gap-1">
                       <Badge variant="outline" className="text-[10px]">{i.game}</Badge>
                       {i.rarity && <Badge variant="outline" className="text-[10px]">{i.rarity}</Badge>}
-                      {i.tcgplayer_market_price != null && (
-                        <Badge variant="secondary" className="text-[10px]">${i.tcgplayer_market_price.toFixed(2)}</Badge>
-                      )}
+                      {i.tcgplayer_market_price != null && (() => {
+                        const adj = adjustedPrice(i.tcgplayer_market_price, i.condition);
+                        const isAdjusted = adj !== i.tcgplayer_market_price;
+                        return (
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px]"
+                            title={isAdjusted
+                              ? `${CONDITION_LABELS[i.condition] ?? i.condition} estimate · NM market $${i.tcgplayer_market_price.toFixed(2)}`
+                              : "Near Mint market price"}
+                          >
+                            ${adj?.toFixed(2)}
+                            {isAdjusted && <span className="ml-1 opacity-70">({CONDITION_LABELS[i.condition] ?? i.condition})</span>}
+                          </Badge>
+                        );
+                      })()}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 pt-1">
                       <div className="flex items-center gap-1">
@@ -187,12 +236,14 @@ const DealList = () => {
                         />
                       </div>
                       <Select value={i.condition} onValueChange={(v) => updateItem(i.id, { condition: v })}>
-                        <SelectTrigger className="h-7 w-32 text-xs">
+                        <SelectTrigger className="h-7 w-40 text-xs">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {CONDITIONS.map((c) => (
-                            <SelectItem key={c} value={c} className="text-xs">{c.replace("_", " ")}</SelectItem>
+                          {CONDITION_OPTIONS.map((c) => (
+                            <SelectItem key={c.value} value={c.value} className="text-xs">
+                              {c.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
