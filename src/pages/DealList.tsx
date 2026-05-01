@@ -462,23 +462,39 @@ const DealList = () => {
                         return (
                           <Badge
                             variant="secondary"
-                            className="text-[10px] cursor-pointer hover:bg-secondary/80"
+                            className="text-[10px] cursor-pointer hover:bg-secondary/80 gap-1"
                             onClick={() => {
                               setEditingPriceId(i.id);
                               setPriceDraft(eff.toFixed(2));
                             }}
                             title={
                               isOverride
-                                ? `Manual price · auto would be $${auto != null ? auto.toFixed(2) : "—"}. Click to edit.`
+                                ? `Manual price $${eff.toFixed(2)} · auto would be $${auto != null ? auto.toFixed(2) : "—"}. Click to edit.`
                                 : isAdjusted
                                   ? `${CONDITION_LABELS[i.condition] ?? i.condition} estimate · NM market $${(i.tcgplayer_market_price ?? 0).toFixed(2)}. Click to override.`
                                   : "Near Mint market price. Click to override."
                             }
                           >
-                            ${eff.toFixed(2)}
-                            {isOverride && <span className="ml-1 opacity-70">(manual)</span>}
-                            {!isOverride && isAdjusted && (
-                              <span className="ml-1 opacity-70">({CONDITION_LABELS[i.condition] ?? i.condition})</span>
+                            {isOverride ? (
+                              <>
+                                {/* Manual price wins — show it as the primary value, with the auto price struck-through alongside for comparison. */}
+                                <span className="font-semibold">${eff.toFixed(2)}</span>
+                                <span className="opacity-70">(manual)</span>
+                                {auto != null && (
+                                  <span className="opacity-60 line-through ml-0.5">
+                                    ${auto.toFixed(2)}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <span className="font-semibold">${eff.toFixed(2)}</span>
+                                {isAdjusted && (
+                                  <span className="opacity-70">
+                                    ({CONDITION_LABELS[i.condition] ?? i.condition})
+                                  </span>
+                                )}
+                              </>
                             )}
                           </Badge>
                         );
