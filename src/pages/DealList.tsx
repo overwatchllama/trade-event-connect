@@ -194,9 +194,22 @@ const DealList = () => {
                     <div className="flex flex-wrap items-center gap-1">
                       <Badge variant="outline" className="text-[10px]">{i.game}</Badge>
                       {i.rarity && <Badge variant="outline" className="text-[10px]">{i.rarity}</Badge>}
-                      {i.tcgplayer_market_price != null && (
-                        <Badge variant="secondary" className="text-[10px]">${i.tcgplayer_market_price.toFixed(2)}</Badge>
-                      )}
+                      {i.tcgplayer_market_price != null && (() => {
+                        const adj = adjustedPrice(i.tcgplayer_market_price, i.condition);
+                        const isAdjusted = adj !== i.tcgplayer_market_price;
+                        return (
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px]"
+                            title={isAdjusted
+                              ? `${CONDITION_LABELS[i.condition] ?? i.condition} estimate · NM market $${i.tcgplayer_market_price.toFixed(2)}`
+                              : "Near Mint market price"}
+                          >
+                            ${adj?.toFixed(2)}
+                            {isAdjusted && <span className="ml-1 opacity-70">({CONDITION_LABELS[i.condition] ?? i.condition})</span>}
+                          </Badge>
+                        );
+                      })()}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 pt-1">
                       <div className="flex items-center gap-1">
@@ -210,12 +223,14 @@ const DealList = () => {
                         />
                       </div>
                       <Select value={i.condition} onValueChange={(v) => updateItem(i.id, { condition: v })}>
-                        <SelectTrigger className="h-7 w-32 text-xs">
+                        <SelectTrigger className="h-7 w-40 text-xs">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {CONDITIONS.map((c) => (
-                            <SelectItem key={c} value={c} className="text-xs">{c.replace("_", " ")}</SelectItem>
+                          {CONDITION_OPTIONS.map((c) => (
+                            <SelectItem key={c.value} value={c.value} className="text-xs">
+                              {c.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
