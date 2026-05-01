@@ -29,7 +29,33 @@ interface DetectedCard {
     | "low"
     | null;
   notes: string | null;
+  is_slab: boolean | null;
+  grading_company:
+    | "PSA"
+    | "BGS"
+    | "CGC"
+    | "SGC"
+    | "TAG"
+    | "HGA"
+    | "GMA"
+    | "OTHER"
+    | null;
+  grade: string | null;
+  cert_number: string | null;
 }
+
+/**
+ * Build the eBay query suffix for a graded slab so sold comps reflect graded prices.
+ * e.g. PSA 10, BGS 9.5, CGC 10.
+ */
+const buildGradeQuery = (c: DetectedCard): string | null => {
+  if (!c.is_slab || !c.grade) return null;
+  const company = c.grading_company && c.grading_company !== "OTHER" ? c.grading_company : "";
+  // Strip noisy words; keep the numeric grade
+  const grade = c.grade.replace(/gem\s*mt|mint|black\s*label/gi, "").trim();
+  const combined = `${company} ${grade}`.trim();
+  return combined || null;
+};
 
 const CardScanner = () => {
   const { user, loading: authLoading } = useAuth();
