@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ExternalLink, Plus, ImageOff, Hash, Sparkles } from "lucide-react";
+import { Loader2, ExternalLink, Plus, ImageOff, Hash, Sparkles, Award } from "lucide-react";
 import type { ResolvedCard } from "@/services/cardLookup";
 import { PriceSourceBadge } from "@/components/pricing/PriceSourceBadge";
 
