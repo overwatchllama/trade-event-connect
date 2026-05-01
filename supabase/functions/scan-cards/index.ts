@@ -18,6 +18,11 @@ interface DetectedCard {
   guess_total: string | null;
   confidence_basis: "number_and_set" | "number_only" | "set_only" | "name_only" | "low" | null;
   notes: string | null;
+  // Slab (graded card) fields — null when the card is raw.
+  is_slab: boolean | null;
+  grading_company: "PSA" | "BGS" | "CGC" | "SGC" | "TAG" | "HGA" | "GMA" | "OTHER" | null;
+  grade: string | null;
+  cert_number: string | null;
 }
 
 serve(async (req) => {
