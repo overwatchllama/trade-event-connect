@@ -269,19 +269,93 @@ const DealList = () => {
                     <div className="flex flex-wrap items-center gap-1">
                       <Badge variant="outline" className="text-[10px]">{i.game}</Badge>
                       {i.rarity && <Badge variant="outline" className="text-[10px]">{i.rarity}</Badge>}
-                      {i.tcgplayer_market_price != null && (() => {
-                        const adj = adjustedPrice(i.tcgplayer_market_price, i.condition);
-                        const isAdjusted = adj !== i.tcgplayer_market_price;
+                      {(() => {
+                        const auto = adjustedPrice(i.tcgplayer_market_price, i.condition);
+                        const eff = effectivePrice(i);
+                        const isOverride = i.price_override != null;
+                        const isAdjusted = !isOverride && auto !== i.tcgplayer_market_price && i.tcgplayer_market_price != null;
+                        const isEditing = editingPriceId === i.id;
+
+                        if (isEditing) {
+                          return (
+                            <div className="flex items-center gap-1">
+                              <span className="text-[11px] text-muted-foreground">$</span>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min={0}
+                                autoFocus
+                                value={priceDraft}
+                                placeholder={auto != null ? auto.toFixed(2) : "0.00"}
+                                onChange={(e) => setPriceDraft(e.target.value)}
+                                onBlur={() => commitPriceEdit(i.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") commitPriceEdit(i.id);
+                                  if (e.key === "Escape") {
+                                    setEditingPriceId(null);
+                                    setPriceDraft("");
+                                  }
+                                }}
+                                className="h-6 w-20 text-[11px] px-1.5"
+                              />
+                              {isOverride && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 px-1.5 text-[10px]"
+                                  onMouseDown={(e) => {
+                                    // Use mouseDown so it fires before the input's onBlur cancels.
+                                    e.preventDefault();
+                                    setPriceDraft("");
+                                    void updateItem(i.id, { price_override: null });
+                                    setEditingPriceId(null);
+                                  }}
+                                  title="Reset to auto price"
+                                >
+                                  reset
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        if (eff == null) {
+                          return (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] cursor-pointer hover:bg-muted"
+                              onClick={() => {
+                                setEditingPriceId(i.id);
+                                setPriceDraft("");
+                              }}
+                              title="Click to set a price"
+                            >
+                              Set price
+                            </Badge>
+                          );
+                        }
+
                         return (
                           <Badge
                             variant="secondary"
-                            className="text-[10px]"
-                            title={isAdjusted
-                              ? `${CONDITION_LABELS[i.condition] ?? i.condition} estimate · NM market $${i.tcgplayer_market_price.toFixed(2)}`
-                              : "Near Mint market price"}
+                            className="text-[10px] cursor-pointer hover:bg-secondary/80"
+                            onClick={() => {
+                              setEditingPriceId(i.id);
+                              setPriceDraft(eff.toFixed(2));
+                            }}
+                            title={
+                              isOverride
+                                ? `Manual price · auto would be $${auto != null ? auto.toFixed(2) : "—"}. Click to edit.`
+                                : isAdjusted
+                                  ? `${CONDITION_LABELS[i.condition] ?? i.condition} estimate · NM market $${(i.tcgplayer_market_price ?? 0).toFixed(2)}. Click to override.`
+                                  : "Near Mint market price. Click to override."
+                            }
                           >
-                            ${adj?.toFixed(2)}
-                            {isAdjusted && <span className="ml-1 opacity-70">({CONDITION_LABELS[i.condition] ?? i.condition})</span>}
+                            ${eff.toFixed(2)}
+                            {isOverride && <span className="ml-1 opacity-70">(manual)</span>}
+                            {!isOverride && isAdjusted && (
+                              <span className="ml-1 opacity-70">({CONDITION_LABELS[i.condition] ?? i.condition})</span>
+                            )}
                           </Badge>
                         );
                       })()}
