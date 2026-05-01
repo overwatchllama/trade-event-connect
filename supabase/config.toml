@@ -48,6 +48,9 @@ verify_jwt = false
 [functions.scan-cards]
 verify_jwt = true
 
+[functions.ebay-sold-comps]
+verify_jwt = true
+
 [functions.demo-login]
 verify_jwt = false
 

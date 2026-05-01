@@ -1,9 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ExternalLink, Plus, ImageOff, Hash, Sparkles, Award } from "lucide-react";
+import { Loader2, ExternalLink, Plus, ImageOff, Hash, Sparkles, Award, TrendingUp } from "lucide-react";
 import type { ResolvedCard } from "@/services/cardLookup";
 import { PriceSourceBadge } from "@/components/pricing/PriceSourceBadge";
+import type { SlabComps } from "@/pages/CardScanner";
 
 interface DetectedCard {
   bbox: { x: number; y: number; w: number; h: number };
@@ -42,8 +43,22 @@ interface Props {
   detected: DetectedCard[];
   matches: ResolvedCard[];
   loading: boolean;
+  slabComps?: Record<string, SlabComps>;
+  slabCompsLoading?: boolean;
   onAdd: (m: ResolvedCard) => void;
 }
+
+const formatMoney = (n: number, currency: string) => {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: currency || "USD",
+      maximumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return `$${n.toFixed(2)}`;
+  }
+};
 
 const matchedOnLabel: Record<ResolvedCard["matchedOn"], string> = {
   "set+number": "Exact: set + #",
@@ -64,7 +79,7 @@ const matchedOnVariant: Record<
   unknown: "outline",
 };
 
-export const CardMatchPanel = ({ activeIdx, detected, matches, loading, onAdd }: Props) => {
+export const CardMatchPanel = ({ activeIdx, detected, matches, loading, slabComps, slabCompsLoading, onAdd }: Props) => {
   const active = activeIdx !== null ? detected[activeIdx] : null;
 
   // Compose printed-card-style "25/102" from what the AI saw
@@ -164,8 +179,12 @@ export const CardMatchPanel = ({ activeIdx, detected, matches, loading, onAdd }:
       )}
 
       <div className="space-y-3">
-        {matches.map((m) => (
-          <div key={`${m.game}-${m.externalId}`} className="border rounded-lg p-2 flex gap-3">
+        {matches.map((m) => {
+          const compsKey = `${m.game}-${m.externalId}`;
+          const comps = slabComps?.[compsKey];
+          const isSlab = active?.is_slab === true;
+          return (
+          <div key={compsKey} className="border rounded-lg p-2 flex gap-3">
             <div className="w-16 h-22 shrink-0 bg-muted rounded overflow-hidden flex items-center justify-center">
               {m.imageUrl ? (
                 <img
@@ -208,9 +227,46 @@ export const CardMatchPanel = ({ activeIdx, detected, matches, loading, onAdd }:
                   <Badge variant="outline" className="text-[10px]">{m.rarity}</Badge>
                 )}
               </div>
+
+              {/* Graded sold-comp summary (slabs only) */}
+              {isSlab && (
+                <div className="mt-1 rounded-md border border-amber-500/30 bg-amber-500/5 p-1.5 text-[11px]">
+                  {!comps && slabCompsLoading && (
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Fetching graded sold comps…
+                    </div>
+                  )}
+                  {comps && comps.count === 0 && (
+                    <p className="text-muted-foreground">
+                      No graded sold comps found.
+                    </p>
+                  )}
+                  {comps && comps.count > 0 && (
+                    <>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-300">
+                          <TrendingUp className="h-3 w-3" />
+                          Median {formatMoney(comps.median ?? 0, comps.currency)}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {comps.count} sold
+                        </span>
+                      </div>
+                      {comps.min !== null && comps.max !== null && (
+                        <p className="text-muted-foreground mt-0.5">
+                          Range {formatMoney(comps.min, comps.currency)} –{" "}
+                          {formatMoney(comps.max, comps.currency)}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-1 pt-1">
                 <Button asChild size="sm" variant="outline" className="h-7 text-xs">
-                  <a href={m.ebaySearchUrl} target="_blank" rel="noreferrer">
+                  <a href={comps?.searchUrl ?? m.ebaySearchUrl} target="_blank" rel="noreferrer">
                     eBay sold <ExternalLink className="h-3 w-3 ml-1" />
                   </a>
                 </Button>
@@ -220,7 +276,8 @@ export const CardMatchPanel = ({ activeIdx, detected, matches, loading, onAdd }:
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );
