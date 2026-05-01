@@ -129,8 +129,10 @@ export async function searchCards(opts: {
   number?: string | null;
   setHint?: string | null;
   setCode?: string | null;
+  /** When the source card is a graded slab, append "PSA 10" / "BGS 9.5" to the eBay query so sold comps reflect the graded market. */
+  gradeQuery?: string | null;
 }): Promise<ResolvedCard[]> {
-  const { game, name, number, setHint, setCode } = opts;
+  const { game, name, number, setHint, setCode, gradeQuery } = opts;
 
   // Need at least one usable signal.
   if (!name && !number) return [];
