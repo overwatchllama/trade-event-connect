@@ -29,7 +29,30 @@ interface DealItem {
   created_at: string;
 }
 
-const CONDITIONS = ["mint", "near_mint", "excellent", "good", "light_play", "moderate_play", "heavy_play", "damaged"];
+// TCGplayer-style conditions. The DB enum value is on the left, the user-facing label and
+// price multiplier (vs. Near Mint market) are derived from typical TCGplayer condition discounts.
+const CONDITION_OPTIONS: Array<{ value: string; label: string; multiplier: number }> = [
+  { value: "near_mint", label: "Near Mint", multiplier: 1.0 },
+  { value: "light_play", label: "Lightly Played", multiplier: 0.85 },
+  { value: "moderate_play", label: "Moderately Played", multiplier: 0.65 },
+  { value: "heavy_play", label: "Heavily Played", multiplier: 0.45 },
+  { value: "damaged", label: "Damaged", multiplier: 0.3 },
+];
+
+const CONDITION_MULTIPLIERS: Record<string, number> = Object.fromEntries(
+  CONDITION_OPTIONS.map((c) => [c.value, c.multiplier]),
+);
+
+const CONDITION_LABELS: Record<string, string> = Object.fromEntries(
+  CONDITION_OPTIONS.map((c) => [c.value, c.label]),
+);
+
+/** Treat the stored TCGplayer market price as the Near Mint baseline and scale by condition. */
+const adjustedPrice = (nmPrice: number | null, condition: string): number | null => {
+  if (nmPrice == null) return null;
+  const mult = CONDITION_MULTIPLIERS[condition] ?? 1;
+  return Math.round(nmPrice * mult * 100) / 100;
+};
 
 const DealList = () => {
   const { user, loading: authLoading } = useAuth();
