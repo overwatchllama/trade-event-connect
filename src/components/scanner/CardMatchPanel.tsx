@@ -22,6 +22,19 @@ interface DetectedCard {
     | "low"
     | null;
   notes: string | null;
+  is_slab: boolean | null;
+  grading_company:
+    | "PSA"
+    | "BGS"
+    | "CGC"
+    | "SGC"
+    | "TAG"
+    | "HGA"
+    | "GMA"
+    | "OTHER"
+    | null;
+  grade: string | null;
+  cert_number: string | null;
 }
 
 interface Props {
