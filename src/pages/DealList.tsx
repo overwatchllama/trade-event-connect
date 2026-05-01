@@ -87,6 +87,8 @@ const DealList = () => {
   /** Track which row's price is being inline-edited and its draft string value. */
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [priceDraft, setPriceDraft] = useState<string>("");
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [resettingOverrides, setResettingOverrides] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
