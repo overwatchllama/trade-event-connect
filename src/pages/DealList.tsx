@@ -197,11 +197,36 @@ const DealList = () => {
 
       <main className="container mx-auto px-4 py-6 max-w-5xl">
         <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
-          <div>
+          <div className="space-y-1">
             <h1 className="text-2xl md:text-3xl font-bold">Deal List</h1>
-            <p className="text-muted-foreground text-sm mt-1">
+            <p className="text-muted-foreground text-sm">
               {items.length} card{items.length === 1 ? "" : "s"} · est. ${totalValue.toFixed(2)} total
             </p>
+            {items.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <label htmlFor="cost-pct" className="text-xs text-muted-foreground">
+                  Buy at
+                </label>
+                <div className="relative">
+                  <Input
+                    id="cost-pct"
+                    type="number"
+                    min={0}
+                    max={200}
+                    step={1}
+                    value={costPct}
+                    onChange={(e) => setCostPct(Math.max(0, Math.min(200, parseFloat(e.target.value) || 0)))}
+                    className="h-7 w-20 pr-6 text-xs"
+                  />
+                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                    %
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  of market = <span className="font-semibold text-foreground">${targetSpend.toFixed(2)}</span> target spend
+                </span>
+              </div>
+            )}
           </div>
           <Button variant="outline" onClick={() => navigate("/scanner")}>
             <ScanLine className="h-4 w-4 mr-2" /> Scan more
