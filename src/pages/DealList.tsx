@@ -137,15 +137,50 @@ const DealList = () => {
   );
   const targetSpend = totalValue * (costPct / 100);
 
+  /**
+   * Apply a manual price change AND surface an undo toast that restores the previous
+   * `price_override` value if the user clicks it within the toast's lifetime.
+   * Kept generic so both the inline editor commit and the inline "reset" button can use it.
+   */
+  const applyPriceOverride = (
+    id: string,
+    nextOverride: number | null,
+    cardName: string,
+  ) => {
+    const previous = items.find((it) => it.id === id);
+    if (!previous) return;
+    if (previous.price_override === nextOverride) return; // no-op, don't spam toasts
+
+    void updateItem(id, { price_override: nextOverride });
+
+    const prevDisplay =
+      previous.price_override != null ? `$${previous.price_override.toFixed(2)}` : "auto";
+    const nextDisplay = nextOverride != null ? `$${nextOverride.toFixed(2)}` : "auto";
+
+    sonnerToast(`Price updated · ${cardName}`, {
+      description: `${prevDisplay} → ${nextDisplay}`,
+      duration: 8000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          void updateItem(id, { price_override: previous.price_override });
+          sonnerToast.success("Reverted to previous price");
+        },
+      },
+    });
+  };
+
   const commitPriceEdit = (id: string) => {
     const trimmed = priceDraft.trim();
+    const card = items.find((it) => it.id === id);
+    const cardName = card?.card_name ?? "card";
     if (trimmed === "") {
       // Empty input clears the override → fall back to auto price.
-      void updateItem(id, { price_override: null });
+      applyPriceOverride(id, null, cardName);
     } else {
       const num = parseFloat(trimmed);
       if (Number.isFinite(num) && num >= 0) {
-        void updateItem(id, { price_override: Math.round(num * 100) / 100 });
+        applyPriceOverride(id, Math.round(num * 100) / 100, cardName);
       }
     }
     setEditingPriceId(null);
