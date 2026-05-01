@@ -166,6 +166,38 @@ const DealList = () => {
     setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
+  /** How many rows currently have a manual price override applied. Drives the reset action's enabled state. */
+  const overrideCount = items.reduce((n, i) => n + (i.price_override != null ? 1 : 0), 0);
+
+  /**
+   * Bulk-clear every manual price_override on the user's deal list. After this completes, totals fall
+   * back to the condition-adjusted TCGplayer market price for every row.
+   */
+  const resetAllOverrides = async () => {
+    if (!user || overrideCount === 0) return;
+    setResettingOverrides(true);
+    // Optimistically clear in the local UI so the totals update instantly.
+    const prevSnapshot = items;
+    setItems((prev) => prev.map((it) => ({ ...it, price_override: null })));
+    const { error } = await supabase
+      .from("deal_list_items")
+      .update({ price_override: null })
+      .eq("user_id", user.id)
+      .not("price_override", "is", null);
+    setResettingOverrides(false);
+    setResetConfirmOpen(false);
+    if (error) {
+      // Rollback on failure so the UI doesn't lie about persistence.
+      setItems(prevSnapshot);
+      toast({ title: "Reset failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Manual prices cleared",
+      description: `Reverted ${overrideCount} card${overrideCount === 1 ? "" : "s"} to auto pricing.`,
+    });
+  };
+
   const saveAllToCollection = async () => {
     if (!user || !targetCollection || items.length === 0) return;
     setSavingAll(true);
