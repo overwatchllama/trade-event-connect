@@ -272,10 +272,54 @@ const DealList = () => {
               </div>
             )}
           </div>
-          <Button variant="outline" onClick={() => navigate("/scanner")}>
-            <ScanLine className="h-4 w-4 mr-2" /> Scan more
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {overrideCount > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => setResetConfirmOpen(true)}
+                title="Clear every manual price you typed and revert to auto pricing"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reset {overrideCount} manual price{overrideCount === 1 ? "" : "s"}
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => navigate("/scanner")}>
+              <ScanLine className="h-4 w-4 mr-2" /> Scan more
+            </Button>
+          </div>
         </div>
+
+        <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset all manual prices?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will clear the {overrideCount} price{overrideCount === 1 ? "" : "s"} you typed in
+                manually and revert every card to its auto-calculated price (TCGplayer market scaled by
+                condition). Your quantities and conditions are not affected.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={resettingOverrides}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  // Prevent the dialog from auto-closing before the network call resolves.
+                  e.preventDefault();
+                  void resetAllOverrides();
+                }}
+                disabled={resettingOverrides}
+              >
+                {resettingOverrides ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Resetting…
+                  </>
+                ) : (
+                  "Reset prices"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {loading ? (
           <div className="flex justify-center py-12">
