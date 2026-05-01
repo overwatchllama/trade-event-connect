@@ -167,8 +167,8 @@ const DealList = () => {
         rarity: i.rarity,
         condition: i.condition as "mint" | "near_mint" | "excellent" | "good" | "light_play" | "moderate_play" | "heavy_play" | "damaged",
         quantity: i.quantity,
-        current_market_price: adjustedPrice(i.tcgplayer_market_price, i.condition),
-        estimated_value: adjustedPrice(i.tcgplayer_market_price, i.condition) != null ? (adjustedPrice(i.tcgplayer_market_price, i.condition) as number) * i.quantity : null,
+        current_market_price: effectivePrice(i),
+        estimated_value: effectivePrice(i) != null ? (effectivePrice(i) as number) * i.quantity : null,
         image_url: i.image_url,
         notes: i.notes,
       }));
