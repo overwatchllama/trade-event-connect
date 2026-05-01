@@ -79,7 +79,7 @@ const matchedOnVariant: Record<
   unknown: "outline",
 };
 
-export const CardMatchPanel = ({ activeIdx, detected, matches, loading, onAdd }: Props) => {
+export const CardMatchPanel = ({ activeIdx, detected, matches, loading, slabComps, slabCompsLoading, onAdd }: Props) => {
   const active = activeIdx !== null ? detected[activeIdx] : null;
 
   // Compose printed-card-style "25/102" from what the AI saw
