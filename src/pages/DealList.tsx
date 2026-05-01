@@ -68,6 +68,21 @@ const DealList = () => {
   const [collections, setCollections] = useState<{ id: string; name: string; category: string }[]>([]);
   const [targetCollection, setTargetCollection] = useState<string>("");
   const [savingAll, setSavingAll] = useState(false);
+  /** Buy-side cost target as a % of total market value (e.g. 60 = pay 60% of comps). Persists locally. */
+  const [costPct, setCostPct] = useState<number>(() => {
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem("dealList:costPct") : null;
+    const parsed = stored ? parseFloat(stored) : NaN;
+    return Number.isFinite(parsed) ? parsed : 60;
+  });
+  /** Track which row's price is being inline-edited and its draft string value. */
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [priceDraft, setPriceDraft] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("dealList:costPct", String(costPct));
+    }
+  }, [costPct]);
 
   useEffect(() => {
     if (!authLoading && !user) {
