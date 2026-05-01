@@ -27,6 +27,8 @@ interface DealItem {
   condition: string;
   notes: string | null;
   created_at: string;
+  /** Manual per-card price entered by the user. When non-null, wins over the condition-adjusted market price. */
+  price_override: number | null;
 }
 
 // TCGplayer-style conditions. The DB enum value is on the left, the user-facing label and
@@ -54,6 +56,10 @@ const adjustedPrice = (nmPrice: number | null, condition: string): number | null
   return Math.round(nmPrice * mult * 100) / 100;
 };
 
+/** The per-card price actually used for totals: manual override (if set) > condition-adjusted market. */
+const effectivePrice = (item: DealItem): number | null =>
+  item.price_override ?? adjustedPrice(item.tcgplayer_market_price, item.condition);
+
 const DealList = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -62,6 +68,21 @@ const DealList = () => {
   const [collections, setCollections] = useState<{ id: string; name: string; category: string }[]>([]);
   const [targetCollection, setTargetCollection] = useState<string>("");
   const [savingAll, setSavingAll] = useState(false);
+  /** Buy-side cost target as a % of total market value (e.g. 60 = pay 60% of comps). Persists locally. */
+  const [costPct, setCostPct] = useState<number>(() => {
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem("dealList:costPct") : null;
+    const parsed = stored ? parseFloat(stored) : NaN;
+    return Number.isFinite(parsed) ? parsed : 60;
+  });
+  /** Track which row's price is being inline-edited and its draft string value. */
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [priceDraft, setPriceDraft] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("dealList:costPct", String(costPct));
+    }
+  }, [costPct]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -98,9 +119,25 @@ const DealList = () => {
   }, [user]);
 
   const totalValue = items.reduce(
-    (sum, i) => sum + (adjustedPrice(i.tcgplayer_market_price, i.condition) ?? 0) * i.quantity,
+    (sum, i) => sum + (effectivePrice(i) ?? 0) * i.quantity,
     0,
   );
+  const targetSpend = totalValue * (costPct / 100);
+
+  const commitPriceEdit = (id: string) => {
+    const trimmed = priceDraft.trim();
+    if (trimmed === "") {
+      // Empty input clears the override → fall back to auto price.
+      void updateItem(id, { price_override: null });
+    } else {
+      const num = parseFloat(trimmed);
+      if (Number.isFinite(num) && num >= 0) {
+        void updateItem(id, { price_override: Math.round(num * 100) / 100 });
+      }
+    }
+    setEditingPriceId(null);
+    setPriceDraft("");
+  };
 
   const updateItem = async (id: string, patch: Partial<DealItem>) => {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
@@ -130,8 +167,8 @@ const DealList = () => {
         rarity: i.rarity,
         condition: i.condition as "mint" | "near_mint" | "excellent" | "good" | "light_play" | "moderate_play" | "heavy_play" | "damaged",
         quantity: i.quantity,
-        current_market_price: adjustedPrice(i.tcgplayer_market_price, i.condition),
-        estimated_value: adjustedPrice(i.tcgplayer_market_price, i.condition) != null ? (adjustedPrice(i.tcgplayer_market_price, i.condition) as number) * i.quantity : null,
+        current_market_price: effectivePrice(i),
+        estimated_value: effectivePrice(i) != null ? (effectivePrice(i) as number) * i.quantity : null,
         image_url: i.image_url,
         notes: i.notes,
       }));
@@ -160,11 +197,36 @@ const DealList = () => {
 
       <main className="container mx-auto px-4 py-6 max-w-5xl">
         <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
-          <div>
+          <div className="space-y-1">
             <h1 className="text-2xl md:text-3xl font-bold">Deal List</h1>
-            <p className="text-muted-foreground text-sm mt-1">
+            <p className="text-muted-foreground text-sm">
               {items.length} card{items.length === 1 ? "" : "s"} · est. ${totalValue.toFixed(2)} total
             </p>
+            {items.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <label htmlFor="cost-pct" className="text-xs text-muted-foreground">
+                  Buy at
+                </label>
+                <div className="relative">
+                  <Input
+                    id="cost-pct"
+                    type="number"
+                    min={0}
+                    max={200}
+                    step={1}
+                    value={costPct}
+                    onChange={(e) => setCostPct(Math.max(0, Math.min(200, parseFloat(e.target.value) || 0)))}
+                    className="h-7 w-20 pr-6 text-xs"
+                  />
+                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                    %
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  of market = <span className="font-semibold text-foreground">${targetSpend.toFixed(2)}</span> target spend
+                </span>
+              </div>
+            )}
           </div>
           <Button variant="outline" onClick={() => navigate("/scanner")}>
             <ScanLine className="h-4 w-4 mr-2" /> Scan more
@@ -207,19 +269,93 @@ const DealList = () => {
                     <div className="flex flex-wrap items-center gap-1">
                       <Badge variant="outline" className="text-[10px]">{i.game}</Badge>
                       {i.rarity && <Badge variant="outline" className="text-[10px]">{i.rarity}</Badge>}
-                      {i.tcgplayer_market_price != null && (() => {
-                        const adj = adjustedPrice(i.tcgplayer_market_price, i.condition);
-                        const isAdjusted = adj !== i.tcgplayer_market_price;
+                      {(() => {
+                        const auto = adjustedPrice(i.tcgplayer_market_price, i.condition);
+                        const eff = effectivePrice(i);
+                        const isOverride = i.price_override != null;
+                        const isAdjusted = !isOverride && auto !== i.tcgplayer_market_price && i.tcgplayer_market_price != null;
+                        const isEditing = editingPriceId === i.id;
+
+                        if (isEditing) {
+                          return (
+                            <div className="flex items-center gap-1">
+                              <span className="text-[11px] text-muted-foreground">$</span>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min={0}
+                                autoFocus
+                                value={priceDraft}
+                                placeholder={auto != null ? auto.toFixed(2) : "0.00"}
+                                onChange={(e) => setPriceDraft(e.target.value)}
+                                onBlur={() => commitPriceEdit(i.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") commitPriceEdit(i.id);
+                                  if (e.key === "Escape") {
+                                    setEditingPriceId(null);
+                                    setPriceDraft("");
+                                  }
+                                }}
+                                className="h-6 w-20 text-[11px] px-1.5"
+                              />
+                              {isOverride && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 px-1.5 text-[10px]"
+                                  onMouseDown={(e) => {
+                                    // Use mouseDown so it fires before the input's onBlur cancels.
+                                    e.preventDefault();
+                                    setPriceDraft("");
+                                    void updateItem(i.id, { price_override: null });
+                                    setEditingPriceId(null);
+                                  }}
+                                  title="Reset to auto price"
+                                >
+                                  reset
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        if (eff == null) {
+                          return (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] cursor-pointer hover:bg-muted"
+                              onClick={() => {
+                                setEditingPriceId(i.id);
+                                setPriceDraft("");
+                              }}
+                              title="Click to set a price"
+                            >
+                              Set price
+                            </Badge>
+                          );
+                        }
+
                         return (
                           <Badge
                             variant="secondary"
-                            className="text-[10px]"
-                            title={isAdjusted
-                              ? `${CONDITION_LABELS[i.condition] ?? i.condition} estimate · NM market $${i.tcgplayer_market_price.toFixed(2)}`
-                              : "Near Mint market price"}
+                            className="text-[10px] cursor-pointer hover:bg-secondary/80"
+                            onClick={() => {
+                              setEditingPriceId(i.id);
+                              setPriceDraft(eff.toFixed(2));
+                            }}
+                            title={
+                              isOverride
+                                ? `Manual price · auto would be $${auto != null ? auto.toFixed(2) : "—"}. Click to edit.`
+                                : isAdjusted
+                                  ? `${CONDITION_LABELS[i.condition] ?? i.condition} estimate · NM market $${(i.tcgplayer_market_price ?? 0).toFixed(2)}. Click to override.`
+                                  : "Near Mint market price. Click to override."
+                            }
                           >
-                            ${adj?.toFixed(2)}
-                            {isAdjusted && <span className="ml-1 opacity-70">({CONDITION_LABELS[i.condition] ?? i.condition})</span>}
+                            ${eff.toFixed(2)}
+                            {isOverride && <span className="ml-1 opacity-70">(manual)</span>}
+                            {!isOverride && isAdjusted && (
+                              <span className="ml-1 opacity-70">({CONDITION_LABELS[i.condition] ?? i.condition})</span>
+                            )}
                           </Badge>
                         );
                       })()}
