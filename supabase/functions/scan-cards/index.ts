@@ -59,11 +59,18 @@ YOUR PRIORITY when reading each card is, in order:
   c) Describe the SET SYMBOL shape if you can see it.
   d) Only THEN read the card name from the top.
 
-SLABS (graded cards):
-  - A slab is a card sealed inside a clear hard-plastic case with a colored LABEL bar across the top of the case.
-  - The label shows: the GRADING COMPANY logo (PSA, BGS, CGC, SGC, TAG, HGA, GMA), the card's name/set/year, and a numeric GRADE (e.g. "10", "9.5", "9", "8.5", "BGS 9.5", "GEM MT 10", "MINT 9"). BGS uses sub-grades and a "Black Label" for perfect 10s.
-  - The CERT NUMBER is the long serial number on the label (or barcode area).
-  - When the card is in a slab, set is_slab=true and fill grading_company + grade. The card image is still visible BELOW the label — keep reading number/set/name through the case as best you can.
+SLABS (graded cards) — READ THE LABEL, NOT THE CARD:
+  - A slab is a card sealed inside a clear hard-plastic case with a colored LABEL bar across the top.
+  - The label is the SOURCE OF TRUTH for slab identification. It already contains everything you need: YEAR, SET name, CARD NAME, COLLECTOR NUMBER, and GRADE. Do NOT try to read the card art through the plastic — the label is more reliable and the case adds glare/reflections.
+  - LABEL LAYOUT (typical PSA / CGC / SGC):
+      • Top row: grading company logo + cert/serial number.
+      • Middle row(s): YEAR + SET NAME + sometimes language/edition (e.g. "2023 POKEMON SV-PALDEA EVOLVED").
+      • CARD NAME prominently below or beside the set line (e.g. "CHARIZARD EX").
+      • CARD NUMBER printed in the TOP-RIGHT area of the label (e.g. "#54", "54/193", "199/091"). On PSA labels this is often a small "#NNN" in the upper-right corner of the label.
+      • GRADE printed large on the right side or bottom-right ("GEM MT 10", "MINT 9", "9.5", "BGS 9.5 BLACK LABEL").
+  - BGS labels are vertical with sub-grades on the right edge; the card name/set/number are stacked on the left and the overall grade is the large number on the right.
+  - Set is_slab=true and fill grading_company, grade, and cert_number from the label. Read guess_name, guess_set, guess_number FROM THE LABEL TEXT — never guess them from the card art.
+  - If a label field is unreadable, leave it null. Do not fabricate.
   - The bbox should cover the WHOLE SLAB (label + card area), not just the card window.
 
 Return bounding boxes in NORMALIZED coordinates (0..1) relative to the full image:
