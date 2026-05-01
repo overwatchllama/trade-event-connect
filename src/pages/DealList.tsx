@@ -431,7 +431,7 @@ const DealList = () => {
                                     // Use mouseDown so it fires before the input's onBlur cancels.
                                     e.preventDefault();
                                     setPriceDraft("");
-                                    void updateItem(i.id, { price_override: null });
+                                    applyPriceOverride(i.id, null, i.card_name);
                                     setEditingPriceId(null);
                                   }}
                                   title="Reset to auto price"
