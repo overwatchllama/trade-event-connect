@@ -77,15 +77,19 @@ const buildGradeQuery = (c: DetectedCard): string | null => {
  * when we want PSA 10. We also include set + number which dramatically
  * narrows reprint noise.
  */
+/**
+ * eBay query format: "GRADE NAME NUMBER" — e.g. "PSA 10 Reshiram 170".
+ * This mirrors how graded slab listings are titled on eBay and gives the
+ * tightest sold-comp match. Set name is omitted to avoid over-narrowing.
+ */
 const buildSlabEbayQuery = (
   m: ResolvedCard,
   gradeQuery: string,
 ): string => {
   const parts = [
+    gradeQuery,
     m.name,
-    m.number ? `#${m.number}` : "",
-    m.setName ?? "",
-    `"${gradeQuery}"`,
+    m.number ? m.number.replace(/^0+/, "") : "",
   ].filter(Boolean);
   return parts.join(" ");
 };
