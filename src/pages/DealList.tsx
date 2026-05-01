@@ -56,6 +56,10 @@ const adjustedPrice = (nmPrice: number | null, condition: string): number | null
   return Math.round(nmPrice * mult * 100) / 100;
 };
 
+/** The per-card price actually used for totals: manual override (if set) > condition-adjusted market. */
+const effectivePrice = (item: DealItem): number | null =>
+  item.price_override ?? adjustedPrice(item.tcgplayer_market_price, item.condition);
+
 const DealList = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
