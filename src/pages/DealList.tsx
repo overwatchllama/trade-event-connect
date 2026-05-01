@@ -85,7 +85,7 @@ const DealList = () => {
   }, [user]);
 
   const totalValue = items.reduce(
-    (sum, i) => sum + (i.tcgplayer_market_price ?? 0) * i.quantity,
+    (sum, i) => sum + (adjustedPrice(i.tcgplayer_market_price, i.condition) ?? 0) * i.quantity,
     0,
   );
 
