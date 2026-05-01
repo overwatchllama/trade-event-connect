@@ -129,8 +129,10 @@ export async function searchCards(opts: {
   number?: string | null;
   setHint?: string | null;
   setCode?: string | null;
+  /** When the source card is a graded slab, append "PSA 10" / "BGS 9.5" to the eBay query so sold comps reflect the graded market. */
+  gradeQuery?: string | null;
 }): Promise<ResolvedCard[]> {
-  const { game, name, number, setHint, setCode } = opts;
+  const { game, name, number, setHint, setCode, gradeQuery } = opts;
 
   // Need at least one usable signal.
   if (!name && !number) return [];
@@ -204,9 +206,24 @@ export async function searchCards(opts: {
     }
   };
 
-  if (game === "pokemon") return tryPokemon();
-  if (game === "onepiece") return tryOnePiece();
+  const applyGrade = (results: ResolvedCard[]): ResolvedCard[] => {
+    if (!gradeQuery) return results;
+    const suffix = ` ${gradeQuery}`;
+    return results.map((r) => ({
+      ...r,
+      ebaySearchUrl: r.ebaySearchUrl.replace(
+        /([?&]_nkw=)([^&]*)/,
+        (_m, p1, p2) => `${p1}${p2}${encodeURIComponent(suffix)}`,
+      ),
+      // For graded cards, raw market price is no longer representative.
+      tcgplayerMarketPrice: null,
+      priceSource: null,
+    }));
+  };
+
+  if (game === "pokemon") return applyGrade(await tryPokemon());
+  if (game === "onepiece") return applyGrade(await tryOnePiece());
   // unknown — try both
   const [a, b] = await Promise.all([tryPokemon(), tryOnePiece()]);
-  return [...a, ...b];
+  return applyGrade([...a, ...b]);
 }

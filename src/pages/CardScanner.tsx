@@ -29,7 +29,33 @@ interface DetectedCard {
     | "low"
     | null;
   notes: string | null;
+  is_slab: boolean | null;
+  grading_company:
+    | "PSA"
+    | "BGS"
+    | "CGC"
+    | "SGC"
+    | "TAG"
+    | "HGA"
+    | "GMA"
+    | "OTHER"
+    | null;
+  grade: string | null;
+  cert_number: string | null;
 }
+
+/**
+ * Build the eBay query suffix for a graded slab so sold comps reflect graded prices.
+ * e.g. PSA 10, BGS 9.5, CGC 10.
+ */
+const buildGradeQuery = (c: DetectedCard): string | null => {
+  if (!c.is_slab || !c.grade) return null;
+  const company = c.grading_company && c.grading_company !== "OTHER" ? c.grading_company : "";
+  // Strip noisy words; keep the numeric grade
+  const grade = c.grade.replace(/gem\s*mt|mint|black\s*label/gi, "").trim();
+  const combined = `${company} ${grade}`.trim();
+  return combined || null;
+};
 
 const CardScanner = () => {
   const { user, loading: authLoading } = useAuth();
@@ -112,6 +138,7 @@ const CardScanner = () => {
         number: card.guess_number,
         setHint: card.guess_set,
         setCode: card.guess_set_code,
+        gradeQuery: buildGradeQuery(card),
       });
       setMatches(results);
       if (results.length === 0) {
@@ -214,49 +241,49 @@ const CardScanner = () => {
                   alt="Scanned cards"
                   className="block w-full h-auto"
                 />
-                {/* Bounding box overlays */}
-                <svg
-                  viewBox="0 0 100 100"
-                  preserveAspectRatio="none"
-                  className="absolute inset-0 w-full h-full"
-                >
-                  {detected.map((c, i) => (
-                    <rect
-                      key={i}
-                      x={c.bbox.x * 100}
-                      y={c.bbox.y * 100}
-                      width={c.bbox.w * 100}
-                      height={c.bbox.h * 100}
-                      fill={activeIdx === i ? "hsl(var(--primary) / 0.15)" : "transparent"}
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={activeIdx === i ? 2.5 : 1.5}
-                      vectorEffect="non-scaling-stroke"
-                      className="cursor-pointer transition-all"
-                      onClick={() => onPickCard(i)}
-                      style={{ pointerEvents: "auto" }}
-                    />
-                  ))}
-                </svg>
-                {/* Number badges as HTML so they stay legible regardless of image aspect ratio */}
-                {detected.map((c, i) => (
-                  <button
-                    key={`badge-${i}`}
-                    type="button"
-                    onClick={() => onPickCard(i)}
-                    className={`absolute h-6 w-6 rounded-full text-xs font-bold flex items-center justify-center shadow-md ring-2 ring-background transition-transform ${
-                      activeIdx === i
-                        ? "bg-primary text-primary-foreground scale-110"
-                        : "bg-primary/90 text-primary-foreground hover:scale-110"
-                    }`}
-                    style={{
-                      left: `calc(${c.bbox.x * 100}% + 4px)`,
-                      top: `calc(${c.bbox.y * 100}% + 4px)`,
-                    }}
-                    aria-label={`Card ${i + 1}`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
+                {/* Bounding boxes — positioned divs so borders/badges align with the rendered image regardless of aspect ratio */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {detected.map((c, i) => {
+                    const isActive = activeIdx === i;
+                    const isSlab = c.is_slab === true;
+                    return (
+                      <button
+                        key={`box-${i}`}
+                        type="button"
+                        onClick={() => onPickCard(i)}
+                        aria-label={`${isSlab ? "Slab" : "Card"} ${i + 1}${c.guess_name ? `: ${c.guess_name}` : ""}`}
+                        className={`absolute pointer-events-auto rounded-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                          isActive
+                            ? "ring-2 ring-primary bg-primary/10 z-20"
+                            : "ring-1 ring-primary/70 hover:ring-2 hover:ring-primary hover:bg-primary/5 z-10"
+                        }`}
+                        style={{
+                          left: `${c.bbox.x * 100}%`,
+                          top: `${c.bbox.y * 100}%`,
+                          width: `${c.bbox.w * 100}%`,
+                          height: `${c.bbox.h * 100}%`,
+                        }}
+                      >
+                        {/* Badge anchored INSIDE the box top-left so it never overlaps a neighboring card */}
+                        <span
+                          className={`absolute top-1 left-1 inline-flex items-center gap-1 rounded-full px-1.5 h-5 text-[11px] font-bold shadow-md ring-2 ring-background ${
+                            isActive
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-primary/90 text-primary-foreground"
+                          }`}
+                        >
+                          {i + 1}
+                          {isSlab && (
+                            <span className="text-[9px] font-semibold uppercase tracking-wide bg-background/25 px-1 rounded">
+                              {c.grading_company ?? "Slab"}
+                              {c.grade ? ` ${c.grade}` : ""}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
 
                 {scanning && (
                   <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex flex-col items-center justify-center gap-2">
