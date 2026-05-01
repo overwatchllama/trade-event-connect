@@ -379,6 +379,8 @@ const CardScanner = () => {
               detected={detected}
               matches={matches}
               loading={matchLoading}
+              slabComps={slabComps}
+              slabCompsLoading={slabCompsLoading}
               onAdd={addToDealList}
             />
           </div>
