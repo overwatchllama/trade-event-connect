@@ -86,6 +86,13 @@ export const CardMatchPanel = ({ activeIdx, detected, matches, loading, onAdd }:
           <div className="mt-2 space-y-2">
             {/* Primary identifiers — what the AI read off the BOTTOM of the card */}
             <div className="flex flex-wrap items-center gap-1.5">
+              {active.is_slab && (
+                <Badge className="text-[11px] gap-1 bg-amber-500 text-white hover:bg-amber-500/90 border-transparent">
+                  <Award className="h-3 w-3" />
+                  {active.grading_company ?? "Slab"}
+                  {active.grade ? ` ${active.grade}` : ""}
+                </Badge>
+              )}
               {printedNumber && (
                 <Badge variant="default" className="text-[11px] gap-1">
                   <Hash className="h-3 w-3" />
@@ -111,7 +118,20 @@ export const CardMatchPanel = ({ activeIdx, detected, matches, loading, onAdd }:
                 !active.guess_set_code && (
                   <p>Set symbol: {active.guess_set_symbol_description}</p>
                 )}
+              {active.is_slab && active.cert_number && (
+                <p>Cert #: {active.cert_number}</p>
+              )}
             </div>
+
+            {/* Slab-specific note: raw market price doesn't apply, point user at eBay sold comps. */}
+            {active.is_slab && (
+              <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-snug">
+                Graded slab detected — TCGplayer / Cardmarket prices are for raw
+                cards. The eBay sold link below is filtered to{" "}
+                {active.grading_company ?? "graded"}
+                {active.grade ? ` ${active.grade}` : ""} comps.
+              </p>
+            )}
 
             {/* Tell the user when we couldn't read the bottom-of-card markers */}
             {(active.confidence_basis === "name_only" ||
