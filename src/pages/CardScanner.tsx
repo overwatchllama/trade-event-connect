@@ -44,6 +44,17 @@ interface DetectedCard {
   cert_number: string | null;
 }
 
+export interface SlabComps {
+  count: number;
+  median: number | null;
+  mean: number | null;
+  min: number | null;
+  max: number | null;
+  currency: string;
+  searchUrl: string;
+  samples: Array<{ price: number; title: string; url: string | null }>;
+}
+
 /**
  * Build the eBay query suffix for a graded slab so sold comps reflect graded prices.
  * Normalizes "GEM MT 10" → "10", keeps BGS Black Label as a separate signal.
@@ -154,8 +165,10 @@ const CardScanner = () => {
   const onPickCard = async (idx: number) => {
     setActiveIdx(idx);
     const card = detected[idx];
+    const gradeQuery = buildGradeQuery(card);
     setMatchLoading(true);
     setMatches([]);
+    setSlabComps({});
     try {
       const results = await searchCards({
         game: card.game,
@@ -163,11 +176,39 @@ const CardScanner = () => {
         number: card.guess_number,
         setHint: card.guess_set,
         setCode: card.guess_set_code,
-        gradeQuery: buildGradeQuery(card),
+        gradeQuery,
       });
       setMatches(results);
       if (results.length === 0) {
         toast({ title: "No matches found", description: "AI guess may be off. Try another card or refine the photo." });
+        return;
+      }
+
+      // For graded slabs, fetch real eBay sold-comp stats so we show an
+      // actual graded market price (median + range) — not just a search link.
+      if (card.is_slab && gradeQuery) {
+        setSlabCompsLoading(true);
+        const top = results.slice(0, 3);
+        await Promise.all(
+          top.map(async (m) => {
+            try {
+              const query = buildSlabEbayQuery(m, gradeQuery);
+              const { data, error } = await supabase.functions.invoke(
+                "ebay-sold-comps",
+                { body: { query } },
+              );
+              if (error) throw error;
+              if (data?.error) throw new Error(data.error);
+              setSlabComps((prev) => ({
+                ...prev,
+                [`${m.game}-${m.externalId}`]: data as SlabComps,
+              }));
+            } catch (e) {
+              console.error("ebay-sold-comps failed", e);
+            }
+          }),
+        );
+        setSlabCompsLoading(false);
       }
     } finally {
       setMatchLoading(false);
