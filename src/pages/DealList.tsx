@@ -27,6 +27,8 @@ interface DealItem {
   condition: string;
   notes: string | null;
   created_at: string;
+  /** Manual per-card price entered by the user. When non-null, wins over the condition-adjusted market price. */
+  price_override: number | null;
 }
 
 // TCGplayer-style conditions. The DB enum value is on the left, the user-facing label and
