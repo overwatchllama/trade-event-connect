@@ -138,6 +138,7 @@ const CardScanner = () => {
         number: card.guess_number,
         setHint: card.guess_set,
         setCode: card.guess_set_code,
+        gradeQuery: buildGradeQuery(card),
       });
       setMatches(results);
       if (results.length === 0) {
