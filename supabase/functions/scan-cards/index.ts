@@ -93,7 +93,7 @@ Only return cards that are clearly visible. Do not invent details. If text is un
 - grade: the printed numeric grade as a string ("10", "9.5", "BGS 9.5 Black Label", "GEM MT 10"), or null
 - cert_number: the serial/cert number on the slab label, or null
 
-Reminder: prioritize bottom-of-card markers (number + set code/symbol) over the name. For slabs, also read the label.`;
+Reminder: For RAW cards, prioritize bottom-of-card markers (number + set code/symbol) over the name. For SLABS, read everything from the LABEL — especially the card NUMBER in the top-right of the label and the card NAME/SET in the middle. Do NOT try to read through the plastic case.`;
 
     const aiResp = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
