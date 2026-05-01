@@ -10,7 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw } from "lucide-react";
 
 interface DealItem {
   id: string;
@@ -77,6 +87,8 @@ const DealList = () => {
   /** Track which row's price is being inline-edited and its draft string value. */
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [priceDraft, setPriceDraft] = useState<string>("");
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [resettingOverrides, setResettingOverrides] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -154,6 +166,38 @@ const DealList = () => {
     setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
+  /** How many rows currently have a manual price override applied. Drives the reset action's enabled state. */
+  const overrideCount = items.reduce((n, i) => n + (i.price_override != null ? 1 : 0), 0);
+
+  /**
+   * Bulk-clear every manual price_override on the user's deal list. After this completes, totals fall
+   * back to the condition-adjusted TCGplayer market price for every row.
+   */
+  const resetAllOverrides = async () => {
+    if (!user || overrideCount === 0) return;
+    setResettingOverrides(true);
+    // Optimistically clear in the local UI so the totals update instantly.
+    const prevSnapshot = items;
+    setItems((prev) => prev.map((it) => ({ ...it, price_override: null })));
+    const { error } = await supabase
+      .from("deal_list_items")
+      .update({ price_override: null })
+      .eq("user_id", user.id)
+      .not("price_override", "is", null);
+    setResettingOverrides(false);
+    setResetConfirmOpen(false);
+    if (error) {
+      // Rollback on failure so the UI doesn't lie about persistence.
+      setItems(prevSnapshot);
+      toast({ title: "Reset failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Manual prices cleared",
+      description: `Reverted ${overrideCount} card${overrideCount === 1 ? "" : "s"} to auto pricing.`,
+    });
+  };
+
   const saveAllToCollection = async () => {
     if (!user || !targetCollection || items.length === 0) return;
     setSavingAll(true);
@@ -228,10 +272,54 @@ const DealList = () => {
               </div>
             )}
           </div>
-          <Button variant="outline" onClick={() => navigate("/scanner")}>
-            <ScanLine className="h-4 w-4 mr-2" /> Scan more
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {overrideCount > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => setResetConfirmOpen(true)}
+                title="Clear every manual price you typed and revert to auto pricing"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reset {overrideCount} manual price{overrideCount === 1 ? "" : "s"}
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => navigate("/scanner")}>
+              <ScanLine className="h-4 w-4 mr-2" /> Scan more
+            </Button>
+          </div>
         </div>
+
+        <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset all manual prices?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will clear the {overrideCount} price{overrideCount === 1 ? "" : "s"} you typed in
+                manually and revert every card to its auto-calculated price (TCGplayer market scaled by
+                condition). Your quantities and conditions are not affected.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={resettingOverrides}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  // Prevent the dialog from auto-closing before the network call resolves.
+                  e.preventDefault();
+                  void resetAllOverrides();
+                }}
+                disabled={resettingOverrides}
+              >
+                {resettingOverrides ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Resetting…
+                  </>
+                ) : (
+                  "Reset prices"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {loading ? (
           <div className="flex justify-center py-12">
