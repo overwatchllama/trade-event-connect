@@ -46,15 +46,37 @@ interface DetectedCard {
 
 /**
  * Build the eBay query suffix for a graded slab so sold comps reflect graded prices.
- * e.g. PSA 10, BGS 9.5, CGC 10.
+ * Normalizes "GEM MT 10" → "10", keeps BGS Black Label as a separate signal.
+ * Returns just the grade portion (e.g. `PSA 10`) — caller composes the full query.
  */
 const buildGradeQuery = (c: DetectedCard): string | null => {
-  if (!c.is_slab || !c.grade) return null;
-  const company = c.grading_company && c.grading_company !== "OTHER" ? c.grading_company : "";
-  // Strip noisy words; keep the numeric grade
-  const grade = c.grade.replace(/gem\s*mt|mint|black\s*label/gi, "").trim();
-  const combined = `${company} ${grade}`.trim();
-  return combined || null;
+  if (!c.is_slab) return null;
+  const company =
+    c.grading_company && c.grading_company !== "OTHER" ? c.grading_company : "";
+  // Pull the first numeric grade out of strings like "GEM MT 10" or "BGS 9.5".
+  const numMatch = c.grade?.match(/(\d+(?:\.\d+)?)/);
+  const grade = numMatch?.[1] ?? "";
+  if (!company && !grade) return null;
+  return `${company} ${grade}`.trim();
+};
+
+/**
+ * Compose a tight eBay query for a graded slab match.
+ * Putting the grade in quotes prevents eBay from matching "PSA 9" listings
+ * when we want PSA 10. We also include set + number which dramatically
+ * narrows reprint noise.
+ */
+const buildSlabEbayQuery = (
+  m: ResolvedCard,
+  gradeQuery: string,
+): string => {
+  const parts = [
+    m.name,
+    m.number ? `#${m.number}` : "",
+    m.setName ?? "",
+    `"${gradeQuery}"`,
+  ].filter(Boolean);
+  return parts.join(" ");
 };
 
 const CardScanner = () => {
