@@ -1,9 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ExternalLink, Plus, ImageOff, Hash, Sparkles, Award } from "lucide-react";
+import { Loader2, ExternalLink, Plus, ImageOff, Hash, Sparkles, Award, TrendingUp } from "lucide-react";
 import type { ResolvedCard } from "@/services/cardLookup";
 import { PriceSourceBadge } from "@/components/pricing/PriceSourceBadge";
+import type { SlabComps } from "@/pages/CardScanner";
 
 interface DetectedCard {
   bbox: { x: number; y: number; w: number; h: number };
@@ -42,8 +43,22 @@ interface Props {
   detected: DetectedCard[];
   matches: ResolvedCard[];
   loading: boolean;
+  slabComps?: Record<string, SlabComps>;
+  slabCompsLoading?: boolean;
   onAdd: (m: ResolvedCard) => void;
 }
+
+const formatMoney = (n: number, currency: string) => {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: currency || "USD",
+      maximumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return `$${n.toFixed(2)}`;
+  }
+};
 
 const matchedOnLabel: Record<ResolvedCard["matchedOn"], string> = {
   "set+number": "Exact: set + #",
