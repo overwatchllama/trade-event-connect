@@ -73,10 +73,12 @@ SLABS (graded cards) — READ THE LABEL, NOT THE CARD:
   - If a label field is unreadable, leave it null. Do not fabricate.
   - The bbox should cover the WHOLE SLAB (label + card area), not just the card window.
 
-Return bounding boxes in NORMALIZED coordinates (0..1) relative to the full image:
-- x, y = top-left corner
-- w, h = width / height
-- Make boxes TIGHT around each card/slab — no large margins, no overlap with neighbors.
+Return bounding boxes in NORMALIZED coordinates (0..1) relative to the FULL ORIGINAL image dimensions:
+- x, y = top-left corner of the card/slab as a fraction of image width / height
+- w, h = width / height as a fraction of image width / height
+- The box must TIGHTLY hug the visible edges of THAT specific card/slab — no large margins, no padding, and crucially NO drift onto a neighboring card.
+- Double-check each bbox by mentally cropping the image to (x, y, x+w, y+h) and confirming the crop contains exactly ONE card and that card matches the guess_name/guess_number you returned for it.
+- If two cards are close together, shrink the boxes inward rather than letting them overlap. A box that covers the wrong card is worse than no box.
 
 Only return cards that are clearly visible. Do not invent details. If text is unreadable, leave the field null — do NOT guess. A confident "null" is more useful than a wrong guess.`;
 
