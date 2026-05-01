@@ -119,9 +119,25 @@ const DealList = () => {
   }, [user]);
 
   const totalValue = items.reduce(
-    (sum, i) => sum + (adjustedPrice(i.tcgplayer_market_price, i.condition) ?? 0) * i.quantity,
+    (sum, i) => sum + (effectivePrice(i) ?? 0) * i.quantity,
     0,
   );
+  const targetSpend = totalValue * (costPct / 100);
+
+  const commitPriceEdit = (id: string) => {
+    const trimmed = priceDraft.trim();
+    if (trimmed === "") {
+      // Empty input clears the override → fall back to auto price.
+      void updateItem(id, { price_override: null });
+    } else {
+      const num = parseFloat(trimmed);
+      if (Number.isFinite(num) && num >= 0) {
+        void updateItem(id, { price_override: Math.round(num * 100) / 100 });
+      }
+    }
+    setEditingPriceId(null);
+    setPriceDraft("");
+  };
 
   const updateItem = async (id: string, patch: Partial<DealItem>) => {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
