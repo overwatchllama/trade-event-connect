@@ -323,6 +323,11 @@ const DealList = () => {
                 </div>
                 <span className="text-xs text-muted-foreground">
                   of market = <span className="font-semibold text-foreground">${targetSpend.toFixed(2)}</span> target spend
+                  {items.some((i) => i.trade_pct_override != null) && (
+                    <span className="ml-1 opacity-80">
+                      (blended {blendedPct.toFixed(1)}% — some cards overridden)
+                    </span>
+                  )}
                 </span>
               </div>
             )}
