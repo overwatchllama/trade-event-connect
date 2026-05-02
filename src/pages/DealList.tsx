@@ -133,11 +133,28 @@ const DealList = () => {
     })();
   }, [user]);
 
+  /** Effective trade % for a row: per-card override (if set) > global costPct. */
+  const effectiveTradePct = (item: DealItem): number =>
+    item.trade_pct_override ?? costPct;
+
+  /** Per-card modified (deal) price = effective price × effective trade % / 100. */
+  const modifiedPrice = (item: DealItem): number | null => {
+    const eff = effectivePrice(item);
+    if (eff == null) return null;
+    return Math.round(eff * (effectiveTradePct(item) / 100) * 100) / 100;
+  };
+
   const totalValue = items.reduce(
     (sum, i) => sum + (effectivePrice(i) ?? 0) * i.quantity,
     0,
   );
-  const targetSpend = totalValue * (costPct / 100);
+  // Live deal total honors per-card trade % overrides; falls back to global costPct otherwise.
+  const targetSpend = items.reduce(
+    (sum, i) => sum + (modifiedPrice(i) ?? 0) * i.quantity,
+    0,
+  );
+  // Blended effective % (informational) — useful when per-card overrides drag the average away from the global.
+  const blendedPct = totalValue > 0 ? (targetSpend / totalValue) * 100 : costPct;
 
   /**
    * Apply a manual price change AND surface an undo toast that restores the previous
