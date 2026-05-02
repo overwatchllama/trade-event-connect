@@ -1,0 +1,1 @@
+ALTER TABLE public.deal_list_items ADD COLUMN IF NOT EXISTS trade_pct_override numeric;
