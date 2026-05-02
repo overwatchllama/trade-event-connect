@@ -40,6 +40,8 @@ interface DealItem {
   created_at: string;
   /** Manual per-card price entered by the user. When non-null, wins over the condition-adjusted market price. */
   price_override: number | null;
+  /** Per-card trade % (0-200). When non-null, this card uses its own buy-at % instead of the global one. */
+  trade_pct_override: number | null;
 }
 
 // TCGplayer-style conditions. The DB enum value is on the left, the user-facing label and
@@ -131,11 +133,28 @@ const DealList = () => {
     })();
   }, [user]);
 
+  /** Effective trade % for a row: per-card override (if set) > global costPct. */
+  const effectiveTradePct = (item: DealItem): number =>
+    item.trade_pct_override ?? costPct;
+
+  /** Per-card modified (deal) price = effective price × effective trade % / 100. */
+  const modifiedPrice = (item: DealItem): number | null => {
+    const eff = effectivePrice(item);
+    if (eff == null) return null;
+    return Math.round(eff * (effectiveTradePct(item) / 100) * 100) / 100;
+  };
+
   const totalValue = items.reduce(
     (sum, i) => sum + (effectivePrice(i) ?? 0) * i.quantity,
     0,
   );
-  const targetSpend = totalValue * (costPct / 100);
+  // Live deal total honors per-card trade % overrides; falls back to global costPct otherwise.
+  const targetSpend = items.reduce(
+    (sum, i) => sum + (modifiedPrice(i) ?? 0) * i.quantity,
+    0,
+  );
+  // Blended effective % (informational) — useful when per-card overrides drag the average away from the global.
+  const blendedPct = totalValue > 0 ? (targetSpend / totalValue) * 100 : costPct;
 
   /**
    * Apply a manual price change AND surface an undo toast that restores the previous
@@ -304,6 +323,11 @@ const DealList = () => {
                 </div>
                 <span className="text-xs text-muted-foreground">
                   of market = <span className="font-semibold text-foreground">${targetSpend.toFixed(2)}</span> target spend
+                  {items.some((i) => i.trade_pct_override != null) && (
+                    <span className="ml-1 opacity-80">
+                      (blended {blendedPct.toFixed(1)}% — some cards overridden)
+                    </span>
+                  )}
                 </span>
               </div>
             )}
@@ -499,6 +523,28 @@ const DealList = () => {
                           </Badge>
                         );
                       })()}
+                      {/* Live "deal price" badge: market × this card's trade %. Highlights when the row uses a per-card override. */}
+                      {(() => {
+                        const mod = modifiedPrice(i);
+                        if (mod == null) return null;
+                        const pct = effectiveTradePct(i);
+                        const hasPctOverride = i.trade_pct_override != null;
+                        return (
+                          <Badge
+                            variant={hasPctOverride ? "default" : "outline"}
+                            className="text-[10px] gap-1"
+                            title={
+                              hasPctOverride
+                                ? `Per-card trade ${pct}% applied to this row.`
+                                : `Using global ${costPct}% buy-at rate.`
+                            }
+                          >
+                            <span className="opacity-70">deal</span>
+                            <span className="font-semibold">${mod.toFixed(2)}</span>
+                            <span className="opacity-70">@ {pct}%</span>
+                          </Badge>
+                        );
+                      })()}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 pt-1">
                       <div className="flex items-center gap-1">
@@ -523,6 +569,47 @@ const DealList = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      {/* Per-card trade % override. Empty = inherit the global costPct. */}
+                      <div className="flex items-center gap-1" title="Override the buy-at % for just this card. Leave blank to use the global rate.">
+                        <span className="text-xs text-muted-foreground">Trade</span>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            min={0}
+                            max={200}
+                            step={1}
+                            value={i.trade_pct_override ?? ""}
+                            placeholder={String(costPct)}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              if (raw === "") {
+                                updateItem(i.id, { trade_pct_override: null });
+                                return;
+                              }
+                              const num = parseFloat(raw);
+                              if (!Number.isFinite(num)) return;
+                              updateItem(i.id, {
+                                trade_pct_override: Math.max(0, Math.min(200, num)),
+                              });
+                            }}
+                            className="h-7 w-16 pr-5 text-xs"
+                          />
+                          <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
+                            %
+                          </span>
+                        </div>
+                        {i.trade_pct_override != null && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            title="Clear per-card trade % (use global rate)"
+                            onClick={() => updateItem(i.id, { trade_pct_override: null })}
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                       {i.tcgplayer_url && (
                         <Button asChild size="sm" variant="ghost" className="h-7 text-xs px-2">
                           <a href={i.tcgplayer_url} target="_blank" rel="noreferrer">TCG <ExternalLink className="h-3 w-3 ml-1" /></a>

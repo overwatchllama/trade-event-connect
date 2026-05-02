@@ -188,6 +188,7 @@ export type Database = {
           set_name: string | null
           tcgplayer_market_price: number | null
           tcgplayer_url: string | null
+          trade_pct_override: number | null
           updated_at: string
           user_id: string
         }
@@ -210,6 +211,7 @@ export type Database = {
           set_name?: string | null
           tcgplayer_market_price?: number | null
           tcgplayer_url?: string | null
+          trade_pct_override?: number | null
           updated_at?: string
           user_id: string
         }
@@ -232,6 +234,7 @@ export type Database = {
           set_name?: string | null
           tcgplayer_market_price?: number | null
           tcgplayer_url?: string | null
+          trade_pct_override?: number | null
           updated_at?: string
           user_id?: string
         }
