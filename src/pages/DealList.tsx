@@ -40,6 +40,8 @@ interface DealItem {
   created_at: string;
   /** Manual per-card price entered by the user. When non-null, wins over the condition-adjusted market price. */
   price_override: number | null;
+  /** Per-card trade % (0-200). When non-null, this card uses its own buy-at % instead of the global one. */
+  trade_pct_override: number | null;
 }
 
 // TCGplayer-style conditions. The DB enum value is on the left, the user-facing label and
