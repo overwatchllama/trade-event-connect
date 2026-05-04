@@ -39,9 +39,25 @@ serve(async (req) => {
     const desc = event.description || `Join us for ${title}${event.venue_name ? ` at ${event.venue_name}` : ""}.`;
     const image = event.flyer_url || `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/public/logo.jpg`;
 
-    // Determine where to send users; prefer explicit redirect param
-    const fallbackAppUrl = `${Deno.env.get("SUPABASE_URL")}`; // fallback only
-    const targetUrl = redirect || `${fallbackAppUrl}/event/${id}`;
+    // Determine where to send users; prefer explicit redirect param,
+    // but only if it points to an allow-listed origin (prevents open redirect / phishing).
+    const ALLOWED_ORIGINS = [
+      "https://collectorcompanion.lovable.app",
+      "https://collectorcompanion.com",
+      "https://www.collectorcompanion.com",
+      "https://id-preview--a3c4ac8f-d60c-4517-8645-9de632618750.lovable.app",
+    ];
+    const isSafeRedirect = (value: string | null): value is string => {
+      if (!value) return false;
+      try {
+        const parsed = new URL(value);
+        return ALLOWED_ORIGINS.some((o) => parsed.origin === o);
+      } catch {
+        return false;
+      }
+    };
+    const fallbackAppUrl = ALLOWED_ORIGINS[0];
+    const targetUrl = isSafeRedirect(redirect) ? redirect : `${fallbackAppUrl}/event/${id}`;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
