@@ -60,6 +60,18 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // If a user JWT was used, verify they own the order before sending tickets to an arbitrary email
+    if (!isServiceRole) {
+      const { data: orderRow, error: orderErr } = await supabaseAdmin
+        .from("orders")
+        .select("user_id")
+        .eq("id", orderId)
+        .single();
+      if (orderErr || !orderRow || orderRow.user_id !== callerUserId) {
+        throw new HttpError("Forbidden", "Not authorized for this order", 403);
+      }
+    }
+
     // Get order items with tickets
     const { data: orderItems, error: itemsError } = await supabaseAdmin
       .from("order_items")
