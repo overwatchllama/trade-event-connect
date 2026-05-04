@@ -224,12 +224,20 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
 
     const tableCount = application.approved_tables || application.requested_tables;
     const tableNumbers = application.table_number || 'TBD';
-    
+
+    const escHtml = (s: unknown) =>
+      String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Vendor Badge - ${application.vendor.business_name}</title>
+        <title>Vendor Badge - ${escHtml(application.vendor.business_name)}</title>
         <style>
           @page { size: 4in 3in; margin: 0; }
           body { 
@@ -260,13 +268,13 @@ const ManageVendorsDialog = ({ open, onOpenChange, eventId, eventTitle }: Manage
       </head>
       <body>
         <div class="badge">
-          <div class="event-title">${eventTitle}</div>
-          <div class="vendor-name">${application.vendor.business_name}</div>
+          <div class="event-title">${escHtml(eventTitle)}</div>
+          <div class="vendor-name">${escHtml(application.vendor.business_name)}</div>
           <div class="table-section">
             <div class="label">Table Assignment</div>
-            <div class="value">${tableNumbers}</div>
+            <div class="value">${escHtml(tableNumbers)}</div>
             <div class="label" style="margin-top: 8px;">Tables</div>
-            <div class="value">${tableCount}</div>
+            <div class="value">${escHtml(tableCount)}</div>
           </div>
           <div style="margin-top: 16px; font-size: 10px; color: #999;">VENDOR</div>
         </div>
