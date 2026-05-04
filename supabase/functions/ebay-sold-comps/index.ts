@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const corsHeaders = {
@@ -131,6 +132,22 @@ serve(async (req) => {
 
   const requestId = newRequestId();
   try {
+    // Require authentication — prevent abuse as anonymous proxy / IP banning
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      throw new HttpError("Unauthorized", "Unauthorized", 401);
+    }
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    );
+    const { data: claimsData, error: authErr } = await supabase.auth.getClaims(
+      authHeader.replace("Bearer ", ""),
+    );
+    if (authErr || !claimsData?.claims) {
+      throw new HttpError("Unauthorized", "Unauthorized", 401);
+    }
+
     let body: { query?: string };
     try {
       body = await req.json();

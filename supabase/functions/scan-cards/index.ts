@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { errorResponse, HttpError, newRequestId } from "../_shared/errors.ts";
 
 const corsHeaders = {
@@ -32,6 +33,21 @@ serve(async (req) => {
 
   const requestId = newRequestId();
   try {
+    // Require authentication — this endpoint consumes paid AI credits
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      throw new HttpError("Unauthorized", "Unauthorized", 401);
+    }
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    );
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: authErr } = await supabase.auth.getClaims(token);
+    if (authErr || !claimsData?.claims) {
+      throw new HttpError("Unauthorized", "Unauthorized", 401);
+    }
+
     let body: { imageUrl?: string };
     try {
       body = await req.json();
@@ -41,6 +57,13 @@ serve(async (req) => {
     const { imageUrl } = body;
     if (!imageUrl || typeof imageUrl !== "string") {
       throw new HttpError("MissingFields", "imageUrl (string) is required", 400);
+    }
+
+    // Restrict imageUrl to our own Supabase storage (card-scans bucket) to prevent
+    // attackers from using us as a proxy to fetch arbitrary large images.
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    if (!imageUrl.startsWith(supabaseUrl) || !imageUrl.includes("/card-scans/")) {
+      throw new HttpError("InvalidImageUrl", "imageUrl must be a Supabase signed URL from the card-scans bucket", 400);
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

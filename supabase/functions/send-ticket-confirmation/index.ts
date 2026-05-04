@@ -24,6 +24,29 @@ serve(async (req) => {
 
   const requestId = newRequestId();
   try {
+    // Authenticate caller. Allow either service-role (internal calls from
+    // verify-ticket-payment) or an authenticated user who owns the order.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const isServiceRole = token.length > 0 && token === serviceRoleKey;
+
+    let callerUserId: string | null = null;
+    if (!isServiceRole) {
+      if (!token) {
+        throw new HttpError("Unauthorized", "Unauthorized", 401);
+      }
+      const supabaseAuth = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      );
+      const { data: claimsData, error: authErr } = await supabaseAuth.auth.getClaims(token);
+      if (authErr || !claimsData?.claims?.sub) {
+        throw new HttpError("Unauthorized", "Unauthorized", 401);
+      }
+      callerUserId = claimsData.claims.sub as string;
+    }
+
     const { orderId, userEmail, userName }: TicketConfirmationRequest = await req.json();
 
     if (!orderId || !userEmail) {
@@ -36,6 +59,18 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    // If a user JWT was used, verify they own the order before sending tickets to an arbitrary email
+    if (!isServiceRole) {
+      const { data: orderRow, error: orderErr } = await supabaseAdmin
+        .from("orders")
+        .select("user_id")
+        .eq("id", orderId)
+        .single();
+      if (orderErr || !orderRow || orderRow.user_id !== callerUserId) {
+        throw new HttpError("Forbidden", "Not authorized for this order", 403);
+      }
+    }
 
     // Get order items with tickets
     const { data: orderItems, error: itemsError } = await supabaseAdmin
