@@ -275,9 +275,23 @@ const CardScanner = () => {
               Snap a photo of one or many cards. Tap each detected card to see TCGplayer & eBay pricing.
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate("/deal-list")}>
-            <ListPlus className="h-4 w-4 mr-2" /> View Deal List <ArrowRight className="h-4 w-4 ml-1" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Tabs value="pricing">
+              <TabsList>
+                <TabsTrigger value="pricing">
+                  <ScanLine className="h-4 w-4 mr-1.5" /> Pricing
+                </TabsTrigger>
+                <TabsTrigger value="markets" asChild>
+                  <Link to="/markets">
+                    <TrendingUp className="h-4 w-4 mr-1.5" /> Markets
+                  </Link>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Button variant="outline" onClick={() => navigate("/deal-list")}>
+              <ListPlus className="h-4 w-4 mr-2" /> View Deal List <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
         </div>
 
         {!imageUrl && (
