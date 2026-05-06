@@ -131,7 +131,7 @@ const Header = () => {
             <Link 
               to="/scanner" 
               className={`text-sm font-medium transition-colors hover:text-primary ${
-                location.pathname === '/scanner' || location.pathname === '/deal-list' ? 'text-primary' : 'text-muted-foreground'
+                location.pathname === '/scanner' || location.pathname === '/deal-list' || location.pathname === '/markets' ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
               Pricing

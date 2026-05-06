@@ -9,8 +9,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { searchCards, type ResolvedCard } from "@/services/cardLookup";
-import { Camera, Upload, Loader2, ListPlus, ScanLine, ArrowRight } from "lucide-react";
+import { Camera, Upload, Loader2, ListPlus, ScanLine, ArrowRight, TrendingUp } from "lucide-react";
 import { CardMatchPanel } from "@/components/scanner/CardMatchPanel";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link } from "react-router-dom";
 
 interface DetectedCard {
   bbox: { x: number; y: number; w: number; h: number };
@@ -273,9 +275,23 @@ const CardScanner = () => {
               Snap a photo of one or many cards. Tap each detected card to see TCGplayer & eBay pricing.
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate("/deal-list")}>
-            <ListPlus className="h-4 w-4 mr-2" /> View Deal List <ArrowRight className="h-4 w-4 ml-1" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Tabs value="pricing">
+              <TabsList>
+                <TabsTrigger value="pricing">
+                  <ScanLine className="h-4 w-4 mr-1.5" /> Pricing
+                </TabsTrigger>
+                <TabsTrigger value="markets" asChild>
+                  <Link to="/markets">
+                    <TrendingUp className="h-4 w-4 mr-1.5" /> Markets
+                  </Link>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Button variant="outline" onClick={() => navigate("/deal-list")}>
+              <ListPlus className="h-4 w-4 mr-2" /> View Deal List <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
         </div>
 
         {!imageUrl && (

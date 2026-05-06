@@ -35,6 +35,7 @@ const StaffCheckIn = lazy(() => import("./pages/StaffCheckIn"));
 const OrganizeVenue = lazy(() => import("./pages/OrganizeVenue"));
 const CardScanner = lazy(() => import("./pages/CardScanner"));
 const DealList = lazy(() => import("./pages/DealList"));
+const Markets = lazy(() => import("./pages/Markets"));
 const Demo = lazy(() => import("./pages/Demo"));
 const Security = lazy(() => import("./pages/Security"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -128,6 +129,12 @@ const App = () => (
                 <DealList />
               </ProtectedRoute>
             } />
+            <Route path="/markets" element={
+              <ProtectedRoute>
+                <Markets />
+              </ProtectedRoute>
+            } />
+
             <Route path="/security" element={<Security />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
