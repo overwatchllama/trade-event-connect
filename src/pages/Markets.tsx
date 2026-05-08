@@ -65,6 +65,7 @@ const Markets = () => {
     setBlockedCount(0);
 
     try {
+      let blocked = 0;
       // Fetch a broad pool of Pokémon cards with market pricing — no rarity
       // ceiling so expensive chase cards (e.g. $200 raw → $600 PSA 10) are
       // included alongside cheap grading flips.
@@ -105,7 +106,8 @@ const Markets = () => {
             if (error) throw error;
             const ebayData = (data ?? {}) as EbaySoldCompsResponse;
             if (ebayData.blocked) {
-              setBlockedCount((current) => current + 1);
+              blocked += 1;
+              setBlockedCount(blocked);
               done++;
               setProgress({ done, total: candidates.length });
               continue;
@@ -144,7 +146,7 @@ const Markets = () => {
       results.sort((a, b) => b.multiple - a.multiple);
       setRows(results.slice(0, TOP_N));
 
-      if (results.length === 0 && blockedCount > 0) {
+      if (results.length === 0 && blocked > 0) {
         toast({
           title: "eBay blocked the sold-comp scan",
           description: "The server was rate-limited by eBay, so live PSA 10 comps could not be loaded right now.",
