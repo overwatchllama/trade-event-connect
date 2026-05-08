@@ -31,6 +31,15 @@ interface GapRow {
   ebayUrl: string;
 }
 
+interface EbaySoldCompsResponse {
+  median?: number | null;
+  count?: number;
+  searchUrl?: string;
+  blocked?: boolean;
+  blockedReason?: string | null;
+  sourceStatus?: number | null;
+}
+
 const usd = new Intl.NumberFormat(undefined, {
   style: "currency",
   currency: "USD",
@@ -47,11 +56,13 @@ const Markets = () => {
   const [rows, setRows] = useState<GapRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [blockedCount, setBlockedCount] = useState(0);
 
   const loadGaps = async () => {
     setLoading(true);
     setRows([]);
     setProgress({ done: 0, total: CANDIDATE_POOL });
+    setBlockedCount(0);
 
     try {
       // Fetch a broad pool of Pokémon cards with market pricing — no rarity
@@ -92,8 +103,16 @@ const Markets = () => {
               { body: { query } },
             );
             if (error) throw error;
-            const median = data?.median as number | null | undefined;
-            const count = (data?.count as number | undefined) ?? 0;
+            const ebayData = (data ?? {}) as EbaySoldCompsResponse;
+            if (ebayData.blocked) {
+              setBlockedCount((current) => current + 1);
+              done++;
+              setProgress({ done, total: candidates.length });
+              continue;
+            }
+
+            const median = ebayData.median ?? null;
+            const count = ebayData.count ?? 0;
             const multiple = median ? median / nmPrice : 0;
             const gap = median ? median - nmPrice : 0;
             // Keep any card with a meaningful PSA 10 premium and enough samples.
@@ -105,7 +124,7 @@ const Markets = () => {
                 gap,
                 multiple,
                 sampleCount: count,
-                ebayUrl: data?.searchUrl as string,
+                ebayUrl: ebayData.searchUrl ?? `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_Sold=1&LH_Complete=1`,
               });
             }
           } catch (e) {
@@ -125,7 +144,13 @@ const Markets = () => {
       results.sort((a, b) => b.multiple - a.multiple);
       setRows(results.slice(0, TOP_N));
 
-      if (results.length === 0) {
+      if (results.length === 0 && blockedCount > 0) {
+        toast({
+          title: "eBay blocked the sold-comp scan",
+          description: "The server was rate-limited by eBay, so live PSA 10 comps could not be loaded right now.",
+          variant: "destructive",
+        });
+      } else if (results.length === 0) {
         toast({
           title: "No PSA 10 comps found",
           description: "eBay returned no graded sold comps for the top candidates.",
@@ -201,6 +226,15 @@ const Markets = () => {
                 Fetching live PSA 10 sold comps from eBay. This can take a minute.
               </p>
             </div>
+          </Card>
+        )}
+
+        {!loading && blockedCount > 0 && rows.length === 0 && (
+          <Card className="p-4 mb-4 border-destructive/40 bg-destructive/5">
+            <p className="text-sm font-medium">Live eBay comps are temporarily blocked</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              eBay is rejecting the server-side sold-comp requests right now, so the market scan can’t calculate PSA 10 gaps until that clears.
+            </p>
           </Card>
         )}
 
