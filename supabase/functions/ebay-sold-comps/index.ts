@@ -141,10 +141,9 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
     );
-    const { data: claimsData, error: authErr } = await supabase.auth.getClaims(
-      authHeader.replace("Bearer ", ""),
-    );
-    if (authErr || !claimsData?.claims) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: authErr } = await supabase.auth.getUser(token);
+    if (authErr || !userData?.user) {
       throw new HttpError("Unauthorized", "Unauthorized", 401);
     }
 
