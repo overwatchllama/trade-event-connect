@@ -36,18 +36,10 @@ const usd = new Intl.NumberFormat(undefined, {
   currency: "USD",
 });
 
-/**
- * Pricing objective: surface cards that are CHEAP raw but EXPENSIVE in PSA 10 —
- * the best grading flips. We pull a pool of low-to-mid raw-priced cards and
- * rank by the multiple (PSA 10 ÷ NM), not by absolute gap, so a $3 → $80 card
- * outranks a $200 → $260 card.
- */
-const CANDIDATE_POOL = 40;
+const CANDIDATE_POOL = 60;
 const TOP_N = 10;
-// Raw NM price window — low enough to be a cheap pickup, high enough to filter
-// out bulk commons that won't have meaningful PSA 10 comps.
-const RAW_MIN = 2;
-const RAW_MAX = 30;
+// Floor to filter out true bulk commons that never have PSA 10 comps
+const RAW_MIN = 1;
 
 const Markets = () => {
   const { user, loading: authLoading } = useAuth();
@@ -62,11 +54,11 @@ const Markets = () => {
     setProgress({ done: 0, total: CANDIDATE_POOL });
 
     try {
-      // Fetch a pool of CHEAP-to-mid Pokémon holos. We want low raw prices so
-      // the multiple to PSA 10 has room to be dramatic. Bias toward rare/holo
-      // slots since commons rarely have PSA 10 sold comps.
+      // Fetch a broad pool of Pokémon cards with market pricing — no rarity
+      // ceiling so expensive chase cards (e.g. $200 raw → $600 PSA 10) are
+      // included alongside cheap grading flips.
       const resp = await pokemonTcgApi.searchCards({
-        q: `tcgplayer.prices.holofoil.market:[${RAW_MIN} TO ${RAW_MAX}] (rarity:"Rare Holo" OR rarity:"Rare Ultra" OR rarity:"Rare Holo GX" OR rarity:"Rare Holo EX" OR rarity:"Rare Holo V" OR rarity:"Rare Secret" OR rarity:"Rare Rainbow" OR rarity:"Illustration Rare" OR rarity:"Special Illustration Rare")`,
+        q: `tcgplayer.prices.holofoil.market:[${RAW_MIN} TO *]`,
         orderBy: "-tcgplayer.prices.holofoil.market",
         pageSize: CANDIDATE_POOL,
       });
@@ -102,11 +94,10 @@ const Markets = () => {
             if (error) throw error;
             const median = data?.median as number | null | undefined;
             const count = (data?.count as number | undefined) ?? 0;
-            // Require a meaningful flip: PSA 10 must be at least 2× raw and
-            // the gap must clear ~$25 of grading + shipping friction.
             const multiple = median ? median / nmPrice : 0;
             const gap = median ? median - nmPrice : 0;
-            if (median && count >= 3 && multiple >= 2 && gap >= 25) {
+            // Keep any card with a meaningful PSA 10 premium and enough samples.
+            if (median && count >= 3 && multiple > 1) {
               results.push({
                 card,
                 nmPrice,
@@ -158,7 +149,7 @@ const Markets = () => {
         <title>Markets | Collector Companion</title>
         <meta
           name="description"
-          content="See the Pokémon cards with the largest gap between Near Mint market price and PSA 10 sold comps."
+          content="Discover Pokémon cards with the largest PSA 10 premium across the entire market."
         />
       </Helmet>
       <Header />
@@ -171,8 +162,8 @@ const Markets = () => {
               Markets
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              Cheap raw, expensive in PSA 10 — the 10 best grading flips, ranked
-              by multiple (PSA 10 ÷ Near Mint).
+              The biggest PSA 10 premiums across all priced Pokémon cards —
+              ranked by multiple (PSA 10 ÷ Near Mint).
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -219,8 +210,9 @@ const Markets = () => {
             <div>
               <p className="font-medium">No gaps loaded yet</p>
               <p className="text-sm text-muted-foreground max-w-md">
-                Click "Load gaps" to fetch the top-priced Pokémon cards and
-                compare each one to its live PSA 10 sold-comp median.
+                Click "Load gaps" to scan priced Pokémon cards across the
+                whole market and compare each one to its live PSA 10 sold-comp
+                median.
               </p>
             </div>
           </Card>
