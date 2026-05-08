@@ -54,11 +54,11 @@ const Markets = () => {
     setProgress({ done: 0, total: CANDIDATE_POOL });
 
     try {
-      // Fetch a pool of CHEAP-to-mid Pokémon holos. We want low raw prices so
-      // the multiple to PSA 10 has room to be dramatic. Bias toward rare/holo
-      // slots since commons rarely have PSA 10 sold comps.
+      // Fetch a broad pool of Pokémon cards with market pricing — no rarity
+      // ceiling so expensive chase cards (e.g. $200 raw → $600 PSA 10) are
+      // included alongside cheap grading flips.
       const resp = await pokemonTcgApi.searchCards({
-        q: `tcgplayer.prices.holofoil.market:[${RAW_MIN} TO ${RAW_MAX}] (rarity:"Rare Holo" OR rarity:"Rare Ultra" OR rarity:"Rare Holo GX" OR rarity:"Rare Holo EX" OR rarity:"Rare Holo V" OR rarity:"Rare Secret" OR rarity:"Rare Rainbow" OR rarity:"Illustration Rare" OR rarity:"Special Illustration Rare")`,
+        q: `tcgplayer.prices.holofoil.market:[${RAW_MIN} TO *]`,
         orderBy: "-tcgplayer.prices.holofoil.market",
         pageSize: CANDIDATE_POOL,
       });
