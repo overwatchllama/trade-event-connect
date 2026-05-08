@@ -162,8 +162,8 @@ const Markets = () => {
               Markets
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              Cheap raw, expensive in PSA 10 — the 10 best grading flips, ranked
-              by multiple (PSA 10 ÷ Near Mint).
+              The biggest PSA 10 premiums across all priced Pokémon cards —
+              ranked by multiple (PSA 10 ÷ Near Mint).
             </p>
           </div>
           <div className="flex items-center gap-2">
