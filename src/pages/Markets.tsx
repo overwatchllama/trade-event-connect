@@ -210,8 +210,9 @@ const Markets = () => {
             <div>
               <p className="font-medium">No gaps loaded yet</p>
               <p className="text-sm text-muted-foreground max-w-md">
-                Click "Load gaps" to fetch the top-priced Pokémon cards and
-                compare each one to its live PSA 10 sold-comp median.
+                Click "Load gaps" to scan priced Pokémon cards across the
+                whole market and compare each one to its live PSA 10 sold-comp
+                median.
               </p>
             </div>
           </Card>
