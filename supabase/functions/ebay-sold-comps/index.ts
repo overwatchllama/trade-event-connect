@@ -16,6 +16,9 @@ interface SoldStats {
   max: number | null;
   currency: string;
   searchUrl: string;
+  blocked?: boolean;
+  blockedReason?: string | null;
+  sourceStatus?: number | null;
   samples: Array<{ price: number; title: string; url: string | null }>;
 }
 
@@ -27,6 +30,27 @@ const median = (nums: number[]): number | null => {
     ? (sorted[mid - 1] + sorted[mid]) / 2
     : sorted[mid];
 };
+
+const emptyStats = (
+  searchUrl: string,
+  options: {
+    blocked?: boolean;
+    blockedReason?: string | null;
+    sourceStatus?: number | null;
+  } = {},
+): SoldStats => ({
+  count: 0,
+  median: null,
+  mean: null,
+  min: null,
+  max: null,
+  currency: "USD",
+  searchUrl,
+  blocked: options.blocked ?? false,
+  blockedReason: options.blockedReason ?? null,
+  sourceStatus: options.sourceStatus ?? null,
+  samples: [],
+});
 
 /**
  * Fetch eBay completed+sold listings page and parse out item prices/titles.
@@ -49,6 +73,15 @@ async function fetchSoldComps(query: string): Promise<SoldStats> {
   });
 
   if (!resp.ok) {
+    if ([403, 429, 451, 503].includes(resp.status)) {
+      return emptyStats(searchUrl, {
+        blocked: true,
+        blockedReason:
+          "eBay temporarily blocked automated sold-comp lookups from the server.",
+        sourceStatus: resp.status,
+      });
+    }
+
     throw new HttpError(
       "EbayFetchError",
       `eBay returned ${resp.status}`,
@@ -112,6 +145,7 @@ async function fetchSoldComps(query: string): Promise<SoldStats> {
   }
 
   return {
+    ...emptyStats(searchUrl),
     count: prices.length,
     median: median(trimmed),
     mean: trimmed.length
@@ -120,7 +154,6 @@ async function fetchSoldComps(query: string): Promise<SoldStats> {
     min: prices.length ? Math.min(...prices) : null,
     max: prices.length ? Math.max(...prices) : null,
     currency,
-    searchUrl,
     samples: samples.slice(0, 8),
   };
 }
