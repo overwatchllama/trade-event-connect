@@ -36,18 +36,10 @@ const usd = new Intl.NumberFormat(undefined, {
   currency: "USD",
 });
 
-/**
- * Pricing objective: surface cards that are CHEAP raw but EXPENSIVE in PSA 10 —
- * the best grading flips. We pull a pool of low-to-mid raw-priced cards and
- * rank by the multiple (PSA 10 ÷ NM), not by absolute gap, so a $3 → $80 card
- * outranks a $200 → $260 card.
- */
-const CANDIDATE_POOL = 40;
+const CANDIDATE_POOL = 60;
 const TOP_N = 10;
-// Raw NM price window — low enough to be a cheap pickup, high enough to filter
-// out bulk commons that won't have meaningful PSA 10 comps.
-const RAW_MIN = 2;
-const RAW_MAX = 30;
+// Floor to filter out true bulk commons that never have PSA 10 comps
+const RAW_MIN = 1;
 
 const Markets = () => {
   const { user, loading: authLoading } = useAuth();
