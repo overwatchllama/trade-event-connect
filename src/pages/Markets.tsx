@@ -149,7 +149,7 @@ const Markets = () => {
         <title>Markets | Collector Companion</title>
         <meta
           name="description"
-          content="See the Pokémon cards with the largest gap between Near Mint market price and PSA 10 sold comps."
+          content="Discover Pokémon cards with the largest PSA 10 premium across the entire market."
         />
       </Helmet>
       <Header />
