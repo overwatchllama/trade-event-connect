@@ -37,14 +37,17 @@ const usd = new Intl.NumberFormat(undefined, {
 });
 
 /**
- * Pull a candidate pool of high-value Pokémon cards, then for each fetch live
- * eBay PSA 10 sold-comp medians and compute the "ungraded → PSA 10" gap.
- *
- * We over-fetch candidates so even after eBay scrapes return zero comps for
- * some cards we still end up with a healthy top-10 list.
+ * Pricing objective: surface cards that are CHEAP raw but EXPENSIVE in PSA 10 —
+ * the best grading flips. We pull a pool of low-to-mid raw-priced cards and
+ * rank by the multiple (PSA 10 ÷ NM), not by absolute gap, so a $3 → $80 card
+ * outranks a $200 → $260 card.
  */
-const CANDIDATE_POOL = 25;
+const CANDIDATE_POOL = 40;
 const TOP_N = 10;
+// Raw NM price window — low enough to be a cheap pickup, high enough to filter
+// out bulk commons that won't have meaningful PSA 10 comps.
+const RAW_MIN = 2;
+const RAW_MAX = 30;
 
 const Markets = () => {
   const { user, loading: authLoading } = useAuth();
@@ -59,10 +62,11 @@ const Markets = () => {
     setProgress({ done: 0, total: CANDIDATE_POOL });
 
     try {
-      // Fetch top-priced Pokémon cards from the TCG API, ordered by
-      // TCGplayer holofoil market price descending.
+      // Fetch a pool of CHEAP-to-mid Pokémon holos. We want low raw prices so
+      // the multiple to PSA 10 has room to be dramatic. Bias toward rare/holo
+      // slots since commons rarely have PSA 10 sold comps.
       const resp = await pokemonTcgApi.searchCards({
-        q: "tcgplayer.prices.holofoil.market:[20 TO *]",
+        q: `tcgplayer.prices.holofoil.market:[${RAW_MIN} TO ${RAW_MAX}] (rarity:"Rare Holo" OR rarity:"Rare Ultra" OR rarity:"Rare Holo GX" OR rarity:"Rare Holo EX" OR rarity:"Rare Holo V" OR rarity:"Rare Secret" OR rarity:"Rare Rainbow" OR rarity:"Illustration Rare" OR rarity:"Special Illustration Rare")`,
         orderBy: "-tcgplayer.prices.holofoil.market",
         pageSize: CANDIDATE_POOL,
       });
@@ -98,13 +102,17 @@ const Markets = () => {
             if (error) throw error;
             const median = data?.median as number | null | undefined;
             const count = (data?.count as number | undefined) ?? 0;
-            if (median && count >= 3 && median > nmPrice) {
+            // Require a meaningful flip: PSA 10 must be at least 2× raw and
+            // the gap must clear ~$25 of grading + shipping friction.
+            const multiple = median ? median / nmPrice : 0;
+            const gap = median ? median - nmPrice : 0;
+            if (median && count >= 3 && multiple >= 2 && gap >= 25) {
               results.push({
                 card,
                 nmPrice,
                 psa10Median: median,
-                gap: median - nmPrice,
-                multiple: median / nmPrice,
+                gap,
+                multiple,
                 sampleCount: count,
                 ebayUrl: data?.searchUrl as string,
               });
@@ -122,7 +130,8 @@ const Markets = () => {
         Array.from({ length: concurrency }, () => worker()),
       );
 
-      results.sort((a, b) => b.gap - a.gap);
+      // Rank by multiple (best flip ratio) rather than absolute gap.
+      results.sort((a, b) => b.multiple - a.multiple);
       setRows(results.slice(0, TOP_N));
 
       if (results.length === 0) {
@@ -162,8 +171,8 @@ const Markets = () => {
               Markets
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              The 10 Pokémon cards with the largest gap between Near Mint market
-              price and PSA 10 sold comps — pure grading upside, ranked.
+              Cheap raw, expensive in PSA 10 — the 10 best grading flips, ranked
+              by multiple (PSA 10 ÷ Near Mint).
             </p>
           </div>
           <div className="flex items-center gap-2">
