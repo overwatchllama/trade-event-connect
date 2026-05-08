@@ -94,11 +94,10 @@ const Markets = () => {
             if (error) throw error;
             const median = data?.median as number | null | undefined;
             const count = (data?.count as number | undefined) ?? 0;
-            // Require a meaningful flip: PSA 10 must be at least 2× raw and
-            // the gap must clear ~$25 of grading + shipping friction.
             const multiple = median ? median / nmPrice : 0;
             const gap = median ? median - nmPrice : 0;
-            if (median && count >= 3 && multiple >= 2 && gap >= 25) {
+            // Keep any card with a meaningful PSA 10 premium and enough samples.
+            if (median && count >= 3 && multiple > 1) {
               results.push({
                 card,
                 nmPrice,
