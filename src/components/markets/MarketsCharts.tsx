@@ -229,18 +229,58 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
 
   return (
     <div className="space-y-3 mb-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <BarChart3 className="h-4 w-4" />
-        Insights from the top {rows.length.toLocaleString()} matching cards
-      </div>
+      <Card className="p-3 flex flex-wrap items-end gap-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mr-auto">
+          <BarChart3 className="h-4 w-4" />
+          Insights from {rows.length.toLocaleString()} matching cards
+        </div>
+        <div>
+          <Label className="text-xs">Sample size</Label>
+          <Select
+            value={String(sampleLimit)}
+            onValueChange={(v) => setSampleLimit(Number(v))}
+          >
+            <SelectTrigger className="w-32 h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {SAMPLE_OPTIONS.map((n) => (
+                <SelectItem key={n} value={String(n)}>{n.toLocaleString()} cards</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Rank by</Label>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as InsightSort)}>
+            <SelectTrigger className="w-48 h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(Object.keys(SORT_LABELS) as InsightSort[]).map((k) => (
+                <SelectItem key={k} value={k}>{SORT_LABELS[k]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Top N</Label>
+          <Select value={String(topN)} onValueChange={(v) => setTopN(Number(v))}>
+            <SelectTrigger className="w-24 h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {TOP_N_OPTIONS.map((n) => (
+                <SelectItem key={n} value={String(n)}>Top {n}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </Card>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* Top by ratio */}
+        {/* Top by selected metric */}
         <Card className="p-4">
-          <h3 className="font-semibold text-sm mb-3">Top 15 by Raw → PSA 10 ratio</h3>
-          <div className="h-72">
+          <h3 className="font-semibold text-sm mb-3">
+            Top {topN} by {SORT_LABELS[sortBy]}
+          </h3>
+          <div style={{ height: Math.max(288, topRanked.data.length * 22 + 40) }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={topByRatio}
+                data={topRanked.data}
                 layout="vertical"
                 margin={{ top: 4, right: 16, left: 4, bottom: 4 }}
               >
@@ -249,7 +289,7 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
                   type="number"
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={11}
-                  tickFormatter={(v) => `${v}×`}
+                  tickFormatter={(v) => topRanked.formatVal(v)}
                 />
                 <YAxis
                   type="category"
@@ -265,9 +305,9 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
                     borderRadius: 8,
                     fontSize: 12,
                   }}
-                  formatter={(v: number) => [`${v}×`, "Ratio"]}
+                  formatter={(v: number) => [topRanked.formatVal(v), SORT_LABELS[sortBy]]}
                 />
-                <Bar dataKey="ratio" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
