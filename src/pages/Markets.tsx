@@ -102,7 +102,7 @@ const Markets = () => {
   // Reset page when filters change
   useEffect(() => {
     setPage(0);
-  }, [game, debouncedSearch, setName, rarity, minRaw, maxRaw, minGemRate, minPop, sort]);
+  }, [game, debouncedSearch, setName, rarity, minRaw, maxRaw, minGemRate, minPop, minRatio, maxRatio, sort]);
 
   // Load distinct filter options once
   useEffect(() => {
