@@ -22,9 +22,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare, Download } from "lucide-react";
+import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare, Download, Pencil } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkAsBoughtDialog, type MarkAsBoughtTarget } from "@/components/deals/MarkAsBoughtDialog";
+import { EditBoughtDialog, type EditBoughtTarget } from "@/components/deals/EditBoughtDialog";
 
 type DealStatus = "watching" | "negotiating" | "bought" | "passed";
 
@@ -119,6 +120,7 @@ const DealList = () => {
     return (window.localStorage.getItem("dealList:statusFilter") as DealStatus | "active" | "all") || "active";
   });
   const [buyTarget, setBuyTarget] = useState<MarkAsBoughtTarget | null>(null);
+  const [editTarget, setEditTarget] = useState<EditBoughtTarget | null>(null);
   // Pass-flow state — capturing a non-empty reason is mandatory so future-you knows why a deal died.
   const [passTarget, setPassTarget] = useState<DealItem | null>(null);
   const [passReason, setPassReason] = useState("");
@@ -941,10 +943,32 @@ const DealList = () => {
                           </>
                         )}
                         {i.status === "bought" && (
-                          <span className="text-[11px] text-muted-foreground">
-                            Cost ${(((i.purchase_price ?? 0) * i.quantity) + (i.shipping_cost ?? 0) + (i.fees ?? 0)).toFixed(2)}
-                            {i.target_sell_price ? ` · target $${(i.target_sell_price * i.quantity).toFixed(2)}` : ""}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-muted-foreground">
+                              Cost ${(((i.purchase_price ?? 0) * i.quantity) + (i.shipping_cost ?? 0) + (i.fees ?? 0)).toFixed(2)}
+                              {i.target_sell_price ? ` · target $${(i.target_sell_price * i.quantity).toFixed(2)}` : ""}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2"
+                              onClick={() => setEditTarget({
+                                id: i.id,
+                                card_name: i.card_name,
+                                set_name: i.set_name,
+                                quantity: i.quantity,
+                                purchase_price: i.purchase_price,
+                                shipping_cost: i.shipping_cost,
+                                fees: i.fees,
+                                source: i.source,
+                                target_sell_price: i.target_sell_price,
+                                collection_item_id: i.collection_item_id,
+                              })}
+                              title="Edit cost basis & target sell"
+                            >
+                              <Pencil className="h-3 w-3 mr-1" /> Edit
+                            </Button>
+                          </div>
                         )}
                         {i.status === "passed" && (
                           <Button
@@ -1011,6 +1035,15 @@ const DealList = () => {
             }}
           />
         )}
+
+        <EditBoughtDialog
+          open={!!editTarget}
+          target={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSuccess={(dealId, patch) => {
+            setItems((prev) => prev.map((it) => (it.id === dealId ? { ...it, ...patch } : it)));
+          }}
+        />
 
         {/* Pass-with-reason dialog. The reason is required so the Passed tab keeps useful context. */}
         <AlertDialog
