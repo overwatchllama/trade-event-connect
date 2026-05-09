@@ -13,6 +13,14 @@ import {
   ZAxis,
 } from "recharts";
 import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart3 } from "lucide-react";
@@ -38,11 +46,57 @@ interface SampleRow {
   market_cards: { name: string; set_name: string | null } | null;
 }
 
-const SAMPLE_LIMIT = 500;
+type InsightSort =
+  | "psa10_ratio"
+  | "gem_rate"
+  | "psa10_price"
+  | "raw_price"
+  | "gap";
+
+const SAMPLE_OPTIONS = [50, 100, 250, 500, 1000] as const;
+const TOP_N_OPTIONS = [15, 25, 50, 100] as const;
+const STORAGE_KEY = "markets:insights:v1";
+
+const SORT_LABELS: Record<InsightSort, string> = {
+  psa10_ratio: "Raw → PSA 10 ratio",
+  gem_rate: "Gem rate",
+  psa10_price: "PSA 10 price",
+  raw_price: "Raw price",
+  gap: "PSA 10 − Raw gap",
+};
+
+const persisted = (() => {
+  try {
+    const raw =
+      typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+})();
 
 export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => {
   const [rows, setRows] = useState<SampleRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sampleLimit, setSampleLimit] = useState<number>(
+    persisted.sampleLimit ?? 500,
+  );
+  const [topN, setTopN] = useState<number>(persisted.topN ?? 15);
+  const [sortBy, setSortBy] = useState<InsightSort>(
+    persisted.sortBy ?? "psa10_ratio",
+  );
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ sampleLimit, topN, sortBy }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [sampleLimit, topN, sortBy]);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -69,7 +123,10 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
         if (filters.minRatio) q = q.gte("psa10_ratio", Number(filters.minRatio));
         if (filters.maxRatio) q = q.lte("psa10_ratio", Number(filters.maxRatio));
 
-        q = q.order("psa10_ratio", { ascending: false, nullsFirst: false }).limit(SAMPLE_LIMIT);
+        q = q.order(sortBy === "gap" ? "psa10_price" : sortBy, {
+          ascending: false,
+          nullsFirst: false,
+        }).limit(sampleLimit);
 
         const { data, error } = await q;
         if (error) throw error;
@@ -95,21 +152,38 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
     filters.minPop,
     filters.minRatio,
     filters.maxRatio,
+    sampleLimit,
+    sortBy,
   ]);
 
-  const topByRatio = useMemo(() => {
-    return [...rows]
-      .filter((r) => r.psa10_ratio != null && r.market_cards?.name)
-      .sort((a, b) => (b.psa10_ratio ?? 0) - (a.psa10_ratio ?? 0))
-      .slice(0, 15)
-      .map((r) => ({
-        name:
-          (r.market_cards?.name ?? "").length > 22
-            ? `${r.market_cards?.name.slice(0, 22)}…`
-            : r.market_cards?.name ?? "",
-        ratio: Number((r.psa10_ratio ?? 0).toFixed(2)),
-      }));
-  }, [rows]);
+  const topRanked = useMemo(() => {
+    const metricOf = (r: SampleRow): number | null => {
+      if (sortBy === "gap")
+        return r.psa10_price != null && r.raw_price != null
+          ? r.psa10_price - r.raw_price
+          : null;
+      return (r as any)[sortBy] ?? null;
+    };
+    const formatVal = (v: number) => {
+      if (sortBy === "psa10_ratio") return `${v.toFixed(2)}×`;
+      if (sortBy === "gem_rate") return `${(v * 100).toFixed(1)}%`;
+      return `$${v.toFixed(2)}`;
+    };
+    return {
+      formatVal,
+      data: [...rows]
+        .filter((r) => metricOf(r) != null && r.market_cards?.name)
+        .sort((a, b) => (metricOf(b) ?? 0) - (metricOf(a) ?? 0))
+        .slice(0, topN)
+        .map((r) => ({
+          name:
+            (r.market_cards?.name ?? "").length > 22
+              ? `${r.market_cards?.name.slice(0, 22)}…`
+              : r.market_cards?.name ?? "",
+          value: Number((metricOf(r) ?? 0).toFixed(4)),
+        })),
+    };
+  }, [rows, sortBy, topN]);
 
   const histogram = useMemo(() => {
     // Buckets: <1×, 1-2×, 2-3×, 3-5×, 5-10×, 10-20×, 20×+
@@ -155,18 +229,58 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
 
   return (
     <div className="space-y-3 mb-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <BarChart3 className="h-4 w-4" />
-        Insights from the top {rows.length.toLocaleString()} matching cards
-      </div>
+      <Card className="p-3 flex flex-wrap items-end gap-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mr-auto">
+          <BarChart3 className="h-4 w-4" />
+          Insights from {rows.length.toLocaleString()} matching cards
+        </div>
+        <div>
+          <Label className="text-xs">Sample size</Label>
+          <Select
+            value={String(sampleLimit)}
+            onValueChange={(v) => setSampleLimit(Number(v))}
+          >
+            <SelectTrigger className="w-32 h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {SAMPLE_OPTIONS.map((n) => (
+                <SelectItem key={n} value={String(n)}>{n.toLocaleString()} cards</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Rank by</Label>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as InsightSort)}>
+            <SelectTrigger className="w-48 h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(Object.keys(SORT_LABELS) as InsightSort[]).map((k) => (
+                <SelectItem key={k} value={k}>{SORT_LABELS[k]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Top N</Label>
+          <Select value={String(topN)} onValueChange={(v) => setTopN(Number(v))}>
+            <SelectTrigger className="w-24 h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {TOP_N_OPTIONS.map((n) => (
+                <SelectItem key={n} value={String(n)}>Top {n}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </Card>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* Top by ratio */}
+        {/* Top by selected metric */}
         <Card className="p-4">
-          <h3 className="font-semibold text-sm mb-3">Top 15 by Raw → PSA 10 ratio</h3>
-          <div className="h-72">
+          <h3 className="font-semibold text-sm mb-3">
+            Top {topN} by {SORT_LABELS[sortBy]}
+          </h3>
+          <div style={{ height: Math.max(288, topRanked.data.length * 22 + 40) }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={topByRatio}
+                data={topRanked.data}
                 layout="vertical"
                 margin={{ top: 4, right: 16, left: 4, bottom: 4 }}
               >
@@ -175,7 +289,7 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
                   type="number"
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={11}
-                  tickFormatter={(v) => `${v}×`}
+                  tickFormatter={(v) => topRanked.formatVal(v)}
                 />
                 <YAxis
                   type="category"
@@ -191,9 +305,9 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
                     borderRadius: 8,
                     fontSize: 12,
                   }}
-                  formatter={(v: number) => [`${v}×`, "Ratio"]}
+                  formatter={(v: number) => [topRanked.formatVal(v), SORT_LABELS[sortBy]]}
                 />
-                <Bar dataKey="ratio" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
