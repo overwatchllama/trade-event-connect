@@ -175,17 +175,44 @@ const DealList = () => {
     return Math.round(eff * (effectiveTradePct(item) / 100) * 100) / 100;
   };
 
-  const totalValue = items.reduce(
+  // Group items by status for tab counts and the visible filter.
+  const statusCounts = items.reduce(
+    (acc, it) => {
+      acc[it.status] = (acc[it.status] ?? 0) + 1;
+      return acc;
+    },
+    { watching: 0, negotiating: 0, bought: 0, passed: 0 } as Record<DealStatus, number>,
+  );
+  const visibleItems = items.filter((it) => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "active") return it.status === "watching" || it.status === "negotiating";
+    return it.status === statusFilter;
+  });
+
+  // Pipeline totals (active deals only — bought/passed shouldn't inflate "spend" math).
+  const pipelineItems = items.filter((it) => it.status === "watching" || it.status === "negotiating");
+  const totalValue = pipelineItems.reduce(
     (sum, i) => sum + (effectivePrice(i) ?? 0) * i.quantity,
     0,
   );
-  // Live deal total honors per-card trade % overrides; falls back to global costPct otherwise.
-  const targetSpend = items.reduce(
+  const targetSpend = pipelineItems.reduce(
     (sum, i) => sum + (modifiedPrice(i) ?? 0) * i.quantity,
     0,
   );
-  // Blended effective % (informational) — useful when per-card overrides drag the average away from the global.
   const blendedPct = totalValue > 0 ? (targetSpend / totalValue) * 100 : costPct;
+
+  // P&L roll-up across every "Bought" deal: invested = unit×qty + ship + fees, projected = target_sell×qty.
+  const boughtItems = items.filter((it) => it.status === "bought");
+  const totalInvested = boughtItems.reduce(
+    (s, i) => s + (i.purchase_price ?? 0) * i.quantity + (i.shipping_cost ?? 0) + (i.fees ?? 0),
+    0,
+  );
+  const projectedRevenue = boughtItems.reduce(
+    (s, i) => s + (i.target_sell_price ?? 0) * i.quantity,
+    0,
+  );
+  const projectedProfit = projectedRevenue - totalInvested;
+  const projectedMarginPct = totalInvested > 0 ? (projectedProfit / totalInvested) * 100 : 0;
 
   /**
    * Apply a manual price change AND surface an undo toast that restores the previous
