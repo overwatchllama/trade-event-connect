@@ -152,21 +152,38 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
     filters.minPop,
     filters.minRatio,
     filters.maxRatio,
+    sampleLimit,
+    sortBy,
   ]);
 
-  const topByRatio = useMemo(() => {
-    return [...rows]
-      .filter((r) => r.psa10_ratio != null && r.market_cards?.name)
-      .sort((a, b) => (b.psa10_ratio ?? 0) - (a.psa10_ratio ?? 0))
-      .slice(0, 15)
-      .map((r) => ({
-        name:
-          (r.market_cards?.name ?? "").length > 22
-            ? `${r.market_cards?.name.slice(0, 22)}…`
-            : r.market_cards?.name ?? "",
-        ratio: Number((r.psa10_ratio ?? 0).toFixed(2)),
-      }));
-  }, [rows]);
+  const topRanked = useMemo(() => {
+    const metricOf = (r: SampleRow): number | null => {
+      if (sortBy === "gap")
+        return r.psa10_price != null && r.raw_price != null
+          ? r.psa10_price - r.raw_price
+          : null;
+      return (r as any)[sortBy] ?? null;
+    };
+    const formatVal = (v: number) => {
+      if (sortBy === "psa10_ratio") return `${v.toFixed(2)}×`;
+      if (sortBy === "gem_rate") return `${(v * 100).toFixed(1)}%`;
+      return `$${v.toFixed(2)}`;
+    };
+    return {
+      formatVal,
+      data: [...rows]
+        .filter((r) => metricOf(r) != null && r.market_cards?.name)
+        .sort((a, b) => (metricOf(b) ?? 0) - (metricOf(a) ?? 0))
+        .slice(0, topN)
+        .map((r) => ({
+          name:
+            (r.market_cards?.name ?? "").length > 22
+              ? `${r.market_cards?.name.slice(0, 22)}…`
+              : r.market_cards?.name ?? "",
+          value: Number((metricOf(r) ?? 0).toFixed(4)),
+        })),
+    };
+  }, [rows, sortBy, topN]);
 
   const histogram = useMemo(() => {
     // Buckets: <1×, 1-2×, 2-3×, 3-5×, 5-10×, 10-20×, 20×+
