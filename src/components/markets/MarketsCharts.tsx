@@ -365,7 +365,10 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
           <h3 className="font-semibold text-sm mb-3">
             Top {topN} by {SORT_LABELS[sortBy]}
           </h3>
-          <div style={{ height: Math.max(288, topRanked.data.length * 22 + 40) }}>
+          <div style={{ height: Math.max(288, (loading ? topN : topRanked.data.length) * 22 + 40) }}>
+            {loading ? (
+              <Skeleton className="h-full w-full" />
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={topRanked.data}
