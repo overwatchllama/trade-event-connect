@@ -151,6 +151,8 @@ const Markets = () => {
         if (maxRaw) q = q.lte("raw_price", Number(maxRaw));
         if (minGemRate) q = q.gte("gem_rate", Number(minGemRate) / 100);
         if (minPop) q = q.gte("psa_total_pop", Number(minPop));
+        if (minRatio) q = q.gte("psa10_ratio", Number(minRatio));
+        if (maxRatio) q = q.lte("psa10_ratio", Number(maxRatio));
 
         switch (sort) {
           case "psa10_ratio":
