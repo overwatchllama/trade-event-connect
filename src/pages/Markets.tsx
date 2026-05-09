@@ -29,6 +29,7 @@ import {
   Search,
   TrendingUp,
 } from "lucide-react";
+import { MarketsCharts } from "@/components/markets/MarketsCharts";
 
 interface MarketRow {
   card_id: string;
