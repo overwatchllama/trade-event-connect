@@ -477,7 +477,13 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
                   formatter={(v: number, key: string) => [`$${Number(v).toFixed(2)}`, key]}
                   labelFormatter={(_, items) => (items?.[0]?.payload?.name ?? "")}
                 />
-                <Scatter data={scatter} fill="hsl(var(--primary))" fillOpacity={0.65} />
+                <Scatter
+                  data={scatter}
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.65}
+                  cursor="pointer"
+                  onClick={(p: any) => p && setSelectedPoint(p as any)}
+                />
               </ScatterChart>
             </ResponsiveContainer>
           </div>
