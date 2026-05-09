@@ -943,10 +943,32 @@ const DealList = () => {
                           </>
                         )}
                         {i.status === "bought" && (
-                          <span className="text-[11px] text-muted-foreground">
-                            Cost ${(((i.purchase_price ?? 0) * i.quantity) + (i.shipping_cost ?? 0) + (i.fees ?? 0)).toFixed(2)}
-                            {i.target_sell_price ? ` · target $${(i.target_sell_price * i.quantity).toFixed(2)}` : ""}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-muted-foreground">
+                              Cost ${(((i.purchase_price ?? 0) * i.quantity) + (i.shipping_cost ?? 0) + (i.fees ?? 0)).toFixed(2)}
+                              {i.target_sell_price ? ` · target $${(i.target_sell_price * i.quantity).toFixed(2)}` : ""}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2"
+                              onClick={() => setEditTarget({
+                                id: i.id,
+                                card_name: i.card_name,
+                                set_name: i.set_name,
+                                quantity: i.quantity,
+                                purchase_price: i.purchase_price,
+                                shipping_cost: i.shipping_cost,
+                                fees: i.fees,
+                                source: i.source,
+                                target_sell_price: i.target_sell_price,
+                                collection_item_id: i.collection_item_id,
+                              })}
+                              title="Edit cost basis & target sell"
+                            >
+                              <Pencil className="h-3 w-3 mr-1" /> Edit
+                            </Button>
+                          </div>
                         )}
                         {i.status === "passed" && (
                           <Button
