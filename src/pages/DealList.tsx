@@ -279,6 +279,40 @@ const DealList = () => {
     setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
+  /**
+   * Move a deal between lifecycle stages (watching → negotiating → bought/passed).
+   * "bought" is intentionally NOT routed through here — it requires the cost-basis dialog
+   * (MarkAsBoughtDialog) so we always capture purchase price + ship/fees and create the
+   * matching inventory row.
+   */
+  const setDealStatus = async (id: string, next: Exclude<DealStatus, "bought">) => {
+    const patch: Partial<DealItem> = {
+      status: next,
+      passed_at: next === "passed" ? new Date().toISOString() : null,
+    };
+    await updateItem(id, patch);
+  };
+
+  const openBuyDialog = (item: DealItem) => {
+    const eff = effectivePrice(item);
+    const dealUnit = modifiedPrice(item);
+    setBuyTarget({
+      id: item.id,
+      card_name: item.card_name,
+      set_name: item.set_name,
+      card_number: item.card_number,
+      rarity: item.rarity,
+      image_url: item.image_url,
+      quantity: item.quantity,
+      condition: item.condition,
+      game: item.game,
+      notes: item.notes,
+      // Default the purchase price to the per-card "deal" price you've already negotiated for.
+      suggested_unit_price: dealUnit ?? eff,
+      suggested_sell_price: eff,
+    });
+  };
+
   /** How many rows currently have a manual price override applied. Drives the reset action's enabled state. */
   const overrideCount = items.reduce((n, i) => n + (i.price_override != null ? 1 : 0), 0);
 
