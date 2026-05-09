@@ -488,6 +488,56 @@ const DealList = () => {
           </Card>
         ) : (
           <>
+            {/* Lifecycle tabs — drives which rows render below. Counts come from the unfiltered list. */}
+            <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)} className="mb-4">
+              <TabsList className="flex flex-wrap h-auto">
+                <TabsTrigger value="active">
+                  Active <span className="ml-1.5 text-xs opacity-70">{statusCounts.watching + statusCounts.negotiating}</span>
+                </TabsTrigger>
+                <TabsTrigger value="watching">
+                  Watching <span className="ml-1.5 text-xs opacity-70">{statusCounts.watching}</span>
+                </TabsTrigger>
+                <TabsTrigger value="negotiating">
+                  Negotiating <span className="ml-1.5 text-xs opacity-70">{statusCounts.negotiating}</span>
+                </TabsTrigger>
+                <TabsTrigger value="bought">
+                  Bought <span className="ml-1.5 text-xs opacity-70">{statusCounts.bought}</span>
+                </TabsTrigger>
+                <TabsTrigger value="passed">
+                  Passed <span className="ml-1.5 text-xs opacity-70">{statusCounts.passed}</span>
+                </TabsTrigger>
+                <TabsTrigger value="all">All</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {/* P&L roll-up shown when relevant to the current view. */}
+            {boughtItems.length > 0 && (statusFilter === "bought" || statusFilter === "all") && (
+              <Card className="p-4 mb-4 border-emerald-500/30 bg-emerald-500/5">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Inventoried</p>
+                    <p className="font-semibold">{boughtItems.length} deal{boughtItems.length === 1 ? "" : "s"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total invested</p>
+                    <p className="font-semibold">${totalInvested.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Projected revenue</p>
+                    <p className="font-semibold">${projectedRevenue.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Projected profit</p>
+                    <p className={`font-semibold ${projectedProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                      ${projectedProfit.toFixed(2)} ({projectedMarginPct.toFixed(0)}%)
+                    </p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  Bought deals also live in your <button className="underline" onClick={() => navigate("/my-collection")}>Inventory</button> collection with full cost basis.
+                </p>
+              </Card>
+            )}
             <div className="space-y-3 mb-6">
               {items.map((i) => (
                 <Card key={i.id} className="p-3 flex gap-3">
