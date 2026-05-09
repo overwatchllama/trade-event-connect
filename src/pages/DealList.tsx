@@ -25,6 +25,7 @@ import {
 import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare, Download } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkAsBoughtDialog, type MarkAsBoughtTarget } from "@/components/deals/MarkAsBoughtDialog";
+import { EditBoughtDialog, type EditBoughtTarget } from "@/components/deals/EditBoughtDialog";
 
 type DealStatus = "watching" | "negotiating" | "bought" | "passed";
 
