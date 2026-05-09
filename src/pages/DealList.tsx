@@ -112,6 +112,17 @@ const DealList = () => {
   const [priceDraft, setPriceDraft] = useState<string>("");
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [resettingOverrides, setResettingOverrides] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<DealStatus | "active" | "all">(() => {
+    if (typeof window === "undefined") return "active";
+    return (window.localStorage.getItem("dealList:statusFilter") as DealStatus | "active" | "all") || "active";
+  });
+  const [buyTarget, setBuyTarget] = useState<MarkAsBoughtTarget | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("dealList:statusFilter", statusFilter);
+    }
+  }, [statusFilter]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
