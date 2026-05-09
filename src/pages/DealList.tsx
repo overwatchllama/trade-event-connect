@@ -1011,6 +1011,54 @@ const DealList = () => {
             }}
           />
         )}
+
+        {/* Pass-with-reason dialog. The reason is required so the Passed tab keeps useful context. */}
+        <AlertDialog
+          open={!!passTarget}
+          onOpenChange={(o) => {
+            if (!o && !passSubmitting) {
+              setPassTarget(null);
+              setPassReason("");
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Why are you passing on this deal?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {passTarget?.card_name ? (
+                  <>Add a quick note for <span className="font-medium text-foreground">{passTarget.card_name}</span> so future-you remembers why it didn't get bought (e.g. "seller wouldn't budge", "condition worse in person", "found cheaper copy").</>
+                ) : (
+                  "Add a quick note so future-you remembers why this deal didn't get bought."
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-1.5">
+              <Textarea
+                value={passReason}
+                onChange={(e) => setPassReason(e.target.value.slice(0, 500))}
+                placeholder="Reason (required)…"
+                rows={4}
+                autoFocus
+                maxLength={500}
+                disabled={passSubmitting}
+              />
+              <div className="flex justify-between text-[11px] text-muted-foreground">
+                <span>Min 3 characters</span>
+                <span>{passReason.trim().length}/500</span>
+              </div>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={passSubmitting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => { e.preventDefault(); void confirmPass(); }}
+                disabled={passSubmitting || passReason.trim().length < 3}
+              >
+                {passSubmitting ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving…</>) : "Mark as Passed"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
