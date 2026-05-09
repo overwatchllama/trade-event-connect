@@ -698,6 +698,39 @@ const DealList = () => {
                 </p>
               </Card>
             )}
+
+            {/* Bulk-edit toolbar — visible whenever bought rows are on screen so users can multi-select cost-basis updates. */}
+            {visibleBoughtItems.length > 0 && (
+              <Card className="p-2 mb-3 flex flex-wrap items-center gap-2 text-xs">
+                <Checkbox
+                  checked={allVisibleBoughtSelected}
+                  onCheckedChange={toggleSelectAllVisibleBought}
+                  aria-label="Select all visible bought deals"
+                />
+                <span className="text-muted-foreground">
+                  {selectedBoughtCount > 0
+                    ? `${selectedBoughtCount} selected`
+                    : `Select bought deals to bulk-edit cost basis (${visibleBoughtItems.length} on screen)`}
+                </span>
+                <div className="ml-auto flex items-center gap-2">
+                  {selectedBoughtCount > 0 && (
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={clearBoughtSelection}>
+                      Clear
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={selectedBoughtCount === 0}
+                    onClick={() => setBulkEditOpen(true)}
+                  >
+                    <ListChecks className="h-3 w-3 mr-1" />
+                    Edit {selectedBoughtCount || ""} cost bas{selectedBoughtCount === 1 ? "is" : "es"}
+                  </Button>
+                </div>
+              </Card>
+            )}
+
             <div className="space-y-3 mb-6">
               {visibleItems.length === 0 && (
                 <Card className="p-10 text-center border-dashed">
