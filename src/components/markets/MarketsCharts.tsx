@@ -311,16 +311,7 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
     | null
   >(null);
 
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-        <Skeleton className="h-72 w-full" />
-        <Skeleton className="h-72 w-full" />
-      </div>
-    );
-  }
-
-  if (rows.length === 0) return null;
+  if (!loading && rows.length === 0) return null;
 
   return (
     <div className="space-y-3 mb-4">
