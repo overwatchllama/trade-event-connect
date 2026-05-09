@@ -518,6 +518,9 @@ const DealList = () => {
                 Reset {overrideCount} manual price{overrideCount === 1 ? "" : "s"}
               </Button>
             )}
+            <Button variant="outline" onClick={exportCsv} disabled={visibleItems.length === 0} title="Download current view + P&L summary as CSV">
+              <Download className="h-4 w-4 mr-2" /> Export CSV
+            </Button>
             <Button variant="outline" onClick={() => navigate("/scanner")}>
               <ScanLine className="h-4 w-4 mr-2" /> Scan more
             </Button>
