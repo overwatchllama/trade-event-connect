@@ -347,10 +347,11 @@ const DealList = () => {
   };
 
   const saveAllToCollection = async () => {
-    if (!user || !targetCollection || items.length === 0) return;
+    // Bulk-import only acts on the current pipeline (active deals); already-bought rows are inventoried elsewhere.
+    if (!user || !targetCollection || pipelineItems.length === 0) return;
     setSavingAll(true);
     try {
-      const rows = items.map((i) => ({
+      const rows = pipelineItems.map((i) => ({
         collection_id: targetCollection,
         user_id: user.id,
         name: i.card_name,
@@ -366,10 +367,10 @@ const DealList = () => {
       }));
       const { error } = await supabase.from("collection_items").insert(rows);
       if (error) throw error;
-      // Clear deal list after successful import
-      const ids = items.map((i) => i.id);
+      // Clear the pipeline rows we just imported (keeps your bought/passed history intact).
+      const ids = pipelineItems.map((i) => i.id);
       await supabase.from("deal_list_items").delete().in("id", ids);
-      setItems([]);
+      setItems((prev) => prev.filter((i) => !ids.includes(i.id)));
       toast({ title: "Saved to collection", description: `${rows.length} card(s) added.` });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Save failed";
