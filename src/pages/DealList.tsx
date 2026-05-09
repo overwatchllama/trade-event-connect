@@ -706,6 +706,16 @@ const DealList = () => {
               )}
               {visibleItems.map((i) => (
                 <Card key={i.id} className="p-3 flex gap-3">
+                  {/* Bulk-edit checkbox is bought-only — keeps the gutter empty for active/passed rows. */}
+                  {i.status === "bought" && (
+                    <div className="flex items-start pt-1">
+                      <Checkbox
+                        checked={selectedBoughtIds.has(i.id)}
+                        onCheckedChange={() => toggleBoughtSelection(i.id)}
+                        aria-label={`Select ${i.card_name} for bulk edit`}
+                      />
+                    </div>
+                  )}
                   <div className="w-16 h-22 shrink-0 bg-muted rounded overflow-hidden flex items-center justify-center">
                     {i.image_url ? (
                       <img src={i.image_url} alt={i.card_name} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
