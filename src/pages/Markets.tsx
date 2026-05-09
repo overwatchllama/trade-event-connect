@@ -355,6 +355,16 @@ const Markets = () => {
               <Input type="number" inputMode="numeric" value={minPop}
                      onChange={(e) => setMinPop(e.target.value)} placeholder="0" />
             </div>
+            <div>
+              <Label className="text-xs">Min ratio (×)</Label>
+              <Input type="number" inputMode="decimal" step="0.1" value={minRatio}
+                     onChange={(e) => setMinRatio(e.target.value)} placeholder="0" />
+            </div>
+            <div>
+              <Label className="text-xs">Max ratio (×)</Label>
+              <Input type="number" inputMode="decimal" step="0.1" value={maxRatio}
+                     onChange={(e) => setMaxRatio(e.target.value)} placeholder="∞" />
+            </div>
             <div className="lg:col-span-4 flex items-end justify-between gap-3 flex-wrap">
               <div className="flex items-end gap-2">
                 <div>
