@@ -781,6 +781,60 @@ const DealList = () => {
                           <a href={i.ebay_search_url} target="_blank" rel="noreferrer">eBay <ExternalLink className="h-3 w-3 ml-1" /></a>
                         </Button>
                       )}
+                      {/* Lifecycle actions — bought goes through the cost-basis dialog so we capture P&L. */}
+                      <div className="ml-auto flex items-center gap-1">
+                        {i.status !== "bought" && (
+                          <>
+                            {i.status !== "negotiating" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs px-2"
+                                onClick={() => setDealStatus(i.id, "negotiating")}
+                                title="Move to Negotiating"
+                              >
+                                <MessageSquare className="h-3 w-3 mr-1" /> Negotiate
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={() => openBuyDialog(i)}
+                              title="Mark as bought and add to Inventory"
+                            >
+                              <ShoppingCart className="h-3 w-3 mr-1" /> Bought
+                            </Button>
+                            {i.status !== "passed" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs px-2"
+                                onClick={() => setDealStatus(i.id, "passed")}
+                                title="Mark as passed"
+                              >
+                                <XCircle className="h-3 w-3 mr-1" /> Pass
+                              </Button>
+                            )}
+                          </>
+                        )}
+                        {i.status === "bought" && (
+                          <span className="text-[11px] text-muted-foreground">
+                            Cost ${(((i.purchase_price ?? 0) * i.quantity) + (i.shipping_cost ?? 0) + (i.fees ?? 0)).toFixed(2)}
+                            {i.target_sell_price ? ` · target $${(i.target_sell_price * i.quantity).toFixed(2)}` : ""}
+                          </span>
+                        )}
+                        {i.status === "passed" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs px-2"
+                            onClick={() => setDealStatus(i.id, "watching")}
+                            title="Restore to Watching"
+                          >
+                            <RotateCcw className="h-3 w-3 mr-1" /> Restore
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </Card>
