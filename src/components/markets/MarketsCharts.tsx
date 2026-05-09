@@ -311,23 +311,16 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
     | null
   >(null);
 
-  if (loading) {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-        <Skeleton className="h-72 w-full" />
-        <Skeleton className="h-72 w-full" />
-      </div>
-    );
-  }
-
-  if (rows.length === 0) return null;
+  if (!loading && rows.length === 0) return null;
 
   return (
     <div className="space-y-3 mb-4">
       <Card className="p-3 flex flex-wrap items-end gap-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mr-auto">
           <BarChart3 className="h-4 w-4" />
-          Insights from {rows.length.toLocaleString()} matching cards
+          {loading
+            ? "Loading insights…"
+            : `Insights from ${rows.length.toLocaleString()} matching cards`}
         </div>
         <div>
           <Label className="text-xs">Sample size</Label>
@@ -372,7 +365,10 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
           <h3 className="font-semibold text-sm mb-3">
             Top {topN} by {SORT_LABELS[sortBy]}
           </h3>
-          <div style={{ height: Math.max(288, topRanked.data.length * 22 + 40) }}>
+          <div style={{ height: Math.max(288, (loading ? topN : topRanked.data.length) * 22 + 40) }}>
+            {loading ? (
+              <Skeleton className="h-full w-full" />
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={topRanked.data}
@@ -405,6 +401,7 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
                 <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
+            )}
           </div>
         </Card>
 
@@ -412,6 +409,9 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
         <Card className="p-4">
           <h3 className="font-semibold text-sm mb-3">Ratio distribution</h3>
           <div className="h-72">
+            {loading ? (
+              <Skeleton className="h-full w-full" />
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={histogram} margin={{ top: 4, right: 8, left: 4, bottom: 4 }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
@@ -442,6 +442,7 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            )}
           </div>
         </Card>
 
@@ -449,6 +450,9 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
         <Card className="p-4 lg:col-span-2">
           <h3 className="font-semibold text-sm mb-3">Raw price vs PSA 10 price</h3>
           <div className="h-80">
+            {loading ? (
+              <Skeleton className="h-full w-full" />
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 8, right: 16, left: 4, bottom: 8 }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
@@ -493,6 +497,7 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
                 />
               </ScatterChart>
             </ResponsiveContainer>
+            )}
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             Log-scaled. Click a point to see card details.
