@@ -359,6 +359,15 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
             </SelectContent>
           </Select>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9"
+          onClick={handleExportCsv}
+          disabled={loading || rows.length === 0}
+        >
+          <Download className="h-4 w-4 mr-1.5" /> Export CSV
+        </Button>
       </Card>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Top by selected metric */}
