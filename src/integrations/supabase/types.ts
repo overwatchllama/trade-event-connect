@@ -171,21 +171,30 @@ export type Database = {
       deal_list_items: {
         Row: {
           bbox: Json | null
+          bought_at: string | null
           card_name: string
           card_number: string | null
+          collection_item_id: string | null
           condition: string
           created_at: string
           ebay_search_url: string | null
           external_id: string | null
+          fees: number
           game: string
           id: string
           image_url: string | null
           notes: string | null
+          passed_at: string | null
           price_override: number | null
+          purchase_price: number | null
           quantity: number
           rarity: string | null
           scan_image_url: string | null
           set_name: string | null
+          shipping_cost: number
+          source: string | null
+          status: string
+          target_sell_price: number | null
           tcgplayer_market_price: number | null
           tcgplayer_url: string | null
           trade_pct_override: number | null
@@ -194,21 +203,30 @@ export type Database = {
         }
         Insert: {
           bbox?: Json | null
+          bought_at?: string | null
           card_name: string
           card_number?: string | null
+          collection_item_id?: string | null
           condition?: string
           created_at?: string
           ebay_search_url?: string | null
           external_id?: string | null
+          fees?: number
           game?: string
           id?: string
           image_url?: string | null
           notes?: string | null
+          passed_at?: string | null
           price_override?: number | null
+          purchase_price?: number | null
           quantity?: number
           rarity?: string | null
           scan_image_url?: string | null
           set_name?: string | null
+          shipping_cost?: number
+          source?: string | null
+          status?: string
+          target_sell_price?: number | null
           tcgplayer_market_price?: number | null
           tcgplayer_url?: string | null
           trade_pct_override?: number | null
@@ -217,21 +235,30 @@ export type Database = {
         }
         Update: {
           bbox?: Json | null
+          bought_at?: string | null
           card_name?: string
           card_number?: string | null
+          collection_item_id?: string | null
           condition?: string
           created_at?: string
           ebay_search_url?: string | null
           external_id?: string | null
+          fees?: number
           game?: string
           id?: string
           image_url?: string | null
           notes?: string | null
+          passed_at?: string | null
           price_override?: number | null
+          purchase_price?: number | null
           quantity?: number
           rarity?: string | null
           scan_image_url?: string | null
           set_name?: string | null
+          shipping_cost?: number
+          source?: string | null
+          status?: string
+          target_sell_price?: number | null
           tcgplayer_market_price?: number | null
           tcgplayer_url?: string | null
           trade_pct_override?: number | null
