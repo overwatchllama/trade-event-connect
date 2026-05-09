@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare } from "lucide-react";
+import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare, Download } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkAsBoughtDialog, type MarkAsBoughtTarget } from "@/components/deals/MarkAsBoughtDialog";
 
@@ -214,6 +214,87 @@ const DealList = () => {
   );
   const projectedProfit = projectedRevenue - totalInvested;
   const projectedMarginPct = totalInvested > 0 ? (projectedProfit / totalInvested) * 100 : 0;
+
+  /**
+   * CSV export of the current view + a P&L summary footer for every bought deal.
+   * Designed to drop straight into Excel / Google Sheets — quotes are escaped per RFC 4180.
+   */
+  const exportCsv = () => {
+    const esc = (v: unknown): string => {
+      if (v === null || v === undefined) return "";
+      const s = String(v);
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const fix = (n: number | null | undefined, d = 2) =>
+      n == null || Number.isNaN(n) ? "" : n.toFixed(d);
+
+    const headers = [
+      "Status", "Game", "Card", "Set", "Number", "Rarity", "Condition", "Quantity",
+      "Market Price", "Effective Price", "Trade %", "Buy Price (per card)", "Buy Total",
+      "Purchase Price", "Shipping", "Fees", "Invested", "Target Sell (per card)",
+      "Projected Revenue", "Projected Profit", "Projected Margin %",
+      "Source", "Notes", "Bought At", "Created At",
+    ];
+
+    const rows = visibleItems.map((i) => {
+      const market = i.tcgplayer_market_price;
+      const eff = effectivePrice(i);
+      const tradePct = effectiveTradePct(i);
+      const modPer = modifiedPrice(i);
+      const modTotal = modPer != null ? modPer * i.quantity : null;
+      const invested = i.status === "bought"
+        ? (i.purchase_price ?? 0) * i.quantity + (i.shipping_cost ?? 0) + (i.fees ?? 0)
+        : null;
+      const projRev = i.status === "bought" && i.target_sell_price != null
+        ? i.target_sell_price * i.quantity
+        : null;
+      const projProfit = invested != null && projRev != null ? projRev - invested : null;
+      const projMargin = projRev != null && projRev > 0 && projProfit != null
+        ? (projProfit / projRev) * 100
+        : null;
+      return [
+        STATUS_META[i.status].label, i.game, i.card_name, i.set_name, i.card_number, i.rarity,
+        i.condition, i.quantity,
+        fix(market), fix(eff), fix(tradePct, 1), fix(modPer), fix(modTotal),
+        fix(i.purchase_price), fix(i.shipping_cost), fix(i.fees), fix(invested),
+        fix(i.target_sell_price), fix(projRev), fix(projProfit), fix(projMargin, 1),
+        i.source, i.notes,
+        i.bought_at ? new Date(i.bought_at).toISOString() : "",
+        new Date(i.created_at).toISOString(),
+      ].map(esc).join(",");
+    });
+
+    // Footer: pipeline + P&L roll-up so the file is self-contained for analysis.
+    const summary: string[] = [
+      "",
+      "SUMMARY",
+      ["Metric", "Value"].map(esc).join(","),
+      ["View", statusFilter].map(esc).join(","),
+      ["Rows in export", String(visibleItems.length)].map(esc).join(","),
+      ["Active deals", String(pipelineItems.length)].map(esc).join(","),
+      ["Pipeline market value", `$${totalValue.toFixed(2)}`].map(esc).join(","),
+      ["Pipeline target spend", `$${targetSpend.toFixed(2)}`].map(esc).join(","),
+      ["Blended buy %", `${blendedPct.toFixed(1)}%`].map(esc).join(","),
+      ["Bought deals", String(boughtItems.length)].map(esc).join(","),
+      ["Total invested", `$${totalInvested.toFixed(2)}`].map(esc).join(","),
+      ["Projected revenue", `$${projectedRevenue.toFixed(2)}`].map(esc).join(","),
+      ["Projected profit", `$${projectedProfit.toFixed(2)}`].map(esc).join(","),
+      ["Projected margin %", `${projectedMarginPct.toFixed(1)}%`].map(esc).join(","),
+    ];
+
+    const csv = [headers.map(esc).join(","), ...rows, ...summary].join("\r\n");
+    // BOM so Excel opens UTF-8 cleanly with accented card names.
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `deal-pipeline-${statusFilter}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    sonnerToast.success(`Exported ${visibleItems.length} row${visibleItems.length === 1 ? "" : "s"} + P&L summary`);
+  };
 
   /**
    * Apply a manual price change AND surface an undo toast that restores the previous
@@ -437,6 +518,9 @@ const DealList = () => {
                 Reset {overrideCount} manual price{overrideCount === 1 ? "" : "s"}
               </Button>
             )}
+            <Button variant="outline" onClick={exportCsv} disabled={visibleItems.length === 0} title="Download current view + P&L summary as CSV">
+              <Download className="h-4 w-4 mr-2" /> Export CSV
+            </Button>
             <Button variant="outline" onClick={() => navigate("/scanner")}>
               <ScanLine className="h-4 w-4 mr-2" /> Scan more
             </Button>
