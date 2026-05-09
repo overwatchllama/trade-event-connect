@@ -75,6 +75,59 @@ const persisted = (() => {
   }
 })();
 
+// --- Query cache (per filter+sort+limit signature) ---
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const SESSION_CACHE_PREFIX = "markets:insights:cache:";
+const SESSION_CACHE_MAX_ENTRIES = 20;
+const chartsCache = new Map<string, { rows: SampleRow[]; ts: number }>();
+
+const readSessionCache = (key: string): SampleRow[] | null => {
+  try {
+    if (typeof window === "undefined") return null;
+    const raw = sessionStorage.getItem(SESSION_CACHE_PREFIX + key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts: number; rows: SampleRow[] };
+    if (Date.now() - parsed.ts > CACHE_TTL_MS) {
+      sessionStorage.removeItem(SESSION_CACHE_PREFIX + key);
+      return null;
+    }
+    return parsed.rows;
+  } catch {
+    return null;
+  }
+};
+
+const writeSessionCache = (key: string, rows: SampleRow[]) => {
+  try {
+    if (typeof window === "undefined") return;
+    // Evict oldest entries if over the cap
+    const allKeys = Object.keys(sessionStorage).filter((k) =>
+      k.startsWith(SESSION_CACHE_PREFIX),
+    );
+    if (allKeys.length >= SESSION_CACHE_MAX_ENTRIES) {
+      const sorted = allKeys
+        .map((k) => {
+          try {
+            const v = JSON.parse(sessionStorage.getItem(k) ?? "{}");
+            return { k, ts: v?.ts ?? 0 };
+          } catch {
+            return { k, ts: 0 };
+          }
+        })
+        .sort((a, b) => a.ts - b.ts);
+      for (let i = 0; i <= allKeys.length - SESSION_CACHE_MAX_ENTRIES; i++) {
+        sessionStorage.removeItem(sorted[i].k);
+      }
+    }
+    sessionStorage.setItem(
+      SESSION_CACHE_PREFIX + key,
+      JSON.stringify({ ts: Date.now(), rows }),
+    );
+  } catch {
+    /* quota exceeded — ignore */
+  }
+};
+
 export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => {
   const [rows, setRows] = useState<SampleRow[]>([]);
   const [loading, setLoading] = useState(true);
