@@ -354,7 +354,7 @@ const Markets = () => {
                   <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
                     <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="psa10_ratio">PSA 10 ratio (high → low)</SelectItem>
+                      <SelectItem value="psa10_ratio">Raw → PSA 10 ratio (high → low)</SelectItem>
                       <SelectItem value="gap">PSA 10 price (high → low)</SelectItem>
                       <SelectItem value="gem_rate">Gem rate (high → low)</SelectItem>
                       <SelectItem value="raw_desc">Raw price (high → low)</SelectItem>
