@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,6 +119,10 @@ const DealList = () => {
     return (window.localStorage.getItem("dealList:statusFilter") as DealStatus | "active" | "all") || "active";
   });
   const [buyTarget, setBuyTarget] = useState<MarkAsBoughtTarget | null>(null);
+  // Pass-flow state — capturing a non-empty reason is mandatory so future-you knows why a deal died.
+  const [passTarget, setPassTarget] = useState<DealItem | null>(null);
+  const [passReason, setPassReason] = useState("");
+  const [passSubmitting, setPassSubmitting] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -373,6 +378,40 @@ const DealList = () => {
       passed_at: next === "passed" ? new Date().toISOString() : null,
     };
     await updateItem(id, patch);
+  };
+
+  /**
+   * Confirms a Pass with a required reason. We prepend a timestamped "Passed:" line to the
+   * existing notes so the original notes (if any) are preserved as additional context.
+   */
+  const confirmPass = async () => {
+    if (!passTarget) return;
+    const reason = passReason.trim();
+    if (reason.length < 3) {
+      sonnerToast.error("Please add a short reason (at least 3 characters).");
+      return;
+    }
+    if (reason.length > 500) {
+      sonnerToast.error("Reason is too long (max 500 characters).");
+      return;
+    }
+    setPassSubmitting(true);
+    const stamp = new Date().toISOString().slice(0, 10);
+    const passedLine = `[Passed ${stamp}] ${reason}`;
+    const merged = passTarget.notes && passTarget.notes.trim().length > 0
+      ? `${passedLine}\n\n${passTarget.notes}`
+      : passedLine;
+    try {
+      await updateItem(passTarget.id, {
+        status: "passed",
+        passed_at: new Date().toISOString(),
+        notes: merged,
+      });
+      setPassTarget(null);
+      setPassReason("");
+    } finally {
+      setPassSubmitting(false);
+    }
   };
 
   const openBuyDialog = (item: DealItem) => {
@@ -893,7 +932,7 @@ const DealList = () => {
                                 size="sm"
                                 variant="ghost"
                                 className="h-7 text-xs px-2"
-                                onClick={() => setDealStatus(i.id, "passed")}
+                                onClick={() => { setPassTarget(i); setPassReason(""); }}
                                 title="Mark as passed"
                               >
                                 <XCircle className="h-3 w-3 mr-1" /> Pass
@@ -972,6 +1011,54 @@ const DealList = () => {
             }}
           />
         )}
+
+        {/* Pass-with-reason dialog. The reason is required so the Passed tab keeps useful context. */}
+        <AlertDialog
+          open={!!passTarget}
+          onOpenChange={(o) => {
+            if (!o && !passSubmitting) {
+              setPassTarget(null);
+              setPassReason("");
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Why are you passing on this deal?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {passTarget?.card_name ? (
+                  <>Add a quick note for <span className="font-medium text-foreground">{passTarget.card_name}</span> so future-you remembers why it didn't get bought (e.g. "seller wouldn't budge", "condition worse in person", "found cheaper copy").</>
+                ) : (
+                  "Add a quick note so future-you remembers why this deal didn't get bought."
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-1.5">
+              <Textarea
+                value={passReason}
+                onChange={(e) => setPassReason(e.target.value.slice(0, 500))}
+                placeholder="Reason (required)…"
+                rows={4}
+                autoFocus
+                maxLength={500}
+                disabled={passSubmitting}
+              />
+              <div className="flex justify-between text-[11px] text-muted-foreground">
+                <span>Min 3 characters</span>
+                <span>{passReason.trim().length}/500</span>
+              </div>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={passSubmitting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => { e.preventDefault(); void confirmPass(); }}
+                disabled={passSubmitting || passReason.trim().length < 3}
+              >
+                {passSubmitting ? (<><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving…</>) : "Mark as Passed"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
