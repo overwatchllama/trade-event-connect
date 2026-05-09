@@ -123,7 +123,10 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
         if (filters.minRatio) q = q.gte("psa10_ratio", Number(filters.minRatio));
         if (filters.maxRatio) q = q.lte("psa10_ratio", Number(filters.maxRatio));
 
-        q = q.order("psa10_ratio", { ascending: false, nullsFirst: false }).limit(SAMPLE_LIMIT);
+        q = q.order(sortBy === "gap" ? "psa10_price" : sortBy, {
+          ascending: false,
+          nullsFirst: false,
+        }).limit(sampleLimit);
 
         const { data, error } = await q;
         if (error) throw error;
