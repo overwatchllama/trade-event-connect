@@ -841,37 +841,52 @@ const DealList = () => {
               ))}
             </div>
 
-            <Card className="p-4 sticky bottom-4 border-primary/40 shadow-lg">
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="flex-1 min-w-[200px]">
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Save to collection</label>
-                  <Select value={targetCollection} onValueChange={setTargetCollection}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={collections.length === 0 ? "Create a collection first" : "Choose a collection"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {collections.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name} ({c.category})</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            {pipelineItems.length > 0 && (
+              <Card className="p-4 sticky bottom-4 border-primary/40 shadow-lg">
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                      Bulk save active deals to collection (no cost basis)
+                    </label>
+                    <Select value={targetCollection} onValueChange={setTargetCollection}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={collections.length === 0 ? "Create a collection first" : "Choose a collection"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {collections.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name} ({c.category})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    onClick={saveAllToCollection}
+                    disabled={!targetCollection || savingAll || pipelineItems.length === 0}
+                    className="shrink-0"
+                    variant="outline"
+                  >
+                    {savingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Library className="h-4 w-4 mr-2" />}
+                    Save {pipelineItems.length} active
+                  </Button>
                 </div>
-                <Button
-                  onClick={saveAllToCollection}
-                  disabled={!targetCollection || savingAll || items.length === 0}
-                  className="shrink-0"
-                >
-                  {savingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Library className="h-4 w-4 mr-2" />}
-                  Save all to collection
-                </Button>
-              </div>
-              {collections.length === 0 && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  No collections yet — <button className="underline" onClick={() => navigate("/my-collection")}>create one</button> first.
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  For full P&amp;L tracking, mark each row as <strong>Bought</strong> instead — that captures purchase price, shipping, fees, and target sell.
                 </p>
-              )}
-            </Card>
+              </Card>
+            )}
           </>
+        )}
+
+        {user && (
+          <MarkAsBoughtDialog
+            open={!!buyTarget}
+            target={buyTarget}
+            userId={user.id}
+            onClose={() => setBuyTarget(null)}
+            onSuccess={(dealId, patch) => {
+              setItems((prev) => prev.map((it) => (it.id === dealId ? { ...it, ...patch } : it)));
+            }}
+          />
         )}
       </main>
     </div>
