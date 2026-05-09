@@ -21,7 +21,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw } from "lucide-react";
+import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MarkAsBoughtDialog, type MarkAsBoughtTarget } from "@/components/deals/MarkAsBoughtDialog";
+
+type DealStatus = "watching" | "negotiating" | "bought" | "passed";
 
 interface DealItem {
   id: string;
@@ -42,7 +46,24 @@ interface DealItem {
   price_override: number | null;
   /** Per-card trade % (0-200). When non-null, this card uses its own buy-at % instead of the global one. */
   trade_pct_override: number | null;
+  status: DealStatus;
+  purchase_price: number | null;
+  shipping_cost: number;
+  fees: number;
+  source: string | null;
+  target_sell_price: number | null;
+  bought_at: string | null;
+  passed_at: string | null;
+  collection_item_id: string | null;
 }
+
+const STATUS_META: Record<DealStatus, { label: string; icon: typeof Eye; tone: string }> = {
+  watching: { label: "Watching", icon: Eye, tone: "bg-muted text-muted-foreground" },
+  negotiating: { label: "Negotiating", icon: MessageSquare, tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
+  bought: { label: "Bought", icon: CheckCircle2, tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
+  passed: { label: "Passed", icon: XCircle, tone: "bg-muted/40 text-muted-foreground line-through" },
+};
+
 
 // TCGplayer-style conditions. The DB enum value is on the left, the user-facing label and
 // price multiplier (vs. Near Mint market) are derived from typical TCGplayer condition discounts.
@@ -92,6 +113,17 @@ const DealList = () => {
   const [priceDraft, setPriceDraft] = useState<string>("");
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [resettingOverrides, setResettingOverrides] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<DealStatus | "active" | "all">(() => {
+    if (typeof window === "undefined") return "active";
+    return (window.localStorage.getItem("dealList:statusFilter") as DealStatus | "active" | "all") || "active";
+  });
+  const [buyTarget, setBuyTarget] = useState<MarkAsBoughtTarget | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("dealList:statusFilter", statusFilter);
+    }
+  }, [statusFilter]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -144,17 +176,44 @@ const DealList = () => {
     return Math.round(eff * (effectiveTradePct(item) / 100) * 100) / 100;
   };
 
-  const totalValue = items.reduce(
+  // Group items by status for tab counts and the visible filter.
+  const statusCounts = items.reduce(
+    (acc, it) => {
+      acc[it.status] = (acc[it.status] ?? 0) + 1;
+      return acc;
+    },
+    { watching: 0, negotiating: 0, bought: 0, passed: 0 } as Record<DealStatus, number>,
+  );
+  const visibleItems = items.filter((it) => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "active") return it.status === "watching" || it.status === "negotiating";
+    return it.status === statusFilter;
+  });
+
+  // Pipeline totals (active deals only — bought/passed shouldn't inflate "spend" math).
+  const pipelineItems = items.filter((it) => it.status === "watching" || it.status === "negotiating");
+  const totalValue = pipelineItems.reduce(
     (sum, i) => sum + (effectivePrice(i) ?? 0) * i.quantity,
     0,
   );
-  // Live deal total honors per-card trade % overrides; falls back to global costPct otherwise.
-  const targetSpend = items.reduce(
+  const targetSpend = pipelineItems.reduce(
     (sum, i) => sum + (modifiedPrice(i) ?? 0) * i.quantity,
     0,
   );
-  // Blended effective % (informational) — useful when per-card overrides drag the average away from the global.
   const blendedPct = totalValue > 0 ? (targetSpend / totalValue) * 100 : costPct;
+
+  // P&L roll-up across every "Bought" deal: invested = unit×qty + ship + fees, projected = target_sell×qty.
+  const boughtItems = items.filter((it) => it.status === "bought");
+  const totalInvested = boughtItems.reduce(
+    (s, i) => s + (i.purchase_price ?? 0) * i.quantity + (i.shipping_cost ?? 0) + (i.fees ?? 0),
+    0,
+  );
+  const projectedRevenue = boughtItems.reduce(
+    (s, i) => s + (i.target_sell_price ?? 0) * i.quantity,
+    0,
+  );
+  const projectedProfit = projectedRevenue - totalInvested;
+  const projectedMarginPct = totalInvested > 0 ? (projectedProfit / totalInvested) * 100 : 0;
 
   /**
    * Apply a manual price change AND surface an undo toast that restores the previous
@@ -221,6 +280,40 @@ const DealList = () => {
     setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
+  /**
+   * Move a deal between lifecycle stages (watching → negotiating → bought/passed).
+   * "bought" is intentionally NOT routed through here — it requires the cost-basis dialog
+   * (MarkAsBoughtDialog) so we always capture purchase price + ship/fees and create the
+   * matching inventory row.
+   */
+  const setDealStatus = async (id: string, next: Exclude<DealStatus, "bought">) => {
+    const patch: Partial<DealItem> = {
+      status: next,
+      passed_at: next === "passed" ? new Date().toISOString() : null,
+    };
+    await updateItem(id, patch);
+  };
+
+  const openBuyDialog = (item: DealItem) => {
+    const eff = effectivePrice(item);
+    const dealUnit = modifiedPrice(item);
+    setBuyTarget({
+      id: item.id,
+      card_name: item.card_name,
+      set_name: item.set_name,
+      card_number: item.card_number,
+      rarity: item.rarity,
+      image_url: item.image_url,
+      quantity: item.quantity,
+      condition: item.condition,
+      game: item.game,
+      notes: item.notes,
+      // Default the purchase price to the per-card "deal" price you've already negotiated for.
+      suggested_unit_price: dealUnit ?? eff,
+      suggested_sell_price: eff,
+    });
+  };
+
   /** How many rows currently have a manual price override applied. Drives the reset action's enabled state. */
   const overrideCount = items.reduce((n, i) => n + (i.price_override != null ? 1 : 0), 0);
 
@@ -254,10 +347,11 @@ const DealList = () => {
   };
 
   const saveAllToCollection = async () => {
-    if (!user || !targetCollection || items.length === 0) return;
+    // Bulk-import only acts on the current pipeline (active deals); already-bought rows are inventoried elsewhere.
+    if (!user || !targetCollection || pipelineItems.length === 0) return;
     setSavingAll(true);
     try {
-      const rows = items.map((i) => ({
+      const rows = pipelineItems.map((i) => ({
         collection_id: targetCollection,
         user_id: user.id,
         name: i.card_name,
@@ -273,10 +367,10 @@ const DealList = () => {
       }));
       const { error } = await supabase.from("collection_items").insert(rows);
       if (error) throw error;
-      // Clear deal list after successful import
-      const ids = items.map((i) => i.id);
+      // Clear the pipeline rows we just imported (keeps your bought/passed history intact).
+      const ids = pipelineItems.map((i) => i.id);
       await supabase.from("deal_list_items").delete().in("id", ids);
-      setItems([]);
+      setItems((prev) => prev.filter((i) => !ids.includes(i.id)));
       toast({ title: "Saved to collection", description: `${rows.length} card(s) added.` });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Save failed";
@@ -299,7 +393,7 @@ const DealList = () => {
           <div className="space-y-1">
             <h1 className="text-2xl md:text-3xl font-bold">Deal List</h1>
             <p className="text-muted-foreground text-sm">
-              {items.length} card{items.length === 1 ? "" : "s"} · est. ${totalValue.toFixed(2)} total
+              {pipelineItems.length} active deal{pipelineItems.length === 1 ? "" : "s"} · est. ${totalValue.toFixed(2)} pipeline
             </p>
             {items.length > 0 && (
               <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -394,8 +488,63 @@ const DealList = () => {
           </Card>
         ) : (
           <>
+            {/* Lifecycle tabs — drives which rows render below. Counts come from the unfiltered list. */}
+            <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)} className="mb-4">
+              <TabsList className="flex flex-wrap h-auto">
+                <TabsTrigger value="active">
+                  Active <span className="ml-1.5 text-xs opacity-70">{statusCounts.watching + statusCounts.negotiating}</span>
+                </TabsTrigger>
+                <TabsTrigger value="watching">
+                  Watching <span className="ml-1.5 text-xs opacity-70">{statusCounts.watching}</span>
+                </TabsTrigger>
+                <TabsTrigger value="negotiating">
+                  Negotiating <span className="ml-1.5 text-xs opacity-70">{statusCounts.negotiating}</span>
+                </TabsTrigger>
+                <TabsTrigger value="bought">
+                  Bought <span className="ml-1.5 text-xs opacity-70">{statusCounts.bought}</span>
+                </TabsTrigger>
+                <TabsTrigger value="passed">
+                  Passed <span className="ml-1.5 text-xs opacity-70">{statusCounts.passed}</span>
+                </TabsTrigger>
+                <TabsTrigger value="all">All</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            {/* P&L roll-up shown when relevant to the current view. */}
+            {boughtItems.length > 0 && (statusFilter === "bought" || statusFilter === "all") && (
+              <Card className="p-4 mb-4 border-emerald-500/30 bg-emerald-500/5">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Inventoried</p>
+                    <p className="font-semibold">{boughtItems.length} deal{boughtItems.length === 1 ? "" : "s"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total invested</p>
+                    <p className="font-semibold">${totalInvested.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Projected revenue</p>
+                    <p className="font-semibold">${projectedRevenue.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Projected profit</p>
+                    <p className={`font-semibold ${projectedProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                      ${projectedProfit.toFixed(2)} ({projectedMarginPct.toFixed(0)}%)
+                    </p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  Bought deals also live in your <button className="underline" onClick={() => navigate("/my-collection")}>Inventory</button> collection with full cost basis.
+                </p>
+              </Card>
+            )}
             <div className="space-y-3 mb-6">
-              {items.map((i) => (
+              {visibleItems.length === 0 && (
+                <Card className="p-10 text-center border-dashed">
+                  <p className="text-muted-foreground text-sm">No deals in this view.</p>
+                </Card>
+              )}
+              {visibleItems.map((i) => (
                 <Card key={i.id} className="p-3 flex gap-3">
                   <div className="w-16 h-22 shrink-0 bg-muted rounded overflow-hidden flex items-center justify-center">
                     {i.image_url ? (
@@ -406,7 +555,9 @@ const DealList = () => {
                   </div>
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="font-medium text-sm truncate">{i.card_name}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate">{i.card_name}</p>
+                      </div>
                       <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => deleteItem(i.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -415,6 +566,16 @@ const DealList = () => {
                       {i.set_name ?? "—"} {i.card_number ? `· ${i.card_number}` : ""}
                     </p>
                     <div className="flex flex-wrap items-center gap-1">
+                      {(() => {
+                        const meta = STATUS_META[i.status];
+                        const Icon = meta.icon;
+                        return (
+                          <Badge className={`text-[10px] gap-1 ${meta.tone}`} variant="secondary">
+                            <Icon className="h-3 w-3" />
+                            {meta.label}
+                          </Badge>
+                        );
+                      })()}
                       <Badge variant="outline" className="text-[10px]">{i.game}</Badge>
                       {i.rarity && <Badge variant="outline" className="text-[10px]">{i.rarity}</Badge>}
                       {(() => {
@@ -620,43 +781,112 @@ const DealList = () => {
                           <a href={i.ebay_search_url} target="_blank" rel="noreferrer">eBay <ExternalLink className="h-3 w-3 ml-1" /></a>
                         </Button>
                       )}
+                      {/* Lifecycle actions — bought goes through the cost-basis dialog so we capture P&L. */}
+                      <div className="ml-auto flex items-center gap-1">
+                        {i.status !== "bought" && (
+                          <>
+                            {i.status !== "negotiating" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs px-2"
+                                onClick={() => setDealStatus(i.id, "negotiating")}
+                                title="Move to Negotiating"
+                              >
+                                <MessageSquare className="h-3 w-3 mr-1" /> Negotiate
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={() => openBuyDialog(i)}
+                              title="Mark as bought and add to Inventory"
+                            >
+                              <ShoppingCart className="h-3 w-3 mr-1" /> Bought
+                            </Button>
+                            {i.status !== "passed" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs px-2"
+                                onClick={() => setDealStatus(i.id, "passed")}
+                                title="Mark as passed"
+                              >
+                                <XCircle className="h-3 w-3 mr-1" /> Pass
+                              </Button>
+                            )}
+                          </>
+                        )}
+                        {i.status === "bought" && (
+                          <span className="text-[11px] text-muted-foreground">
+                            Cost ${(((i.purchase_price ?? 0) * i.quantity) + (i.shipping_cost ?? 0) + (i.fees ?? 0)).toFixed(2)}
+                            {i.target_sell_price ? ` · target $${(i.target_sell_price * i.quantity).toFixed(2)}` : ""}
+                          </span>
+                        )}
+                        {i.status === "passed" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs px-2"
+                            onClick={() => setDealStatus(i.id, "watching")}
+                            title="Restore to Watching"
+                          >
+                            <RotateCcw className="h-3 w-3 mr-1" /> Restore
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </Card>
               ))}
             </div>
 
-            <Card className="p-4 sticky bottom-4 border-primary/40 shadow-lg">
-              <div className="flex flex-wrap items-end gap-3">
-                <div className="flex-1 min-w-[200px]">
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Save to collection</label>
-                  <Select value={targetCollection} onValueChange={setTargetCollection}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={collections.length === 0 ? "Create a collection first" : "Choose a collection"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {collections.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name} ({c.category})</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            {pipelineItems.length > 0 && (
+              <Card className="p-4 sticky bottom-4 border-primary/40 shadow-lg">
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                      Bulk save active deals to collection (no cost basis)
+                    </label>
+                    <Select value={targetCollection} onValueChange={setTargetCollection}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={collections.length === 0 ? "Create a collection first" : "Choose a collection"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {collections.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name} ({c.category})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    onClick={saveAllToCollection}
+                    disabled={!targetCollection || savingAll || pipelineItems.length === 0}
+                    className="shrink-0"
+                    variant="outline"
+                  >
+                    {savingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Library className="h-4 w-4 mr-2" />}
+                    Save {pipelineItems.length} active
+                  </Button>
                 </div>
-                <Button
-                  onClick={saveAllToCollection}
-                  disabled={!targetCollection || savingAll || items.length === 0}
-                  className="shrink-0"
-                >
-                  {savingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Library className="h-4 w-4 mr-2" />}
-                  Save all to collection
-                </Button>
-              </div>
-              {collections.length === 0 && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  No collections yet — <button className="underline" onClick={() => navigate("/my-collection")}>create one</button> first.
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  For full P&amp;L tracking, mark each row as <strong>Bought</strong> instead — that captures purchase price, shipping, fees, and target sell.
                 </p>
-              )}
-            </Card>
+              </Card>
+            )}
           </>
+        )}
+
+        {user && (
+          <MarkAsBoughtDialog
+            open={!!buyTarget}
+            target={buyTarget}
+            userId={user.id}
+            onClose={() => setBuyTarget(null)}
+            onSuccess={(dealId, patch) => {
+              setItems((prev) => prev.map((it) => (it.id === dealId ? { ...it, ...patch } : it)));
+            }}
+          />
         )}
       </main>
     </div>
