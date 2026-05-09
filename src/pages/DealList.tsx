@@ -539,7 +539,12 @@ const DealList = () => {
               </Card>
             )}
             <div className="space-y-3 mb-6">
-              {items.map((i) => (
+              {visibleItems.length === 0 && (
+                <Card className="p-10 text-center border-dashed">
+                  <p className="text-muted-foreground text-sm">No deals in this view.</p>
+                </Card>
+              )}
+              {visibleItems.map((i) => (
                 <Card key={i.id} className="p-3 flex gap-3">
                   <div className="w-16 h-22 shrink-0 bg-muted rounded overflow-hidden flex items-center justify-center">
                     {i.image_url ? (
