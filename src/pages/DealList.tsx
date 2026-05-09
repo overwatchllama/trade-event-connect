@@ -393,7 +393,7 @@ const DealList = () => {
           <div className="space-y-1">
             <h1 className="text-2xl md:text-3xl font-bold">Deal List</h1>
             <p className="text-muted-foreground text-sm">
-              {items.length} card{items.length === 1 ? "" : "s"} · est. ${totalValue.toFixed(2)} total
+              {pipelineItems.length} active deal{pipelineItems.length === 1 ? "" : "s"} · est. ${totalValue.toFixed(2)} pipeline
             </p>
             {items.length > 0 && (
               <div className="flex flex-wrap items-center gap-2 pt-1">
