@@ -154,6 +154,9 @@ const Markets = () => {
           case "psa10_ratio":
             q = q.order("psa10_ratio", { ascending: false, nullsFirst: false });
             break;
+          case "psa10_ratio_asc":
+            q = q.order("psa10_ratio", { ascending: true, nullsFirst: false });
+            break;
           case "gap":
             // No stored gap column; sort by psa10_price desc as a proxy then we'll
             // also have ratio. For an honest absolute-gap sort we'd need a generated col;
