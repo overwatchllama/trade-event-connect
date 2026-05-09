@@ -450,6 +450,9 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
         <Card className="p-4 lg:col-span-2">
           <h3 className="font-semibold text-sm mb-3">Raw price vs PSA 10 price</h3>
           <div className="h-80">
+            {loading ? (
+              <Skeleton className="h-full w-full" />
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 8, right: 16, left: 4, bottom: 8 }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
