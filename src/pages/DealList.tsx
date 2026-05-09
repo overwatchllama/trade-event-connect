@@ -22,10 +22,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare, Download, Pencil } from "lucide-react";
+import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare, Download, Pencil, ListChecks } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkAsBoughtDialog, type MarkAsBoughtTarget } from "@/components/deals/MarkAsBoughtDialog";
 import { EditBoughtDialog, type EditBoughtTarget } from "@/components/deals/EditBoughtDialog";
+import { BulkEditBoughtDialog, type BulkEditTarget } from "@/components/deals/BulkEditBoughtDialog";
 
 type DealStatus = "watching" | "negotiating" | "bought" | "passed";
 
