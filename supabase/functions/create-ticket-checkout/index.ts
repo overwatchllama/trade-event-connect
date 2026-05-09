@@ -32,23 +32,66 @@ serve(async (req) => {
       throw new HttpError("Unauthorized", userError?.message || "Unauthorized", 401);
     }
 
-    let body: { orderId?: string; eventId?: string; eventTitle?: string; quantity?: number; unitPrice?: number };
+    let body: { orderId?: string; eventId?: string; eventTitle?: string };
     try {
       body = await req.json();
     } catch (_e) {
       throw new HttpError("InvalidJson", "Request body is not valid JSON", 400);
     }
 
-    const { orderId, eventId, eventTitle, quantity, unitPrice } = body;
+    const { orderId, eventId, eventTitle } = body;
 
-    if (!orderId || !eventId || !eventTitle || quantity === undefined || unitPrice === undefined) {
-      throw new HttpError("MissingFields", "Missing required fields: orderId, eventId, eventTitle, quantity, unitPrice", 400);
+    if (!orderId || !eventId || !eventTitle) {
+      throw new HttpError("MissingFields", "Missing required fields: orderId, eventId, eventTitle", 400);
     }
-    if (typeof quantity !== "number" || !Number.isFinite(quantity) || quantity <= 0 || !Number.isInteger(quantity)) {
-      throw new HttpError("InvalidQuantity", "quantity must be a positive integer", 422);
+
+    // SECURITY: derive total from server-side order_items rather than trusting client price.
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .select("id, user_id, event_id")
+      .eq("id", orderId)
+      .single();
+    if (orderError || !order) {
+      throw new HttpError("OrderNotFound", "Order not found", 404);
     }
-    if (typeof unitPrice !== "number" || !Number.isFinite(unitPrice) || unitPrice < 0) {
-      throw new HttpError("InvalidUnitPrice", "unitPrice must be a non-negative number", 422);
+    if (order.user_id !== userData.user.id) {
+      throw new HttpError("Forbidden", "Order does not belong to caller", 403);
+    }
+    if (order.event_id !== eventId) {
+      throw new HttpError("OrderMismatch", "Order does not match event", 400);
+    }
+
+    const { data: items, error: itemsError } = await supabaseAdmin
+      .from("order_items")
+      .select("quantity, unit_price")
+      .eq("order_id", orderId);
+    if (itemsError || !items || items.length === 0) {
+      throw new HttpError("OrderItemsMissing", "Order has no items", 400);
+    }
+
+    let totalQuantity = 0;
+    let totalCents = 0;
+    for (const it of items) {
+      const q = Number(it.quantity ?? 0);
+      const p = Number(it.unit_price ?? 0);
+      if (!Number.isFinite(q) || q <= 0 || !Number.isInteger(q)) {
+        throw new HttpError("InvalidOrderItem", "Order item quantity invalid", 422);
+      }
+      if (!Number.isFinite(p) || p < 0) {
+        throw new HttpError("InvalidOrderItem", "Order item price invalid", 422);
+      }
+      totalQuantity += q;
+      totalCents += Math.round(p * 100) * q;
+    }
+
+    if (totalCents <= 0) {
+      throw new HttpError("ZeroAmount", "Order total is zero", 422);
     }
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -57,7 +100,7 @@ serve(async (req) => {
     }
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
-    // Check if customer exists
+    // Resolve / create Stripe customer
     let customerId: string | undefined;
     try {
       const customers = await stripe.customers.list({
@@ -65,7 +108,6 @@ serve(async (req) => {
         limit: 1,
       });
       customerId = customers.data[0]?.id;
-
       if (!customerId) {
         const customer = await stripe.customers.create({
           email: userData.user.email,
@@ -91,11 +133,12 @@ serve(async (req) => {
               currency: "usd",
               product_data: {
                 name: `Event Ticket - ${eventTitle}`,
-                description: `General Admission x ${quantity}`,
+                description: `General Admission x ${totalQuantity}`,
               },
-              unit_amount: Math.round(unitPrice * 100),
+              // Charge the full server-derived total as a single line item
+              unit_amount: totalCents,
             },
-            quantity: quantity,
+            quantity: 1,
           },
         ],
         mode: "payment",
@@ -105,7 +148,8 @@ serve(async (req) => {
           order_id: orderId,
           event_id: eventId,
           user_id: userData.user.id,
-          quantity: quantity.toString(),
+          quantity: totalQuantity.toString(),
+          expected_total_cents: totalCents.toString(),
         },
       });
     } catch (e) {
@@ -113,10 +157,9 @@ serve(async (req) => {
       throw new HttpError("StripeSessionError", msg, 502);
     }
 
-    // Update order with Stripe session ID
-    const { error: updateError } = await supabaseClient
+    const { error: updateError } = await supabaseAdmin
       .from("orders")
-      .update({ stripe_session_id: session.id })
+      .update({ stripe_session_id: session.id, total_amount: totalCents / 100 })
       .eq("id", orderId);
 
     if (updateError) {

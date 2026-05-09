@@ -200,13 +200,11 @@ const BuyTicketDialog = ({
       }
 
       // For paid tickets, redirect to Stripe checkout
+      // SECURITY: ticket totals are computed server-side from order_items.
       const checkoutBody = {
         orderId: order.id,
         eventId,
         eventTitle,
-        quantity: tickets.length,
-        unitPrice: totalAmount / tickets.length,
-        totalAmount,
       };
 
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(

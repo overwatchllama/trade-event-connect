@@ -278,8 +278,33 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const psaToken = Deno.env.get("PSA_API_TOKEN") ?? "";
   const pokemonKey = Deno.env.get("POKEMON_TCG_API_KEY") ?? undefined;
+  const cronSecret = Deno.env.get("MARKET_REFRESH_CRON_SECRET") ?? "";
 
   const supabase = createClient(supabaseUrl, serviceKey);
+
+  // SECURITY: require either an authenticated admin user OR a valid cron secret.
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const xCronSecret = req.headers.get("x-cron-secret") ?? "";
+
+  let authorized = false;
+  if (cronSecret && xCronSecret && xCronSecret === cronSecret) {
+    authorized = true;
+  } else if (authHeader.startsWith("Bearer ")) {
+    const token = authHeader.replace("Bearer ", "");
+    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") ?? "");
+    const { data: userData, error: userErr } = await anonClient.auth.getUser(token);
+    if (!userErr && userData?.user) {
+      const { data: isAdmin } = await supabase.rpc("is_admin", { user_id: userData.user.id });
+      if (isAdmin === true) authorized = true;
+    }
+  }
+
+  if (!authorized) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 403,
+    });
+  }
 
   let body: RefreshBody = {};
   try {

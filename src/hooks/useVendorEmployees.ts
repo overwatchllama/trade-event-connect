@@ -239,40 +239,28 @@ export const useJoinVendor = () => {
 
     setLoading(true);
     try {
-      // Find the invite
-      const { data: invite, error: findError } = await supabase
-        .from('vendor_employees')
-        .select('*, vendors(business_name)')
-        .eq('invite_code', inviteCode.toUpperCase())
-        .is('user_id', null)
-        .single();
+      // Server-side validation + claim via SECURITY DEFINER RPC.
+      // The RPC verifies the submitted invite_code matches a real, unclaimed,
+      // unexpired row before assigning it to the caller.
+      const { data: claimed, error: claimError } = await (supabase as any)
+        .rpc('claim_vendor_invite', { _invite_code: inviteCode.toUpperCase() });
 
-      if (findError || !invite) {
+      if (claimError || !claimed) {
         toast.error('Invalid or expired invite code');
         return false;
       }
 
-      // Check if expired
-      if (invite.invite_expires_at && new Date(invite.invite_expires_at) < new Date()) {
-        toast.error('This invite code has expired');
-        return false;
+      const claimedRow: any = Array.isArray(claimed) ? claimed[0] : claimed;
+      let vendorName = 'the vendor';
+      if (claimedRow?.vendor_id) {
+        const { data: vendor } = await supabase
+          .from('vendors')
+          .select('business_name')
+          .eq('id', claimedRow.vendor_id)
+          .maybeSingle();
+        if (vendor?.business_name) vendorName = vendor.business_name;
       }
 
-      // Claim the invite
-      const { error: updateError } = await supabase
-        .from('vendor_employees')
-        .update({
-          user_id: user.id,
-          status: 'active',
-          hired_at: new Date().toISOString(),
-          invite_code: null,
-          invite_expires_at: null
-        })
-        .eq('id', invite.id);
-
-      if (updateError) throw updateError;
-
-      const vendorName = (invite.vendors as any)?.business_name || 'the vendor';
       toast.success(`Successfully joined ${vendorName}!`);
       return true;
     } catch (error) {

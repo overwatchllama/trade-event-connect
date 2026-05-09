@@ -44,58 +44,15 @@ serve(async (req) => {
       throw new HttpError("InvalidJson", "Request body is not valid JSON", 400);
     }
 
-    // Check if this is a subscription or one-time payment
+    // SECURITY: the legacy one-time `priceAmount` path was removed because it
+    // accepted an attacker-controlled price. One-time ticket purchases now go
+    // through `create-ticket-checkout`, which derives the price server-side.
     if (requestBody.priceAmount !== undefined) {
-      // One-time payment (e.g., event tickets)
-      const { priceAmount, successUrl, cancelUrl, metadata } = requestBody;
-
-      if (priceAmount === undefined) {
-        throw new HttpError("MissingFields", "Missing priceAmount for one-time payment", 400);
-      }
-
-      logStep("One-time payment request", { priceAmount, metadata });
-
-      const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-        apiVersion: "2023-10-16",
-      });
-
-      // Check if customer already exists
-      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-      let customerId;
-      if (customers.data.length > 0) {
-        customerId = customers.data[0].id;
-      }
-
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        customer_email: customerId ? undefined : user.email,
-        // Using automatic payment methods - enables cards, Apple Pay, Google Pay, etc.
-        // based on what's enabled in your Stripe dashboard
-        line_items: [
-          {
-            price_data: {
-              currency: "usd",
-              product_data: { 
-                name: metadata?.event_title || "Event Ticket",
-                description: "Event ticket purchase"
-              },
-              unit_amount: Math.round(priceAmount * 100), // Convert dollars to cents
-            },
-            quantity: 1,
-          },
-        ],
-        mode: "payment",
-        success_url: successUrl || `${req.headers.get("origin")}/events?ticket=success`,
-        cancel_url: cancelUrl || `${req.headers.get("origin")}/events`,
-        metadata: metadata || {},
-      });
-
-      logStep("One-time checkout session created", { sessionId: session.id, url: session.url });
-
-      return new Response(JSON.stringify({ url: session.url }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      throw new HttpError(
+        "DeprecatedPath",
+        "One-time payments via create-checkout are disabled. Use create-ticket-checkout.",
+        410,
+      );
     }
 
     // Subscription payment
