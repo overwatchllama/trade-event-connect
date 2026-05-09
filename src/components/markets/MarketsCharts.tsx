@@ -312,6 +312,46 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
     | null
   >(null);
 
+  const handleExportCsv = () => {
+    const escape = (v: unknown) => {
+      if (v == null) return "";
+      const s = String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const toCsv = (header: string[], data: (string | number | null)[][]) =>
+      [header.join(","), ...data.map((row) => row.map(escape).join(","))].join("\n");
+
+    const sections: string[] = [];
+    sections.push(`# Markets Insights Export`);
+    sections.push(`# Generated: ${new Date().toISOString()}`);
+    sections.push(`# Sample size: ${rows.length} cards`);
+    sections.push(`# Ranked by: ${SORT_LABELS[sortBy]}`);
+    sections.push("");
+    sections.push(`## Top ${topN} by ${SORT_LABELS[sortBy]}`);
+    sections.push(toCsv(["rank", "card", "value"], topRanked.data.map((r, i) => [i + 1, r.name, r.value])));
+    sections.push("");
+    sections.push("## Ratio distribution");
+    sections.push(toCsv(["bucket", "card_count"], histogram.map((b) => [b.label, b.count])));
+    sections.push("");
+    sections.push("## Raw vs PSA 10 scatter");
+    sections.push(
+      toCsv(
+        ["card", "set", "raw_price", "psa10_price", "ratio"],
+        scatter.map((p) => [p.name, p.set_name, p.raw, p.psa10, p.ratio]),
+      ),
+    );
+
+    const blob = new Blob([sections.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `markets-insights-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (!loading && rows.length === 0) return null;
 
   return (
