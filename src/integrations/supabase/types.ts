@@ -776,6 +776,134 @@ export type Database = {
           },
         ]
       }
+      market_cards: {
+        Row: {
+          created_at: string
+          external_id: string
+          game: string
+          id: string
+          image_url: string | null
+          name: string
+          number: string | null
+          rarity: string | null
+          set_id: string | null
+          set_name: string | null
+          tcgplayer_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          external_id: string
+          game: string
+          id?: string
+          image_url?: string | null
+          name: string
+          number?: string | null
+          rarity?: string | null
+          set_id?: string | null
+          set_name?: string | null
+          tcgplayer_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          external_id?: string
+          game?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          number?: string | null
+          rarity?: string | null
+          set_id?: string | null
+          set_name?: string | null
+          tcgplayer_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      market_refresh_runs: {
+        Row: {
+          cards_upserted: number | null
+          errors: number | null
+          finished_at: string | null
+          game: string | null
+          id: string
+          notes: string | null
+          psa_lookups: number | null
+          snapshots_upserted: number | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          cards_upserted?: number | null
+          errors?: number | null
+          finished_at?: string | null
+          game?: string | null
+          id?: string
+          notes?: string | null
+          psa_lookups?: number | null
+          snapshots_upserted?: number | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          cards_upserted?: number | null
+          errors?: number | null
+          finished_at?: string | null
+          game?: string | null
+          id?: string
+          notes?: string | null
+          psa_lookups?: number | null
+          snapshots_upserted?: number | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      market_snapshots: {
+        Row: {
+          card_id: string
+          gem_rate: number | null
+          last_refreshed_at: string
+          psa_total_pop: number | null
+          psa10_pop: number | null
+          psa10_price: number | null
+          psa10_ratio: number | null
+          raw_price: number | null
+          sample_size: number | null
+        }
+        Insert: {
+          card_id: string
+          gem_rate?: number | null
+          last_refreshed_at?: string
+          psa_total_pop?: number | null
+          psa10_pop?: number | null
+          psa10_price?: number | null
+          psa10_ratio?: number | null
+          raw_price?: number | null
+          sample_size?: number | null
+        }
+        Update: {
+          card_id?: string
+          gem_rate?: number | null
+          last_refreshed_at?: string
+          psa_total_pop?: number | null
+          psa10_pop?: number | null
+          psa10_price?: number | null
+          psa10_ratio?: number | null
+          raw_price?: number | null
+          sample_size?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_snapshots_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: true
+            referencedRelation: "market_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
