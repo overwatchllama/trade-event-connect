@@ -21,7 +21,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw } from "lucide-react";
+import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MarkAsBoughtDialog, type MarkAsBoughtTarget } from "@/components/deals/MarkAsBoughtDialog";
+
+type DealStatus = "watching" | "negotiating" | "bought" | "passed";
 
 interface DealItem {
   id: string;
@@ -42,7 +46,23 @@ interface DealItem {
   price_override: number | null;
   /** Per-card trade % (0-200). When non-null, this card uses its own buy-at % instead of the global one. */
   trade_pct_override: number | null;
+  status: DealStatus;
+  purchase_price: number | null;
+  shipping_cost: number;
+  fees: number;
+  source: string | null;
+  target_sell_price: number | null;
+  bought_at: string | null;
+  collection_item_id: string | null;
 }
+
+const STATUS_META: Record<DealStatus, { label: string; icon: typeof Eye; tone: string }> = {
+  watching: { label: "Watching", icon: Eye, tone: "bg-muted text-muted-foreground" },
+  negotiating: { label: "Negotiating", icon: MessageSquare, tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
+  bought: { label: "Bought", icon: CheckCircle2, tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
+  passed: { label: "Passed", icon: XCircle, tone: "bg-muted/40 text-muted-foreground line-through" },
+};
+
 
 // TCGplayer-style conditions. The DB enum value is on the left, the user-facing label and
 // price multiplier (vs. Near Mint market) are derived from typical TCGplayer condition discounts.
