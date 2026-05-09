@@ -21,7 +21,7 @@ export const EventSponsors = ({ eventId }: EventSponsorsProps) => {
       const { data, error } = await supabase
         .from("event_sponsors")
         .select(`
-          *,
+          id, event_id, sponsor_id, sponsorship_level, benefits, created_at,
           sponsors:sponsor_id (*)
         `)
         .eq("event_id", eventId)
