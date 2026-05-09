@@ -1036,6 +1036,15 @@ const DealList = () => {
           />
         )}
 
+        <EditBoughtDialog
+          open={!!editTarget}
+          target={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSuccess={(dealId, patch) => {
+            setItems((prev) => prev.map((it) => (it.id === dealId ? { ...it, ...patch } : it)));
+          }}
+        />
+
         {/* Pass-with-reason dialog. The reason is required so the Passed tab keeps useful context. */}
         <AlertDialog
           open={!!passTarget}
