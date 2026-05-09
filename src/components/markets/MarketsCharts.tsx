@@ -401,6 +401,7 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
                 <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
+            )}
           </div>
         </Card>
 
