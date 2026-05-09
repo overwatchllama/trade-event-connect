@@ -497,6 +497,7 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
                 />
               </ScatterChart>
             </ResponsiveContainer>
+            )}
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             Log-scaled. Click a point to see card details.
