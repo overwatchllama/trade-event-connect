@@ -51,12 +51,51 @@ serve(async (req) => {
     if (!user?.email) throw new HttpError("Unauthorized", "User not authenticated or email not available", 401);
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Parse request body
-    const { eventId, eventTitle, applicationId, tableFee, tableCount } = await req.json();
-    if (!eventId || !eventTitle) {
-      throw new HttpError("MissingFields", "eventId and eventTitle are required", 400);
+    // Parse request body — DO NOT trust client-supplied fee/count.
+    const { eventId, eventTitle, applicationId } = await req.json();
+    if (!eventId || !eventTitle || !applicationId) {
+      throw new HttpError("MissingFields", "eventId, eventTitle and applicationId are required", 400);
     }
-    logStep("Request parsed", { eventId, eventTitle, applicationId, tableFee, tableCount });
+    logStep("Request parsed", { eventId, eventTitle, applicationId });
+
+    // SECURITY: derive table count + price from server-side records.
+    const { data: application, error: appError } = await supabaseService
+      .from('vendor_applications')
+      .select('id, user_id, event_id, requested_tables, approved_tables, application_status, payment_status')
+      .eq('id', applicationId)
+      .single();
+    if (appError || !application) {
+      throw new HttpError("ApplicationNotFound", "Vendor application not found", 404);
+    }
+    if (application.user_id !== user.id) {
+      throw new HttpError("Forbidden", "Application does not belong to caller", 403);
+    }
+    if (application.event_id !== eventId) {
+      throw new HttpError("EventMismatch", "Application does not match event", 400);
+    }
+    if (application.payment_status === 'paid') {
+      throw new HttpError("AlreadyPaid", "This application is already paid", 409);
+    }
+
+    const { data: eventRow, error: eventError } = await supabaseService
+      .from('events')
+      .select('id, vendor_table_price')
+      .eq('id', eventId)
+      .single();
+    if (eventError || !eventRow) {
+      throw new HttpError("EventNotFound", "Event not found", 404);
+    }
+
+    const tableCount = Number(application.approved_tables ?? application.requested_tables ?? 1);
+    const perTable = Number(eventRow.vendor_table_price ?? 0);
+    if (!Number.isFinite(tableCount) || tableCount < 0 || !Number.isInteger(tableCount)) {
+      throw new HttpError("InvalidTableCount", "Invalid approved table count", 422);
+    }
+    if (!Number.isFinite(perTable) || perTable < 0) {
+      throw new HttpError("InvalidTablePrice", "Invalid table price", 422);
+    }
+    const vendorTableFee = perTable * tableCount;
+    logStep("Server-derived fee", { tableCount, perTable, vendorTableFee });
 
     // Check if user has an active pro subscription
     const { data: subscription, error: subError } = await supabaseService
@@ -111,18 +150,16 @@ serve(async (req) => {
 
     // Build line items - vendor table fee + platform fee
     const lineItems = [];
-    
-    // Add vendor table fee if there's one
-    const vendorTableFee = tableFee || 0;
+
     if (vendorTableFee > 0) {
       lineItems.push({
         price_data: {
           currency: "usd",
           product_data: { 
             name: `Vendor Table Fee - ${eventTitle}`,
-            description: `${tableCount || 1} table(s) at $${(vendorTableFee / (tableCount || 1)).toFixed(2)} each`
+            description: `${tableCount} table(s) at $${perTable.toFixed(2)} each`
           },
-          unit_amount: Math.round(vendorTableFee * 100), // Convert to cents
+          unit_amount: Math.round(vendorTableFee * 100),
         },
         quantity: 1,
       });
@@ -155,7 +192,7 @@ serve(async (req) => {
       metadata: {
         eventId: eventId,
         userId: user.id,
-        applicationId: applicationId || '',
+        applicationId: applicationId,
         registrationType: 'vendor',
         vendorTableFee: vendorTableFee.toString(),
         platformFee: (platformFee / 100).toString()
