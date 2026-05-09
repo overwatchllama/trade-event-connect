@@ -100,7 +100,24 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
 
   useEffect(() => {
     let cancelled = false;
+    const cacheKey = JSON.stringify({ filters, sampleLimit, sortBy });
     const run = async () => {
+      // 1. In-memory cache (instant on revisit during session)
+      const memHit = chartsCache.get(cacheKey);
+      if (memHit && Date.now() - memHit.ts < CACHE_TTL_MS) {
+        setRows(memHit.rows);
+        setLoading(false);
+        return;
+      }
+      // 2. sessionStorage cache (survives navigation)
+      const sessionHit = readSessionCache(cacheKey);
+      if (sessionHit) {
+        setRows(sessionHit);
+        setLoading(false);
+        chartsCache.set(cacheKey, { rows: sessionHit, ts: Date.now() });
+        return;
+      }
+
       setLoading(true);
       try {
         let q = supabase
@@ -130,7 +147,12 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
 
         const { data, error } = await q;
         if (error) throw error;
-        if (!cancelled) setRows((data ?? []) as unknown as SampleRow[]);
+        const result = (data ?? []) as unknown as SampleRow[];
+        if (!cancelled) {
+          setRows(result);
+          chartsCache.set(cacheKey, { rows: result, ts: Date.now() });
+          writeSessionCache(cacheKey, result);
+        }
       } catch {
         if (!cancelled) setRows([]);
       } finally {
