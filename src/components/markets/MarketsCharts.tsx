@@ -488,10 +488,45 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
             </ResponsiveContainer>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Log-scaled. Points further above the diagonal indicate larger PSA 10 premiums.
+            Log-scaled. Click a point to see card details.
           </p>
         </Card>
       </div>
+
+      <Sheet open={!!selectedPoint} onOpenChange={(o) => !o && setSelectedPoint(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="text-left">{selectedPoint?.name ?? "Card"}</SheetTitle>
+            {selectedPoint?.set_name && (
+              <SheetDescription className="text-left">{selectedPoint.set_name}</SheetDescription>
+            )}
+          </SheetHeader>
+          {selectedPoint && (
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground">Raw price</p>
+                <p className="text-lg font-semibold">${selectedPoint.raw.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">PSA 10 price</p>
+                <p className="text-lg font-semibold">${selectedPoint.psa10.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Raw → PSA 10 ratio</p>
+                <p className="text-lg font-semibold">
+                  {selectedPoint.ratio != null ? `${selectedPoint.ratio.toFixed(2)}×` : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Gap</p>
+                <p className="text-lg font-semibold">
+                  ${(selectedPoint.psa10 - selectedPoint.raw).toFixed(2)}
+                </p>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
