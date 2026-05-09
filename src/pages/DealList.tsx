@@ -123,6 +123,10 @@ const DealList = () => {
   });
   const [buyTarget, setBuyTarget] = useState<MarkAsBoughtTarget | null>(null);
   const [editTarget, setEditTarget] = useState<EditBoughtTarget | null>(null);
+  // Bulk-edit state for the Bought tab — Set<id> survives status filter changes so users
+  // can re-find a row in another tab without losing their selection.
+  const [selectedBoughtIds, setSelectedBoughtIds] = useState<Set<string>>(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
   // Pass-flow state — capturing a non-empty reason is mandatory so future-you knows why a deal died.
   const [passTarget, setPassTarget] = useState<DealItem | null>(null);
   const [passReason, setPassReason] = useState("");
