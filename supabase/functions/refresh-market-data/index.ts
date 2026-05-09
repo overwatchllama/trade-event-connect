@@ -126,22 +126,12 @@ async function ingestPokemon(
       })
       .filter(Boolean) as any[];
 
-    // We can't preserve psa fields with a plain upsert because it overwrites all columns.
-    // Instead, do a manual upsert: insert; on conflict only update raw_price.
-    for (const snap of snapshots) {
-      await supabase.rpc("noop").catch(() => {}); // placeholder no-op kept harmless
-    }
-    // Use a single upsert that only sets raw_price/last_refreshed_at, preserving PSA cols.
-    const { error: snapErr } = await supabase.rpc("upsert_market_raw_prices", {
-      payload: snapshots,
-    });
-    if (snapErr) {
-      // Fallback: plain upsert (will null PSA fields for new rows only).
-      await supabase.from("market_snapshots").upsert(snapshots, {
-        onConflict: "card_id",
-        ignoreDuplicates: false,
-      });
-    }
+    // Postgres upsert only writes columns we provide, so PSA fields on existing rows
+    // are preserved automatically.
+    const { error: snapErr } = await supabase
+      .from("market_snapshots")
+      .upsert(snapshots, { onConflict: "card_id" });
+    if (snapErr) console.error("snapshot upsert error", snapErr);
 
     upserted += snapshots.length;
     page++;
