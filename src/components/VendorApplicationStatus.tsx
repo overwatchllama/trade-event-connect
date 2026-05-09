@@ -177,18 +177,14 @@ export const VendorApplicationStatus = ({ eventId, eventTitle, vendorTablePrice 
   const handlePayInvoice = async () => {
     if (!application) return;
 
-    const tableCount = application.approved_tables || application.requested_tables;
-    const tableFee = (vendorTablePrice || 0) * tableCount;
-
     setPaymentProcessing(true);
     try {
+      // SECURITY: fee + table count are derived server-side from the application/event.
       const { data, error } = await supabase.functions.invoke('vendor-registration-payment', {
         body: {
           eventId: eventId,
           eventTitle: eventTitle,
           applicationId: application.id,
-          tableFee: tableFee,
-          tableCount: tableCount
         }
       });
 
