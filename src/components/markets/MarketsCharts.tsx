@@ -488,10 +488,22 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Top by selected metric */}
         <Card className="p-4">
-          <h3 className="font-semibold text-sm mb-3">
-            Top {topN} by {SORT_LABELS[sortBy]}
-          </h3>
-          <div style={{ height: Math.max(288, (loading ? topN : topRanked.data.length) * 22 + 40) }}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm">
+              Top {topN} by {SORT_LABELS[sortBy]}
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2"
+              disabled={loading || topRanked.data.length === 0}
+              onClick={() => exportChartAsPng(topChartRef, "markets-top")}
+              title="Export as PNG"
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+          </div>
+          <div ref={topChartRef} style={{ height: Math.max(288, (loading ? topN : topRanked.data.length) * 22 + 40) }}>
             {loading ? (
               <Skeleton className="h-full w-full" />
             ) : (
@@ -533,8 +545,20 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
 
         {/* Histogram */}
         <Card className="p-4">
-          <h3 className="font-semibold text-sm mb-3">Ratio distribution</h3>
-          <div className="h-72">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm">Ratio distribution</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2"
+              disabled={loading || histogram.every((b) => b.count === 0)}
+              onClick={() => exportChartAsPng(histChartRef, "markets-histogram")}
+              title="Export as PNG"
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+          </div>
+          <div ref={histChartRef} className="h-72">
             {loading ? (
               <Skeleton className="h-full w-full" />
             ) : (
@@ -574,8 +598,20 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
 
         {/* Scatter */}
         <Card className="p-4 lg:col-span-2">
-          <h3 className="font-semibold text-sm mb-3">Raw price vs PSA 10 price</h3>
-          <div className="h-80">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm">Raw price vs PSA 10 price</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2"
+              disabled={loading || scatter.length === 0}
+              onClick={() => exportChartAsPng(scatterChartRef, "markets-scatter")}
+              title="Export as PNG"
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+          </div>
+          <div ref={scatterChartRef} className="h-80">
             {loading ? (
               <Skeleton className="h-full w-full" />
             ) : (
