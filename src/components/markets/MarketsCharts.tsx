@@ -318,7 +318,9 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
       <Card className="p-3 flex flex-wrap items-end gap-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mr-auto">
           <BarChart3 className="h-4 w-4" />
-          Insights from {rows.length.toLocaleString()} matching cards
+          {loading
+            ? "Loading insights…"
+            : `Insights from ${rows.length.toLocaleString()} matching cards`}
         </div>
         <div>
           <Label className="text-xs">Sample size</Label>
