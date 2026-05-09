@@ -932,7 +932,7 @@ const DealList = () => {
                                 size="sm"
                                 variant="ghost"
                                 className="h-7 text-xs px-2"
-                                onClick={() => setDealStatus(i.id, "passed")}
+                                onClick={() => { setPassTarget(i); setPassReason(""); }}
                                 title="Mark as passed"
                               >
                                 <XCircle className="h-3 w-3 mr-1" /> Pass
