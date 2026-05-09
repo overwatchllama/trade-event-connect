@@ -22,6 +22,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart3 } from "lucide-react";
 
@@ -285,11 +292,24 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
       .filter((r) => r.raw_price != null && r.psa10_price != null)
       .slice(0, 300)
       .map((r) => ({
-        raw: r.raw_price,
-        psa10: r.psa10_price,
+        raw: r.raw_price as number,
+        psa10: r.psa10_price as number,
+        ratio: r.psa10_ratio,
         name: r.market_cards?.name ?? "",
+        set_name: r.market_cards?.set_name ?? null,
       }));
   }, [rows]);
+
+  const [selectedPoint, setSelectedPoint] = useState<
+    | {
+        name: string;
+        set_name: string | null;
+        raw: number;
+        psa10: number;
+        ratio: number | null;
+      }
+    | null
+  >(null);
 
   if (loading) {
     return (
@@ -464,15 +484,56 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
                   formatter={(v: number, key: string) => [`$${Number(v).toFixed(2)}`, key]}
                   labelFormatter={(_, items) => (items?.[0]?.payload?.name ?? "")}
                 />
-                <Scatter data={scatter} fill="hsl(var(--primary))" fillOpacity={0.65} />
+                <Scatter
+                  data={scatter}
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.65}
+                  cursor="pointer"
+                  onClick={(p: any) => p && setSelectedPoint(p as any)}
+                />
               </ScatterChart>
             </ResponsiveContainer>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Log-scaled. Points further above the diagonal indicate larger PSA 10 premiums.
+            Log-scaled. Click a point to see card details.
           </p>
         </Card>
       </div>
+
+      <Sheet open={!!selectedPoint} onOpenChange={(o) => !o && setSelectedPoint(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle className="text-left">{selectedPoint?.name ?? "Card"}</SheetTitle>
+            {selectedPoint?.set_name && (
+              <SheetDescription className="text-left">{selectedPoint.set_name}</SheetDescription>
+            )}
+          </SheetHeader>
+          {selectedPoint && (
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground">Raw price</p>
+                <p className="text-lg font-semibold">${selectedPoint.raw.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">PSA 10 price</p>
+                <p className="text-lg font-semibold">${selectedPoint.psa10.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Raw → PSA 10 ratio</p>
+                <p className="text-lg font-semibold">
+                  {selectedPoint.ratio != null ? `${selectedPoint.ratio.toFixed(2)}×` : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Gap</p>
+                <p className="text-lg font-semibold">
+                  ${(selectedPoint.psa10 - selectedPoint.raw).toFixed(2)}
+                </p>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
