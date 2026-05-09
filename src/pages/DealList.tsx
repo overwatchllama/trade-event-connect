@@ -228,6 +228,35 @@ const DealList = () => {
   const projectedProfit = projectedRevenue - totalInvested;
   const projectedMarginPct = totalInvested > 0 ? (projectedProfit / totalInvested) * 100 : 0;
 
+  // Bulk-edit derivations: only bought rows are eligible. Selection is intersected with the
+  // current bought set so deleted rows can't linger as ghost selections.
+  const selectedBoughtItems = boughtItems.filter((b) => selectedBoughtIds.has(b.id));
+  const selectedBoughtCount = selectedBoughtItems.length;
+  const visibleBoughtItems = visibleItems.filter((it) => it.status === "bought");
+  const allVisibleBoughtSelected =
+    visibleBoughtItems.length > 0 && visibleBoughtItems.every((b) => selectedBoughtIds.has(b.id));
+
+  const toggleBoughtSelection = (id: string) => {
+    setSelectedBoughtIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAllVisibleBought = () => {
+    setSelectedBoughtIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleBoughtSelected) {
+        for (const b of visibleBoughtItems) next.delete(b.id);
+      } else {
+        for (const b of visibleBoughtItems) next.add(b.id);
+      }
+      return next;
+    });
+  };
+  const clearBoughtSelection = () => setSelectedBoughtIds(new Set());
+
   /**
    * CSV export of the current view + a P&L summary footer for every bought deal.
    * Designed to drop straight into Excel / Google Sheets — quotes are escaped per RFC 4180.
