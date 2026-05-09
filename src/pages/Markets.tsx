@@ -430,7 +430,7 @@ const Markets = () => {
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-2 text-xs">
+                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 mt-2 text-xs">
                         <div>
                           <p className="text-muted-foreground">Raw</p>
                           <p className="font-medium text-sm">
@@ -441,6 +441,12 @@ const Markets = () => {
                           <p className="text-muted-foreground">PSA 10</p>
                           <p className="font-medium text-sm">
                             {row.psa10_price ? usd.format(row.psa10_price) : "—"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Raw → PSA 10</p>
+                          <p className="font-medium text-sm">
+                            {row.psa10_ratio != null ? `${row.psa10_ratio.toFixed(2)}×` : "—"}
                           </p>
                         </div>
                         <div>
