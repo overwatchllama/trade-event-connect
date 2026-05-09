@@ -75,19 +75,45 @@ const Markets = () => {
   const [count, setCount] = useState<number | null>(null);
   const [page, setPage] = useState(0);
 
+  // Persisted filters/sort
+  const STORAGE_KEY = "markets:filters:v1";
+  const persisted = (() => {
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  })();
+
   // Filters
-  const [game, setGame] = useState<"all" | "pokemon" | "onepiece">("all");
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [setName, setSetName] = useState<string>("__all");
-  const [rarity, setRarity] = useState<string>("__all");
-  const [minRaw, setMinRaw] = useState<string>("");
-  const [maxRaw, setMaxRaw] = useState<string>("");
-  const [minGemRate, setMinGemRate] = useState<string>("");
-  const [minPop, setMinPop] = useState<string>("");
-  const [minRatio, setMinRatio] = useState<string>("");
-  const [maxRatio, setMaxRatio] = useState<string>("");
-  const [sort, setSort] = useState<SortKey>("psa10_ratio");
+  const [game, setGame] = useState<"all" | "pokemon" | "onepiece">(persisted.game ?? "all");
+  const [search, setSearch] = useState(persisted.search ?? "");
+  const [debouncedSearch, setDebouncedSearch] = useState(persisted.search ?? "");
+  const [setName, setSetName] = useState<string>(persisted.setName ?? "__all");
+  const [rarity, setRarity] = useState<string>(persisted.rarity ?? "__all");
+  const [minRaw, setMinRaw] = useState<string>(persisted.minRaw ?? "");
+  const [maxRaw, setMaxRaw] = useState<string>(persisted.maxRaw ?? "");
+  const [minGemRate, setMinGemRate] = useState<string>(persisted.minGemRate ?? "");
+  const [minPop, setMinPop] = useState<string>(persisted.minPop ?? "");
+  const [minRatio, setMinRatio] = useState<string>(persisted.minRatio ?? "");
+  const [maxRatio, setMaxRatio] = useState<string>(persisted.maxRatio ?? "");
+  const [sort, setSort] = useState<SortKey>(persisted.sort ?? "psa10_ratio");
+
+  // Persist filters/sort whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          game, search, setName, rarity, minRaw, maxRaw,
+          minGemRate, minPop, minRatio, maxRatio, sort,
+        }),
+      );
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [game, search, setName, rarity, minRaw, maxRaw, minGemRate, minPop, minRatio, maxRatio, sort]);
 
   // Filter option lists
   const [sets, setSets] = useState<string[]>([]);
