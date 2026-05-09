@@ -285,11 +285,24 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
       .filter((r) => r.raw_price != null && r.psa10_price != null)
       .slice(0, 300)
       .map((r) => ({
-        raw: r.raw_price,
-        psa10: r.psa10_price,
+        raw: r.raw_price as number,
+        psa10: r.psa10_price as number,
+        ratio: r.psa10_ratio,
         name: r.market_cards?.name ?? "",
+        set_name: r.market_cards?.set_name ?? null,
       }));
   }, [rows]);
+
+  const [selectedPoint, setSelectedPoint] = useState<
+    | {
+        name: string;
+        set_name: string | null;
+        raw: number;
+        psa10: number;
+        ratio: number | null;
+      }
+    | null
+  >(null);
 
   if (loading) {
     return (
