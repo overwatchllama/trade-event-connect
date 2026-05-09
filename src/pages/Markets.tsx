@@ -418,6 +418,22 @@ const Markets = () => {
           </div>
         </Card>
 
+        {/* Insights / charts */}
+        <MarketsCharts
+          filters={{
+            game,
+            search: debouncedSearch,
+            setName,
+            rarity,
+            minRaw,
+            maxRaw,
+            minGemRate,
+            minPop,
+            minRatio,
+            maxRatio,
+          }}
+        />
+
         {/* Results */}
         {loading ? (
           <div className="space-y-2">
