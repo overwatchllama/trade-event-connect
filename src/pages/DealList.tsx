@@ -380,6 +380,40 @@ const DealList = () => {
     await updateItem(id, patch);
   };
 
+  /**
+   * Confirms a Pass with a required reason. We prepend a timestamped "Passed:" line to the
+   * existing notes so the original notes (if any) are preserved as additional context.
+   */
+  const confirmPass = async () => {
+    if (!passTarget) return;
+    const reason = passReason.trim();
+    if (reason.length < 3) {
+      sonnerToast.error("Please add a short reason (at least 3 characters).");
+      return;
+    }
+    if (reason.length > 500) {
+      sonnerToast.error("Reason is too long (max 500 characters).");
+      return;
+    }
+    setPassSubmitting(true);
+    const stamp = new Date().toISOString().slice(0, 10);
+    const passedLine = `[Passed ${stamp}] ${reason}`;
+    const merged = passTarget.notes && passTarget.notes.trim().length > 0
+      ? `${passedLine}\n\n${passTarget.notes}`
+      : passedLine;
+    try {
+      await updateItem(passTarget.id, {
+        status: "passed",
+        passed_at: new Date().toISOString(),
+        notes: merged,
+      });
+      setPassTarget(null);
+      setPassReason("");
+    } finally {
+      setPassSubmitting(false);
+    }
+  };
+
   const openBuyDialog = (item: DealItem) => {
     const eff = effectivePrice(item);
     const dealUnit = modifiedPrice(item);
