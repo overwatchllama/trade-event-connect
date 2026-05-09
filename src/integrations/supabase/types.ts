@@ -2695,6 +2695,13 @@ export type Database = {
       }
     }
     Functions: {
+      get_event_sponsor_amounts: {
+        Args: { p_event_id: string }
+        Returns: {
+          amount: number
+          id: string
+        }[]
+      }
       get_public_vendor_profiles: {
         Args: { user_ids: string[] }
         Returns: {

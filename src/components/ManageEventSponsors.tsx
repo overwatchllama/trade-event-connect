@@ -42,19 +42,32 @@ export const ManageEventSponsors = ({ eventId }: ManageEventSponsorsProps) => {
 
       if (sponsorsError) throw sponsorsError;
 
-      // Fetch event sponsors with full sponsor details
+      // Fetch event sponsors with full sponsor details (amount fetched separately
+      // via RPC because the column is restricted to organizers only).
       const { data: eventSponsorsData, error: eventSponsorsError } = await supabase
         .from("event_sponsors")
         .select(`
-          *,
+          id, event_id, sponsor_id, sponsorship_level, benefits, created_at,
           sponsors:sponsor_id (*)
         `)
         .eq("event_id", eventId);
 
       if (eventSponsorsError) throw eventSponsorsError;
 
+      const { data: amountsData } = await supabase.rpc(
+        "get_event_sponsor_amounts",
+        { p_event_id: eventId },
+      );
+      const amountById = new Map(
+        (amountsData ?? []).map((r: any) => [r.id, r.amount]),
+      );
+      const merged = (eventSponsorsData ?? []).map((es: any) => ({
+        ...es,
+        amount: amountById.get(es.id) ?? null,
+      }));
+
       setSponsors(sponsorsData || []);
-      setEventSponsors(eventSponsorsData || []);
+      setEventSponsors(merged);
     } catch (error) {
       console.error("Error fetching sponsors:", error);
       toast.error("Failed to load sponsors");
