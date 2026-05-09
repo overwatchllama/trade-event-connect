@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -31,7 +31,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart3, Download } from "lucide-react";
+import { BarChart3, Download, Image as ImageIcon } from "lucide-react";
 
 export interface MarketsChartFilters {
   game: "all" | "pokemon" | "onepiece";
@@ -312,6 +312,82 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
     | null
   >(null);
 
+  const topChartRef = useRef<HTMLDivElement>(null);
+  const histChartRef = useRef<HTMLDivElement>(null);
+  const scatterChartRef = useRef<HTMLDivElement>(null);
+
+  const exportChartAsPng = async (
+    ref: React.RefObject<HTMLDivElement>,
+    filename: string,
+  ) => {
+    const container = ref.current;
+    if (!container) return;
+    const svg = container.querySelector("svg");
+    if (!svg) return;
+
+    // Clone and inline computed styles for accurate rendering
+    const clone = svg.cloneNode(true) as SVGSVGElement;
+    const bgColor = getComputedStyle(document.body).backgroundColor || "#ffffff";
+    const rect = svg.getBoundingClientRect();
+    const width = Math.ceil(rect.width);
+    const height = Math.ceil(rect.height);
+    clone.setAttribute("width", String(width));
+    clone.setAttribute("height", String(height));
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+    // Resolve CSS custom properties (hsl(var(--...))) by inlining computed colors
+    const srcEls = svg.querySelectorAll<SVGElement>("*");
+    const dstEls = clone.querySelectorAll<SVGElement>("*");
+    srcEls.forEach((src, i) => {
+      const dst = dstEls[i];
+      if (!dst) return;
+      const cs = getComputedStyle(src);
+      ["fill", "stroke", "color", "stop-color"].forEach((prop) => {
+        const val = cs.getPropertyValue(prop);
+        if (val && val !== "none") dst.setAttribute(prop, val);
+      });
+      const fontSize = cs.fontSize;
+      const fontFamily = cs.fontFamily;
+      if (fontSize) dst.setAttribute("font-size", fontSize);
+      if (fontFamily) dst.setAttribute("font-family", fontFamily);
+    });
+
+    const xml = new XMLSerializer().serializeToString(clone);
+    const svg64 = btoa(unescape(encodeURIComponent(xml)));
+    const dataUrl = `data:image/svg+xml;base64,${svg64}`;
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("Failed to render chart image"));
+      img.src = dataUrl;
+    });
+
+    const scale = 2; // hi-DPI export
+    const canvas = document.createElement("canvas");
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0, width, height);
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${filename}-${new Date().toISOString().slice(0, 10)}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  };
+
   const handleExportCsv = () => {
     const escape = (v: unknown) => {
       if (v == null) return "";
@@ -412,10 +488,22 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Top by selected metric */}
         <Card className="p-4">
-          <h3 className="font-semibold text-sm mb-3">
-            Top {topN} by {SORT_LABELS[sortBy]}
-          </h3>
-          <div style={{ height: Math.max(288, (loading ? topN : topRanked.data.length) * 22 + 40) }}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm">
+              Top {topN} by {SORT_LABELS[sortBy]}
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2"
+              disabled={loading || topRanked.data.length === 0}
+              onClick={() => exportChartAsPng(topChartRef, "markets-top")}
+              title="Export as PNG"
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+          </div>
+          <div ref={topChartRef} style={{ height: Math.max(288, (loading ? topN : topRanked.data.length) * 22 + 40) }}>
             {loading ? (
               <Skeleton className="h-full w-full" />
             ) : (
@@ -457,8 +545,20 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
 
         {/* Histogram */}
         <Card className="p-4">
-          <h3 className="font-semibold text-sm mb-3">Ratio distribution</h3>
-          <div className="h-72">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm">Ratio distribution</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2"
+              disabled={loading || histogram.every((b) => b.count === 0)}
+              onClick={() => exportChartAsPng(histChartRef, "markets-histogram")}
+              title="Export as PNG"
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+          </div>
+          <div ref={histChartRef} className="h-72">
             {loading ? (
               <Skeleton className="h-full w-full" />
             ) : (
@@ -498,8 +598,20 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
 
         {/* Scatter */}
         <Card className="p-4 lg:col-span-2">
-          <h3 className="font-semibold text-sm mb-3">Raw price vs PSA 10 price</h3>
-          <div className="h-80">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm">Raw price vs PSA 10 price</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2"
+              disabled={loading || scatter.length === 0}
+              onClick={() => exportChartAsPng(scatterChartRef, "markets-scatter")}
+              title="Export as PNG"
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+          </div>
+          <div ref={scatterChartRef} className="h-80">
             {loading ? (
               <Skeleton className="h-full w-full" />
             ) : (
