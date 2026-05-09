@@ -2695,6 +2695,27 @@ export type Database = {
       }
     }
     Functions: {
+      claim_vendor_invite: {
+        Args: { _invite_code: string }
+        Returns: {
+          created_at: string
+          hired_at: string | null
+          id: string
+          invite_code: string | null
+          invite_expires_at: string | null
+          role: Database["public"]["Enums"]["vendor_employee_role"]
+          status: string
+          updated_at: string
+          user_id: string | null
+          vendor_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vendor_employees"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_event_sponsor_amounts: {
         Args: { p_event_id: string }
         Returns: {
