@@ -120,6 +120,7 @@ const DealList = () => {
     return (window.localStorage.getItem("dealList:statusFilter") as DealStatus | "active" | "all") || "active";
   });
   const [buyTarget, setBuyTarget] = useState<MarkAsBoughtTarget | null>(null);
+  const [editTarget, setEditTarget] = useState<EditBoughtTarget | null>(null);
   // Pass-flow state — capturing a non-empty reason is mandatory so future-you knows why a deal died.
   const [passTarget, setPassTarget] = useState<DealItem | null>(null);
   const [passReason, setPassReason] = useState("");
