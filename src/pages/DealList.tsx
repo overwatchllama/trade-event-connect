@@ -1123,6 +1123,26 @@ const DealList = () => {
           }}
         />
 
+        <BulkEditBoughtDialog
+          open={bulkEditOpen}
+          targets={selectedBoughtItems.map<BulkEditTarget>((b) => ({
+            id: b.id,
+            card_name: b.card_name,
+            quantity: b.quantity,
+            purchase_price: b.purchase_price,
+            shipping_cost: b.shipping_cost,
+            fees: b.fees,
+            target_sell_price: b.target_sell_price,
+            collection_item_id: b.collection_item_id,
+          }))}
+          onClose={() => setBulkEditOpen(false)}
+          onSuccess={(patches) => {
+            // Splice each patched field back into local state so the UI updates without a refetch.
+            setItems((prev) => prev.map((it) => (patches[it.id] ? { ...it, ...patches[it.id] } : it)));
+            clearBoughtSelection();
+          }}
+        />
+
         {/* Pass-with-reason dialog. The reason is required so the Passed tab keeps useful context. */}
         <AlertDialog
           open={!!passTarget}
