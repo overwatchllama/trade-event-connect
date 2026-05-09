@@ -534,7 +534,7 @@ const DealList = () => {
                   </div>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-2">
-                  Bought deals also live in your <button className="underline" onClick={() => navigate("/my-collection")}>Inventory</button> collection with full cost basis.
+                  See full per-item P&amp;L on the <button className="underline" onClick={() => navigate("/inventory")}>Inventory page</button>. Bought deals also live in your <button className="underline" onClick={() => navigate("/my-collection")}>Inventory</button> collection with full cost basis.
                 </p>
               </Card>
             )}
