@@ -48,9 +48,7 @@ export const EventDashboard = ({ eventId, vendorTablePrice, totalTables, maxAtte
           .select('application_status, payment_status, approved_tables, requested_tables, checked_in')
           .eq('event_id', eventId),
         supabase
-          .from('event_sponsors')
-          .select('amount')
-          .eq('event_id', eventId),
+          .rpc('get_event_sponsor_amounts', { p_event_id: eventId }),
       ]);
 
       const tickets = ticketsRes.data || [];
