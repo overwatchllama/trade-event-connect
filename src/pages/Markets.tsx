@@ -85,6 +85,8 @@ const Markets = () => {
   const [maxRaw, setMaxRaw] = useState<string>("");
   const [minGemRate, setMinGemRate] = useState<string>("");
   const [minPop, setMinPop] = useState<string>("");
+  const [minRatio, setMinRatio] = useState<string>("");
+  const [maxRatio, setMaxRatio] = useState<string>("");
   const [sort, setSort] = useState<SortKey>("psa10_ratio");
 
   // Filter option lists
@@ -100,7 +102,7 @@ const Markets = () => {
   // Reset page when filters change
   useEffect(() => {
     setPage(0);
-  }, [game, debouncedSearch, setName, rarity, minRaw, maxRaw, minGemRate, minPop, sort]);
+  }, [game, debouncedSearch, setName, rarity, minRaw, maxRaw, minGemRate, minPop, minRatio, maxRatio, sort]);
 
   // Load distinct filter options once
   useEffect(() => {
@@ -149,6 +151,8 @@ const Markets = () => {
         if (maxRaw) q = q.lte("raw_price", Number(maxRaw));
         if (minGemRate) q = q.gte("gem_rate", Number(minGemRate) / 100);
         if (minPop) q = q.gte("psa_total_pop", Number(minPop));
+        if (minRatio) q = q.gte("psa10_ratio", Number(minRatio));
+        if (maxRatio) q = q.lte("psa10_ratio", Number(maxRatio));
 
         switch (sort) {
           case "psa10_ratio":
@@ -350,6 +354,16 @@ const Markets = () => {
               <Label className="text-xs">Min PSA pop</Label>
               <Input type="number" inputMode="numeric" value={minPop}
                      onChange={(e) => setMinPop(e.target.value)} placeholder="0" />
+            </div>
+            <div>
+              <Label className="text-xs">Min ratio (×)</Label>
+              <Input type="number" inputMode="decimal" step="0.1" value={minRatio}
+                     onChange={(e) => setMinRatio(e.target.value)} placeholder="0" />
+            </div>
+            <div>
+              <Label className="text-xs">Max ratio (×)</Label>
+              <Input type="number" inputMode="decimal" step="0.1" value={maxRatio}
+                     onChange={(e) => setMaxRatio(e.target.value)} placeholder="∞" />
             </div>
             <div className="lg:col-span-4 flex items-end justify-between gap-3 flex-wrap">
               <div className="flex items-end gap-2">
