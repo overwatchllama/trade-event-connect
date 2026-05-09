@@ -13,6 +13,14 @@ import {
   ZAxis,
 } from "recharts";
 import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart3 } from "lucide-react";
@@ -38,11 +46,57 @@ interface SampleRow {
   market_cards: { name: string; set_name: string | null } | null;
 }
 
-const SAMPLE_LIMIT = 500;
+type InsightSort =
+  | "psa10_ratio"
+  | "gem_rate"
+  | "psa10_price"
+  | "raw_price"
+  | "gap";
+
+const SAMPLE_OPTIONS = [50, 100, 250, 500, 1000] as const;
+const TOP_N_OPTIONS = [15, 25, 50, 100] as const;
+const STORAGE_KEY = "markets:insights:v1";
+
+const SORT_LABELS: Record<InsightSort, string> = {
+  psa10_ratio: "Raw → PSA 10 ratio",
+  gem_rate: "Gem rate",
+  psa10_price: "PSA 10 price",
+  raw_price: "Raw price",
+  gap: "PSA 10 − Raw gap",
+};
+
+const persisted = (() => {
+  try {
+    const raw =
+      typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+})();
 
 export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => {
   const [rows, setRows] = useState<SampleRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sampleLimit, setSampleLimit] = useState<number>(
+    persisted.sampleLimit ?? 500,
+  );
+  const [topN, setTopN] = useState<number>(persisted.topN ?? 15);
+  const [sortBy, setSortBy] = useState<InsightSort>(
+    persisted.sortBy ?? "psa10_ratio",
+  );
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ sampleLimit, topN, sortBy }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [sampleLimit, topN, sortBy]);
+
 
   useEffect(() => {
     let cancelled = false;
