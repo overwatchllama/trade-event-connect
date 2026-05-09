@@ -409,6 +409,9 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
         <Card className="p-4">
           <h3 className="font-semibold text-sm mb-3">Ratio distribution</h3>
           <div className="h-72">
+            {loading ? (
+              <Skeleton className="h-full w-full" />
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={histogram} margin={{ top: 4, right: 8, left: 4, bottom: 4 }}>
                 <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
