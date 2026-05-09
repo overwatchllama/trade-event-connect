@@ -53,6 +53,7 @@ interface MarketRow {
 
 type SortKey =
   | "psa10_ratio"
+  | "psa10_ratio_asc"
   | "gap"
   | "gem_rate"
   | "raw_asc"
@@ -152,6 +153,9 @@ const Markets = () => {
         switch (sort) {
           case "psa10_ratio":
             q = q.order("psa10_ratio", { ascending: false, nullsFirst: false });
+            break;
+          case "psa10_ratio_asc":
+            q = q.order("psa10_ratio", { ascending: true, nullsFirst: false });
             break;
           case "gap":
             // No stored gap column; sort by psa10_price desc as a proxy then we'll
@@ -355,6 +359,7 @@ const Markets = () => {
                     <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="psa10_ratio">Raw → PSA 10 ratio (high → low)</SelectItem>
+                      <SelectItem value="psa10_ratio_asc">Raw → PSA 10 ratio (low → high)</SelectItem>
                       <SelectItem value="gap">PSA 10 price (high → low)</SelectItem>
                       <SelectItem value="gem_rate">Gem rate (high → low)</SelectItem>
                       <SelectItem value="raw_desc">Raw price (high → low)</SelectItem>
