@@ -31,7 +31,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Download } from "lucide-react";
 
 export interface MarketsChartFilters {
   game: "all" | "pokemon" | "onepiece";
