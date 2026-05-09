@@ -29,6 +29,7 @@ import {
   Search,
   TrendingUp,
 } from "lucide-react";
+import { MarketsCharts } from "@/components/markets/MarketsCharts";
 
 interface MarketRow {
   card_id: string;
@@ -416,6 +417,22 @@ const Markets = () => {
             </div>
           </div>
         </Card>
+
+        {/* Insights / charts */}
+        <MarketsCharts
+          filters={{
+            game,
+            search: debouncedSearch,
+            setName,
+            rarity,
+            minRaw,
+            maxRaw,
+            minGemRate,
+            minPop,
+            minRatio,
+            maxRatio,
+          }}
+        />
 
         {/* Results */}
         {loading ? (
