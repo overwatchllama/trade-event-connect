@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -31,7 +31,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart3, Download } from "lucide-react";
+import { BarChart3, Download, Image as ImageIcon } from "lucide-react";
 
 export interface MarketsChartFilters {
   game: "all" | "pokemon" | "onepiece";
