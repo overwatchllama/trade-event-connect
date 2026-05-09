@@ -85,6 +85,8 @@ const Markets = () => {
   const [maxRaw, setMaxRaw] = useState<string>("");
   const [minGemRate, setMinGemRate] = useState<string>("");
   const [minPop, setMinPop] = useState<string>("");
+  const [minRatio, setMinRatio] = useState<string>("");
+  const [maxRatio, setMaxRatio] = useState<string>("");
   const [sort, setSort] = useState<SortKey>("psa10_ratio");
 
   // Filter option lists
