@@ -22,10 +22,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare, Download, Pencil } from "lucide-react";
+import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare, Download, Pencil, ListChecks } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkAsBoughtDialog, type MarkAsBoughtTarget } from "@/components/deals/MarkAsBoughtDialog";
 import { EditBoughtDialog, type EditBoughtTarget } from "@/components/deals/EditBoughtDialog";
+import { BulkEditBoughtDialog, type BulkEditTarget } from "@/components/deals/BulkEditBoughtDialog";
 
 type DealStatus = "watching" | "negotiating" | "bought" | "passed";
 
@@ -121,6 +123,10 @@ const DealList = () => {
   });
   const [buyTarget, setBuyTarget] = useState<MarkAsBoughtTarget | null>(null);
   const [editTarget, setEditTarget] = useState<EditBoughtTarget | null>(null);
+  // Bulk-edit state for the Bought tab — Set<id> survives status filter changes so users
+  // can re-find a row in another tab without losing their selection.
+  const [selectedBoughtIds, setSelectedBoughtIds] = useState<Set<string>>(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
   // Pass-flow state — capturing a non-empty reason is mandatory so future-you knows why a deal died.
   const [passTarget, setPassTarget] = useState<DealItem | null>(null);
   const [passReason, setPassReason] = useState("");
@@ -221,6 +227,35 @@ const DealList = () => {
   );
   const projectedProfit = projectedRevenue - totalInvested;
   const projectedMarginPct = totalInvested > 0 ? (projectedProfit / totalInvested) * 100 : 0;
+
+  // Bulk-edit derivations: only bought rows are eligible. Selection is intersected with the
+  // current bought set so deleted rows can't linger as ghost selections.
+  const selectedBoughtItems = boughtItems.filter((b) => selectedBoughtIds.has(b.id));
+  const selectedBoughtCount = selectedBoughtItems.length;
+  const visibleBoughtItems = visibleItems.filter((it) => it.status === "bought");
+  const allVisibleBoughtSelected =
+    visibleBoughtItems.length > 0 && visibleBoughtItems.every((b) => selectedBoughtIds.has(b.id));
+
+  const toggleBoughtSelection = (id: string) => {
+    setSelectedBoughtIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAllVisibleBought = () => {
+    setSelectedBoughtIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleBoughtSelected) {
+        for (const b of visibleBoughtItems) next.delete(b.id);
+      } else {
+        for (const b of visibleBoughtItems) next.add(b.id);
+      }
+      return next;
+    });
+  };
+  const clearBoughtSelection = () => setSelectedBoughtIds(new Set());
 
   /**
    * CSV export of the current view + a P&L summary footer for every bought deal.
@@ -663,6 +698,39 @@ const DealList = () => {
                 </p>
               </Card>
             )}
+
+            {/* Bulk-edit toolbar — visible whenever bought rows are on screen so users can multi-select cost-basis updates. */}
+            {visibleBoughtItems.length > 0 && (
+              <Card className="p-2 mb-3 flex flex-wrap items-center gap-2 text-xs">
+                <Checkbox
+                  checked={allVisibleBoughtSelected}
+                  onCheckedChange={toggleSelectAllVisibleBought}
+                  aria-label="Select all visible bought deals"
+                />
+                <span className="text-muted-foreground">
+                  {selectedBoughtCount > 0
+                    ? `${selectedBoughtCount} selected`
+                    : `Select bought deals to bulk-edit cost basis (${visibleBoughtItems.length} on screen)`}
+                </span>
+                <div className="ml-auto flex items-center gap-2">
+                  {selectedBoughtCount > 0 && (
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={clearBoughtSelection}>
+                      Clear
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={selectedBoughtCount === 0}
+                    onClick={() => setBulkEditOpen(true)}
+                  >
+                    <ListChecks className="h-3 w-3 mr-1" />
+                    Edit {selectedBoughtCount || ""} cost bas{selectedBoughtCount === 1 ? "is" : "es"}
+                  </Button>
+                </div>
+              </Card>
+            )}
+
             <div className="space-y-3 mb-6">
               {visibleItems.length === 0 && (
                 <Card className="p-10 text-center border-dashed">
@@ -671,6 +739,16 @@ const DealList = () => {
               )}
               {visibleItems.map((i) => (
                 <Card key={i.id} className="p-3 flex gap-3">
+                  {/* Bulk-edit checkbox is bought-only — keeps the gutter empty for active/passed rows. */}
+                  {i.status === "bought" && (
+                    <div className="flex items-start pt-1">
+                      <Checkbox
+                        checked={selectedBoughtIds.has(i.id)}
+                        onCheckedChange={() => toggleBoughtSelection(i.id)}
+                        aria-label={`Select ${i.card_name} for bulk edit`}
+                      />
+                    </div>
+                  )}
                   <div className="w-16 h-22 shrink-0 bg-muted rounded overflow-hidden flex items-center justify-center">
                     {i.image_url ? (
                       <img src={i.image_url} alt={i.card_name} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
@@ -1042,6 +1120,26 @@ const DealList = () => {
           onClose={() => setEditTarget(null)}
           onSuccess={(dealId, patch) => {
             setItems((prev) => prev.map((it) => (it.id === dealId ? { ...it, ...patch } : it)));
+          }}
+        />
+
+        <BulkEditBoughtDialog
+          open={bulkEditOpen}
+          targets={selectedBoughtItems.map<BulkEditTarget>((b) => ({
+            id: b.id,
+            card_name: b.card_name,
+            quantity: b.quantity,
+            purchase_price: b.purchase_price,
+            shipping_cost: b.shipping_cost,
+            fees: b.fees,
+            target_sell_price: b.target_sell_price,
+            collection_item_id: b.collection_item_id,
+          }))}
+          onClose={() => setBulkEditOpen(false)}
+          onSuccess={(patches) => {
+            // Splice each patched field back into local state so the UI updates without a refetch.
+            setItems((prev) => prev.map((it) => (patches[it.id] ? { ...it, ...patches[it.id] } : it)));
+            clearBoughtSelection();
           }}
         />
 
