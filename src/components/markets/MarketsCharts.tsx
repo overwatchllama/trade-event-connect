@@ -442,6 +442,7 @@ export const MarketsCharts = ({ filters }: { filters: MarketsChartFilters }) => 
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            )}
           </div>
         </Card>
 
