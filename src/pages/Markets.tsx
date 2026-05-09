@@ -53,6 +53,7 @@ interface MarketRow {
 
 type SortKey =
   | "psa10_ratio"
+  | "psa10_ratio_asc"
   | "gap"
   | "gem_rate"
   | "raw_asc"
