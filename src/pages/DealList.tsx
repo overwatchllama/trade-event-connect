@@ -53,6 +53,7 @@ interface DealItem {
   source: string | null;
   target_sell_price: number | null;
   bought_at: string | null;
+  passed_at: string | null;
   collection_item_id: string | null;
 }
 
