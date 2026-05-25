@@ -88,6 +88,7 @@ export const BulkEditBoughtDialog = ({ open, targets, onClose, onSuccess }: Prop
   const [shipping, setShipping] = useState<FieldState>({ mode: "none", value: "" });
   const [fees, setFees] = useState<FieldState>({ mode: "none", value: "" });
   const [targetSell, setTargetSell] = useState<FieldState>({ mode: "none", value: "" });
+  const [reviewing, setReviewing] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Reset the form whenever a new selection is opened so previous edits don't leak.
@@ -97,14 +98,21 @@ export const BulkEditBoughtDialog = ({ open, targets, onClose, onSuccess }: Prop
     setShipping({ mode: "none", value: "" });
     setFees({ mode: "none", value: "" });
     setTargetSell({ mode: "none", value: "" });
+    setReviewing(false);
   }, [open]);
+
+  const anyChange =
+    purchase.mode !== "none" ||
+    shipping.mode !== "none" ||
+    fees.mode !== "none" ||
+    targetSell.mode !== "none";
 
   // Live preview of aggregate cost-basis impact across the selection.
   const preview = useMemo(() => {
     let beforeCost = 0;
     let afterCost = 0;
     let beforeRevenue = 0;
-    let afterRevenue = 0;
+    let afterRevenue = 1;
     for (const t of targets) {
       const qty = t.quantity || 1;
       const curUnit = t.purchase_price ?? 0;
@@ -129,12 +137,6 @@ export const BulkEditBoughtDialog = ({ open, targets, onClose, onSuccess }: Prop
       afterProfit: afterRevenue - afterCost,
     };
   }, [targets, purchase, shipping, fees, targetSell]);
-
-  const anyChange =
-    purchase.mode !== "none" ||
-    shipping.mode !== "none" ||
-    fees.mode !== "none" ||
-    targetSell.mode !== "none";
 
   const handleSave = async () => {
     if (saving || !anyChange || targets.length === 0) return;
@@ -214,86 +216,83 @@ export const BulkEditBoughtDialog = ({ open, targets, onClose, onSuccess }: Prop
     }
   };
 
+  const deltaSign = (before: number, after: number) =>
+    after > before ? "+" : after < before ? "" : "";
+  const deltaVal = (before: number, after: number) => round2(after - before);
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !saving && onClose()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Bulk edit bought deals</DialogTitle>
+          <DialogTitle>
+            {reviewing ? "Confirm bulk edit" : "Bulk edit bought deals"}
+          </DialogTitle>
           <DialogDescription>
-            Apply the same cost-basis or target-sell change to {targets.length} selected deal
-            {targets.length === 1 ? "" : "s"}. Each field is optional — leave on "No change" to skip it.
+            {reviewing
+              ? `Review the impact before applying changes to ${targets.length} selected deal${targets.length === 1 ? "" : "s"}.`
+              : `Apply the same cost-basis or target-sell change to ${targets.length} selected deal${targets.length === 1 ? "" : "s"}. Each field is optional — leave on "No change" to skip it.`}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
-          <FieldRow
-            label="Purchase price (per card)"
-            field={purchase}
-            onChange={setPurchase}
-            hint="Set replaces; Adjust by $ adds/subtracts; Adjust by % scales."
-          />
-          <FieldRow
-            label="Shipping (total per deal)"
-            field={shipping}
-            onChange={setShipping}
-          />
-          <FieldRow
-            label="Fees (total per deal)"
-            field={fees}
-            onChange={setFees}
-          />
-          <FieldRow
-            label="Target sell price (per card)"
-            field={targetSell}
-            onChange={setTargetSell}
-          />
-        </div>
+        {!reviewing ? (
+          <>
+            <div className="space-y-3">
+              <FieldRow
+                label="Purchase price (per card)"
+                field={purchase}
+                onChange={setPurchase}
+                hint="Set replaces; Adjust by $ adds/subtracts; Adjust by % scales."
+              />
+              <FieldRow
+                label="Shipping (total per deal)"
+                field={shipping}
+                onChange={setShipping}
+              />
+              <FieldRow
+                label="Fees (total per deal)"
+                field={fees}
+                onChange={setFees}
+              />
+              <FieldRow
+                label="Target sell price (per card)"
+                field={targetSell}
+                onChange={setTargetSell}
+              />
+            </div>
 
-        <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs space-y-1">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Total cost basis</span>
-            <span>
-              ${preview.beforeCost.toFixed(2)}
-              {anyChange && (
-                <>
-                  {" → "}
-                  <span className="font-semibold">${preview.afterCost.toFixed(2)}</span>
-                </>
-              )}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Projected revenue</span>
-            <span>
-              ${preview.beforeRevenue.toFixed(2)}
-              {anyChange && (
-                <>
-                  {" → "}
-                  <span className="font-semibold">${preview.afterRevenue.toFixed(2)}</span>
-                </>
-              )}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Projected profit</span>
-            <span className={preview.afterProfit >= 0 ? "text-emerald-600 font-semibold" : "text-destructive font-semibold"}>
-              ${preview.beforeProfit.toFixed(2)}
-              {anyChange && <> → ${preview.afterProfit.toFixed(2)}</>}
-            </span>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving || !anyChange}>
-            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Apply to {targets.length}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
+            <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs space-y-1">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total cost basis</span>
+                <span>
+                  ${preview.beforeCost.toFixed(2)}
+                  {anyChange && (
+                    <>
+                      {" → "}
+                      <span className="font-semibold">${preview.afterCost.toFixed(2)}</span>
+                    </>
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Projected revenue</span>
+                <span>
+                  ${preview.beforeRevenue.toFixed(2)}
+                  {anyChange && (
+                    <>
+                      {" → "}
+                      <span className="font-semibold">${preview.afterRevenue.toFixed(2)}</span>
+                    </>
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Projected profit</span>
+                <span className={preview.afterProfit >= 1 ? "text-emerald-600 font-semibold" : "text-destructive font-semibold"}>
+                  ${preview.beforeProfit.toFixed(2)}
+                  {anyChange && <> → ${preview.afterProfit.toFixed(2)}</>}
+                </span>
+              </div>
+            </di
 
 interface FieldRowProps {
   label: string;
