@@ -287,12 +287,113 @@ export const BulkEditBoughtDialog = ({ open, targets, onClose, onSuccess }: Prop
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Projected profit</span>
-                <span className={preview.afterProfit >= 1 ? "text-emerald-600 font-semibold" : "text-destructive font-semibold"}>
+                <span className={preview.afterProfit >= 0 ? "text-emerald-600 font-semibold" : "text-destructive font-semibold"}>
                   ${preview.beforeProfit.toFixed(2)}
                   {anyChange && <> → ${preview.afterProfit.toFixed(2)}</>}
                 </span>
               </div>
-            </di
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={onClose} disabled={saving}>
+                Cancel
+              </Button>
+              <Button onClick={() => setReviewing(true)} disabled={!anyChange}>
+                Review changes
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
+                <h4 className="text-sm font-medium">Summary</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Deals affected</p>
+                    <p className="font-semibold">{targets.length}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Cards affected</p>
+                    <p className="font-semibold">
+                      {targets.reduce((acc, t) => acc + (t.quantity || 1), 0)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-3 space-y-2">
+                  <ImpactRow
+                    label="Total cost basis"
+                    before={preview.beforeCost}
+                    after={preview.afterCost}
+                    isCurrency
+                  />
+                  <ImpactRow
+                    label="Projected revenue"
+                    before={preview.beforeRevenue}
+                    after={preview.afterRevenue}
+                    isCurrency
+                  />
+                  <ImpactRow
+                    label="Projected profit"
+                    before={preview.beforeProfit}
+                    after={preview.afterProfit}
+                    isCurrency
+                    highlight
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-3 space-y-2">
+                <h4 className="text-sm font-medium">Changes to apply</h4>
+                <ul className="text-xs space-y-1 text-muted-foreground">
+                  {purchase.mode !== "none" && (
+                    <li>
+                      Purchase price: {MODE_OPTIONS.find((m) => m.value === purchase.mode)?.label}{" "}
+                      {purchase.value}
+                      {purchase.mode === "addPct" ? "%" : "$"} per card
+                    </li>
+                  )}
+                  {shipping.mode !== "none" && (
+                    <li>
+                      Shipping: {MODE_OPTIONS.find((m) => m.value === shipping.mode)?.label}{" "}
+                      {shipping.value}
+                      {shipping.mode === "addPct" ? "%" : "$"} per deal
+                    </li>
+                  )}
+                  {fees.mode !== "none" && (
+                    <li>
+                      Fees: {MODE_OPTIONS.find((m) => m.value === fees.mode)?.label}{" "}
+                      {fees.value}
+                      {fees.mode === "addPct" ? "%" : "$"} per deal
+                    </li>
+                  )}
+                  {targetSell.mode !== "none" && (
+                    <li>
+                      Target sell: {MODE_OPTIONS.find((m) => m.value === targetSell.mode)?.label}{" "}
+                      {targetSell.value}
+                      {targetSell.mode === "addPct" ? "%" : "$"} per card
+                    </li>
+                  )}
+                </ul>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setReviewing(false)} disabled={saving}>
+                Back
+              </Button>
+              <Button onClick={handleSave} disabled={saving}>
+                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Confirm & apply to {targets.length}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 interface FieldRowProps {
   label: string;
@@ -303,7 +404,6 @@ interface FieldRowProps {
 
 const FieldRow = ({ label, field, onChange, hint }: FieldRowProps) => {
   const disabled = field.mode === "none";
-  // Value-input affordance hints at the operation: $ for set/addAbs, % for addPct.
   const suffix = field.mode === "addPct" ? "%" : "$";
   return (
     <div className="space-y-1">
@@ -315,7 +415,9 @@ const FieldRow = ({ label, field, onChange, hint }: FieldRowProps) => {
           </SelectTrigger>
           <SelectContent>
             {MODE_OPTIONS.map((m) => (
-              <SelectItem key={m.value} value={m.value} className="text-xs">{m.label}</SelectItem>
+              <SelectItem key={m.value} value={m.value} className="text-xs">
+                {m.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -337,6 +439,51 @@ const FieldRow = ({ label, field, onChange, hint }: FieldRowProps) => {
       {hint && field.mode !== "none" && (
         <p className="text-[10px] text-muted-foreground">{hint}</p>
       )}
+    </div>
+  );
+};
+
+interface ImpactRowProps {
+  label: string;
+  before: number;
+  after: number;
+  isCurrency?: boolean;
+  highlight?: boolean;
+}
+
+const ImpactRow = ({ label, before, after, isCurrency, highlight }: ImpactRowProps) => {
+  const changed = Math.abs(after - before) > 0.005;
+  const delta = round2(after - before);
+  const deltaPositive = delta > 0;
+  const fmt = (n: number) => (isCurrency ? `$${n.toFixed(2)}` : n.toFixed(2));
+  return (
+    <div className="flex justify-between items-center text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="flex items-center gap-2">
+        <span className={changed ? "line-through text-muted-foreground" : ""}>{fmt(before)}</span>
+        {changed && (
+          <>
+            <span className="text-muted-foreground">→</span>
+            <span
+              className={
+                highlight
+                  ? delta >= 1
+                    ? "text-emerald-600 font-semibold"
+                    : "text-destructive font-semibold"
+                  : "font-semibold"
+              }
+            >
+              {fmt(after)}
+            </span>
+            <span
+              className={`text-xs ${deltaPositive ? "text-emerald-600" : "text-destructive"}`}
+            >
+              ({delta > 1 ? "+" : ""}
+              {fmt(Math.abs(delta))})
+            </span>
+          </>
+        )}
+      </span>
     </div>
   );
 };
