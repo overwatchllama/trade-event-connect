@@ -127,6 +127,10 @@ const DealList = () => {
   // can re-find a row in another tab without losing their selection.
   const [selectedBoughtIds, setSelectedBoughtIds] = useState<Set<string>>(new Set());
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  // Latest reversible bulk edit for this user. Refetched after each save so the
+  // Undo button always reflects the freshest action and disappears once consumed.
+  const [lastBulkEdit, setLastBulkEdit] = useState<{ id: string; created_at: string; entries: any[]; summary: any } | null>(null);
+  const [undoing, setUndoing] = useState(false);
   // Pass-flow state — capturing a non-empty reason is mandatory so future-you knows why a deal died.
   const [passTarget, setPassTarget] = useState<DealItem | null>(null);
   const [passReason, setPassReason] = useState("");
