@@ -218,20 +218,47 @@ const EventDetails = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>{event.title} - CC Events</title>
+        <title>{`${event.title} | Collector Companion`}</title>
         <meta name="description" content={event.description || `Join us for ${event.title} at ${event.venue || 'this exciting event'}`} />
-        
+        <link rel="canonical" href={`https://www.collectorcompanion.com/event/${event.id}`} />
+
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:title" content={event.title} />
         <meta property="og:description" content={event.description || `Join us for ${event.title} at ${event.venue || 'this exciting event'}`} />
+        <meta property="og:url" content={`https://www.collectorcompanion.com/event/${event.id}`} />
         {event.flyer_url && <meta property="og:image" content={event.flyer_url} />}
-        
+
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={event.title} />
         <meta name="twitter:description" content={event.description || `Join us for ${event.title} at ${event.venue || 'this exciting event'}`} />
         {event.flyer_url && <meta name="twitter:image" content={event.flyer_url} />}
+
+        {/* Event JSON-LD for rich search results */}
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Event",
+          name: event.title,
+          startDate: event.date,
+          description: event.description || `Join us for ${event.title}`,
+          eventStatus: "https://schema.org/EventScheduled",
+          eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+          location: {
+            "@type": "Place",
+            name: event.venue || event.title,
+            address: {
+              "@type": "PostalAddress",
+              streetAddress: event.address || undefined,
+              addressLocality: event.city || undefined,
+              addressRegion: event.state || undefined,
+              postalCode: event.zip_code || undefined,
+            },
+          },
+          image: event.flyer_url || undefined,
+          organizer: event.organizer_name ? { "@type": "Organization", name: event.organizer_name } : undefined,
+          url: `https://www.collectorcompanion.com/event/${event.id}`,
+        })}</script>
       </Helmet>
       <Header />
       
