@@ -147,6 +147,8 @@ const EnhancedCollection = () => {
       />
 
       <main className="container mx-auto px-4 py-6 max-w-7xl">
+        <h1 className="sr-only">My Trading Card Collection</h1>
+
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <CollectionDashboard items={items} onNavigate={setActiveTab} />

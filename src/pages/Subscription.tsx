@@ -48,6 +48,8 @@ const Subscription = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-8">
+        <h1 className="sr-only">Subscription Plans</h1>
+
         {/* Current Subscription Status */}
         {user && (
           <Card className="p-6 mb-8">
