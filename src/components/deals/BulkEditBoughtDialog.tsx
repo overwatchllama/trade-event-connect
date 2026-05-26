@@ -246,7 +246,7 @@ export const BulkEditBoughtDialog = ({ open, targets, onClose, onSuccess }: Prop
         const { error: auditErr } = await supabase.from("bulk_edit_audit_log").insert({
           user_id: uid,
           action: "bulk_edit_bought",
-          entries: auditEntries,
+          entries: auditEntries as unknown as never,
           summary: {
             count: targets.length,
             inventory_updates: inventoryUpdates.map((u) => ({
@@ -260,7 +260,7 @@ export const BulkEditBoughtDialog = ({ open, targets, onClose, onSuccess }: Prop
               fees: fees.mode !== "none" ? `${fees.mode}:${fees.value}` : null,
               target_sell: targetSell.mode !== "none" ? `${targetSell.mode}:${targetSell.value}` : null,
             },
-          },
+          } as unknown as never,
         });
         if (auditErr) {
           toast({
