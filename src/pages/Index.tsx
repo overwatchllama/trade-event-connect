@@ -104,6 +104,14 @@ const Index = () => {
 
   return (
     <main className="min-h-screen bg-background">
+      <Helmet>
+        <title>Collector Companion — The Ultimate Collector Experience</title>
+        <meta name="description" content="Discover trading card events, connect with vendors, and manage your TCG collection — all in one place." />
+        <link rel="canonical" href="https://www.collectorcompanion.com/" />
+        <meta property="og:title" content="Collector Companion — The Ultimate Collector Experience" />
+        <meta property="og:description" content="Discover trading card events, connect with vendors, and manage your TCG collection — all in one place." />
+        <meta property="og:url" content="https://www.collectorcompanion.com/" />
+      </Helmet>
       <Header />
       <Hero />
       <TryTheDemoSection />
