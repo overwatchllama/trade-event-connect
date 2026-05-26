@@ -386,6 +386,110 @@ export const BulkEditBoughtDialog = ({ open, targets, onClose, onSuccess }: Prop
                   )}
                 </ul>
               </div>
+
+              <div className="rounded-lg border space-y-2">
+                <div className="p-3 pb-0">
+                  <h4 className="text-sm font-medium">Per-deal preview</h4>
+                  <p className="text-xs text-muted-foreground">
+                    New values after your edits
+                  </p>
+                </div>
+                <ScrollArea className="max-h-72">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Card</TableHead>
+                        <TableHead className="text-xs text-right">Qty</TableHead>
+                        <TableHead className="text-xs text-right">Purchase</TableHead>
+                        <TableHead className="text-xs text-right">Ship</TableHead>
+                        <TableHead className="text-xs text-right">Fees</TableHead>
+                        <TableHead className="text-xs text-right">Target sell</TableHead>
+                        <TableHead className="text-xs text-right">Cost basis</TableHead>
+                        <TableHead className="text-xs text-right">Profit</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {targets.map((t) => {
+                        const qty = t.quantity || 1;
+                        const curUnit = t.purchase_price ?? 0;
+                        const curShip = t.shipping_cost ?? 0;
+                        const curFee = t.fees ?? 0;
+                        const curSell = t.target_sell_price ?? 0;
+                        const newUnit = applyOp(curUnit, purchase);
+                        const newShip = applyOp(curShip, shipping);
+                        const newFee = applyOp(curFee, fees);
+                        const newSell = applyOp(curSell, targetSell);
+                        const beforeCost = curUnit * qty + curShip + curFee;
+                        const afterCost = newUnit * qty + newShip + newFee;
+                        const beforeProfit = curSell * qty - beforeCost;
+                        const afterProfit = newSell * qty - afterCost;
+                        const costChanged = Math.abs(afterCost - beforeCost) > 0.005;
+                        const profitChanged = Math.abs(afterProfit - beforeProfit) > 0.005;
+                        return (
+                          <TableRow key={t.id}>
+                            <TableCell className="text-xs font-medium max-w-[140px] truncate">
+                              {t.card_name}
+                            </TableCell>
+                            <TableCell className="text-xs text-right">{qty}</TableCell>
+                            <TableCell className="text-xs text-right">
+                              <span className={purchase.mode !== "none" ? "line-through text-muted-foreground" : ""}>
+                                ${curUnit.toFixed(2)}
+                              </span>
+                              {purchase.mode !== "none" && (
+                                <span className="ml-1 font-semibold">${newUnit.toFixed(2)}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-right">
+                              <span className={shipping.mode !== "none" ? "line-through text-muted-foreground" : ""}>
+                                ${curShip.toFixed(2)}
+                              </span>
+                              {shipping.mode !== "none" && (
+                                <span className="ml-1 font-semibold">${newShip.toFixed(2)}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-right">
+                              <span className={fees.mode !== "none" ? "line-through text-muted-foreground" : ""}>
+                                ${curFee.toFixed(2)}
+                              </span>
+                              {fees.mode !== "none" && (
+                                <span className="ml-1 font-semibold">${newFee.toFixed(2)}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-right">
+                              <span className={targetSell.mode !== "none" ? "line-through text-muted-foreground" : ""}>
+                                ${curSell.toFixed(2)}
+                              </span>
+                              {targetSell.mode !== "none" && (
+                                <span className="ml-1 font-semibold">${newSell.toFixed(2)}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-right">
+                              <span className={costChanged ? "line-through text-muted-foreground" : ""}>
+                                ${beforeCost.toFixed(2)}
+                              </span>
+                              {costChanged && (
+                                <span className={`ml-1 font-semibold ${afterCost > beforeCost ? "text-destructive" : "text-emerald-600"}`}>
+                                  ${afterCost.toFixed(2)}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-right">
+                              <span className={profitChanged ? "line-through text-muted-foreground" : ""}>
+                                ${beforeProfit.toFixed(2)}
+                              </span>
+                              {profitChanged && (
+                                <span className={`ml-1 font-semibold ${afterProfit >= beforeProfit ? "text-emerald-600" : "text-destructive"}`}>
+                                  ${afterProfit.toFixed(2)}
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </div>
             </div>
 
             <DialogFooter>
