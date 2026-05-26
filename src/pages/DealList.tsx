@@ -1241,6 +1241,7 @@ const DealList = () => {
             // Splice each patched field back into local state so the UI updates without a refetch.
             setItems((prev) => prev.map((it) => (patches[it.id] ? { ...it, ...patches[it.id] } : it)));
             clearBoughtSelection();
+            refreshLastBulkEdit();
           }}
         />
 
