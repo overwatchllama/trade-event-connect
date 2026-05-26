@@ -674,6 +674,14 @@ const Events = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Trading Card Events Near You | Collector Companion</title>
+        <meta name="description" content="Browse upcoming trading card shows, tournaments, and conventions. Filter by state, date, and TCG to find your next event." />
+        <link rel="canonical" href="https://www.collectorcompanion.com/events" />
+        <meta property="og:title" content="Trading Card Events Near You | Collector Companion" />
+        <meta property="og:description" content="Browse upcoming trading card shows, tournaments, and conventions. Filter by state, date, and TCG to find your next event." />
+        <meta property="og:url" content="https://www.collectorcompanion.com/events" />
+      </Helmet>
       <Header />
       
       <div className="container mx-auto px-3 md:px-4 py-4 md:py-8">
