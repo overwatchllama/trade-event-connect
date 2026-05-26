@@ -182,6 +182,103 @@ const DealList = () => {
     })();
   }, [user]);
 
+  /**
+   * Load the most recent reversible bulk edit for the current user. Called on mount
+   * and after each successful bulk edit / undo so the Undo button stays in sync.
+   */
+  const refreshLastBulkEdit = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("bulk_edit_audit_log")
+      .select("id, created_at, entries, summary")
+      .eq("user_id", user.id)
+      .eq("action", "bulk_edit_bought")
+      .is("undone_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setLastBulkEdit(data ? { ...(data as any) } : null);
+  };
+
+  useEffect(() => {
+    refreshLastBulkEdit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  /**
+   * Restore every deal (and any mirrored inventory row) in the latest bulk edit
+   * back to its pre-edit values, then mark the audit row consumed.
+   */
+  const handleUndoLastBulkEdit = async () => {
+    if (!lastBulkEdit || undoing) return;
+    setUndoing(true);
+    try {
+      const entries = (lastBulkEdit.entries ?? []) as Array<any>;
+      const dealOps = entries.map((e) =>
+        supabase
+          .from("deal_list_items")
+          .update({
+            purchase_price: e.before?.purchase_price ?? null,
+            shipping_cost: e.before?.shipping_cost ?? 0,
+            fees: e.before?.fees ?? 0,
+            target_sell_price: e.before?.target_sell_price ?? null,
+          })
+          .eq("id", e.deal_id),
+      );
+      const results = await Promise.all(dealOps);
+      const firstErr = results.find((r) => r.error)?.error;
+      if (firstErr) throw firstErr;
+
+      // Restore inventory mirror values where they were captured.
+      const invSnapshots = (lastBulkEdit.summary?.inventory_updates ?? []) as Array<{
+        id: string;
+        prev_purchase_price: number | null;
+        prev_estimated_value: number | null;
+      }>;
+      if (invSnapshots.length > 0) {
+        await Promise.all(
+          invSnapshots.map((s) =>
+            supabase
+              .from("collection_items")
+              .update({ purchase_price: s.prev_purchase_price, estimated_value: s.prev_estimated_value })
+              .eq("id", s.id),
+          ),
+        );
+      }
+
+      // Splice restored values back into local state to avoid a refetch.
+      setItems((prev) =>
+        prev.map((it) => {
+          const match = entries.find((e) => e.deal_id === it.id);
+          if (!match) return it;
+          return {
+            ...it,
+            purchase_price: match.before?.purchase_price ?? null,
+            shipping_cost: match.before?.shipping_cost ?? 0,
+            fees: match.before?.fees ?? 0,
+            target_sell_price: match.before?.target_sell_price ?? null,
+          };
+        }),
+      );
+
+      await supabase
+        .from("bulk_edit_audit_log")
+        .update({ undone_at: new Date().toISOString() })
+        .eq("id", lastBulkEdit.id);
+
+      toast({ title: "Bulk edit reverted", description: `Restored ${entries.length} deal${entries.length === 1 ? "" : "s"}.` });
+      setLastBulkEdit(null);
+    } catch (e) {
+      toast({
+        title: "Undo failed",
+        description: e instanceof Error ? e.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setUndoing(false);
+    }
+  };
+
   /** Effective trade % for a row: per-card override (if set) > global costPct. */
   const effectiveTradePct = (item: DealItem): number =>
     item.trade_pct_override ?? costPct;
