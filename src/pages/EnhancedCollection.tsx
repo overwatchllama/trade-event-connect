@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -127,6 +128,14 @@ const EnhancedCollection = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>My Collection | Collector Companion</title>
+        <meta name="description" content="Track your trading card collection, set completion, market values, and inventory across every TCG you collect." />
+        <link rel="canonical" href="https://www.collectorcompanion.com/my-collection" />
+        <meta property="og:title" content="My Collection | Collector Companion" />
+        <meta property="og:description" content="Track your trading card collection, set completion, and inventory in one place." />
+        <meta property="og:url" content="https://www.collectorcompanion.com/my-collection" />
+      </Helmet>
       <Header />
       <CollectionSubNav
         activeTab={activeTab}

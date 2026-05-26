@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -209,6 +210,15 @@ const VendorProfile = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>{`${vendor.business_name} | Vendor on Collector Companion`}</title>
+        <meta name="description" content={`${vendor.business_name} — trading card vendor profile on Collector Companion. View inventory, contact info, and upcoming events.`} />
+        <link rel="canonical" href={`https://www.collectorcompanion.com/vendor/${vendor.id}`} />
+        <meta property="og:title" content={`${vendor.business_name} | Collector Companion`} />
+        <meta property="og:description" content={`Trading card vendor profile for ${vendor.business_name}.`} />
+        <meta property="og:url" content={`https://www.collectorcompanion.com/vendor/${vendor.id}`} />
+        {vendor.avatar_url && <meta property="og:image" content={vendor.avatar_url} />}
+      </Helmet>
       <Header />
       
       <main className="container mx-auto px-4 py-8">

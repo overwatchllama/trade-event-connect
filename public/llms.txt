@@ -1,0 +1,16 @@
+# Collector Companion
+
+> The Ultimate Collector Experience — a platform for trading card events, vendor marketplace, and personal collection management across TCGs like Pokémon and One Piece.
+
+Collector Companion helps collectors discover local trading card shows and tournaments, connect with vendors, manage their inventory and slabs, and track market pricing. Event organizers and vendors use the same platform to run shows, handle vendor applications, and reach attendees.
+
+## Pages
+
+- [Home](/): Overview of upcoming events and the platform.
+- [Events](/events): Browse upcoming trading card events filtered by state, date, and TCG.
+- [Vendors](/vendors): Directory of trading card vendors on the platform.
+- [Demo](/demo): Interactive demo of the platform's collector and organizer tools.
+
+## Optional
+
+- [Sign in](/auth): Authentication for collectors, vendors, and organizers.
