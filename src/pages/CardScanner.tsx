@@ -259,8 +259,12 @@ const CardScanner = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Pricing | Collector Companion</title>
+        <title>Card Scanner & Market Pricing | Collector Companion</title>
         <meta name="description" content="Snap a photo of multiple trading cards to instantly identify and price them. Build a Deal List then save to your collection." />
+        <link rel="canonical" href="https://www.collectorcompanion.com/scanner" />
+        <meta property="og:title" content="Card Scanner & Market Pricing | Collector Companion" />
+        <meta property="og:description" content="Snap a photo of multiple trading cards to instantly identify and price them. Build a Deal List then save to your collection." />
+        <meta property="og:url" content="https://www.collectorcompanion.com/scanner" />
       </Helmet>
       <Header />
 
