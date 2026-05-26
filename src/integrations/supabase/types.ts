@@ -70,6 +70,36 @@ export type Database = {
           },
         ]
       }
+      bulk_edit_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          entries: Json
+          id: string
+          summary: Json | null
+          undone_at: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entries: Json
+          id?: string
+          summary?: Json | null
+          undone_at?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entries?: Json
+          id?: string
+          summary?: Json | null
+          undone_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       collection_items: {
         Row: {
           acquired_date: string | null
