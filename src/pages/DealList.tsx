@@ -814,6 +814,19 @@ const DealList = () => {
                     : `Select bought deals to bulk-edit cost basis (${visibleBoughtItems.length} on screen)`}
                 </span>
                 <div className="ml-auto flex items-center gap-2">
+                  {lastBulkEdit && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={handleUndoLastBulkEdit}
+                      disabled={undoing}
+                      title={`Revert last bulk edit (${(lastBulkEdit.entries ?? []).length} deal${(lastBulkEdit.entries ?? []).length === 1 ? "" : "s"})`}
+                    >
+                      {undoing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Undo2 className="h-3 w-3 mr-1" />}
+                      Undo last bulk edit
+                    </Button>
+                  )}
                   {selectedBoughtCount > 0 && (
                     <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={clearBoughtSelection}>
                       Clear
