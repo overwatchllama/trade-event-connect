@@ -154,11 +154,17 @@ export const BulkEditBoughtDialog = ({ open, targets, onClose, onSuccess }: Prop
       string,
       Partial<Pick<BulkEditTarget, "purchase_price" | "shipping_cost" | "fees" | "target_sell_price">>
     > = {};
-    const inventoryUpdates: Array<{ id: string; purchase_price: number; estimated_value: number }> = [];
+    const inventoryUpdates: Array<{
+      id: string;
+      purchase_price: number;
+      estimated_value: number;
+      prev_purchase_price: number | null;
+      prev_estimated_value: number | null;
+    }> = [];
+    // Audit entries snapshot before/after per deal so the action can be reversed.
+    const auditEntries: Array<Record<string, unknown>> = [];
 
     try {
-      // Per-row update: bulk SQL would lose per-row math (current values differ per deal).
-      // Rather than N round-trips, we fire them in parallel and surface any failures.
       const ops = targets.map(async (t) => {
         const qty = t.quantity || 1;
         const newUnit = applyOp(t.purchase_price ?? 0, purchase);
@@ -176,20 +182,44 @@ export const BulkEditBoughtDialog = ({ open, targets, onClose, onSuccess }: Prop
         if (error) throw error;
         patches[t.id] = patch;
 
-        // Mirror cost basis to the linked Inventory row so the Inventory page stays accurate.
+        auditEntries.push({
+          deal_id: t.id,
+          card_name: t.card_name,
+          collection_item_id: t.collection_item_id,
+          quantity: qty,
+          before: {
+            purchase_price: t.purchase_price,
+            shipping_cost: t.shipping_cost,
+            fees: t.fees,
+            target_sell_price: t.target_sell_price,
+          },
+          after: {
+            purchase_price: patch.purchase_price ?? t.purchase_price,
+            shipping_cost: patch.shipping_cost ?? t.shipping_cost,
+            fees: patch.fees ?? t.fees,
+            target_sell_price: "target_sell_price" in patch ? patch.target_sell_price : t.target_sell_price,
+          },
+        });
+
         if (t.collection_item_id && (purchase.mode !== "none" || shipping.mode !== "none" || fees.mode !== "none")) {
           const totalCost = newUnit * qty + newShip + newFee;
+          // Capture previous inventory values so undo can restore them exactly.
+          const { data: prevInv } = await supabase
+            .from("collection_items")
+            .select("purchase_price, estimated_value")
+            .eq("id", t.collection_item_id)
+            .maybeSingle();
           inventoryUpdates.push({
             id: t.collection_item_id,
             purchase_price: newUnit,
             estimated_value: totalCost,
+            prev_purchase_price: prevInv?.purchase_price ?? null,
+            prev_estimated_value: prevInv?.estimated_value ?? null,
           });
         }
       });
       await Promise.all(ops);
 
-      // Fire inventory updates in parallel; failures here are non-fatal to the deal-list update,
-      // but we still surface them so users know the inventory mirror may be stale.
       if (inventoryUpdates.length > 0) {
         const invOps = inventoryUpdates.map((u) =>
           supabase
@@ -208,10 +238,43 @@ export const BulkEditBoughtDialog = ({ open, targets, onClose, onSuccess }: Prop
         }
       }
 
+      // Write the audit row. Failure doesn't roll back the edit, but undo
+      // won't be available for this action — warn the user explicitly.
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (uid) {
+        const { error: auditErr } = await supabase.from("bulk_edit_audit_log").insert({
+          user_id: uid,
+          action: "bulk_edit_bought",
+          entries: auditEntries as unknown as never,
+          summary: {
+            count: targets.length,
+            inventory_updates: inventoryUpdates.map((u) => ({
+              id: u.id,
+              prev_purchase_price: u.prev_purchase_price,
+              prev_estimated_value: u.prev_estimated_value,
+            })),
+            modes: {
+              purchase: purchase.mode !== "none" ? `${purchase.mode}:${purchase.value}` : null,
+              shipping: shipping.mode !== "none" ? `${shipping.mode}:${shipping.value}` : null,
+              fees: fees.mode !== "none" ? `${fees.mode}:${fees.value}` : null,
+              target_sell: targetSell.mode !== "none" ? `${targetSell.mode}:${targetSell.value}` : null,
+            },
+          } as unknown as never,
+        });
+        if (auditErr) {
+          toast({
+            title: "Undo unavailable",
+            description: "Edit saved, but audit log failed: " + auditErr.message,
+            variant: "destructive",
+          });
+        }
+      }
+
       onSuccess(patches);
       toast({
         title: "Bulk edit applied",
-        description: `Updated ${targets.length} bought deal${targets.length === 1 ? "" : "s"}.`,
+        description: `Updated ${targets.length} bought deal${targets.length === 1 ? "" : "s"}. Use "Undo last bulk edit" to revert.`,
       });
       onClose();
     } catch (e) {
