@@ -241,17 +241,60 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
+    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
+      {/* Brand panel */}
+      <div className="relative hidden lg:flex flex-col justify-between p-12 overflow-hidden bg-gradient-primary text-primary-foreground">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--accent)/0.45),transparent_60%)]" />
+        <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-accent/30 blur-3xl" />
+        <div className="absolute -top-24 -right-16 h-80 w-80 rounded-full bg-vendor/30 blur-3xl" />
+
+        <div className="relative flex items-center gap-3">
+          <img src="/logo.jpg" alt="Collector Companion" className="h-10 w-10 rounded-lg shadow-lg" />
+          <span className="text-lg font-semibold tracking-tight">Collector Companion</span>
+        </div>
+
+        <div className="relative space-y-6 max-w-md">
+          <h2 className="text-4xl xl:text-5xl font-bold leading-tight">
+            The Ultimate <span className="block">Collector Experience</span>
+          </h2>
+          <p className="text-base xl:text-lg text-primary-foreground/85">
+            Discover events, connect with vendors, and track every card in your collection — all in one place.
+          </p>
+          <div className="grid grid-cols-3 gap-3 pt-2">
+            {[
+              { Icon: Calendar, label: 'Events' },
+              { Icon: Store, label: 'Vendors' },
+              { Icon: Award, label: 'Collection' },
+            ].map(({ Icon, label }) => (
+              <div key={label} className="flex flex-col items-center gap-2 rounded-xl bg-white/10 backdrop-blur-sm p-4 border border-white/15">
+                <Icon className="h-5 w-5" />
+                <span className="text-xs font-medium">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p className="relative text-xs text-primary-foreground/70">
+          © {new Date().getFullYear()} Collector Companion
+        </p>
+      </div>
+
+      {/* Auth panel */}
+      <div className="flex items-center justify-center p-4 sm:p-8 bg-gradient-subtle">
+      <Card className="w-full max-w-md border-border/60 shadow-lg">
+        <CardHeader className="space-y-2">
+          <div className="lg:hidden flex items-center gap-2 mb-2">
+            <img src="/logo.jpg" alt="Collector Companion" className="h-8 w-8 rounded-md" />
+            <span className="font-semibold">Collector Companion</span>
+          </div>
           <CardTitle className="flex items-center gap-2 text-2xl">
-            {isSignUp ? <UserPlus className="h-6 w-6" /> : <LogIn className="h-6 w-6" />}
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
+            {isSignUp ? <UserPlus className="h-6 w-6 text-primary" /> : <LogIn className="h-6 w-6 text-primary" />}
+            {isSignUp ? 'Create your account' : 'Welcome back'}
           </CardTitle>
           <CardDescription>
             {isSignUp 
-              ? 'Join the CardboardCurators marketplace' 
-              : 'Sign in to your account'
+              ? 'Join Collector Companion and start tracking your collection.' 
+              : 'Sign in to continue to Collector Companion.'
             }
           </CardDescription>
         </CardHeader>
@@ -510,6 +553,7 @@ const Auth = () => {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
