@@ -99,16 +99,21 @@ export const StockAdjustmentDialog = ({ open, onOpenChange, items, onApplied, de
         updatedMap.set(c.item.id, c.counted);
       }
       // Insert audit rows
-      const auditRows = changes.map((c) => ({
-        user_id: user.id,
-        item_id: c.item.id,
-        previous_quantity: c.item.quantity,
-        counted_quantity: c.counted,
-        delta: c.delta,
-        reason,
-        notes: notes.trim() || null,
-        source: items.length > 1 ? "bulk" : "single",
-      }));
+      const globalNote = notes.trim();
+      const auditRows = changes.map((c) => {
+        const lineNote = (lineNotes[c.item.id] ?? "").trim();
+        const combined = [lineNote, globalNote].filter(Boolean).join(lineNote && globalNote ? " — " : "");
+        return {
+          user_id: user.id,
+          item_id: c.item.id,
+          previous_quantity: c.item.quantity,
+          counted_quantity: c.counted,
+          delta: c.delta,
+          reason,
+          notes: combined || null,
+          source: items.length > 1 ? "bulk" : "single",
+        };
+      });
       const { error: auditErr } = await supabase.from("stock_adjustments").insert(auditRows);
       if (auditErr) throw auditErr;
 
