@@ -174,13 +174,22 @@ const Inventory = () => {
               Bought deals with cost basis, projected sell price, and per-item P&amp;L.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Input
               placeholder="Search card, set, source…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full md:w-72"
             />
+            <Button
+              variant="default"
+              onClick={() => setPrintOpen(true)}
+              disabled={filtered.length === 0}
+              title={selected.size > 0 ? `Print ${selected.size} selected` : "Print all visible"}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Print labels{selected.size > 0 ? ` (${selected.size})` : ""}
+            </Button>
             <Button variant="outline" asChild>
               <Link to="/deal-list">Deal Pipeline</Link>
             </Button>
