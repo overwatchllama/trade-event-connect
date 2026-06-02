@@ -1628,6 +1628,106 @@ const DealList = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* List for sale — flips Bought → In Stock with a list price. */}
+        <Dialog open={!!listTarget} onOpenChange={(o) => !o && setListTarget(null)}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>List for sale</DialogTitle>
+              <DialogDescription>
+                {listTarget?.card_name} · qty {listTarget?.quantity ?? 1}. Moves this deal to <strong>In Stock</strong>.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="list-price" className="text-xs">List price (per card)</Label>
+              <Input
+                id="list-price"
+                type="number"
+                step="0.01"
+                min={0}
+                value={listDraft.list_price}
+                onChange={(e) => setListDraft({ list_price: e.target.value })}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setListTarget(null)}>Cancel</Button>
+              <Button onClick={confirmList}>List</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Mark sold — captures realized revenue, channel, buyer, fees and shipping. */}
+        <Dialog open={!!sellTarget} onOpenChange={(o) => !o && !sellSubmitting && setSellTarget(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Record sale</DialogTitle>
+              <DialogDescription>
+                {sellTarget?.card_name} · qty {sellTarget?.quantity ?? 1}.
+              </DialogDescription>
+            </DialogHeader>
+            {(() => {
+              if (!sellTarget) return null;
+              const qty = sellTarget.quantity || 1;
+              const price = parseFloat(sellDraft.sold_price) || 0;
+              const fees = parseFloat(sellDraft.sold_fees) || 0;
+              const ship = parseFloat(sellDraft.sold_shipping) || 0;
+              const revenue = price * qty - fees - ship;
+              const cost = (sellTarget.purchase_price ?? 0) * qty + (sellTarget.shipping_cost ?? 0) + (sellTarget.fees ?? 0);
+              const profit = revenue - cost;
+              const marginPct = revenue > 0 ? (profit / revenue) * 100 : 0;
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <Label htmlFor="sold-price" className="text-xs">Sold price (per card)</Label>
+                      <Input id="sold-price" type="number" step="0.01" min={0} value={sellDraft.sold_price}
+                        onChange={(e) => setSellDraft({ ...sellDraft, sold_price: e.target.value })} autoFocus />
+                    </div>
+                    <div>
+                      <Label htmlFor="sold-fees" className="text-xs">Fees (total)</Label>
+                      <Input id="sold-fees" type="number" step="0.01" min={0} value={sellDraft.sold_fees}
+                        onChange={(e) => setSellDraft({ ...sellDraft, sold_fees: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="sold-shipping" className="text-xs">Shipping (total)</Label>
+                      <Input id="sold-shipping" type="number" step="0.01" min={0} value={sellDraft.sold_shipping}
+                        onChange={(e) => setSellDraft({ ...sellDraft, sold_shipping: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="sold-channel" className="text-xs">Channel</Label>
+                      <Input id="sold-channel" value={sellDraft.sold_channel}
+                        onChange={(e) => setSellDraft({ ...sellDraft, sold_channel: e.target.value })}
+                        placeholder="eBay, show, in-person…" />
+                    </div>
+                    <div>
+                      <Label htmlFor="sold-buyer" className="text-xs">Buyer</Label>
+                      <Input id="sold-buyer" value={sellDraft.sold_buyer}
+                        onChange={(e) => setSellDraft({ ...sellDraft, sold_buyer: e.target.value })}
+                        placeholder="Optional" />
+                    </div>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs space-y-1">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Net revenue</span><span>${revenue.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Cost basis</span><span>${cost.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Realized profit</span>
+                      <span className={profit >= 0 ? "font-semibold text-emerald-600" : "font-semibold text-destructive"}>
+                        ${profit.toFixed(2)} ({marginPct.toFixed(0)}%)
+                      </span>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSellTarget(null)} disabled={sellSubmitting}>Cancel</Button>
+              <Button onClick={confirmSale} disabled={sellSubmitting}>
+                {sellSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Mark sold
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
