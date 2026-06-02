@@ -192,15 +192,60 @@ const Inventory = () => {
               onChange={(e) => setSearch(e.target.value)}
               className="w-full md:w-72"
             />
-            <Button
-              variant="default"
-              onClick={() => setPrintOpen(true)}
-              disabled={filtered.length === 0}
-              title={selected.size > 0 ? `Print ${selected.size} selected` : "Print all visible"}
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              Print labels{selected.size > 0 ? ` (${selected.size})` : ""}
-            </Button>
+            {(() => {
+              const visible = filtered;
+              const selArr = visible.filter((i) => selected.has(i.id));
+              const target = selArr.length > 0 ? selArr : visible;
+              const unprinted = target.filter((i) => !i.label_printed_at);
+              const printed = target.filter((i) => i.label_printed_at);
+              const openWith = (ids: string[]) => {
+                if (ids.length === 0) {
+                  toast({ title: "Nothing to print", description: "No matching rows.", variant: "destructive" });
+                  return;
+                }
+                setPrintItemIds(ids);
+                setPrintOpen(true);
+              };
+              return (
+                <div className="inline-flex rounded-md shadow-sm">
+                  <Button
+                    variant="default"
+                    onClick={() => openWith(target.map((i) => i.id))}
+                    disabled={visible.length === 0}
+                    className="rounded-r-none"
+                    title={selArr.length > 0 ? `Print ${selArr.length} selected` : "Print all visible"}
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Print labels{selArr.length > 0 ? ` (${selArr.length})` : ""}
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="default" className="rounded-l-none border-l border-primary-foreground/20 px-2" aria-label="More print options">
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64">
+                      <DropdownMenuItem onClick={() => openWith(unprinted.map((i) => i.id))} disabled={unprinted.length === 0}>
+                        <Printer className="h-4 w-4 mr-2" />
+                        Print unprinted ({unprinted.length})
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => openWith(printed.map((i) => i.id))} disabled={printed.length === 0}>
+                        <RotateCw className="h-4 w-4 mr-2" />
+                        Reprint already-printed ({printed.length})
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => openWith(visible.filter((i) => i.label_printed_at).map((i) => i.id))}
+                        disabled={visible.every((i) => !i.label_printed_at)}
+                      >
+                        <RotateCw className="h-4 w-4 mr-2" />
+                        Reprint all printed in view
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              );
+            })()}
             <Button variant="outline" asChild>
               <Link to="/deal-list">Deal Pipeline</Link>
             </Button>
