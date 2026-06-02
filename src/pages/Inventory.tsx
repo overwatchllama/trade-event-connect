@@ -407,8 +407,16 @@ const Inventory = () => {
 
       <PrintLabelsDialog
         open={printOpen}
-        onOpenChange={setPrintOpen}
-        items={(selected.size > 0 ? filtered.filter((i) => selected.has(i.id)) : filtered).map((i) => ({
+        onOpenChange={(v) => {
+          setPrintOpen(v);
+          if (!v) setPrintItemIds(null);
+        }}
+        items={(printItemIds
+          ? items.filter((i) => printItemIds.includes(i.id))
+          : selected.size > 0
+            ? filtered.filter((i) => selected.has(i.id))
+            : filtered
+        ).map((i) => ({
           id: i.id,
           card_name: i.card_name,
           set_name: i.set_name,
@@ -417,7 +425,43 @@ const Inventory = () => {
           purchase_price: i.purchase_price,
           target_sell_price: i.target_sell_price,
           quantity: i.quantity,
+          label_printed_at: i.label_printed_at,
+          label_print_count: i.label_print_count,
         }))}
+        onPrinted={async (printedIds) => {
+          if (printedIds.length === 0) return;
+          const nowIso = new Date().toISOString();
+          // Optimistic update
+          setItems((prev) =>
+            prev.map((i) =>
+              printedIds.includes(i.id)
+                ? { ...i, label_printed_at: nowIso, label_print_count: (i.label_print_count ?? 0) + 1 }
+                : i,
+            ),
+          );
+          const { error } = await supabase.rpc("bump_label_print", { item_ids: printedIds }).single();
+          // Fallback if RPC doesn't exist: use direct updates per row
+          if (error) {
+            await Promise.all(
+              printedIds.map((id) =>
+                supabase
+                  .from("deal_list_items")
+                  .update({ label_printed_at: nowIso })
+                  .eq("id", id),
+              ),
+            );
+            // increment counts individually
+            const current = items.filter((i) => printedIds.includes(i.id));
+            await Promise.all(
+              current.map((i) =>
+                supabase
+                  .from("deal_list_items")
+                  .update({ label_print_count: (i.label_print_count ?? 0) + 1 })
+                  .eq("id", i.id),
+              ),
+            );
+          }
+        }}
       />
     </>
   );
