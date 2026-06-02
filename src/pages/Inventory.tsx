@@ -873,6 +873,24 @@ const Inventory = () => {
         }}
       />
 
+      <StockAdjustmentDialog
+        open={adjustItemIds !== null}
+        onOpenChange={(v) => { if (!v) setAdjustItemIds(null); }}
+        items={(adjustItemIds ? items.filter((i) => adjustItemIds.includes(i.id)) : []).map<AdjustableItem>((i) => ({
+          id: i.id,
+          card_name: i.card_name,
+          set_name: i.set_name,
+          card_number: i.card_number,
+          condition: i.condition,
+          quantity: i.quantity,
+        }))}
+        onApplied={(updated) => {
+          setItems((cur) => cur.map((x) => (updated.has(x.id) ? { ...x, quantity: updated.get(x.id)! } : x)));
+          setSelected(new Set());
+        }}
+      />
+
+
       <AlertDialog open={confirmDelete !== null} onOpenChange={(v) => { if (!v) setConfirmDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
