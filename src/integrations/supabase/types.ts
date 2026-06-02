@@ -215,9 +215,13 @@ export type Database = {
           image_url: string | null
           label_print_count: number
           label_printed_at: string | null
+          list_price: number | null
+          listed_at: string | null
+          listing_status: string
           notes: string | null
           passed_at: string | null
           price_override: number | null
+          public_notes: string | null
           purchase_price: number | null
           quantity: number
           rarity: string | null
@@ -249,9 +253,13 @@ export type Database = {
           image_url?: string | null
           label_print_count?: number
           label_printed_at?: string | null
+          list_price?: number | null
+          listed_at?: string | null
+          listing_status?: string
           notes?: string | null
           passed_at?: string | null
           price_override?: number | null
+          public_notes?: string | null
           purchase_price?: number | null
           quantity?: number
           rarity?: string | null
@@ -283,9 +291,13 @@ export type Database = {
           image_url?: string | null
           label_print_count?: number
           label_printed_at?: string | null
+          list_price?: number | null
+          listed_at?: string | null
+          listing_status?: string
           notes?: string | null
           passed_at?: string | null
           price_override?: number | null
+          public_notes?: string | null
           purchase_price?: number | null
           quantity?: number
           rarity?: string | null
@@ -2065,6 +2077,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vendor_event_inventory: {
+        Row: {
+          created_at: string
+          event_id: string
+          featured: boolean
+          id: string
+          item_id: string
+          user_id: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          featured?: boolean
+          id?: string
+          item_id: string
+          user_id: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          featured?: boolean
+          id?: string
+          item_id?: string
+          user_id?: string
+          vendor_id?: string
+        }
+        Relationships: []
       }
       vendor_event_ratings: {
         Row: {
