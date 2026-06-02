@@ -83,6 +83,7 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
   const [pricePerTable, setPricePerTable] = useState('');
   const [listingType, setListingType] = useState('public');
   const [targetVendorId, setTargetVendorId] = useState('');
+  const [targetGroupId, setTargetGroupId] = useState('');
   const [vendorSearch, setVendorSearch] = useState('');
   const [listingNotes, setListingNotes] = useState('');
   const [activeView, setActiveView] = useState<'sell' | 'buy'>('sell');
@@ -93,6 +94,9 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
   const [invoiceListing, setInvoiceListing] = useState<TableListing | null>(null);
   const [invoiceAmount, setInvoiceAmount] = useState('');
   const [invoiceNotes, setInvoiceNotes] = useState('');
+  const [myGroups, setMyGroups] = useState<{ id: string; name: string }[]>([]);
+  const [showGroupsManager, setShowGroupsManager] = useState(false);
+
 
   useEffect(() => {
     if (!user || !vendorId) return;
