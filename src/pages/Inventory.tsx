@@ -513,6 +513,14 @@ const Inventory = () => {
                   <ClipboardCheck className="h-4 w-4 mr-2" />
                   Adjust stock ({selected.size})
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => { setAdjHistoryItemIds(Array.from(selected)); setAdjHistoryOpen(true); }}
+                  title="View adjustment history for selected items"
+                >
+                  <History className="h-4 w-4 mr-2" />
+                  Adj. history
+                </Button>
                 {eventScope !== "all" && (
                   <Button
                     variant="outline"
