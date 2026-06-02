@@ -40,7 +40,7 @@ const PRESETS: Record<Preset, { name: string; cols: number; rows: number; w: str
 const fmt = (n?: number | null) =>
   n == null ? "" : n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
 
-export const PrintLabelsDialog = ({ open, onOpenChange, items }: Props) => {
+export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Props) => {
   const [preset, setPreset] = useState<Preset>("avery-5160");
   const [copies, setCopies] = useState(1);
   const [perQuantity, setPerQuantity] = useState(true);
