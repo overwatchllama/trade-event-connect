@@ -726,10 +726,20 @@ const Inventory = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(i)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit item
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openFeature([i.id], i.card_name)}>
                                 <CalendarPlus className="h-4 w-4 mr-2" />
                                 Feature at event…
                               </DropdownMenuItem>
+                              {eventScope !== "all" && (
+                                <DropdownMenuItem onClick={() => removeFromEvent([i.id])}>
+                                  <CalendarX className="h-4 w-4 mr-2" />
+                                  Remove from this event
+                                </DropdownMenuItem>
+                              )}
                               {i.tcgplayer_url && (
                                 <DropdownMenuItem asChild>
                                   <a href={i.tcgplayer_url} target="_blank" rel="noopener noreferrer">
@@ -738,6 +748,14 @@ const Inventory = () => {
                                   </a>
                                 </DropdownMenuItem>
                               )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => requestDelete([i.id])}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete item
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
