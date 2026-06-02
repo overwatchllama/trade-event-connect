@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import Header from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -369,15 +370,17 @@ const InventoryPnL = () => {
 
       <Header />
       <main className="container mx-auto px-3 md:px-4 py-6 max-w-7xl">
+        <Breadcrumb className="mb-4">
+          <BreadcrumbList>
+            <BreadcrumbItem><BreadcrumbLink asChild><Link to="/vending">Vending</Link></BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem><BreadcrumbLink asChild><Link to="/inventory">Inventory</Link></BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem><BreadcrumbPage>P&amp;L Report</BreadcrumbPage></BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-5">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Button asChild variant="ghost" size="sm" className="h-7 px-2 -ml-2">
-                <Link to="/inventory" aria-label="Back to inventory">
-                  <ArrowLeft className="h-4 w-4 mr-1" /> Inventory
-                </Link>
-              </Button>
-            </div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
               <TrendingUp className="h-6 w-6 text-primary" /> P&amp;L report
             </h1>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -804,15 +805,22 @@ const DealList = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Deal List | Collector Companion</title>
-        <meta name="description" content="Review scanned cards, edit quantities and conditions, then save them to your collection." />
+        <title>Deal Pipeline | Collector Companion</title>
+        <meta name="description" content="Track sourcing leads through Bought, In Stock, Sold, and Completed pipeline stages." />
       </Helmet>
       <Header />
 
       <main className="container mx-auto px-4 py-6 max-w-5xl">
+        <Breadcrumb className="mb-4">
+          <BreadcrumbList>
+            <BreadcrumbItem><BreadcrumbLink asChild><Link to="/vending">Vending</Link></BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem><BreadcrumbPage>Deal Pipeline</BreadcrumbPage></BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
         <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-bold">Deal List</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">Deal Pipeline</h1>
             <p className="text-muted-foreground text-sm">
               {pipelineItems.length} active deal{pipelineItems.length === 1 ? "" : "s"} · est. ${totalValue.toFixed(2)} pipeline
             </p>
