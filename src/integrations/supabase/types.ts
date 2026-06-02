@@ -839,6 +839,54 @@ export type Database = {
           },
         ]
       }
+      label_print_audit: {
+        Row: {
+          action: string
+          copies_per_item: number
+          created_at: string
+          filter_context: Json | null
+          id: string
+          item_count: number
+          item_ids: string[]
+          label_count: number
+          per_quantity: boolean
+          preset: string | null
+          reprint_count: number
+          source: string | null
+          user_id: string
+        }
+        Insert: {
+          action?: string
+          copies_per_item?: number
+          created_at?: string
+          filter_context?: Json | null
+          id?: string
+          item_count?: number
+          item_ids?: string[]
+          label_count?: number
+          per_quantity?: boolean
+          preset?: string | null
+          reprint_count?: number
+          source?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          copies_per_item?: number
+          created_at?: string
+          filter_context?: Json | null
+          id?: string
+          item_count?: number
+          item_ids?: string[]
+          label_count?: number
+          per_quantity?: boolean
+          preset?: string | null
+          reprint_count?: number
+          source?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       market_cards: {
         Row: {
           created_at: string
