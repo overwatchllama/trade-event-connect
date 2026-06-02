@@ -22,12 +22,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare, Download, Pencil, ListChecks, Undo2 } from "lucide-react";
+import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare, Download, Pencil, ListChecks, Undo2, PackageCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkAsBoughtDialog, type MarkAsBoughtTarget } from "@/components/deals/MarkAsBoughtDialog";
 import { EditBoughtDialog, type EditBoughtTarget } from "@/components/deals/EditBoughtDialog";
 import { BulkEditBoughtDialog, type BulkEditTarget } from "@/components/deals/BulkEditBoughtDialog";
+import { LotBuyDialog, type LotBuyTarget } from "@/components/deals/LotBuyDialog";
 
 type DealStatus = "watching" | "negotiating" | "bought" | "passed";
 
@@ -127,6 +128,10 @@ const DealList = () => {
   // can re-find a row in another tab without losing their selection.
   const [selectedBoughtIds, setSelectedBoughtIds] = useState<Set<string>>(new Set());
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  // Pipeline selection (watching/negotiating) drives the "Buy as lot" workflow — kept
+  // separate from the bought selection so the two toolbars never fight over the same Set.
+  const [selectedPipelineIds, setSelectedPipelineIds] = useState<Set<string>>(new Set());
+  const [lotBuyOpen, setLotBuyOpen] = useState(false);
   // Latest reversible bulk edit for this user. Refetched after each save so the
   // Undo button always reflects the freshest action and disappears once consumed.
   const [lastBulkEdit, setLastBulkEdit] = useState<{ id: string; created_at: string; entries: any[]; summary: any } | null>(null);
@@ -357,6 +362,37 @@ const DealList = () => {
     });
   };
   const clearBoughtSelection = () => setSelectedBoughtIds(new Set());
+
+  // Pipeline (watching/negotiating) selection — mirrors the bought-selection helpers above
+  // so the row gutter checkbox + lot toolbar can be wired identically.
+  const visiblePipelineItems = visibleItems.filter(
+    (it) => it.status === "watching" || it.status === "negotiating",
+  );
+  const selectedPipelineItems = pipelineItems.filter((p) => selectedPipelineIds.has(p.id));
+  const selectedPipelineCount = selectedPipelineItems.length;
+  const allVisiblePipelineSelected =
+    visiblePipelineItems.length > 0 &&
+    visiblePipelineItems.every((p) => selectedPipelineIds.has(p.id));
+  const togglePipelineSelection = (id: string) => {
+    setSelectedPipelineIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAllVisiblePipeline = () => {
+    setSelectedPipelineIds((prev) => {
+      const next = new Set(prev);
+      if (allVisiblePipelineSelected) {
+        for (const p of visiblePipelineItems) next.delete(p.id);
+      } else {
+        for (const p of visiblePipelineItems) next.add(p.id);
+      }
+      return next;
+    });
+  };
+  const clearPipelineSelection = () => setSelectedPipelineIds(new Set());
 
   /**
    * CSV export of the current view + a P&L summary footer for every bought deal.
@@ -800,6 +836,39 @@ const DealList = () => {
               </Card>
             )}
 
+            {/* Lot-buy toolbar — appears when watching/negotiating rows are on screen so users can
+                multi-select a pile and split a single lot cost across every card in one shot. */}
+            {visiblePipelineItems.length > 0 && (
+              <Card className="p-2 mb-3 flex flex-wrap items-center gap-2 text-xs">
+                <Checkbox
+                  checked={allVisiblePipelineSelected}
+                  onCheckedChange={toggleSelectAllVisiblePipeline}
+                  aria-label="Select all visible active deals"
+                />
+                <span className="text-muted-foreground">
+                  {selectedPipelineCount > 0
+                    ? `${selectedPipelineCount} selected for lot buy`
+                    : `Select active deals to buy as a lot (${visiblePipelineItems.length} on screen)`}
+                </span>
+                <div className="ml-auto flex items-center gap-2">
+                  {selectedPipelineCount > 0 && (
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={clearPipelineSelection}>
+                      Clear
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={selectedPipelineCount === 0}
+                    onClick={() => setLotBuyOpen(true)}
+                  >
+                    <PackageCheck className="h-3 w-3 mr-1" />
+                    Buy {selectedPipelineCount || ""} as lot
+                  </Button>
+                </div>
+              </Card>
+            )}
+
             {/* Bulk-edit toolbar — visible whenever bought rows are on screen so users can multi-select cost-basis updates. */}
             {visibleBoughtItems.length > 0 && (
               <Card className="p-2 mb-3 flex flex-wrap items-center gap-2 text-xs">
@@ -853,13 +922,24 @@ const DealList = () => {
               )}
               {visibleItems.map((i) => (
                 <Card key={i.id} className="p-3 flex gap-3">
-                  {/* Bulk-edit checkbox is bought-only — keeps the gutter empty for active/passed rows. */}
-                  {i.status === "bought" && (
+                  {/* Selection checkbox: bought rows feed bulk-edit, active rows feed lot-buy.
+                      Passed rows stay un-checkable so the gutter visually distinguishes dead deals. */}
+                  {(i.status === "bought" ||
+                    i.status === "watching" ||
+                    i.status === "negotiating") && (
                     <div className="flex items-start pt-1">
                       <Checkbox
-                        checked={selectedBoughtIds.has(i.id)}
-                        onCheckedChange={() => toggleBoughtSelection(i.id)}
-                        aria-label={`Select ${i.card_name} for bulk edit`}
+                        checked={
+                          i.status === "bought"
+                            ? selectedBoughtIds.has(i.id)
+                            : selectedPipelineIds.has(i.id)
+                        }
+                        onCheckedChange={() =>
+                          i.status === "bought"
+                            ? toggleBoughtSelection(i.id)
+                            : togglePipelineSelection(i.id)
+                        }
+                        aria-label={`Select ${i.card_name}`}
                       />
                     </div>
                   )}
@@ -1257,6 +1337,42 @@ const DealList = () => {
             refreshLastBulkEdit();
           }}
         />
+
+        {user && (
+          <LotBuyDialog
+            open={lotBuyOpen}
+            userId={user.id}
+            targets={selectedPipelineItems.map<LotBuyTarget>((p) => ({
+              id: p.id,
+              card_name: p.card_name,
+              set_name: p.set_name,
+              card_number: p.card_number,
+              rarity: p.rarity,
+              image_url: p.image_url,
+              quantity: p.quantity,
+              condition: p.condition,
+              game: p.game,
+              notes: p.notes,
+              // Modified (deal) price is what the user expects to pay per card; falls back
+              // to effective market price so allocation weighting always has a value.
+              reference_unit_price: modifiedPrice(p) ?? effectivePrice(p),
+              suggested_sell_price: effectivePrice(p),
+            }))}
+            onClose={() => setLotBuyOpen(false)}
+            onSuccess={(results) => {
+              // Splice each newly-bought row in place so it instantly flips into the Bought tab.
+              setItems((prev) => {
+                const byId = new Map(results.map((r) => [r.dealId, r.patch]));
+                return prev.map((it) => {
+                  const patch = byId.get(it.id);
+                  return patch ? { ...it, ...patch } : it;
+                });
+              });
+              clearPipelineSelection();
+            }}
+          />
+        )}
+
 
         {/* Pass-with-reason dialog. The reason is required so the Passed tab keeps useful context. */}
         <AlertDialog
