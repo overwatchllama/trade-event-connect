@@ -191,8 +191,8 @@ export const StockAdjustmentHistoryDialog = ({ open, onOpenChange, itemIds }: Pr
                   const editCount = r.notes_history?.length ?? 0;
                   const isExpanded = expanded.has(r.id);
                   return (
-                    <>
-                      <TableRow key={r.id}>
+                    <Fragment key={r.id}>
+                      <TableRow>
                         <TableCell className="p-1">
                           {editCount > 0 && (
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleExpand(r.id)} aria-label="Toggle history">
