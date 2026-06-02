@@ -491,19 +491,50 @@ const Inventory = () => {
               );
             })()}
             {selected.size > 0 && (
-              <Button
-                variant="outline"
-                onClick={() => openFeature(Array.from(selected))}
-                title={`Feature ${selected.size} selected item(s) at events`}
-              >
-                <CalendarPlus className="h-4 w-4 mr-2" />
-                Feature ({selected.size})
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => openFeature(Array.from(selected))}
+                  title={`Feature ${selected.size} selected item(s) at events`}
+                >
+                  <CalendarPlus className="h-4 w-4 mr-2" />
+                  Feature ({selected.size})
+                </Button>
+                {eventScope !== "all" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => removeFromEvent(Array.from(selected))}
+                    title={`Remove ${selected.size} item(s) from ${currentEventLabel ?? "event"}`}
+                  >
+                    <CalendarX className="h-4 w-4 mr-2" />
+                    Remove from event
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => requestDelete(Array.from(selected))}
+                  className="text-destructive hover:text-destructive"
+                  title={`Delete ${selected.size} item(s)`}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete ({selected.size})
+                </Button>
+              </>
             )}
             <Button variant="outline" asChild>
               <Link to="/deal-list">Deal Pipeline</Link>
             </Button>
           </div>
+        </div>
+
+        {currentEventLabel && (
+          <div className="mb-4 -mt-2 text-sm text-muted-foreground">
+            Showing items featured at <span className="font-medium text-foreground">{currentEventLabel}</span>. Use “Add item” to create inventory, then feature it here.
+          </div>
+        )}
+
+        {/* spacer placeholder */}
+        {false && <div></div>
         </div>
 
         {/* Totals */}
