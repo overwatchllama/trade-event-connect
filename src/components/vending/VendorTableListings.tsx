@@ -227,6 +227,14 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
 
   const handleCreateListing = async () => {
     if (!user || !selectedAppId) return;
+    if (listingType === 'direct' && !targetVendorId) {
+      toast.error('Select a vendor to transfer to');
+      return;
+    }
+    if (listingType === 'group' && !targetGroupId) {
+      toast.error('Select a trusted group');
+      return;
+    }
     try {
       const { error } = await supabase
         .from('vendor_table_listings')
@@ -239,8 +247,9 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
           price_per_table: pricePerTable ? parseFloat(pricePerTable) : null,
           listing_type: listingType,
           target_vendor_id: listingType === 'direct' ? targetVendorId || null : null,
+          target_group_id: listingType === 'group' ? targetGroupId || null : null,
           notes: listingNotes || null,
-        });
+        } as any);
 
       if (error) throw error;
       toast.success('Table listing created!');
@@ -251,6 +260,7 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
       toast.error(error.message || 'Failed to create listing');
     }
   };
+
 
   const handleCancelListing = async (id: string) => {
     try {
