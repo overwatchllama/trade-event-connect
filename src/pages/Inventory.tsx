@@ -247,7 +247,7 @@ const Inventory = () => {
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setHistoryOpen(true)}>
-                        <History className="h-4 w-4 mr-2" />
+                        <HistoryIcon className="h-4 w-4 mr-2" />
                         View print history
                       </DropdownMenuItem>
                     </DropdownMenuContent>
