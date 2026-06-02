@@ -213,6 +213,8 @@ export type Database = {
           game: string
           id: string
           image_url: string | null
+          label_print_count: number
+          label_printed_at: string | null
           notes: string | null
           passed_at: string | null
           price_override: number | null
@@ -245,6 +247,8 @@ export type Database = {
           game?: string
           id?: string
           image_url?: string | null
+          label_print_count?: number
+          label_printed_at?: string | null
           notes?: string | null
           passed_at?: string | null
           price_override?: number | null
@@ -277,6 +281,8 @@ export type Database = {
           game?: string
           id?: string
           image_url?: string | null
+          label_print_count?: number
+          label_printed_at?: string | null
           notes?: string | null
           passed_at?: string | null
           price_override?: number | null
