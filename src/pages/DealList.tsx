@@ -825,20 +825,23 @@ const DealList = () => {
           </Card>
         ) : (
           <>
-            {/* Lifecycle tabs — drives which rows render below. Counts come from the unfiltered list. */}
+            {/* Lifecycle tabs — Lead → Bought → In Stock → Sold → Completed. Counts come from the unfiltered list. */}
             <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)} className="mb-4">
               <TabsList className="flex flex-wrap h-auto">
-                <TabsTrigger value="active">
-                  Active <span className="ml-1.5 text-xs opacity-70">{statusCounts.watching + statusCounts.negotiating}</span>
-                </TabsTrigger>
-                <TabsTrigger value="watching">
-                  Watching <span className="ml-1.5 text-xs opacity-70">{statusCounts.watching}</span>
-                </TabsTrigger>
-                <TabsTrigger value="negotiating">
-                  Negotiating <span className="ml-1.5 text-xs opacity-70">{statusCounts.negotiating}</span>
+                <TabsTrigger value="lead">
+                  Lead <span className="ml-1.5 text-xs opacity-70">{statusCounts.lead}</span>
                 </TabsTrigger>
                 <TabsTrigger value="bought">
                   Bought <span className="ml-1.5 text-xs opacity-70">{statusCounts.bought}</span>
+                </TabsTrigger>
+                <TabsTrigger value="in_stock">
+                  In Stock <span className="ml-1.5 text-xs opacity-70">{statusCounts.in_stock}</span>
+                </TabsTrigger>
+                <TabsTrigger value="sold">
+                  Sold <span className="ml-1.5 text-xs opacity-70">{statusCounts.sold}</span>
+                </TabsTrigger>
+                <TabsTrigger value="completed">
+                  Completed <span className="ml-1.5 text-xs opacity-70">{statusCounts.completed}</span>
                 </TabsTrigger>
                 <TabsTrigger value="passed">
                   Passed <span className="ml-1.5 text-xs opacity-70">{statusCounts.passed}</span>
