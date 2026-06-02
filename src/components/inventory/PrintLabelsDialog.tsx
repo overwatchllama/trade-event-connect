@@ -17,12 +17,15 @@ export interface PrintLabelItem {
   purchase_price?: number | null;
   target_sell_price?: number | null;
   quantity?: number;
+  label_printed_at?: string | null;
+  label_print_count?: number;
 }
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   items: PrintLabelItem[];
+  onPrinted?: (printedIds: string[]) => void | Promise<void>;
 }
 
 type Preset = "avery-5160" | "avery-5163" | "dymo-30252" | "brother-dk1201";
