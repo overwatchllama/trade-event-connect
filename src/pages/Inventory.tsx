@@ -10,7 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown } from "lucide-react";
+import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { PrintLabelsDialog } from "@/components/inventory/PrintLabelsDialog";
 
 interface InventoryItem {
   id: string;
