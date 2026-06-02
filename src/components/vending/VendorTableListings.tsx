@@ -684,9 +684,31 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
                 <SelectContent>
                   <SelectItem value="public">Public - Any vendor can see</SelectItem>
                   <SelectItem value="direct">Direct Transfer - Specific vendor</SelectItem>
+                  <SelectItem value="group" disabled={myGroups.length === 0}>
+                    Trusted Group - Only group members{myGroups.length === 0 ? ' (create one first)' : ''}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {listingType === 'group' && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1"><Lock className="h-3.5 w-3.5" /> Trusted Group</Label>
+                <Select value={targetGroupId} onValueChange={setTargetGroupId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {myGroups.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Only vendors in this group will see and be able to claim this listing.
+                </p>
+              </div>
+            )}
+
             {listingType === 'direct' && (
               <div className="space-y-2">
                 <Label>Transfer To</Label>
