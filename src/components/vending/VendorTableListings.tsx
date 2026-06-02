@@ -603,10 +603,19 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
                             )}
                           </div>
                         </div>
-                        <Badge className="bg-green-600 text-white">
-                          {listing.tables_offered} table{listing.tables_offered !== 1 ? 's' : ''}
-                        </Badge>
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge className="bg-green-600 text-white">
+                            {listing.tables_offered} table{listing.tables_offered !== 1 ? 's' : ''}
+                          </Badge>
+                          {listing.listing_type === 'group' && (
+                            <Badge variant="outline" className="text-[10px] gap-1">
+                              <Lock className="h-2.5 w-2.5" />
+                              {listing.target_group_name ?? 'Group only'}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
+
                       {listing.price_per_table && (
                         <p className="text-lg font-bold">${listing.price_per_table}/table</p>
                       )}
