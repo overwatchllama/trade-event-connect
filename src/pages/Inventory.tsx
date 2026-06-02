@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer, ChevronDown, RotateCw, History as HistoryIcon, Store, CalendarPlus, MoreHorizontal } from "lucide-react";
+import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer, ChevronDown, RotateCw, History as HistoryIcon, Store, CalendarPlus, MoreHorizontal, Plus, Pencil, Trash2, CalendarX } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge as BadgeUi } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,9 +21,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PrintLabelsDialog } from "@/components/inventory/PrintLabelsDialog";
 import { PrintHistoryDialog } from "@/components/inventory/PrintHistoryDialog";
 import { FeatureAtEventDialog } from "@/components/inventory/FeatureAtEventDialog";
+import { InventoryItemDialog, type InventoryItemFormValues } from "@/components/inventory/InventoryItemDialog";
+import { useVendorProfile } from "@/hooks/useVendorProfile";
 
 interface InventoryItem {
   id: string;
