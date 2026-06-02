@@ -10,8 +10,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer } from "lucide-react";
+import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer, ChevronDown, RotateCw } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge as BadgeUi } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { PrintLabelsDialog } from "@/components/inventory/PrintLabelsDialog";
 
 interface InventoryItem {
@@ -32,6 +40,8 @@ interface InventoryItem {
   bought_at: string | null;
   tcgplayer_url: string | null;
   tcgplayer_market_price: number | null;
+  label_printed_at: string | null;
+  label_print_count: number;
 }
 
 type SortKey = "bought_at" | "card_name" | "invested" | "projected" | "profit" | "margin";
@@ -56,6 +66,7 @@ const Inventory = () => {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [printOpen, setPrintOpen] = useState(false);
+  const [printItemIds, setPrintItemIds] = useState<string[] | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -64,7 +75,7 @@ const Inventory = () => {
       const { data, error } = await supabase
         .from("deal_list_items")
         .select(
-          "id, card_name, set_name, card_number, rarity, image_url, game, condition, quantity, purchase_price, shipping_cost, fees, target_sell_price, source, bought_at, tcgplayer_url, tcgplayer_market_price"
+          "id, card_name, set_name, card_number, rarity, image_url, game, condition, quantity, purchase_price, shipping_cost, fees, target_sell_price, source, bought_at, tcgplayer_url, tcgplayer_market_price, label_printed_at, label_print_count"
         )
         .eq("user_id", user.id)
         .eq("status", "bought")
@@ -181,15 +192,60 @@ const Inventory = () => {
               onChange={(e) => setSearch(e.target.value)}
               className="w-full md:w-72"
             />
-            <Button
-              variant="default"
-              onClick={() => setPrintOpen(true)}
-              disabled={filtered.length === 0}
-              title={selected.size > 0 ? `Print ${selected.size} selected` : "Print all visible"}
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              Print labels{selected.size > 0 ? ` (${selected.size})` : ""}
-            </Button>
+            {(() => {
+              const visible = filtered;
+              const selArr = visible.filter((i) => selected.has(i.id));
+              const target = selArr.length > 0 ? selArr : visible;
+              const unprinted = target.filter((i) => !i.label_printed_at);
+              const printed = target.filter((i) => i.label_printed_at);
+              const openWith = (ids: string[]) => {
+                if (ids.length === 0) {
+                  toast({ title: "Nothing to print", description: "No matching rows.", variant: "destructive" });
+                  return;
+                }
+                setPrintItemIds(ids);
+                setPrintOpen(true);
+              };
+              return (
+                <div className="inline-flex rounded-md shadow-sm">
+                  <Button
+                    variant="default"
+                    onClick={() => openWith(target.map((i) => i.id))}
+                    disabled={visible.length === 0}
+                    className="rounded-r-none"
+                    title={selArr.length > 0 ? `Print ${selArr.length} selected` : "Print all visible"}
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    Print labels{selArr.length > 0 ? ` (${selArr.length})` : ""}
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="default" className="rounded-l-none border-l border-primary-foreground/20 px-2" aria-label="More print options">
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64">
+                      <DropdownMenuItem onClick={() => openWith(unprinted.map((i) => i.id))} disabled={unprinted.length === 0}>
+                        <Printer className="h-4 w-4 mr-2" />
+                        Print unprinted ({unprinted.length})
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => openWith(printed.map((i) => i.id))} disabled={printed.length === 0}>
+                        <RotateCw className="h-4 w-4 mr-2" />
+                        Reprint already-printed ({printed.length})
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => openWith(visible.filter((i) => i.label_printed_at).map((i) => i.id))}
+                        disabled={visible.every((i) => !i.label_printed_at)}
+                      >
+                        <RotateCw className="h-4 w-4 mr-2" />
+                        Reprint all printed in view
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              );
+            })()}
             <Button variant="outline" asChild>
               <Link to="/deal-list">Deal Pipeline</Link>
             </Button>
@@ -309,6 +365,16 @@ const Inventory = () => {
                               <div className="flex flex-wrap gap-1 mt-1">
                                 <Badge variant="outline" className="text-[10px] py-0 px-1.5">{i.condition.replace("_", " ")}</Badge>
                                 {i.source && <Badge variant="secondary" className="text-[10px] py-0 px-1.5">{i.source}</Badge>}
+                                {i.label_printed_at && (
+                                  <BadgeUi
+                                    variant="outline"
+                                    className="text-[10px] py-0 px-1.5 border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+                                    title={`Last printed ${new Date(i.label_printed_at).toLocaleString()}${i.label_print_count > 1 ? ` · ${i.label_print_count} prints` : ""}`}
+                                  >
+                                    <Printer className="h-2.5 w-2.5 mr-0.5" />
+                                    Printed{i.label_print_count > 1 ? ` ×${i.label_print_count}` : ""}
+                                  </BadgeUi>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -351,8 +417,16 @@ const Inventory = () => {
 
       <PrintLabelsDialog
         open={printOpen}
-        onOpenChange={setPrintOpen}
-        items={(selected.size > 0 ? filtered.filter((i) => selected.has(i.id)) : filtered).map((i) => ({
+        onOpenChange={(v) => {
+          setPrintOpen(v);
+          if (!v) setPrintItemIds(null);
+        }}
+        items={(printItemIds
+          ? items.filter((i) => printItemIds.includes(i.id))
+          : selected.size > 0
+            ? filtered.filter((i) => selected.has(i.id))
+            : filtered
+        ).map((i) => ({
           id: i.id,
           card_name: i.card_name,
           set_name: i.set_name,
@@ -361,7 +435,32 @@ const Inventory = () => {
           purchase_price: i.purchase_price,
           target_sell_price: i.target_sell_price,
           quantity: i.quantity,
+          label_printed_at: i.label_printed_at,
+          label_print_count: i.label_print_count,
         }))}
+        onPrinted={async (printedIds) => {
+          if (printedIds.length === 0) return;
+          const nowIso = new Date().toISOString();
+          const current = items.filter((i) => printedIds.includes(i.id));
+          setItems((prev) =>
+            prev.map((i) =>
+              printedIds.includes(i.id)
+                ? { ...i, label_printed_at: nowIso, label_print_count: (i.label_print_count ?? 0) + 1 }
+                : i,
+            ),
+          );
+          await Promise.all(
+            current.map((i) =>
+              supabase
+                .from("deal_list_items")
+                .update({
+                  label_printed_at: nowIso,
+                  label_print_count: (i.label_print_count ?? 0) + 1,
+                })
+                .eq("id", i.id),
+            ),
+          );
+        }}
       />
     </>
   );
