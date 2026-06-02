@@ -67,6 +67,8 @@ const Inventory = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [printOpen, setPrintOpen] = useState(false);
   const [printItemIds, setPrintItemIds] = useState<string[] | null>(null);
+  const [printSource, setPrintSource] = useState<string>("all_visible");
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
