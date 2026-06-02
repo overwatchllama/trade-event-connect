@@ -744,6 +744,10 @@ const Inventory = () => {
                                 <CalendarPlus className="h-4 w-4 mr-2" />
                                 Feature at event…
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setAdjustItemIds([i.id])}>
+                                <ClipboardCheck className="h-4 w-4 mr-2" />
+                                Adjust stock…
+                              </DropdownMenuItem>
                               {eventScope !== "all" && (
                                 <DropdownMenuItem onClick={() => removeFromEvent([i.id])}>
                                   <CalendarX className="h-4 w-4 mr-2" />
