@@ -509,7 +509,13 @@ const VendorProfile = () => {
                 </div>
               </div>
             </TabsContent>
-            
+
+            <TabsContent value="inventory">
+              <div className="mt-6">
+                <VendorStorefront vendorUserId={vendor.user_id} vendorId={vendor.id} />
+              </div>
+            </TabsContent>
+
             <TabsContent value="calendar">
               <div className="mt-6">
                 <VendorCalendar vendorId={vendor.id} />
