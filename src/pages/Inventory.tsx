@@ -36,6 +36,7 @@ import { PrintHistoryDialog } from "@/components/inventory/PrintHistoryDialog";
 import { FeatureAtEventDialog } from "@/components/inventory/FeatureAtEventDialog";
 import { InventoryItemDialog, type InventoryItemFormValues } from "@/components/inventory/InventoryItemDialog";
 import { StockAdjustmentDialog, type AdjustableItem } from "@/components/inventory/StockAdjustmentDialog";
+import { StockAdjustmentHistoryDialog } from "@/components/inventory/StockAdjustmentHistoryDialog";
 import { useVendorProfile } from "@/hooks/useVendorProfile";
 
 interface InventoryItem {
@@ -106,6 +107,8 @@ const Inventory = () => {
   const [editingItem, setEditingItem] = useState<(Partial<InventoryItemFormValues> & { id?: string }) | undefined>(undefined);
   const [confirmDelete, setConfirmDelete] = useState<{ ids: string[]; label: string } | null>(null);
   const [adjustItemIds, setAdjustItemIds] = useState<string[] | null>(null);
+  const [adjHistoryOpen, setAdjHistoryOpen] = useState(false);
+  const [adjHistoryItemIds, setAdjHistoryItemIds] = useState<string[] | undefined>(undefined);
 
   const loadInventory = async () => {
     if (!user) return;
@@ -510,6 +513,14 @@ const Inventory = () => {
                   <ClipboardCheck className="h-4 w-4 mr-2" />
                   Adjust stock ({selected.size})
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => { setAdjHistoryItemIds(Array.from(selected)); setAdjHistoryOpen(true); }}
+                  title="View adjustment history for selected items"
+                >
+                  <HistoryIcon className="h-4 w-4 mr-2" />
+                  Adj. history
+                </Button>
                 {eventScope !== "all" && (
                   <Button
                     variant="outline"
@@ -748,6 +759,10 @@ const Inventory = () => {
                                 <ClipboardCheck className="h-4 w-4 mr-2" />
                                 Adjust stock…
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { setAdjHistoryItemIds([i.id]); setAdjHistoryOpen(true); }}>
+                                <HistoryIcon className="h-4 w-4 mr-2" />
+                                Adjustment history…
+                              </DropdownMenuItem>
                               {eventScope !== "all" && (
                                 <DropdownMenuItem onClick={() => removeFromEvent([i.id])}>
                                   <CalendarX className="h-4 w-4 mr-2" />
@@ -889,6 +904,14 @@ const Inventory = () => {
           setSelected(new Set());
         }}
       />
+
+      <StockAdjustmentHistoryDialog
+        open={adjHistoryOpen}
+        onOpenChange={(v) => { setAdjHistoryOpen(v); if (!v) setAdjHistoryItemIds(undefined); }}
+        itemIds={adjHistoryItemIds}
+      />
+
+
 
 
       <AlertDialog open={confirmDelete !== null} onOpenChange={(v) => { if (!v) setConfirmDelete(null); }}>
