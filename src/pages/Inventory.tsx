@@ -174,6 +174,45 @@ const Inventory = () => {
     </button>
   );
 
+  const updateListing = async (item: InventoryItem, patch: Partial<Pick<InventoryItem, "listing_status" | "list_price">>) => {
+    const prev = items;
+    const nextStatus = patch.listing_status ?? item.listing_status;
+    const nowListing = nextStatus === "for_sale" && item.listing_status !== "for_sale";
+    setItems((cur) =>
+      cur.map((x) =>
+        x.id === item.id
+          ? {
+              ...x,
+              ...patch,
+            }
+          : x,
+      ),
+    );
+    const update: Record<string, unknown> = { ...patch };
+    if (nowListing) update.listed_at = new Date().toISOString();
+    const { error } = await supabase.from("deal_list_items").update(update).eq("id", item.id);
+    if (error) {
+      setItems(prev);
+      toast({ title: "Failed to update listing", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const openFeature = (ids: string[], label?: string) => {
+    if (ids.length === 0) return;
+    setFeatureItemIds(ids);
+    setFeatureLabel(label);
+  };
+
+  const statusBadgeClass = (s: InventoryItem["listing_status"]) => {
+    switch (s) {
+      case "for_sale": return "border-emerald-500/40 text-emerald-600 dark:text-emerald-400";
+      case "sold": return "border-muted text-muted-foreground line-through";
+      case "hold": return "border-amber-500/40 text-amber-600 dark:text-amber-400";
+      default: return "border-muted text-muted-foreground";
+    }
+  };
+
+
   return (
     <>
       <Helmet>
