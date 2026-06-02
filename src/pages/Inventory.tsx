@@ -429,6 +429,12 @@ const Inventory = () => {
                 </SelectContent>
               </Select>
             )}
+            <Button asChild variant="outline">
+              <Link to="/inventory/pnl" title="View cost basis, sell-through, revenue and profit by SKU or lot">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                P&amp;L report
+              </Link>
+            </Button>
             <Button onClick={openAdd} variant="default">
               <Plus className="h-4 w-4 mr-2" />
               Add item
