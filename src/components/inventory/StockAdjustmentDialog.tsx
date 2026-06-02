@@ -187,6 +187,75 @@ export const StockAdjustmentDialog = ({ open, onOpenChange, items, onApplied, de
           </Table>
         </div>
 
+        {changes.length > 0 && (
+          <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold flex items-center gap-2">
+                <ClipboardCheck className="h-4 w-4 text-primary" />
+                Variance review
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {changes.length} item{changes.length > 1 ? "s" : ""} will change
+              </div>
+            </div>
+            <div className="max-h-40 overflow-y-auto rounded border bg-background">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="h-8">Item</TableHead>
+                    <TableHead className="h-8 text-right w-20">Expected</TableHead>
+                    <TableHead className="h-8 text-right w-20">Counted</TableHead>
+                    <TableHead className="h-8 text-right w-16">Δ</TableHead>
+                    <TableHead className="h-8 text-right w-20">Variance</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {changes.map(({ item, counted, delta }) => {
+                    const pct = item.quantity === 0
+                      ? counted > 0 ? Infinity : 0
+                      : (delta / item.quantity) * 100;
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell className="py-1.5">
+                          <div className="text-sm font-medium leading-tight truncate max-w-[220px]">{item.card_name}</div>
+                        </TableCell>
+                        <TableCell className="py-1.5 text-right tabular-nums">{item.quantity}</TableCell>
+                        <TableCell className="py-1.5 text-right tabular-nums">{counted}</TableCell>
+                        <TableCell className={`py-1.5 text-right tabular-nums font-medium ${delta > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                          {delta > 0 ? `+${delta}` : delta}
+                        </TableCell>
+                        <TableCell className={`py-1.5 text-right tabular-nums text-xs ${delta > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                          {pct === Infinity ? "new" : `${pct > 0 ? "+" : ""}${pct.toFixed(0)}%`}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-xs pt-1">
+              <div className="rounded bg-background border p-2">
+                <div className="text-muted-foreground">Units added</div>
+                <div className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                  +{changes.filter(c => c.delta > 0).reduce((a, c) => a + c.delta, 0)}
+                </div>
+              </div>
+              <div className="rounded bg-background border p-2">
+                <div className="text-muted-foreground">Units removed</div>
+                <div className="font-semibold text-destructive tabular-nums">
+                  {changes.filter(c => c.delta < 0).reduce((a, c) => a + c.delta, 0)}
+                </div>
+              </div>
+              <div className="rounded bg-background border p-2">
+                <div className="text-muted-foreground">Net change</div>
+                <div className={`font-semibold tabular-nums ${totalDelta === 0 ? "" : totalDelta > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                  {totalDelta > 0 ? "+" : ""}{totalDelta}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <Label htmlFor="adj-reason">Reason</Label>
