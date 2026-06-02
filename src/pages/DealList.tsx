@@ -922,13 +922,24 @@ const DealList = () => {
               )}
               {visibleItems.map((i) => (
                 <Card key={i.id} className="p-3 flex gap-3">
-                  {/* Bulk-edit checkbox is bought-only — keeps the gutter empty for active/passed rows. */}
-                  {i.status === "bought" && (
+                  {/* Selection checkbox: bought rows feed bulk-edit, active rows feed lot-buy.
+                      Passed rows stay un-checkable so the gutter visually distinguishes dead deals. */}
+                  {(i.status === "bought" ||
+                    i.status === "watching" ||
+                    i.status === "negotiating") && (
                     <div className="flex items-start pt-1">
                       <Checkbox
-                        checked={selectedBoughtIds.has(i.id)}
-                        onCheckedChange={() => toggleBoughtSelection(i.id)}
-                        aria-label={`Select ${i.card_name} for bulk edit`}
+                        checked={
+                          i.status === "bought"
+                            ? selectedBoughtIds.has(i.id)
+                            : selectedPipelineIds.has(i.id)
+                        }
+                        onCheckedChange={() =>
+                          i.status === "bought"
+                            ? toggleBoughtSelection(i.id)
+                            : togglePipelineSelection(i.id)
+                        }
+                        aria-label={`Select ${i.card_name}`}
                       />
                     </div>
                   )}
