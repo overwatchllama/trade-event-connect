@@ -328,16 +328,15 @@ const DealList = () => {
       acc[it.status] = (acc[it.status] ?? 0) + 1;
       return acc;
     },
-    { watching: 0, negotiating: 0, bought: 0, passed: 0 } as Record<DealStatus, number>,
+    { lead: 0, bought: 0, in_stock: 0, sold: 0, completed: 0, passed: 0 } as Record<DealStatus, number>,
   );
   const visibleItems = items.filter((it) => {
     if (statusFilter === "all") return true;
-    if (statusFilter === "active") return it.status === "watching" || it.status === "negotiating";
     return it.status === statusFilter;
   });
 
-  // Pipeline totals (active deals only — bought/passed shouldn't inflate "spend" math).
-  const pipelineItems = items.filter((it) => it.status === "watching" || it.status === "negotiating");
+  // Pipeline totals (leads only — bought/in-stock/sold/passed shouldn't inflate "spend" math).
+  const pipelineItems = items.filter((it) => it.status === "lead");
   const totalValue = pipelineItems.reduce(
     (sum, i) => sum + (effectivePrice(i) ?? 0) * i.quantity,
     0,
@@ -348,16 +347,32 @@ const DealList = () => {
   );
   const blendedPct = totalValue > 0 ? (targetSpend / totalValue) * 100 : costPct;
 
-  // P&L roll-up across every "Bought" deal: invested = unit×qty + ship + fees, projected = target_sell×qty.
+  // P&L roll-up: any deal that's been purchased is "invested capital", regardless of where
+  // it sits downstream (bought / in_stock / sold / completed).
+  const purchasedItems = items.filter(
+    (it) => it.status === "bought" || it.status === "in_stock" || it.status === "sold" || it.status === "completed",
+  );
   const boughtItems = items.filter((it) => it.status === "bought");
-  const totalInvested = boughtItems.reduce(
+  const inStockItems = items.filter((it) => it.status === "in_stock");
+  const soldItems = items.filter((it) => it.status === "sold" || it.status === "completed");
+  const totalInvested = purchasedItems.reduce(
     (s, i) => s + (i.purchase_price ?? 0) * i.quantity + (i.shipping_cost ?? 0) + (i.fees ?? 0),
     0,
   );
-  const projectedRevenue = boughtItems.reduce(
-    (s, i) => s + (i.target_sell_price ?? 0) * i.quantity,
+  const projectedRevenue = purchasedItems.reduce(
+    (s, i) => s + (i.sold_price ?? i.target_sell_price ?? 0) * i.quantity,
     0,
   );
+  const realizedRevenue = soldItems.reduce(
+    (s, i) => s + (i.sold_price ?? 0) * i.quantity - (i.sold_fees ?? 0) - (i.sold_shipping ?? 0),
+    0,
+  );
+  const realizedCost = soldItems.reduce(
+    (s, i) => s + (i.purchase_price ?? 0) * i.quantity + (i.shipping_cost ?? 0) + (i.fees ?? 0),
+    0,
+  );
+  const realizedProfit = realizedRevenue - realizedCost;
+  const realizedMarginPct = realizedRevenue > 0 ? (realizedProfit / realizedRevenue) * 100 : 0;
   const projectedProfit = projectedRevenue - totalInvested;
   const projectedMarginPct = totalInvested > 0 ? (projectedProfit / totalInvested) * 100 : 0;
 
