@@ -10,7 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown } from "lucide-react";
+import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { PrintLabelsDialog } from "@/components/inventory/PrintLabelsDialog";
 
 interface InventoryItem {
   id: string;
@@ -52,6 +54,8 @@ const Inventory = () => {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("bought_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [printOpen, setPrintOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -170,13 +174,22 @@ const Inventory = () => {
               Bought deals with cost basis, projected sell price, and per-item P&amp;L.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Input
               placeholder="Search card, set, source…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full md:w-72"
             />
+            <Button
+              variant="default"
+              onClick={() => setPrintOpen(true)}
+              disabled={filtered.length === 0}
+              title={selected.size > 0 ? `Print ${selected.size} selected` : "Print all visible"}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Print labels{selected.size > 0 ? ` (${selected.size})` : ""}
+            </Button>
             <Button variant="outline" asChild>
               <Link to="/deal-list">Deal Pipeline</Link>
             </Button>
@@ -231,6 +244,16 @@ const Inventory = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[36px]">
+                      <Checkbox
+                        checked={filtered.length > 0 && filtered.every((i) => selected.has(i.id))}
+                        onCheckedChange={(v) => {
+                          if (v) setSelected(new Set(filtered.map((i) => i.id)));
+                          else setSelected(new Set());
+                        }}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead className="w-[280px]"><SortBtn k="card_name">Card</SortBtn></TableHead>
                     <TableHead><SortBtn k="bought_at">Bought</SortBtn></TableHead>
                     <TableHead className="text-right">Qty</TableHead>
@@ -249,7 +272,20 @@ const Inventory = () => {
                     const { invested, projected, profit, margin } = calc(i);
                     const positive = profit >= 0;
                     return (
-                      <TableRow key={i.id}>
+                      <TableRow key={i.id} data-state={selected.has(i.id) ? "selected" : undefined}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selected.has(i.id)}
+                            onCheckedChange={(v) => {
+                              setSelected((prev) => {
+                                const next = new Set(prev);
+                                if (v) next.add(i.id); else next.delete(i.id);
+                                return next;
+                              });
+                            }}
+                            aria-label={`Select ${i.card_name}`}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="h-12 w-9 rounded bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -312,6 +348,21 @@ const Inventory = () => {
           )}
         </Card>
       </main>
+
+      <PrintLabelsDialog
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        items={(selected.size > 0 ? filtered.filter((i) => selected.has(i.id)) : filtered).map((i) => ({
+          id: i.id,
+          card_name: i.card_name,
+          set_name: i.set_name,
+          card_number: i.card_number,
+          condition: i.condition,
+          purchase_price: i.purchase_price,
+          target_sell_price: i.target_sell_price,
+          quantity: i.quantity,
+        }))}
+      />
     </>
   );
 };
