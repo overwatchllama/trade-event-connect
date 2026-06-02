@@ -85,6 +85,28 @@ export const StockAdjustmentHistoryDialog = ({ open, onOpenChange, itemIds }: Pr
             return { ...r, card_name: it?.card_name, set_name: it?.set_name, card_number: it?.card_number };
           })
         );
+
+        // Resolve editor names for all history entries
+        const editorIds = new Set<string>();
+        for (const r of adj) {
+          for (const h of (r.notes_history ?? []) as NoteEdit[]) {
+            if (h.edited_by) editorIds.add(h.edited_by);
+          }
+        }
+        if (editorIds.size > 0) {
+          const { data: profs } = await supabase
+            .from("profiles")
+            .select("id,full_name,email")
+            .in("id", Array.from(editorIds));
+          const map: Record<string, string> = {};
+          for (const p of profs ?? []) {
+            map[(p as any).id] = (p as any).full_name || (p as any).email || "Unknown";
+          }
+          setEditorNames(map);
+        } else {
+          setEditorNames({});
+        }
+
       } catch (e: any) {
         toast({ title: "Failed to load history", description: e.message, variant: "destructive" });
       } finally {
