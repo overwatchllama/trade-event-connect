@@ -32,6 +32,8 @@ interface InventoryItem {
   bought_at: string | null;
   tcgplayer_url: string | null;
   tcgplayer_market_price: number | null;
+  label_printed_at: string | null;
+  label_print_count: number;
 }
 
 type SortKey = "bought_at" | "card_name" | "invested" | "projected" | "profit" | "margin";
