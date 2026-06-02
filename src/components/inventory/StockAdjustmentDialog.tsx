@@ -53,6 +53,7 @@ const REASONS = [
 export const StockAdjustmentDialog = ({ open, onOpenChange, items, onApplied, defaultReason = "count" }: Props) => {
   const { user } = useAuth();
   const [counts, setCounts] = useState<Record<string, string>>({});
+  const [lineNotes, setLineNotes] = useState<Record<string, string>>({});
   const [reason, setReason] = useState(defaultReason);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -62,6 +63,7 @@ export const StockAdjustmentDialog = ({ open, onOpenChange, items, onApplied, de
       const seed: Record<string, string> = {};
       for (const i of items) seed[i.id] = String(i.quantity);
       setCounts(seed);
+      setLineNotes({});
       setReason(defaultReason);
       setNotes("");
     }
@@ -97,16 +99,21 @@ export const StockAdjustmentDialog = ({ open, onOpenChange, items, onApplied, de
         updatedMap.set(c.item.id, c.counted);
       }
       // Insert audit rows
-      const auditRows = changes.map((c) => ({
-        user_id: user.id,
-        item_id: c.item.id,
-        previous_quantity: c.item.quantity,
-        counted_quantity: c.counted,
-        delta: c.delta,
-        reason,
-        notes: notes.trim() || null,
-        source: items.length > 1 ? "bulk" : "single",
-      }));
+      const globalNote = notes.trim();
+      const auditRows = changes.map((c) => {
+        const lineNote = (lineNotes[c.item.id] ?? "").trim();
+        const combined = [lineNote, globalNote].filter(Boolean).join(lineNote && globalNote ? " — " : "");
+        return {
+          user_id: user.id,
+          item_id: c.item.id,
+          previous_quantity: c.item.quantity,
+          counted_quantity: c.counted,
+          delta: c.delta,
+          reason,
+          notes: combined || null,
+          source: items.length > 1 ? "bulk" : "single",
+        };
+      });
       const { error: auditErr } = await supabase.from("stock_adjustments").insert(auditRows);
       if (auditErr) throw auditErr;
 
@@ -142,7 +149,8 @@ export const StockAdjustmentDialog = ({ open, onOpenChange, items, onApplied, de
                 <TableHead>Item</TableHead>
                 <TableHead className="text-right w-20">On hand</TableHead>
                 <TableHead className="text-right w-28">Counted</TableHead>
-                <TableHead className="text-right w-20">Δ</TableHead>
+                <TableHead className="text-right w-16">Δ</TableHead>
+                <TableHead className="w-[220px]">Note</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -150,6 +158,7 @@ export const StockAdjustmentDialog = ({ open, onOpenChange, items, onApplied, de
                 const raw = counts[i.id] ?? "";
                 const counted = raw === "" ? null : Number(raw);
                 const delta = counted == null || !Number.isFinite(counted) ? null : counted - i.quantity;
+                const hasDelta = delta != null && delta !== 0;
                 return (
                   <TableRow key={i.id}>
                     <TableCell>
@@ -179,6 +188,14 @@ export const StockAdjustmentDialog = ({ open, onOpenChange, items, onApplied, de
                       }`}
                     >
                       {delta == null ? "—" : delta > 0 ? `+${delta}` : delta}
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={lineNotes[i.id] ?? ""}
+                        onChange={(e) => setLineNotes((n) => ({ ...n, [i.id]: e.target.value }))}
+                        placeholder={hasDelta ? "Why the variance?" : "Optional"}
+                        className="h-8 text-xs"
+                      />
                     </TableCell>
                   </TableRow>
                 );
