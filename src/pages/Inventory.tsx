@@ -365,6 +365,16 @@ const Inventory = () => {
                               <div className="flex flex-wrap gap-1 mt-1">
                                 <Badge variant="outline" className="text-[10px] py-0 px-1.5">{i.condition.replace("_", " ")}</Badge>
                                 {i.source && <Badge variant="secondary" className="text-[10px] py-0 px-1.5">{i.source}</Badge>}
+                                {i.label_printed_at && (
+                                  <BadgeUi
+                                    variant="outline"
+                                    className="text-[10px] py-0 px-1.5 border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+                                    title={`Last printed ${new Date(i.label_printed_at).toLocaleString()}${i.label_print_count > 1 ? ` · ${i.label_print_count} prints` : ""}`}
+                                  >
+                                    <Printer className="h-2.5 w-2.5 mr-0.5" />
+                                    Printed{i.label_print_count > 1 ? ` ×${i.label_print_count}` : ""}
+                                  </BadgeUi>
+                                )}
                               </div>
                             </div>
                           </div>
