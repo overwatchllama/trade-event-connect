@@ -135,7 +135,7 @@ export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Prop
 </body></html>`;
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (expanded.length === 0) return;
     const html = buildPrintHtml();
     const w = window.open("", "_blank", "width=900,height=1100");
@@ -143,15 +143,33 @@ export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Prop
     w.document.open();
     w.document.write(html);
     w.document.close();
+    const uniqueIds = Array.from(new Set(items.map((i) => i.id)));
+    try {
+      await onPrinted?.(uniqueIds);
+    } catch {
+      // ignore
+    }
+    onOpenChange(false);
   };
+
+  const reprintCount = items.filter((i) => i.label_printed_at).length;
+  const isReprint = reprintCount > 0 && reprintCount === items.length;
+  const isMixed = reprintCount > 0 && reprintCount < items.length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Printer className="h-4 w-4" /> Print inventory labels</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Printer className="h-4 w-4" />
+            {isReprint ? "Reprint inventory labels" : "Print inventory labels"}
+          </DialogTitle>
           <DialogDescription>
-            Generates Code 128 barcodes encoded with each item's ID so you can re-scan at checkout, restock, or sale.
+            {isReprint
+              ? `Regenerating labels for ${reprintCount} previously-printed item${reprintCount === 1 ? "" : "s"}. New barcodes encode the same item IDs so existing scans still match.`
+              : isMixed
+                ? `${items.length - reprintCount} new + ${reprintCount} reprint. Code 128 barcodes encode each item's ID for scanning at checkout, restock, or sale.`
+                : "Generates Code 128 barcodes encoded with each item's ID so you can re-scan at checkout, restock, or sale."}
           </DialogDescription>
         </DialogHeader>
 
