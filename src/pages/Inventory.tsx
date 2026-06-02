@@ -518,7 +518,7 @@ const Inventory = () => {
                   onClick={() => { setAdjHistoryItemIds(Array.from(selected)); setAdjHistoryOpen(true); }}
                   title="View adjustment history for selected items"
                 >
-                  <History className="h-4 w-4 mr-2" />
+                  <HistoryIcon className="h-4 w-4 mr-2" />
                   Adj. history
                 </Button>
                 {eventScope !== "all" && (
