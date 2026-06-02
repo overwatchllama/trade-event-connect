@@ -348,6 +348,21 @@ const Inventory = () => {
           )}
         </Card>
       </main>
+
+      <PrintLabelsDialog
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        items={(selected.size > 0 ? filtered.filter((i) => selected.has(i.id)) : filtered).map((i) => ({
+          id: i.id,
+          card_name: i.card_name,
+          set_name: i.set_name,
+          card_number: i.card_number,
+          condition: i.condition,
+          purchase_price: i.purchase_price,
+          target_sell_price: i.target_sell_price,
+          quantity: i.quantity,
+        }))}
+      />
     </>
   );
 };
