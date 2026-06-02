@@ -1749,6 +1749,9 @@ export type Database = {
           id: string
           item_id: string
           notes: string | null
+          notes_history: Json
+          notes_updated_at: string | null
+          notes_updated_by: string | null
           previous_quantity: number
           reason: string | null
           source: string | null
@@ -1762,6 +1765,9 @@ export type Database = {
           id?: string
           item_id: string
           notes?: string | null
+          notes_history?: Json
+          notes_updated_at?: string | null
+          notes_updated_by?: string | null
           previous_quantity: number
           reason?: string | null
           source?: string | null
@@ -1775,6 +1781,9 @@ export type Database = {
           id?: string
           item_id?: string
           notes?: string | null
+          notes_history?: Json
+          notes_updated_at?: string | null
+          notes_updated_by?: string | null
           previous_quantity?: number
           reason?: string | null
           source?: string | null
