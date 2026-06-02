@@ -965,11 +965,9 @@ const DealList = () => {
               )}
               {visibleItems.map((i) => (
                 <Card key={i.id} className="p-3 flex gap-3">
-                  {/* Selection checkbox: bought rows feed bulk-edit, active rows feed lot-buy.
-                      Passed rows stay un-checkable so the gutter visually distinguishes dead deals. */}
-                  {(i.status === "bought" ||
-                    i.status === "watching" ||
-                    i.status === "negotiating") && (
+                  {/* Selection checkbox: bought rows feed bulk-edit, lead rows feed lot-buy.
+                      Downstream stages (in_stock/sold/completed/passed) aren't multi-selectable. */}
+                  {(i.status === "bought" || i.status === "lead") && (
                     <div className="flex items-start pt-1">
                       <Checkbox
                         checked={
