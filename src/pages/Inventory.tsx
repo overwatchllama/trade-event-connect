@@ -281,6 +281,105 @@ const Inventory = () => {
     }
   };
 
+  const openAdd = () => {
+    setEditingItem(undefined);
+    setItemDialogOpen(true);
+  };
+
+  const openEdit = (i: InventoryItem) => {
+    setEditingItem({
+      id: i.id,
+      card_name: i.card_name,
+      set_name: i.set_name,
+      card_number: i.card_number,
+      rarity: i.rarity,
+      image_url: i.image_url,
+      game: i.game,
+      condition: i.condition,
+      quantity: i.quantity,
+      purchase_price: i.purchase_price,
+      shipping_cost: i.shipping_cost,
+      fees: i.fees,
+      target_sell_price: i.target_sell_price,
+      source: i.source,
+      bought_at: i.bought_at,
+      notes: i.notes,
+    });
+    setItemDialogOpen(true);
+  };
+
+  const requestDelete = (ids: string[]) => {
+    if (ids.length === 0) return;
+    const label =
+      ids.length === 1
+        ? items.find((x) => x.id === ids[0])?.card_name ?? "this item"
+        : `${ids.length} items`;
+    setConfirmDelete({ ids, label });
+  };
+
+  const performDelete = async () => {
+    if (!confirmDelete) return;
+    const { ids } = confirmDelete;
+    const prev = items;
+    setItems((cur) => cur.filter((x) => !ids.includes(x.id)));
+    setSelected((cur) => {
+      const next = new Set(cur);
+      ids.forEach((id) => next.delete(id));
+      return next;
+    });
+    setConfirmDelete(null);
+    const { error } = await supabase.from("deal_list_items").delete().in("id", ids);
+    if (error) {
+      setItems(prev);
+      toast({ title: "Failed to delete", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: `Deleted ${ids.length} item${ids.length > 1 ? "s" : ""}` });
+    }
+  };
+
+  const removeFromEvent = async (ids: string[]) => {
+    if (eventScope === "all" || ids.length === 0 || !vendorProfile?.id) return;
+    const { error } = await supabase
+      .from("vendor_event_inventory")
+      .delete()
+      .eq("vendor_id", vendorProfile.id)
+      .eq("event_id", eventScope)
+      .in("item_id", ids);
+    if (error) {
+      toast({ title: "Failed to remove from event", description: error.message, variant: "destructive" });
+      return;
+    }
+    setEventMemberships((cur) => {
+      const next = new Map(cur);
+      for (const id of ids) {
+        const s = new Set(next.get(id) ?? []);
+        s.delete(eventScope);
+        next.set(id, s);
+      }
+      return next;
+    });
+    setSelected(new Set());
+    toast({ title: `Removed ${ids.length} item${ids.length > 1 ? "s" : ""} from event` });
+  };
+
+  const reloadEventMemberships = async () => {
+    if (!vendorProfile?.id) return;
+    const { data: picks } = await supabase
+      .from("vendor_event_inventory")
+      .select("event_id, item_id")
+      .eq("vendor_id", vendorProfile.id);
+    const map = new Map<string, Set<string>>();
+    for (const p of picks ?? []) {
+      if (!map.has(p.item_id)) map.set(p.item_id, new Set());
+      map.get(p.item_id)!.add(p.event_id);
+    }
+    setEventMemberships(map);
+  };
+
+  const currentEventLabel =
+    eventScope === "all" ? null : eventOptions.find((e) => e.id === eventScope)?.title ?? null;
+
+
 
   return (
     <>
