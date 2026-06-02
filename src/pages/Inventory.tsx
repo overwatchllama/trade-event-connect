@@ -105,6 +105,7 @@ const Inventory = () => {
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<(Partial<InventoryItemFormValues> & { id?: string }) | undefined>(undefined);
   const [confirmDelete, setConfirmDelete] = useState<{ ids: string[]; label: string } | null>(null);
+  const [adjustItemIds, setAdjustItemIds] = useState<string[] | null>(null);
 
   const loadInventory = async () => {
     if (!user) return;
