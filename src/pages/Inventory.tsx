@@ -905,6 +905,14 @@ const Inventory = () => {
         }}
       />
 
+      <StockAdjustmentHistoryDialog
+        open={adjHistoryOpen}
+        onOpenChange={(v) => { setAdjHistoryOpen(v); if (!v) setAdjHistoryItemIds(undefined); }}
+        itemIds={adjHistoryItemIds}
+      />
+
+
+
 
       <AlertDialog open={confirmDelete !== null} onOpenChange={(v) => { if (!v) setConfirmDelete(null); }}>
         <AlertDialogContent>
