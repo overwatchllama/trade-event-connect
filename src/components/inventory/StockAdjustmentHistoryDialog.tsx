@@ -52,6 +52,8 @@ export const StockAdjustmentHistoryDialog = ({ open, onOpenChange, itemIds }: Pr
   const [draft, setDraft] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [editorNames, setEditorNames] = useState<Record<string, string>>({});
+
 
   useEffect(() => {
     if (!open || !user) return;
