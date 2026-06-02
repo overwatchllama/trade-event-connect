@@ -144,7 +144,8 @@ export const StockAdjustmentDialog = ({ open, onOpenChange, items, onApplied, de
                 <TableHead>Item</TableHead>
                 <TableHead className="text-right w-20">On hand</TableHead>
                 <TableHead className="text-right w-28">Counted</TableHead>
-                <TableHead className="text-right w-20">Δ</TableHead>
+                <TableHead className="text-right w-16">Δ</TableHead>
+                <TableHead className="w-[220px]">Note</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -152,6 +153,7 @@ export const StockAdjustmentDialog = ({ open, onOpenChange, items, onApplied, de
                 const raw = counts[i.id] ?? "";
                 const counted = raw === "" ? null : Number(raw);
                 const delta = counted == null || !Number.isFinite(counted) ? null : counted - i.quantity;
+                const hasDelta = delta != null && delta !== 0;
                 return (
                   <TableRow key={i.id}>
                     <TableCell>
@@ -181,6 +183,14 @@ export const StockAdjustmentDialog = ({ open, onOpenChange, items, onApplied, de
                       }`}
                     >
                       {delta == null ? "—" : delta > 0 ? `+${delta}` : delta}
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={lineNotes[i.id] ?? ""}
+                        onChange={(e) => setLineNotes((n) => ({ ...n, [i.id]: e.target.value }))}
+                        placeholder={hasDelta ? "Why the variance?" : "Optional"}
+                        className="h-8 text-xs"
+                      />
                     </TableCell>
                   </TableRow>
                 );
