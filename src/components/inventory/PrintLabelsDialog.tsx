@@ -21,11 +21,19 @@ export interface PrintLabelItem {
   label_print_count?: number;
 }
 
+export interface PrintLabelsMeta {
+  preset: string;
+  copies: number;
+  perQuantity: boolean;
+  labelCount: number;
+  reprintCount: number;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   items: PrintLabelItem[];
-  onPrinted?: (printedIds: string[]) => void | Promise<void>;
+  onPrinted?: (printedIds: string[], meta: PrintLabelsMeta) => void | Promise<void>;
 }
 
 type Preset = "avery-5160" | "avery-5163" | "dymo-30252" | "brother-dk1201";
