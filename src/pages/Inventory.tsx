@@ -398,6 +398,13 @@ const Inventory = () => {
 
       <Header />
       <main className="container mx-auto px-3 md:px-4 py-6 max-w-7xl">
+        <Breadcrumb className="mb-4">
+          <BreadcrumbList>
+            <BreadcrumbItem><BreadcrumbLink asChild><Link to="/vending">Vending</Link></BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem><BreadcrumbPage>Inventory</BreadcrumbPage></BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-5">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
