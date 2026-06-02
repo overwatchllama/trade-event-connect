@@ -53,6 +53,7 @@ const REASONS = [
 export const StockAdjustmentDialog = ({ open, onOpenChange, items, onApplied, defaultReason = "count" }: Props) => {
   const { user } = useAuth();
   const [counts, setCounts] = useState<Record<string, string>>({});
+  const [lineNotes, setLineNotes] = useState<Record<string, string>>({});
   const [reason, setReason] = useState(defaultReason);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
