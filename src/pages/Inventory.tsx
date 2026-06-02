@@ -602,6 +602,18 @@ const Inventory = () => {
       />
 
       <PrintHistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} />
+
+      <FeatureAtEventDialog
+        open={featureItemIds !== null}
+        onOpenChange={(v) => {
+          if (!v) {
+            setFeatureItemIds(null);
+            setFeatureLabel(undefined);
+          }
+        }}
+        itemIds={featureItemIds ?? []}
+        itemLabel={featureLabel}
+      />
     </>
   );
 };
