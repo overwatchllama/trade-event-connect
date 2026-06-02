@@ -843,11 +843,38 @@ const Inventory = () => {
           if (!v) {
             setFeatureItemIds(null);
             setFeatureLabel(undefined);
+            reloadEventMemberships();
           }
         }}
         itemIds={featureItemIds ?? []}
         itemLabel={featureLabel}
       />
+
+      <InventoryItemDialog
+        open={itemDialogOpen}
+        onOpenChange={setItemDialogOpen}
+        initialValues={editingItem}
+        onSaved={() => {
+          loadInventory();
+        }}
+      />
+
+      <AlertDialog open={confirmDelete !== null} onOpenChange={(v) => { if (!v) setConfirmDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {confirmDelete?.label}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the inventory record, listing, and any event features. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={performDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
