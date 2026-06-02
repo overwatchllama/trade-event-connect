@@ -431,7 +431,7 @@ const Inventory = () => {
         onPrinted={async (printedIds) => {
           if (printedIds.length === 0) return;
           const nowIso = new Date().toISOString();
-          // Optimistic update
+          const current = items.filter((i) => printedIds.includes(i.id));
           setItems((prev) =>
             prev.map((i) =>
               printedIds.includes(i.id)
@@ -439,28 +439,17 @@ const Inventory = () => {
                 : i,
             ),
           );
-          const { error } = await supabase.rpc("bump_label_print", { item_ids: printedIds }).single();
-          // Fallback if RPC doesn't exist: use direct updates per row
-          if (error) {
-            await Promise.all(
-              printedIds.map((id) =>
-                supabase
-                  .from("deal_list_items")
-                  .update({ label_printed_at: nowIso })
-                  .eq("id", id),
-              ),
-            );
-            // increment counts individually
-            const current = items.filter((i) => printedIds.includes(i.id));
-            await Promise.all(
-              current.map((i) =>
-                supabase
-                  .from("deal_list_items")
-                  .update({ label_print_count: (i.label_print_count ?? 0) + 1 })
-                  .eq("id", i.id),
-              ),
-            );
-          }
+          await Promise.all(
+            current.map((i) =>
+              supabase
+                .from("deal_list_items")
+                .update({
+                  label_printed_at: nowIso,
+                  label_print_count: (i.label_print_count ?? 0) + 1,
+                })
+                .eq("id", i.id),
+            ),
+          );
         }}
       />
     </>
