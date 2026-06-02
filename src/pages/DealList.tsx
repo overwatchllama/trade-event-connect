@@ -836,6 +836,39 @@ const DealList = () => {
               </Card>
             )}
 
+            {/* Lot-buy toolbar — appears when watching/negotiating rows are on screen so users can
+                multi-select a pile and split a single lot cost across every card in one shot. */}
+            {visiblePipelineItems.length > 0 && (
+              <Card className="p-2 mb-3 flex flex-wrap items-center gap-2 text-xs">
+                <Checkbox
+                  checked={allVisiblePipelineSelected}
+                  onCheckedChange={toggleSelectAllVisiblePipeline}
+                  aria-label="Select all visible active deals"
+                />
+                <span className="text-muted-foreground">
+                  {selectedPipelineCount > 0
+                    ? `${selectedPipelineCount} selected for lot buy`
+                    : `Select active deals to buy as a lot (${visiblePipelineItems.length} on screen)`}
+                </span>
+                <div className="ml-auto flex items-center gap-2">
+                  {selectedPipelineCount > 0 && (
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={clearPipelineSelection}>
+                      Clear
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs"
+                    disabled={selectedPipelineCount === 0}
+                    onClick={() => setLotBuyOpen(true)}
+                  >
+                    <PackageCheck className="h-3 w-3 mr-1" />
+                    Buy {selectedPipelineCount || ""} as lot
+                  </Button>
+                </div>
+              </Card>
+            )}
+
             {/* Bulk-edit toolbar — visible whenever bought rows are on screen so users can multi-select cost-basis updates. */}
             {visibleBoughtItems.length > 0 && (
               <Card className="p-2 mb-3 flex flex-wrap items-center gap-2 text-xs">
