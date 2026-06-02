@@ -277,32 +277,64 @@ export const StockAdjustmentHistoryDialog = ({ open, onOpenChange, itemIds }: Pr
                         </TableCell>
                       </TableRow>
                       {isExpanded && editCount > 0 && (
-                        <TableRow key={`${r.id}-h`} className="bg-muted/30">
+                        <TableRow key={`${r.id}-h`} className="bg-muted/30 hover:bg-muted/30">
                           <TableCell />
-                          <TableCell colSpan={8} className="py-2">
-                            <div className="text-xs font-semibold mb-1">Edit history</div>
-                            <ol className="space-y-1.5 text-xs">
-                              {(r.notes_history ?? []).slice().reverse().map((h, idx) => (
-                                <li key={idx} className="rounded border bg-background p-2">
-                                  <div className="text-[11px] text-muted-foreground">
-                                    {new Date(h.edited_at).toLocaleString()}
-                                  </div>
-                                  <div className="grid sm:grid-cols-2 gap-2 mt-1">
-                                    <div>
-                                      <div className="text-[10px] uppercase text-muted-foreground">Before</div>
-                                      <div className="whitespace-pre-wrap">{h.previous || <span className="italic text-muted-foreground">—</span>}</div>
+                          <TableCell colSpan={8} className="py-3">
+                            <div className="text-xs font-semibold mb-2 flex items-center gap-1.5">
+                              <History className="h-3.5 w-3.5 text-primary" /> Note timeline
+                            </div>
+                            <ol className="relative border-l-2 border-border ml-2 space-y-3">
+                              {[
+                                {
+                                  edited_at: r.created_at,
+                                  edited_by: null as string | null,
+                                  previous: null as string | null,
+                                  next: (r.notes_history?.[0]?.previous ?? r.notes) ?? null,
+                                  initial: true,
+                                },
+                                ...(r.notes_history ?? []).map((h) => ({ ...h, initial: false })),
+                              ].map((entry, idx) => {
+                                const editorName = entry.edited_by
+                                  ? editorNames[entry.edited_by] ?? "Unknown user"
+                                  : "Adjustment created";
+                                return (
+                                  <li key={idx} className="ml-4 relative">
+                                    <span className="absolute -left-[1.4rem] top-1.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background" />
+                                    <div className="rounded border bg-background p-2">
+                                      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                                        <span className="font-medium">{editorName}</span>
+                                        <span className="text-muted-foreground tabular-nums">
+                                          {new Date(entry.edited_at).toLocaleString()}
+                                        </span>
+                                      </div>
+                                      {entry.initial ? (
+                                        <div className="mt-1 text-xs">
+                                          <div className="text-[10px] uppercase text-muted-foreground">Initial note</div>
+                                          <div className="whitespace-pre-wrap">
+                                            {entry.next || <span className="italic text-muted-foreground">— (no note)</span>}
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="grid sm:grid-cols-2 gap-2 mt-1 text-xs">
+                                          <div>
+                                            <div className="text-[10px] uppercase text-muted-foreground">Before</div>
+                                            <div className="whitespace-pre-wrap">{entry.previous || <span className="italic text-muted-foreground">—</span>}</div>
+                                          </div>
+                                          <div>
+                                            <div className="text-[10px] uppercase text-muted-foreground">After</div>
+                                            <div className="whitespace-pre-wrap">{entry.next || <span className="italic text-muted-foreground">—</span>}</div>
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
-                                    <div>
-                                      <div className="text-[10px] uppercase text-muted-foreground">After</div>
-                                      <div className="whitespace-pre-wrap">{h.next || <span className="italic text-muted-foreground">—</span>}</div>
-                                    </div>
-                                  </div>
-                                </li>
-                              ))}
+                                  </li>
+                                );
+                              })}
                             </ol>
                           </TableCell>
                         </TableRow>
                       )}
+
                     </Fragment>
                   );
                 })}
