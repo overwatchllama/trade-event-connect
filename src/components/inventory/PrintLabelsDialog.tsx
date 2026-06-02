@@ -152,8 +152,15 @@ export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Prop
     w.document.write(html);
     w.document.close();
     const uniqueIds = Array.from(new Set(items.map((i) => i.id)));
+    const reprintCountLocal = items.filter((i) => i.label_printed_at).length;
     try {
-      await onPrinted?.(uniqueIds);
+      await onPrinted?.(uniqueIds, {
+        preset,
+        copies,
+        perQuantity,
+        labelCount: expanded.length,
+        reprintCount: reprintCountLocal,
+      });
     } catch {
       // ignore
     }
