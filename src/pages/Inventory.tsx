@@ -376,6 +376,7 @@ const Inventory = () => {
                     <TableHead className="text-right"><SortBtn k="projected">Projected</SortBtn></TableHead>
                     <TableHead className="text-right"><SortBtn k="profit">Profit</SortBtn></TableHead>
                     <TableHead className="text-right"><SortBtn k="margin">Margin</SortBtn></TableHead>
+                    <TableHead className="w-[200px]">Listing</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
