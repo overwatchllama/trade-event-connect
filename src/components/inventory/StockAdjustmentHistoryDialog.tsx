@@ -279,7 +279,7 @@ export const StockAdjustmentHistoryDialog = ({ open, onOpenChange, itemIds }: Pr
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </TableBody>
