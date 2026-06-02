@@ -8,11 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, DollarSign, Send, Store, Trash2, Search, Heart, FileText, X, CalendarIcon, MapPin } from 'lucide-react';
+import { Plus, DollarSign, Send, Store, Trash2, Search, Heart, FileText, X, CalendarIcon, MapPin, Users, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
+import { TrustedGroupsDialog } from './TrustedGroupsDialog';
+
 
 interface VendingEvent {
   id: string; // application id
@@ -36,11 +38,14 @@ interface TableListing {
   status: string;
   buyer_vendor_id: string | null;
   notes: string | null;
+  target_group_id: string | null;
   created_at: string;
   event_title?: string;
   buyer_name?: string;
   target_name?: string;
+  target_group_name?: string;
 }
+
 
 interface AvailableListing {
   id: string;
@@ -49,11 +54,15 @@ interface AvailableListing {
   notes: string | null;
   event_id: string;
   seller_vendor_id: string;
+  listing_type: string;
+  target_group_id: string | null;
   event_title?: string;
   event_date?: string;
   event_state?: string;
   seller_name?: string;
+  target_group_name?: string;
 }
+
 
 interface VendorTableListingsProps {
   vendorId: string;
@@ -74,6 +83,7 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
   const [pricePerTable, setPricePerTable] = useState('');
   const [listingType, setListingType] = useState('public');
   const [targetVendorId, setTargetVendorId] = useState('');
+  const [targetGroupId, setTargetGroupId] = useState('');
   const [vendorSearch, setVendorSearch] = useState('');
   const [listingNotes, setListingNotes] = useState('');
   const [activeView, setActiveView] = useState<'sell' | 'buy'>('sell');
@@ -84,6 +94,9 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
   const [invoiceListing, setInvoiceListing] = useState<TableListing | null>(null);
   const [invoiceAmount, setInvoiceAmount] = useState('');
   const [invoiceNotes, setInvoiceNotes] = useState('');
+  const [myGroups, setMyGroups] = useState<{ id: string; name: string }[]>([]);
+  const [showGroupsManager, setShowGroupsManager] = useState(false);
+
 
   useEffect(() => {
     if (!user || !vendorId) return;
@@ -142,36 +155,52 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
         setMyListings([]);
       }
 
-      // Fetch available listings from other vendors
+      // Fetch available listings from other vendors. RLS already restricts which
+      // group listings the current user can see, so we just request both types.
       const { data: available } = await supabase
         .from('vendor_table_listings')
-        .select('id, tables_offered, price_per_table, notes, event_id, seller_vendor_id')
+        .select('id, tables_offered, price_per_table, notes, event_id, seller_vendor_id, listing_type, target_group_id')
         .eq('status', 'available')
-        .eq('listing_type', 'public')
+        .in('listing_type', ['public', 'group'])
         .neq('seller_vendor_id', vendorId);
 
       if (available && available.length > 0) {
         const eventIds = [...new Set(available.map(a => a.event_id))];
         const vendorIds = [...new Set(available.map(a => a.seller_vendor_id))];
-        
-        const [eventsRes, vendorsRes] = await Promise.all([
+        const groupIds = [...new Set(available.map((a: any) => a.target_group_id).filter(Boolean))] as string[];
+
+        const [eventsRes, vendorsRes, groupsRes] = await Promise.all([
           supabase.from('events').select('id, title, date, state').in('id', eventIds),
           supabase.from('vendors').select('id, business_name').in('id', vendorIds),
+          groupIds.length > 0
+            ? supabase.from('vendor_trusted_groups' as any).select('id, name').in('id', groupIds)
+            : Promise.resolve({ data: [] as any[] }),
         ]);
-        
+
         const eventsMap = new Map(eventsRes.data?.map(e => [e.id, e]) || []);
         const vendorsMap = new Map(vendorsRes.data?.map(v => [v.id, v]) || []);
+        const groupsMap = new Map(((groupsRes as any).data ?? []).map((g: any) => [g.id, g.name]));
 
-        setAvailableListings(available.map(a => ({
+        setAvailableListings(available.map((a: any) => ({
           ...a,
           event_title: eventsMap.get(a.event_id)?.title,
           event_date: eventsMap.get(a.event_id)?.date,
           event_state: eventsMap.get(a.event_id)?.state,
           seller_name: vendorsMap.get(a.seller_vendor_id)?.business_name,
+          target_group_name: a.target_group_id ? (groupsMap.get(a.target_group_id) as string | undefined) : undefined,
         })));
       } else {
         setAvailableListings([]);
       }
+
+      // Load my trusted groups (for the create listing dialog)
+      const { data: groupsOwned } = await supabase
+        .from('vendor_trusted_groups' as any)
+        .select('id, name')
+        .eq('owner_user_id', user.id)
+        .order('name');
+      setMyGroups(((groupsOwned ?? []) as any[]).map((g) => ({ id: g.id, name: g.name })));
+
 
       // Fetch all vendors for direct transfer
       const [vendorsRes, notesRes] = await Promise.all([
@@ -198,6 +227,14 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
 
   const handleCreateListing = async () => {
     if (!user || !selectedAppId) return;
+    if (listingType === 'direct' && !targetVendorId) {
+      toast.error('Select a vendor to transfer to');
+      return;
+    }
+    if (listingType === 'group' && !targetGroupId) {
+      toast.error('Select a trusted group');
+      return;
+    }
     try {
       const { error } = await supabase
         .from('vendor_table_listings')
@@ -210,8 +247,9 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
           price_per_table: pricePerTable ? parseFloat(pricePerTable) : null,
           listing_type: listingType,
           target_vendor_id: listingType === 'direct' ? targetVendorId || null : null,
+          target_group_id: listingType === 'group' ? targetGroupId || null : null,
           notes: listingNotes || null,
-        });
+        } as any);
 
       if (error) throw error;
       toast.success('Table listing created!');
@@ -222,6 +260,7 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
       toast.error(error.message || 'Failed to create listing');
     }
   };
+
 
   const handleCancelListing = async (id: string) => {
     try {
@@ -263,9 +302,11 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
     setPricePerTable('');
     setListingType('public');
     setTargetVendorId('');
+    setTargetGroupId('');
     setVendorSearch('');
     setListingNotes('');
   };
+
 
   // Filtered vendors for search
   const filteredVendors = useMemo(() => {
@@ -381,10 +422,17 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
             </CardTitle>
             <CardDescription>Sell your tables or buy from other vendors</CardDescription>
           </div>
-          <Button onClick={() => setShowCreateDialog(true)} disabled={events.length === 0}>
-            <Plus className="h-4 w-4 mr-2" />
-            List Tables
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowGroupsManager(true)}>
+              <Users className="h-4 w-4 mr-2" />
+              Groups
+            </Button>
+            <Button onClick={() => setShowCreateDialog(true)} disabled={events.length === 0}>
+              <Plus className="h-4 w-4 mr-2" />
+              List Tables
+            </Button>
+          </div>
+
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -435,9 +483,14 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
                     <TableCell>{listing.price_per_table ? `$${listing.price_per_table}` : 'Free'}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs">
-                        {listing.listing_type === 'direct' ? 'Direct Transfer' : 'Public'}
+                        {listing.listing_type === 'direct'
+                          ? 'Direct Transfer'
+                          : listing.listing_type === 'group'
+                          ? `Group${myGroups.find((g) => g.id === listing.target_group_id) ? `: ${myGroups.find((g) => g.id === listing.target_group_id)!.name}` : ''}`
+                          : 'Public'}
                       </Badge>
                     </TableCell>
+
                     <TableCell>{statusBadge(listing.status)}</TableCell>
                     <TableCell className="flex gap-1">
                       {listing.status === 'available' && (
@@ -550,10 +603,19 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
                             )}
                           </div>
                         </div>
-                        <Badge className="bg-green-600 text-white">
-                          {listing.tables_offered} table{listing.tables_offered !== 1 ? 's' : ''}
-                        </Badge>
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge className="bg-green-600 text-white">
+                            {listing.tables_offered} table{listing.tables_offered !== 1 ? 's' : ''}
+                          </Badge>
+                          {listing.listing_type === 'group' && (
+                            <Badge variant="outline" className="text-[10px] gap-1">
+                              <Lock className="h-2.5 w-2.5" />
+                              {listing.target_group_name ?? 'Group only'}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
+
                       {listing.price_per_table && (
                         <p className="text-lg font-bold">${listing.price_per_table}/table</p>
                       )}
@@ -631,9 +693,31 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
                 <SelectContent>
                   <SelectItem value="public">Public - Any vendor can see</SelectItem>
                   <SelectItem value="direct">Direct Transfer - Specific vendor</SelectItem>
+                  <SelectItem value="group" disabled={myGroups.length === 0}>
+                    Trusted Group - Only group members{myGroups.length === 0 ? ' (create one first)' : ''}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {listingType === 'group' && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1"><Lock className="h-3.5 w-3.5" /> Trusted Group</Label>
+                <Select value={targetGroupId} onValueChange={setTargetGroupId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {myGroups.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Only vendors in this group will see and be able to claim this listing.
+                </p>
+              </div>
+            )}
+
             {listingType === 'direct' && (
               <div className="space-y-2">
                 <Label>Transfer To</Label>
@@ -741,7 +825,17 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <TrustedGroupsDialog
+        open={showGroupsManager}
+        onOpenChange={setShowGroupsManager}
+        vendorId={vendorId}
+        vendors={vendors}
+        shortlistedVendorIds={shortlistedVendorIds}
+        onChanged={fetchData}
+      />
     </Card>
+
   );
 };
 
