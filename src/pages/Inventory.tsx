@@ -10,9 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer, ChevronDown, RotateCw, History as HistoryIcon } from "lucide-react";
+import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer, ChevronDown, RotateCw, History as HistoryIcon, Store, CalendarPlus, MoreHorizontal } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge as BadgeUi } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PrintLabelsDialog } from "@/components/inventory/PrintLabelsDialog";
 import { PrintHistoryDialog } from "@/components/inventory/PrintHistoryDialog";
+import { FeatureAtEventDialog } from "@/components/inventory/FeatureAtEventDialog";
 
 interface InventoryItem {
   id: string;
@@ -43,6 +45,9 @@ interface InventoryItem {
   tcgplayer_market_price: number | null;
   label_printed_at: string | null;
   label_print_count: number;
+  listing_status: "private" | "for_sale" | "sold" | "hold";
+  list_price: number | null;
+  public_notes: string | null;
 }
 
 type SortKey = "bought_at" | "card_name" | "invested" | "projected" | "profit" | "margin";
@@ -70,6 +75,8 @@ const Inventory = () => {
   const [printItemIds, setPrintItemIds] = useState<string[] | null>(null);
   const [printSource, setPrintSource] = useState<string>("all_visible");
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [featureItemIds, setFeatureItemIds] = useState<string[] | null>(null);
+  const [featureLabel, setFeatureLabel] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!user) return;
@@ -78,7 +85,7 @@ const Inventory = () => {
       const { data, error } = await supabase
         .from("deal_list_items")
         .select(
-          "id, card_name, set_name, card_number, rarity, image_url, game, condition, quantity, purchase_price, shipping_cost, fees, target_sell_price, source, bought_at, tcgplayer_url, tcgplayer_market_price, label_printed_at, label_print_count"
+          "id, card_name, set_name, card_number, rarity, image_url, game, condition, quantity, purchase_price, shipping_cost, fees, target_sell_price, source, bought_at, tcgplayer_url, tcgplayer_market_price, label_printed_at, label_print_count, listing_status, list_price, public_notes"
         )
         .eq("user_id", user.id)
         .eq("status", "bought")
@@ -166,6 +173,45 @@ const Inventory = () => {
       <ArrowUpDown className={`h-3 w-3 ${sortKey === k ? "opacity-100" : "opacity-40"}`} />
     </button>
   );
+
+  const updateListing = async (item: InventoryItem, patch: Partial<Pick<InventoryItem, "listing_status" | "list_price">>) => {
+    const prev = items;
+    const nextStatus = patch.listing_status ?? item.listing_status;
+    const nowListing = nextStatus === "for_sale" && item.listing_status !== "for_sale";
+    setItems((cur) =>
+      cur.map((x) =>
+        x.id === item.id
+          ? {
+              ...x,
+              ...patch,
+            }
+          : x,
+      ),
+    );
+    const update: Record<string, unknown> = { ...patch };
+    if (nowListing) update.listed_at = new Date().toISOString();
+    const { error } = await supabase.from("deal_list_items").update(update).eq("id", item.id);
+    if (error) {
+      setItems(prev);
+      toast({ title: "Failed to update listing", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const openFeature = (ids: string[], label?: string) => {
+    if (ids.length === 0) return;
+    setFeatureItemIds(ids);
+    setFeatureLabel(label);
+  };
+
+  const statusBadgeClass = (s: InventoryItem["listing_status"]) => {
+    switch (s) {
+      case "for_sale": return "border-emerald-500/40 text-emerald-600 dark:text-emerald-400";
+      case "sold": return "border-muted text-muted-foreground line-through";
+      case "hold": return "border-amber-500/40 text-amber-600 dark:text-amber-400";
+      default: return "border-muted text-muted-foreground";
+    }
+  };
+
 
   return (
     <>
@@ -256,6 +302,16 @@ const Inventory = () => {
                 </div>
               );
             })()}
+            {selected.size > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => openFeature(Array.from(selected))}
+                title={`Feature ${selected.size} selected item(s) at events`}
+              >
+                <CalendarPlus className="h-4 w-4 mr-2" />
+                Feature ({selected.size})
+              </Button>
+            )}
             <Button variant="outline" asChild>
               <Link to="/deal-list">Deal Pipeline</Link>
             </Button>
@@ -330,6 +386,7 @@ const Inventory = () => {
                     <TableHead className="text-right"><SortBtn k="projected">Projected</SortBtn></TableHead>
                     <TableHead className="text-right"><SortBtn k="profit">Profit</SortBtn></TableHead>
                     <TableHead className="text-right"><SortBtn k="margin">Margin</SortBtn></TableHead>
+                    <TableHead className="w-[200px]">Listing</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -375,6 +432,12 @@ const Inventory = () => {
                               <div className="flex flex-wrap gap-1 mt-1">
                                 <Badge variant="outline" className="text-[10px] py-0 px-1.5">{i.condition.replace("_", " ")}</Badge>
                                 {i.source && <Badge variant="secondary" className="text-[10px] py-0 px-1.5">{i.source}</Badge>}
+                                {i.listing_status === "for_sale" && (
+                                  <BadgeUi variant="outline" className={`text-[10px] py-0 px-1.5 ${statusBadgeClass(i.listing_status)}`}>
+                                    <Store className="h-2.5 w-2.5 mr-0.5" />
+                                    Listed
+                                  </BadgeUi>
+                                )}
                                 {i.label_printed_at && (
                                   <BadgeUi
                                     variant="outline"
@@ -406,14 +469,61 @@ const Inventory = () => {
                         <TableCell className={`text-right font-semibold ${positive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
                           {projected > 0 ? `${margin.toFixed(1)}%` : "—"}
                         </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <Select
+                              value={i.listing_status}
+                              onValueChange={(v) =>
+                                updateListing(i, { listing_status: v as InventoryItem["listing_status"] })
+                              }
+                            >
+                              <SelectTrigger className="h-8 w-[110px] text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="private">Private</SelectItem>
+                                <SelectItem value="for_sale">For sale</SelectItem>
+                                <SelectItem value="hold">Hold</SelectItem>
+                                <SelectItem value="sold">Sold</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="Price"
+                              defaultValue={i.list_price ?? ""}
+                              onBlur={(e) => {
+                                const raw = e.target.value;
+                                const val = raw === "" ? null : Number(raw);
+                                if (val === i.list_price) return;
+                                updateListing(i, { list_price: val });
+                              }}
+                              className="h-8 w-[80px] text-xs"
+                            />
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right">
-                          {i.tcgplayer_url && (
-                            <Button variant="ghost" size="icon" asChild title="View on TCGplayer">
-                              <a href={i.tcgplayer_url} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
-                            </Button>
-                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" aria-label="Item actions">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openFeature([i.id], i.card_name)}>
+                                <CalendarPlus className="h-4 w-4 mr-2" />
+                                Feature at event…
+                              </DropdownMenuItem>
+                              {i.tcgplayer_url && (
+                                <DropdownMenuItem asChild>
+                                  <a href={i.tcgplayer_url} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    View on TCGplayer
+                                  </a>
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     );
@@ -492,6 +602,18 @@ const Inventory = () => {
       />
 
       <PrintHistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} />
+
+      <FeatureAtEventDialog
+        open={featureItemIds !== null}
+        onOpenChange={(v) => {
+          if (!v) {
+            setFeatureItemIds(null);
+            setFeatureLabel(undefined);
+          }
+        }}
+        itemIds={featureItemIds ?? []}
+        itemLabel={featureLabel}
+      />
     </>
   );
 };
