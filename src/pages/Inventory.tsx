@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer, ChevronDown, RotateCw, History as HistoryIcon, Store, CalendarPlus, MoreHorizontal } from "lucide-react";
+import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer, ChevronDown, RotateCw, History as HistoryIcon, Store, CalendarPlus, MoreHorizontal, Plus, Pencil, Trash2, CalendarX } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge as BadgeUi } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,9 +21,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PrintLabelsDialog } from "@/components/inventory/PrintLabelsDialog";
 import { PrintHistoryDialog } from "@/components/inventory/PrintHistoryDialog";
 import { FeatureAtEventDialog } from "@/components/inventory/FeatureAtEventDialog";
+import { InventoryItemDialog, type InventoryItemFormValues } from "@/components/inventory/InventoryItemDialog";
+import { useVendorProfile } from "@/hooks/useVendorProfile";
 
 interface InventoryItem {
   id: string;
@@ -48,6 +60,13 @@ interface InventoryItem {
   listing_status: "private" | "for_sale" | "sold" | "hold";
   list_price: number | null;
   public_notes: string | null;
+  notes: string | null;
+}
+
+interface EventOpt {
+  id: string;
+  title: string;
+  date: string;
 }
 
 type SortKey = "bought_at" | "card_name" | "invested" | "projected" | "profit" | "margin";
@@ -65,6 +84,7 @@ const calc = (i: InventoryItem) => {
 
 const Inventory = () => {
   const { user } = useAuth();
+  const { vendorProfile } = useVendorProfile();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -77,31 +97,76 @@ const Inventory = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [featureItemIds, setFeatureItemIds] = useState<string[] | null>(null);
   const [featureLabel, setFeatureLabel] = useState<string | undefined>(undefined);
+  const [eventOptions, setEventOptions] = useState<EventOpt[]>([]);
+  const [eventScope, setEventScope] = useState<string>("all");
+  // map of itemId -> Set<eventId>
+  const [eventMemberships, setEventMemberships] = useState<Map<string, Set<string>>>(new Map());
+  const [itemDialogOpen, setItemDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<(Partial<InventoryItemFormValues> & { id?: string }) | undefined>(undefined);
+  const [confirmDelete, setConfirmDelete] = useState<{ ids: string[]; label: string } | null>(null);
+
+  const loadInventory = async () => {
+    if (!user) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("deal_list_items")
+      .select(
+        "id, card_name, set_name, card_number, rarity, image_url, game, condition, quantity, purchase_price, shipping_cost, fees, target_sell_price, source, bought_at, tcgplayer_url, tcgplayer_market_price, label_printed_at, label_print_count, listing_status, list_price, public_notes, notes"
+      )
+      .eq("user_id", user.id)
+      .eq("status", "bought")
+      .order("bought_at", { ascending: false });
+    if (error) {
+      toast({ title: "Failed to load inventory", description: error.message, variant: "destructive" });
+    } else {
+      setItems((data ?? []) as InventoryItem[]);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (!user) return;
-    (async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("deal_list_items")
-        .select(
-          "id, card_name, set_name, card_number, rarity, image_url, game, condition, quantity, purchase_price, shipping_cost, fees, target_sell_price, source, bought_at, tcgplayer_url, tcgplayer_market_price, label_printed_at, label_print_count, listing_status, list_price, public_notes"
-        )
-        .eq("user_id", user.id)
-        .eq("status", "bought")
-        .order("bought_at", { ascending: false });
-      if (error) {
-        toast({ title: "Failed to load inventory", description: error.message, variant: "destructive" });
-      } else {
-        setItems((data ?? []) as InventoryItem[]);
-      }
-      setLoading(false);
-    })();
+    loadInventory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  // Load vendor's approved+paid events + per-item event memberships
+  useEffect(() => {
+    if (!user || !vendorProfile?.id) {
+      setEventOptions([]);
+      setEventMemberships(new Map());
+      return;
+    }
+    (async () => {
+      const { data: apps } = await supabase
+        .from("vendor_applications")
+        .select("event_id, events!inner(id, title, date)")
+        .eq("vendor_id", vendorProfile.id)
+        .eq("application_status", "approved")
+        .eq("payment_status", "paid");
+      const evs: EventOpt[] = (apps ?? [])
+        .map((a: any) => a.events)
+        .filter(Boolean);
+      setEventOptions(evs);
+
+      const { data: picks } = await supabase
+        .from("vendor_event_inventory")
+        .select("event_id, item_id")
+        .eq("vendor_id", vendorProfile.id);
+      const map = new Map<string, Set<string>>();
+      for (const p of picks ?? []) {
+        if (!map.has(p.item_id)) map.set(p.item_id, new Set());
+        map.get(p.item_id)!.add(p.event_id);
+      }
+      setEventMemberships(map);
+    })();
+  }, [user, vendorProfile?.id, items.length]);
+
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const base = q
+    let base = q
       ? items.filter(
           (i) =>
             i.card_name.toLowerCase().includes(q) ||
@@ -109,6 +174,9 @@ const Inventory = () => {
             (i.source ?? "").toLowerCase().includes(q),
         )
       : items;
+    if (eventScope !== "all") {
+      base = base.filter((i) => eventMemberships.get(i.id)?.has(eventScope));
+    }
     const sorted = [...base].sort((a, b) => {
       const ca = calc(a);
       const cb = calc(b);
@@ -137,7 +205,8 @@ const Inventory = () => {
       return 0;
     });
     return sorted;
-  }, [items, search, sortKey, sortDir]);
+  }, [items, search, sortKey, sortDir, eventScope, eventMemberships]);
+
 
   const totals = useMemo(() => {
     return filtered.reduce(
@@ -212,6 +281,105 @@ const Inventory = () => {
     }
   };
 
+  const openAdd = () => {
+    setEditingItem(undefined);
+    setItemDialogOpen(true);
+  };
+
+  const openEdit = (i: InventoryItem) => {
+    setEditingItem({
+      id: i.id,
+      card_name: i.card_name,
+      set_name: i.set_name,
+      card_number: i.card_number,
+      rarity: i.rarity,
+      image_url: i.image_url,
+      game: i.game,
+      condition: i.condition,
+      quantity: i.quantity,
+      purchase_price: i.purchase_price,
+      shipping_cost: i.shipping_cost,
+      fees: i.fees,
+      target_sell_price: i.target_sell_price,
+      source: i.source,
+      bought_at: i.bought_at,
+      notes: i.notes,
+    });
+    setItemDialogOpen(true);
+  };
+
+  const requestDelete = (ids: string[]) => {
+    if (ids.length === 0) return;
+    const label =
+      ids.length === 1
+        ? items.find((x) => x.id === ids[0])?.card_name ?? "this item"
+        : `${ids.length} items`;
+    setConfirmDelete({ ids, label });
+  };
+
+  const performDelete = async () => {
+    if (!confirmDelete) return;
+    const { ids } = confirmDelete;
+    const prev = items;
+    setItems((cur) => cur.filter((x) => !ids.includes(x.id)));
+    setSelected((cur) => {
+      const next = new Set(cur);
+      ids.forEach((id) => next.delete(id));
+      return next;
+    });
+    setConfirmDelete(null);
+    const { error } = await supabase.from("deal_list_items").delete().in("id", ids);
+    if (error) {
+      setItems(prev);
+      toast({ title: "Failed to delete", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: `Deleted ${ids.length} item${ids.length > 1 ? "s" : ""}` });
+    }
+  };
+
+  const removeFromEvent = async (ids: string[]) => {
+    if (eventScope === "all" || ids.length === 0 || !vendorProfile?.id) return;
+    const { error } = await supabase
+      .from("vendor_event_inventory")
+      .delete()
+      .eq("vendor_id", vendorProfile.id)
+      .eq("event_id", eventScope)
+      .in("item_id", ids);
+    if (error) {
+      toast({ title: "Failed to remove from event", description: error.message, variant: "destructive" });
+      return;
+    }
+    setEventMemberships((cur) => {
+      const next = new Map(cur);
+      for (const id of ids) {
+        const s = new Set(next.get(id) ?? []);
+        s.delete(eventScope);
+        next.set(id, s);
+      }
+      return next;
+    });
+    setSelected(new Set());
+    toast({ title: `Removed ${ids.length} item${ids.length > 1 ? "s" : ""} from event` });
+  };
+
+  const reloadEventMemberships = async () => {
+    if (!vendorProfile?.id) return;
+    const { data: picks } = await supabase
+      .from("vendor_event_inventory")
+      .select("event_id, item_id")
+      .eq("vendor_id", vendorProfile.id);
+    const map = new Map<string, Set<string>>();
+    for (const p of picks ?? []) {
+      if (!map.has(p.item_id)) map.set(p.item_id, new Set());
+      map.get(p.item_id)!.add(p.event_id);
+    }
+    setEventMemberships(map);
+  };
+
+  const currentEventLabel =
+    eventScope === "all" ? null : eventOptions.find((e) => e.id === eventScope)?.title ?? null;
+
+
 
   return (
     <>
@@ -241,6 +409,26 @@ const Inventory = () => {
               onChange={(e) => setSearch(e.target.value)}
               className="w-full md:w-72"
             />
+            {eventOptions.length > 0 && (
+              <Select value={eventScope} onValueChange={(v) => { setEventScope(v); setSelected(new Set()); }}>
+                <SelectTrigger className="w-[200px]" aria-label="Filter by event">
+                  <SelectValue placeholder="Scope: All inventory" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All inventory</SelectItem>
+                  {eventOptions.map((ev) => (
+                    <SelectItem key={ev.id} value={ev.id}>
+                      {ev.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button onClick={openAdd} variant="default">
+              <Plus className="h-4 w-4 mr-2" />
+              Add item
+            </Button>
+
             {(() => {
               const visible = filtered;
               const selArr = visible.filter((i) => selected.has(i.id));
@@ -303,14 +491,35 @@ const Inventory = () => {
               );
             })()}
             {selected.size > 0 && (
-              <Button
-                variant="outline"
-                onClick={() => openFeature(Array.from(selected))}
-                title={`Feature ${selected.size} selected item(s) at events`}
-              >
-                <CalendarPlus className="h-4 w-4 mr-2" />
-                Feature ({selected.size})
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => openFeature(Array.from(selected))}
+                  title={`Feature ${selected.size} selected item(s) at events`}
+                >
+                  <CalendarPlus className="h-4 w-4 mr-2" />
+                  Feature ({selected.size})
+                </Button>
+                {eventScope !== "all" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => removeFromEvent(Array.from(selected))}
+                    title={`Remove ${selected.size} item(s) from ${currentEventLabel ?? "event"}`}
+                  >
+                    <CalendarX className="h-4 w-4 mr-2" />
+                    Remove from event
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => requestDelete(Array.from(selected))}
+                  className="text-destructive hover:text-destructive"
+                  title={`Delete ${selected.size} item(s)`}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete ({selected.size})
+                </Button>
+              </>
             )}
             <Button variant="outline" asChild>
               <Link to="/deal-list">Deal Pipeline</Link>
@@ -318,7 +527,14 @@ const Inventory = () => {
           </div>
         </div>
 
+        {currentEventLabel && (
+          <div className="mb-4 -mt-2 text-sm text-muted-foreground">
+            Showing items featured at <span className="font-medium text-foreground">{currentEventLabel}</span>. Use “Add item” to create inventory, then feature it here.
+          </div>
+        )}
+
         {/* Totals */}
+
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
           <Card className="p-3">
             <p className="text-xs text-muted-foreground">Items</p>
@@ -510,10 +726,20 @@ const Inventory = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(i)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit item
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openFeature([i.id], i.card_name)}>
                                 <CalendarPlus className="h-4 w-4 mr-2" />
                                 Feature at event…
                               </DropdownMenuItem>
+                              {eventScope !== "all" && (
+                                <DropdownMenuItem onClick={() => removeFromEvent([i.id])}>
+                                  <CalendarX className="h-4 w-4 mr-2" />
+                                  Remove from this event
+                                </DropdownMenuItem>
+                              )}
                               {i.tcgplayer_url && (
                                 <DropdownMenuItem asChild>
                                   <a href={i.tcgplayer_url} target="_blank" rel="noopener noreferrer">
@@ -522,6 +748,14 @@ const Inventory = () => {
                                   </a>
                                 </DropdownMenuItem>
                               )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => requestDelete([i.id])}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete item
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -609,11 +843,38 @@ const Inventory = () => {
           if (!v) {
             setFeatureItemIds(null);
             setFeatureLabel(undefined);
+            reloadEventMemberships();
           }
         }}
         itemIds={featureItemIds ?? []}
         itemLabel={featureLabel}
       />
+
+      <InventoryItemDialog
+        open={itemDialogOpen}
+        onOpenChange={setItemDialogOpen}
+        initialValues={editingItem}
+        onSaved={() => {
+          loadInventory();
+        }}
+      />
+
+      <AlertDialog open={confirmDelete !== null} onOpenChange={(v) => { if (!v) setConfirmDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {confirmDelete?.label}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the inventory record, listing, and any event features. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={performDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
