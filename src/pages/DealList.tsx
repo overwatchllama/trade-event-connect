@@ -363,6 +363,37 @@ const DealList = () => {
   };
   const clearBoughtSelection = () => setSelectedBoughtIds(new Set());
 
+  // Pipeline (watching/negotiating) selection — mirrors the bought-selection helpers above
+  // so the row gutter checkbox + lot toolbar can be wired identically.
+  const visiblePipelineItems = visibleItems.filter(
+    (it) => it.status === "watching" || it.status === "negotiating",
+  );
+  const selectedPipelineItems = pipelineItems.filter((p) => selectedPipelineIds.has(p.id));
+  const selectedPipelineCount = selectedPipelineItems.length;
+  const allVisiblePipelineSelected =
+    visiblePipelineItems.length > 0 &&
+    visiblePipelineItems.every((p) => selectedPipelineIds.has(p.id));
+  const togglePipelineSelection = (id: string) => {
+    setSelectedPipelineIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAllVisiblePipeline = () => {
+    setSelectedPipelineIds((prev) => {
+      const next = new Set(prev);
+      if (allVisiblePipelineSelected) {
+        for (const p of visiblePipelineItems) next.delete(p.id);
+      } else {
+        for (const p of visiblePipelineItems) next.add(p.id);
+      }
+      return next;
+    });
+  };
+  const clearPipelineSelection = () => setSelectedPipelineIds(new Set());
+
   /**
    * CSV export of the current view + a P&L summary footer for every bought deal.
    * Designed to drop straight into Excel / Google Sheets — quotes are escaped per RFC 4180.
