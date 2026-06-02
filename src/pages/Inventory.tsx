@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer, ChevronDown, RotateCw } from "lucide-react";
+import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer, ChevronDown, RotateCw, History as HistoryIcon } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge as BadgeUi } from "@/components/ui/badge";
 import {
@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PrintLabelsDialog } from "@/components/inventory/PrintLabelsDialog";
+import { PrintHistoryDialog } from "@/components/inventory/PrintHistoryDialog";
 
 interface InventoryItem {
   id: string;
@@ -67,6 +68,8 @@ const Inventory = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [printOpen, setPrintOpen] = useState(false);
   const [printItemIds, setPrintItemIds] = useState<string[] | null>(null);
+  const [printSource, setPrintSource] = useState<string>("all_visible");
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -198,19 +201,21 @@ const Inventory = () => {
               const target = selArr.length > 0 ? selArr : visible;
               const unprinted = target.filter((i) => !i.label_printed_at);
               const printed = target.filter((i) => i.label_printed_at);
-              const openWith = (ids: string[]) => {
+              const openWith = (ids: string[], source: string) => {
                 if (ids.length === 0) {
                   toast({ title: "Nothing to print", description: "No matching rows.", variant: "destructive" });
                   return;
                 }
                 setPrintItemIds(ids);
+                setPrintSource(source);
                 setPrintOpen(true);
               };
+              const primarySource = selArr.length > 0 ? "selection" : "all_visible";
               return (
                 <div className="inline-flex rounded-md shadow-sm">
                   <Button
                     variant="default"
-                    onClick={() => openWith(target.map((i) => i.id))}
+                    onClick={() => openWith(target.map((i) => i.id), primarySource)}
                     disabled={visible.length === 0}
                     className="rounded-r-none"
                     title={selArr.length > 0 ? `Print ${selArr.length} selected` : "Print all visible"}
@@ -225,21 +230,26 @@ const Inventory = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-64">
-                      <DropdownMenuItem onClick={() => openWith(unprinted.map((i) => i.id))} disabled={unprinted.length === 0}>
+                      <DropdownMenuItem onClick={() => openWith(unprinted.map((i) => i.id), "unprinted")} disabled={unprinted.length === 0}>
                         <Printer className="h-4 w-4 mr-2" />
                         Print unprinted ({unprinted.length})
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => openWith(printed.map((i) => i.id))} disabled={printed.length === 0}>
+                      <DropdownMenuItem onClick={() => openWith(printed.map((i) => i.id), "reprint_printed")} disabled={printed.length === 0}>
                         <RotateCw className="h-4 w-4 mr-2" />
                         Reprint already-printed ({printed.length})
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => openWith(visible.filter((i) => i.label_printed_at).map((i) => i.id))}
+                        onClick={() => openWith(visible.filter((i) => i.label_printed_at).map((i) => i.id), "reprint_view")}
                         disabled={visible.every((i) => !i.label_printed_at)}
                       >
                         <RotateCw className="h-4 w-4 mr-2" />
                         Reprint all printed in view
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setHistoryOpen(true)}>
+                        <HistoryIcon className="h-4 w-4 mr-2" />
+                        View print history
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -438,7 +448,7 @@ const Inventory = () => {
           label_printed_at: i.label_printed_at,
           label_print_count: i.label_print_count,
         }))}
-        onPrinted={async (printedIds) => {
+        onPrinted={async (printedIds, meta) => {
           if (printedIds.length === 0) return;
           const nowIso = new Date().toISOString();
           const current = items.filter((i) => printedIds.includes(i.id));
@@ -460,8 +470,28 @@ const Inventory = () => {
                 .eq("id", i.id),
             ),
           );
+          if (user) {
+            await supabase.from("label_print_audit").insert({
+              user_id: user.id,
+              action: meta.reprintCount === printedIds.length ? "reprint" : meta.reprintCount > 0 ? "mixed" : "print",
+              source: printSource,
+              preset: meta.preset,
+              copies_per_item: meta.copies,
+              per_quantity: meta.perQuantity,
+              item_ids: printedIds,
+              item_count: printedIds.length,
+              label_count: meta.labelCount,
+              reprint_count: meta.reprintCount,
+              filter_context: {
+                search: search || null,
+                sort: `${sortKey}:${sortDir}`,
+              },
+            });
+          }
         }}
       />
+
+      <PrintHistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} />
     </>
   );
 };

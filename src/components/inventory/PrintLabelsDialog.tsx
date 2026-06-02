@@ -21,11 +21,19 @@ export interface PrintLabelItem {
   label_print_count?: number;
 }
 
+export interface PrintLabelsMeta {
+  preset: string;
+  copies: number;
+  perQuantity: boolean;
+  labelCount: number;
+  reprintCount: number;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   items: PrintLabelItem[];
-  onPrinted?: (printedIds: string[]) => void | Promise<void>;
+  onPrinted?: (printedIds: string[], meta: PrintLabelsMeta) => void | Promise<void>;
 }
 
 type Preset = "avery-5160" | "avery-5163" | "dymo-30252" | "brother-dk1201";
@@ -144,8 +152,15 @@ export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Prop
     w.document.write(html);
     w.document.close();
     const uniqueIds = Array.from(new Set(items.map((i) => i.id)));
+    const reprintCountLocal = items.filter((i) => i.label_printed_at).length;
     try {
-      await onPrinted?.(uniqueIds);
+      await onPrinted?.(uniqueIds, {
+        preset,
+        copies,
+        perQuantity,
+        labelCount: expanded.length,
+        reprintCount: reprintCountLocal,
+      });
     } catch {
       // ignore
     }
