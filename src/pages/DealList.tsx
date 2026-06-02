@@ -1338,6 +1338,42 @@ const DealList = () => {
           }}
         />
 
+        {user && (
+          <LotBuyDialog
+            open={lotBuyOpen}
+            userId={user.id}
+            targets={selectedPipelineItems.map<LotBuyTarget>((p) => ({
+              id: p.id,
+              card_name: p.card_name,
+              set_name: p.set_name,
+              card_number: p.card_number,
+              rarity: p.rarity,
+              image_url: p.image_url,
+              quantity: p.quantity,
+              condition: p.condition,
+              game: p.game,
+              notes: p.notes,
+              // Modified (deal) price is what the user expects to pay per card; falls back
+              // to effective market price so allocation weighting always has a value.
+              reference_unit_price: modifiedPrice(p) ?? effectivePrice(p),
+              suggested_sell_price: effectivePrice(p),
+            }))}
+            onClose={() => setLotBuyOpen(false)}
+            onSuccess={(results) => {
+              // Splice each newly-bought row in place so it instantly flips into the Bought tab.
+              setItems((prev) => {
+                const byId = new Map(results.map((r) => [r.dealId, r.patch]));
+                return prev.map((it) => {
+                  const patch = byId.get(it.id);
+                  return patch ? { ...it, ...patch } : it;
+                });
+              });
+              clearPipelineSelection();
+            }}
+          />
+        )}
+
+
         {/* Pass-with-reason dialog. The reason is required so the Passed tab keeps useful context. */}
         <AlertDialog
           open={!!passTarget}
