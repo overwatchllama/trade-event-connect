@@ -121,10 +121,10 @@ export const StockAdjustmentHistoryDialog = ({ open, onOpenChange, itemIds }: Pr
         .from("stock_adjustments")
         .update({
           notes: next,
-          notes_history: history as any,
+          notes_history: history,
           notes_updated_at: entry.edited_at,
           notes_updated_by: user.id,
-        })
+        } as any)
         .eq("id", row.id);
       if (error) throw error;
       setRows((rs) =>
