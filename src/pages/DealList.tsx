@@ -167,6 +167,13 @@ const DealList = () => {
   const [passTarget, setPassTarget] = useState<DealItem | null>(null);
   const [passReason, setPassReason] = useState("");
   const [passSubmitting, setPassSubmitting] = useState(false);
+  // Sell-flow state — capture realized revenue when moving Bought/In Stock → Sold.
+  const [sellTarget, setSellTarget] = useState<DealItem | null>(null);
+  const [sellDraft, setSellDraft] = useState({ sold_price: "", sold_channel: "", sold_buyer: "", sold_fees: "0", sold_shipping: "0" });
+  const [sellSubmitting, setSellSubmitting] = useState(false);
+  // List-for-sale state — sets list_price when moving Bought → In Stock.
+  const [listTarget, setListTarget] = useState<DealItem | null>(null);
+  const [listDraft, setListDraft] = useState({ list_price: "" });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
