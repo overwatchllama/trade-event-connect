@@ -422,10 +422,17 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
             </CardTitle>
             <CardDescription>Sell your tables or buy from other vendors</CardDescription>
           </div>
-          <Button onClick={() => setShowCreateDialog(true)} disabled={events.length === 0}>
-            <Plus className="h-4 w-4 mr-2" />
-            List Tables
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowGroupsManager(true)}>
+              <Users className="h-4 w-4 mr-2" />
+              Groups
+            </Button>
+            <Button onClick={() => setShowCreateDialog(true)} disabled={events.length === 0}>
+              <Plus className="h-4 w-4 mr-2" />
+              List Tables
+            </Button>
+          </div>
+
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
