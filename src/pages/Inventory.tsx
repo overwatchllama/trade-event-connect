@@ -759,6 +759,10 @@ const Inventory = () => {
                                 <ClipboardCheck className="h-4 w-4 mr-2" />
                                 Adjust stock…
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { setAdjHistoryItemIds([i.id]); setAdjHistoryOpen(true); }}>
+                                <HistoryIcon className="h-4 w-4 mr-2" />
+                                Adjustment history…
+                              </DropdownMenuItem>
                               {eventScope !== "all" && (
                                 <DropdownMenuItem onClick={() => removeFromEvent([i.id])}>
                                   <CalendarX className="h-4 w-4 mr-2" />
