@@ -825,7 +825,17 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <TrustedGroupsDialog
+        open={showGroupsManager}
+        onOpenChange={setShowGroupsManager}
+        vendorId={vendorId}
+        vendors={vendors}
+        shortlistedVendorIds={shortlistedVendorIds}
+        onChanged={fetchData}
+      />
     </Card>
+
   );
 };
 
