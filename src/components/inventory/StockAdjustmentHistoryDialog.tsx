@@ -58,7 +58,7 @@ export const StockAdjustmentHistoryDialog = ({ open, onOpenChange, itemIds }: Pr
     (async () => {
       setLoading(true);
       try {
-        let q = supabase
+        let q = (supabase as any)
           .from("stock_adjustments")
           .select("id,item_id,previous_quantity,counted_quantity,delta,reason,notes,notes_history,notes_updated_at,created_at")
           .eq("user_id", user.id)
