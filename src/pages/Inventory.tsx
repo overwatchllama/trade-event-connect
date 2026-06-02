@@ -36,6 +36,7 @@ import { PrintHistoryDialog } from "@/components/inventory/PrintHistoryDialog";
 import { FeatureAtEventDialog } from "@/components/inventory/FeatureAtEventDialog";
 import { InventoryItemDialog, type InventoryItemFormValues } from "@/components/inventory/InventoryItemDialog";
 import { StockAdjustmentDialog, type AdjustableItem } from "@/components/inventory/StockAdjustmentDialog";
+import { StockAdjustmentHistoryDialog } from "@/components/inventory/StockAdjustmentHistoryDialog";
 import { useVendorProfile } from "@/hooks/useVendorProfile";
 
 interface InventoryItem {
