@@ -2389,6 +2389,7 @@ export type Database = {
           seller_vendor_id: string
           status: string
           tables_offered: number
+          target_group_id: string | null
           target_vendor_id: string | null
           updated_at: string
           vendor_application_id: string
@@ -2406,6 +2407,7 @@ export type Database = {
           seller_vendor_id: string
           status?: string
           tables_offered?: number
+          target_group_id?: string | null
           target_vendor_id?: string | null
           updated_at?: string
           vendor_application_id: string
@@ -2423,6 +2425,7 @@ export type Database = {
           seller_vendor_id?: string
           status?: string
           tables_offered?: number
+          target_group_id?: string | null
           target_vendor_id?: string | null
           updated_at?: string
           vendor_application_id?: string
@@ -2450,6 +2453,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vendor_table_listings_target_group_id_fkey"
+            columns: ["target_group_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_trusted_groups"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "vendor_table_listings_target_vendor_id_fkey"
             columns: ["target_vendor_id"]
             isOneToOne: false
@@ -2468,6 +2478,83 @@ export type Database = {
             columns: ["vendor_application_id"]
             isOneToOne: false
             referencedRelation: "vendor_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_trusted_group_members: {
+        Row: {
+          added_by: string
+          created_at: string
+          group_id: string
+          id: string
+          vendor_id: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          group_id: string
+          id?: string
+          vendor_id: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_trusted_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_trusted_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_trusted_group_members_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_trusted_groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_user_id: string
+          owner_vendor_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_user_id: string
+          owner_vendor_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_user_id?: string
+          owner_vendor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_trusted_groups_owner_vendor_id_fkey"
+            columns: ["owner_vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
             referencedColumns: ["id"]
           },
         ]
