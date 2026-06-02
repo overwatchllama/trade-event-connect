@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PrintLabelsDialog } from "@/components/inventory/PrintLabelsDialog";
+import { PrintHistoryDialog } from "@/components/inventory/PrintHistoryDialog";
 
 interface InventoryItem {
   id: string;
