@@ -84,6 +84,7 @@ const calc = (i: InventoryItem) => {
 
 const Inventory = () => {
   const { user } = useAuth();
+  const { vendorProfile } = useVendorProfile();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -96,27 +97,72 @@ const Inventory = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [featureItemIds, setFeatureItemIds] = useState<string[] | null>(null);
   const [featureLabel, setFeatureLabel] = useState<string | undefined>(undefined);
+  const [eventOptions, setEventOptions] = useState<EventOpt[]>([]);
+  const [eventScope, setEventScope] = useState<string>("all");
+  // map of itemId -> Set<eventId>
+  const [eventMemberships, setEventMemberships] = useState<Map<string, Set<string>>>(new Map());
+  const [itemDialogOpen, setItemDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<(Partial<InventoryItemFormValues> & { id?: string }) | undefined>(undefined);
+  const [confirmDelete, setConfirmDelete] = useState<{ ids: string[]; label: string } | null>(null);
+
+  const loadInventory = async () => {
+    if (!user) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("deal_list_items")
+      .select(
+        "id, card_name, set_name, card_number, rarity, image_url, game, condition, quantity, purchase_price, shipping_cost, fees, target_sell_price, source, bought_at, tcgplayer_url, tcgplayer_market_price, label_printed_at, label_print_count, listing_status, list_price, public_notes, notes"
+      )
+      .eq("user_id", user.id)
+      .eq("status", "bought")
+      .order("bought_at", { ascending: false });
+    if (error) {
+      toast({ title: "Failed to load inventory", description: error.message, variant: "destructive" });
+    } else {
+      setItems((data ?? []) as InventoryItem[]);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (!user) return;
-    (async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("deal_list_items")
-        .select(
-          "id, card_name, set_name, card_number, rarity, image_url, game, condition, quantity, purchase_price, shipping_cost, fees, target_sell_price, source, bought_at, tcgplayer_url, tcgplayer_market_price, label_printed_at, label_print_count, listing_status, list_price, public_notes"
-        )
-        .eq("user_id", user.id)
-        .eq("status", "bought")
-        .order("bought_at", { ascending: false });
-      if (error) {
-        toast({ title: "Failed to load inventory", description: error.message, variant: "destructive" });
-      } else {
-        setItems((data ?? []) as InventoryItem[]);
-      }
-      setLoading(false);
-    })();
+    loadInventory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  // Load vendor's approved+paid events + per-item event memberships
+  useEffect(() => {
+    if (!user || !vendorProfile?.id) {
+      setEventOptions([]);
+      setEventMemberships(new Map());
+      return;
+    }
+    (async () => {
+      const { data: apps } = await supabase
+        .from("vendor_applications")
+        .select("event_id, events!inner(id, title, date)")
+        .eq("vendor_id", vendorProfile.id)
+        .eq("application_status", "approved")
+        .eq("payment_status", "paid");
+      const evs: EventOpt[] = (apps ?? [])
+        .map((a: any) => a.events)
+        .filter(Boolean);
+      setEventOptions(evs);
+
+      const { data: picks } = await supabase
+        .from("vendor_event_inventory")
+        .select("event_id, item_id")
+        .eq("vendor_id", vendorProfile.id);
+      const map = new Map<string, Set<string>>();
+      for (const p of picks ?? []) {
+        if (!map.has(p.item_id)) map.set(p.item_id, new Set());
+        map.get(p.item_id)!.add(p.event_id);
+      }
+      setEventMemberships(map);
+    })();
+  }, [user, vendorProfile?.id, items.length]);
+
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
