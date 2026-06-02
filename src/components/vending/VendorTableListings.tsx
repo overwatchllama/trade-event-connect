@@ -483,9 +483,14 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
                     <TableCell>{listing.price_per_table ? `$${listing.price_per_table}` : 'Free'}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs">
-                        {listing.listing_type === 'direct' ? 'Direct Transfer' : 'Public'}
+                        {listing.listing_type === 'direct'
+                          ? 'Direct Transfer'
+                          : listing.listing_type === 'group'
+                          ? `Group${myGroups.find((g) => g.id === listing.target_group_id) ? `: ${myGroups.find((g) => g.id === listing.target_group_id)!.name}` : ''}`
+                          : 'Public'}
                       </Badge>
                     </TableCell>
+
                     <TableCell>{statusBadge(listing.status)}</TableCell>
                     <TableCell className="flex gap-1">
                       {listing.status === 'available' && (
