@@ -63,6 +63,7 @@ export const StockAdjustmentDialog = ({ open, onOpenChange, items, onApplied, de
       const seed: Record<string, string> = {};
       for (const i of items) seed[i.id] = String(i.quantity);
       setCounts(seed);
+      setLineNotes({});
       setReason(defaultReason);
       setNotes("");
     }
