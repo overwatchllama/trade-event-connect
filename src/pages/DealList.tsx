@@ -28,6 +28,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkAsBoughtDialog, type MarkAsBoughtTarget } from "@/components/deals/MarkAsBoughtDialog";
 import { EditBoughtDialog, type EditBoughtTarget } from "@/components/deals/EditBoughtDialog";
 import { BulkEditBoughtDialog, type BulkEditTarget } from "@/components/deals/BulkEditBoughtDialog";
+import { LotBuyDialog, type LotBuyTarget } from "@/components/deals/LotBuyDialog";
 
 type DealStatus = "watching" | "negotiating" | "bought" | "passed";
 
