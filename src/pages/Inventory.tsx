@@ -409,6 +409,26 @@ const Inventory = () => {
               onChange={(e) => setSearch(e.target.value)}
               className="w-full md:w-72"
             />
+            {eventOptions.length > 0 && (
+              <Select value={eventScope} onValueChange={(v) => { setEventScope(v); setSelected(new Set()); }}>
+                <SelectTrigger className="w-[200px]" aria-label="Filter by event">
+                  <SelectValue placeholder="Scope: All inventory" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All inventory</SelectItem>
+                  {eventOptions.map((ev) => (
+                    <SelectItem key={ev.id} value={ev.id}>
+                      {ev.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button onClick={openAdd} variant="default">
+              <Plus className="h-4 w-4 mr-2" />
+              Add item
+            </Button>
+
             {(() => {
               const visible = filtered;
               const selArr = visible.filter((i) => selected.has(i.id));
