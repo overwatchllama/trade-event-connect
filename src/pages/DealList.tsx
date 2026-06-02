@@ -1219,21 +1219,12 @@ const DealList = () => {
                           <a href={i.ebay_search_url} target="_blank" rel="noreferrer">eBay <ExternalLink className="h-3 w-3 ml-1" /></a>
                         </Button>
                       )}
-                      {/* Lifecycle actions — bought goes through the cost-basis dialog so we capture P&L. */}
-                      <div className="ml-auto flex items-center gap-1">
-                        {i.status !== "bought" && (
+                      {/* Lifecycle actions — bought goes through the cost-basis dialog so we capture P&L.
+                          Downstream stages route through dedicated dialogs (List for sale / Mark sold) so
+                          we always capture list_price, sold_price, channel, buyer, fees, and shipping. */}
+                      <div className="ml-auto flex items-center gap-1 flex-wrap justify-end">
+                        {i.status === "lead" && (
                           <>
-                            {i.status !== "negotiating" && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 text-xs px-2"
-                                onClick={() => setDealStatus(i.id, "negotiating")}
-                                title="Move to Negotiating"
-                              >
-                                <MessageSquare className="h-3 w-3 mr-1" /> Negotiate
-                              </Button>
-                            )}
                             <Button
                               size="sm"
                               className="h-7 text-xs px-2"
@@ -1242,25 +1233,48 @@ const DealList = () => {
                             >
                               <ShoppingCart className="h-3 w-3 mr-1" /> Bought
                             </Button>
-                            {i.status !== "passed" && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 text-xs px-2"
-                                onClick={() => { setPassTarget(i); setPassReason(""); }}
-                                title="Mark as passed"
-                              >
-                                <XCircle className="h-3 w-3 mr-1" /> Pass
-                              </Button>
-                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2"
+                              onClick={() => { setPassTarget(i); setPassReason(""); }}
+                              title="Mark as passed"
+                            >
+                              <XCircle className="h-3 w-3 mr-1" /> Pass
+                            </Button>
                           </>
                         )}
                         {i.status === "bought" && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] text-muted-foreground">
+                          <>
+                            <span className="text-[11px] text-muted-foreground mr-1">
                               Cost ${(((i.purchase_price ?? 0) * i.quantity) + (i.shipping_cost ?? 0) + (i.fees ?? 0)).toFixed(2)}
                               {i.target_sell_price ? ` · target $${(i.target_sell_price * i.quantity).toFixed(2)}` : ""}
                             </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs px-2"
+                              onClick={() => {
+                                setListTarget(i);
+                                setListDraft({
+                                  list_price:
+                                    i.list_price?.toString() ??
+                                    i.target_sell_price?.toString() ??
+                                    "",
+                                });
+                              }}
+                              title="List for sale (move to In Stock)"
+                            >
+                              <Tag className="h-3 w-3 mr-1" /> List
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={() => openSellDialog(i)}
+                              title="Record a sale"
+                            >
+                              <DollarSign className="h-3 w-3 mr-1" /> Sold
+                            </Button>
                             <Button
                               size="sm"
                               variant="ghost"
@@ -1281,15 +1295,80 @@ const DealList = () => {
                             >
                               <Pencil className="h-3 w-3 mr-1" /> Edit
                             </Button>
-                          </div>
+                          </>
+                        )}
+                        {i.status === "in_stock" && (
+                          <>
+                            <span className="text-[11px] text-muted-foreground mr-1">
+                              Listed{i.list_price != null ? ` @ $${i.list_price.toFixed(2)}` : ""}
+                            </span>
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={() => openSellDialog(i)}
+                              title="Record a sale"
+                            >
+                              <DollarSign className="h-3 w-3 mr-1" /> Sold
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2"
+                              onClick={() => unlistItem(i)}
+                              title="Take down listing (back to Bought)"
+                            >
+                              <Undo2 className="h-3 w-3 mr-1" /> Unlist
+                            </Button>
+                          </>
+                        )}
+                        {i.status === "sold" && (
+                          <>
+                            <span className="text-[11px] text-muted-foreground mr-1">
+                              {i.sold_price != null ? `$${(i.sold_price * i.quantity).toFixed(2)}` : "—"}
+                              {i.sold_channel ? ` · ${i.sold_channel}` : ""}
+                            </span>
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={() => markCompleted(i)}
+                              title="Mark deal completed (archive)"
+                            >
+                              <Archive className="h-3 w-3 mr-1" /> Complete
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2"
+                              onClick={() => setDealStatus(i.id, "bought")}
+                              title="Revert sale (back to Bought)"
+                            >
+                              <Undo2 className="h-3 w-3 mr-1" /> Undo
+                            </Button>
+                          </>
+                        )}
+                        {i.status === "completed" && (
+                          <>
+                            <span className="text-[11px] text-muted-foreground mr-1">
+                              Profit ${(((i.sold_price ?? 0) * i.quantity) - (i.sold_fees ?? 0) - (i.sold_shipping ?? 0) - ((i.purchase_price ?? 0) * i.quantity) - (i.shipping_cost ?? 0) - (i.fees ?? 0)).toFixed(2)}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2"
+                              onClick={() => updateItem(i.id, { status: "sold", completed_at: null })}
+                              title="Reopen this deal"
+                            >
+                              <RotateCcw className="h-3 w-3 mr-1" /> Reopen
+                            </Button>
+                          </>
                         )}
                         {i.status === "passed" && (
                           <Button
                             size="sm"
                             variant="ghost"
                             className="h-7 text-xs px-2"
-                            onClick={() => setDealStatus(i.id, "watching")}
-                            title="Restore to Watching"
+                            onClick={() => setDealStatus(i.id, "lead")}
+                            title="Restore to Lead"
                           >
                             <RotateCcw className="h-3 w-3 mr-1" /> Restore
                           </Button>
