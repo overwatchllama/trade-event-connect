@@ -35,9 +35,11 @@ import {
   Upload,
   CalendarDays,
   Share2,
-  Users
+  Users,
+  Store
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { VendorStorefront } from '@/components/vendor/VendorStorefront';
 
 interface VendorProfile {
   id: string;
