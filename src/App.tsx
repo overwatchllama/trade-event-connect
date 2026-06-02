@@ -36,6 +36,7 @@ const OrganizeVenue = lazy(() => import("./pages/OrganizeVenue"));
 const CardScanner = lazy(() => import("./pages/CardScanner"));
 const DealList = lazy(() => import("./pages/DealList"));
 const Inventory = lazy(() => import("./pages/Inventory"));
+const InventoryPnL = lazy(() => import("./pages/InventoryPnL"));
 const Markets = lazy(() => import("./pages/Markets"));
 const Demo = lazy(() => import("./pages/Demo"));
 const Security = lazy(() => import("./pages/Security"));
@@ -133,6 +134,11 @@ const App = () => (
             <Route path="/inventory" element={
               <ProtectedRoute>
                 <Inventory />
+              </ProtectedRoute>
+            } />
+            <Route path="/inventory/pnl" element={
+              <ProtectedRoute>
+                <InventoryPnL />
               </ProtectedRoute>
             } />
             <Route path="/markets" element={

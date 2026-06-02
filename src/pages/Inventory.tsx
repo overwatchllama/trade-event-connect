@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer, ChevronDown, RotateCw, History as HistoryIcon, Store, CalendarPlus, MoreHorizontal, Plus, Pencil, Trash2, CalendarX, ClipboardCheck } from "lucide-react";
+import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer, ChevronDown, RotateCw, History as HistoryIcon, Store, CalendarPlus, MoreHorizontal, Plus, Pencil, Trash2, CalendarX, ClipboardCheck, TrendingUp } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge as BadgeUi } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -429,6 +429,12 @@ const Inventory = () => {
                 </SelectContent>
               </Select>
             )}
+            <Button asChild variant="outline">
+              <Link to="/inventory/pnl" title="View cost basis, sell-through, revenue and profit by SKU or lot">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                P&amp;L report
+              </Link>
+            </Button>
             <Button onClick={openAdd} variant="default">
               <Plus className="h-4 w-4 mr-2" />
               Add item
