@@ -302,9 +302,11 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
     setPricePerTable('');
     setListingType('public');
     setTargetVendorId('');
+    setTargetGroupId('');
     setVendorSearch('');
     setListingNotes('');
   };
+
 
   // Filtered vendors for search
   const filteredVendors = useMemo(() => {
