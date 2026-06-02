@@ -8,11 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, DollarSign, Send, Store, Trash2, Search, Heart, FileText, X, CalendarIcon, MapPin } from 'lucide-react';
+import { Plus, DollarSign, Send, Store, Trash2, Search, Heart, FileText, X, CalendarIcon, MapPin, Users, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
+import { TrustedGroupsDialog } from './TrustedGroupsDialog';
+
 
 interface VendingEvent {
   id: string; // application id
