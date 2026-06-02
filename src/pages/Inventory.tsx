@@ -447,7 +447,7 @@ const Inventory = () => {
           label_printed_at: i.label_printed_at,
           label_print_count: i.label_print_count,
         }))}
-        onPrinted={async (printedIds) => {
+        onPrinted={async (printedIds, meta) => {
           if (printedIds.length === 0) return;
           const nowIso = new Date().toISOString();
           const current = items.filter((i) => printedIds.includes(i.id));
@@ -469,8 +469,28 @@ const Inventory = () => {
                 .eq("id", i.id),
             ),
           );
+          if (user) {
+            await supabase.from("label_print_audit").insert({
+              user_id: user.id,
+              action: meta.reprintCount === printedIds.length ? "reprint" : meta.reprintCount > 0 ? "mixed" : "print",
+              source: printSource,
+              preset: meta.preset,
+              copies_per_item: meta.copies,
+              per_quantity: meta.perQuantity,
+              item_ids: printedIds,
+              item_count: printedIds.length,
+              label_count: meta.labelCount,
+              reprint_count: meta.reprintCount,
+              filter_context: {
+                search: search || null,
+                sort: `${sortKey}:${sortDir}`,
+              },
+            });
+          }
         }}
       />
+
+      <PrintHistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} />
     </>
   );
 };
