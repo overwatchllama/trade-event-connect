@@ -142,9 +142,12 @@ const DealList = () => {
   const [priceDraft, setPriceDraft] = useState<string>("");
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [resettingOverrides, setResettingOverrides] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<DealStatus | "active" | "all">(() => {
-    if (typeof window === "undefined") return "active";
-    return (window.localStorage.getItem("dealList:statusFilter") as DealStatus | "active" | "all") || "active";
+  const [statusFilter, setStatusFilter] = useState<DealStatus | "all">(() => {
+    if (typeof window === "undefined") return "lead";
+    const stored = (window.localStorage.getItem("dealList:statusFilter") as DealStatus | "all" | "active" | null);
+    // Migrate legacy stored values
+    if (!stored || stored === "active" || (stored as string) === "watching" || (stored as string) === "negotiating") return "lead";
+    return stored as DealStatus | "all";
   });
   const [buyTarget, setBuyTarget] = useState<MarkAsBoughtTarget | null>(null);
   const [editTarget, setEditTarget] = useState<EditBoughtTarget | null>(null);
