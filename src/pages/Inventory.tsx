@@ -302,6 +302,16 @@ const Inventory = () => {
                 </div>
               );
             })()}
+            {selected.size > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => openFeature(Array.from(selected))}
+                title={`Feature ${selected.size} selected item(s) at events`}
+              >
+                <CalendarPlus className="h-4 w-4 mr-2" />
+                Feature ({selected.size})
+              </Button>
+            )}
             <Button variant="outline" asChild>
               <Link to="/deal-list">Deal Pipeline</Link>
             </Button>
