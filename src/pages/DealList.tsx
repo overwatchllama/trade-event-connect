@@ -128,6 +128,10 @@ const DealList = () => {
   // can re-find a row in another tab without losing their selection.
   const [selectedBoughtIds, setSelectedBoughtIds] = useState<Set<string>>(new Set());
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  // Pipeline selection (watching/negotiating) drives the "Buy as lot" workflow — kept
+  // separate from the bought selection so the two toolbars never fight over the same Set.
+  const [selectedPipelineIds, setSelectedPipelineIds] = useState<Set<string>>(new Set());
+  const [lotBuyOpen, setLotBuyOpen] = useState(false);
   // Latest reversible bulk edit for this user. Refetched after each save so the
   // Undo button always reflects the freshest action and disappears once consumed.
   const [lastBulkEdit, setLastBulkEdit] = useState<{ id: string; created_at: string; entries: any[]; summary: any } | null>(null);
