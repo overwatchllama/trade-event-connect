@@ -22,15 +22,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare, Download, Pencil, ListChecks, Undo2, PackageCheck } from "lucide-react";
+import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, Download, Pencil, ListChecks, Undo2, PackageCheck, Tag, DollarSign, Archive } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { MarkAsBoughtDialog, type MarkAsBoughtTarget } from "@/components/deals/MarkAsBoughtDialog";
 import { EditBoughtDialog, type EditBoughtTarget } from "@/components/deals/EditBoughtDialog";
 import { BulkEditBoughtDialog, type BulkEditTarget } from "@/components/deals/BulkEditBoughtDialog";
 import { LotBuyDialog, type LotBuyTarget } from "@/components/deals/LotBuyDialog";
 
-type DealStatus = "watching" | "negotiating" | "bought" | "passed";
+/**
+ * Deal pipeline stages:
+ *  - lead       → identified opportunity, still evaluating / negotiating
+ *  - bought     → purchased, cost basis captured, sitting in inventory
+ *  - in_stock   → actively listed for sale (publicly or otherwise)
+ *  - sold       → buyer committed, sale price + fees recorded
+ *  - completed  → payout received & deal archived (final state)
+ *  - passed     → walked away from the opportunity
+ * Legacy 'watching'/'negotiating' values were migrated to 'lead' in the DB.
+ */
+type DealStatus = "lead" | "bought" | "in_stock" | "sold" | "completed" | "passed";
 
 interface DealItem {
   id: string;
@@ -60,12 +72,24 @@ interface DealItem {
   bought_at: string | null;
   passed_at: string | null;
   collection_item_id: string | null;
+  // Sale tracking (set when advancing into the Sold stage)
+  listing_status: string | null;
+  list_price: number | null;
+  sold_price: number | null;
+  sold_at: string | null;
+  sold_channel: string | null;
+  sold_buyer: string | null;
+  sold_fees: number;
+  sold_shipping: number;
+  completed_at: string | null;
 }
 
 const STATUS_META: Record<DealStatus, { label: string; icon: typeof Eye; tone: string }> = {
-  watching: { label: "Watching", icon: Eye, tone: "bg-muted text-muted-foreground" },
-  negotiating: { label: "Negotiating", icon: MessageSquare, tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
+  lead: { label: "Lead", icon: Eye, tone: "bg-muted text-muted-foreground" },
   bought: { label: "Bought", icon: CheckCircle2, tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
+  in_stock: { label: "In Stock", icon: Tag, tone: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
+  sold: { label: "Sold", icon: DollarSign, tone: "bg-violet-500/15 text-violet-700 dark:text-violet-300" },
+  completed: { label: "Completed", icon: Archive, tone: "bg-slate-500/15 text-slate-700 dark:text-slate-300" },
   passed: { label: "Passed", icon: XCircle, tone: "bg-muted/40 text-muted-foreground line-through" },
 };
 
