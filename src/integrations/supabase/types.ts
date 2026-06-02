@@ -205,6 +205,7 @@ export type Database = {
           card_name: string
           card_number: string | null
           collection_item_id: string | null
+          completed_at: string | null
           condition: string
           created_at: string
           ebay_search_url: string | null
@@ -228,6 +229,12 @@ export type Database = {
           scan_image_url: string | null
           set_name: string | null
           shipping_cost: number
+          sold_at: string | null
+          sold_buyer: string | null
+          sold_channel: string | null
+          sold_fees: number
+          sold_price: number | null
+          sold_shipping: number
           source: string | null
           status: string
           target_sell_price: number | null
@@ -243,6 +250,7 @@ export type Database = {
           card_name: string
           card_number?: string | null
           collection_item_id?: string | null
+          completed_at?: string | null
           condition?: string
           created_at?: string
           ebay_search_url?: string | null
@@ -266,6 +274,12 @@ export type Database = {
           scan_image_url?: string | null
           set_name?: string | null
           shipping_cost?: number
+          sold_at?: string | null
+          sold_buyer?: string | null
+          sold_channel?: string | null
+          sold_fees?: number
+          sold_price?: number | null
+          sold_shipping?: number
           source?: string | null
           status?: string
           target_sell_price?: number | null
@@ -281,6 +295,7 @@ export type Database = {
           card_name?: string
           card_number?: string | null
           collection_item_id?: string | null
+          completed_at?: string | null
           condition?: string
           created_at?: string
           ebay_search_url?: string | null
@@ -304,6 +319,12 @@ export type Database = {
           scan_image_url?: string | null
           set_name?: string | null
           shipping_cost?: number
+          sold_at?: string | null
+          sold_buyer?: string | null
+          sold_channel?: string | null
+          sold_fees?: number
+          sold_price?: number | null
+          sold_shipping?: number
           source?: string | null
           status?: string
           target_sell_price?: number | null

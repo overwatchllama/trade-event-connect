@@ -22,15 +22,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, MessageSquare, Download, Pencil, ListChecks, Undo2, PackageCheck } from "lucide-react";
+import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, Download, Pencil, ListChecks, Undo2, PackageCheck, Tag, DollarSign, Archive } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { MarkAsBoughtDialog, type MarkAsBoughtTarget } from "@/components/deals/MarkAsBoughtDialog";
 import { EditBoughtDialog, type EditBoughtTarget } from "@/components/deals/EditBoughtDialog";
 import { BulkEditBoughtDialog, type BulkEditTarget } from "@/components/deals/BulkEditBoughtDialog";
 import { LotBuyDialog, type LotBuyTarget } from "@/components/deals/LotBuyDialog";
 
-type DealStatus = "watching" | "negotiating" | "bought" | "passed";
+/**
+ * Deal pipeline stages:
+ *  - lead       → identified opportunity, still evaluating / negotiating
+ *  - bought     → purchased, cost basis captured, sitting in inventory
+ *  - in_stock   → actively listed for sale (publicly or otherwise)
+ *  - sold       → buyer committed, sale price + fees recorded
+ *  - completed  → payout received & deal archived (final state)
+ *  - passed     → walked away from the opportunity
+ * Legacy 'watching'/'negotiating' values were migrated to 'lead' in the DB.
+ */
+type DealStatus = "lead" | "bought" | "in_stock" | "sold" | "completed" | "passed";
 
 interface DealItem {
   id: string;
@@ -60,12 +72,24 @@ interface DealItem {
   bought_at: string | null;
   passed_at: string | null;
   collection_item_id: string | null;
+  // Sale tracking (set when advancing into the Sold stage)
+  listing_status: string | null;
+  list_price: number | null;
+  sold_price: number | null;
+  sold_at: string | null;
+  sold_channel: string | null;
+  sold_buyer: string | null;
+  sold_fees: number;
+  sold_shipping: number;
+  completed_at: string | null;
 }
 
 const STATUS_META: Record<DealStatus, { label: string; icon: typeof Eye; tone: string }> = {
-  watching: { label: "Watching", icon: Eye, tone: "bg-muted text-muted-foreground" },
-  negotiating: { label: "Negotiating", icon: MessageSquare, tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
+  lead: { label: "Lead", icon: Eye, tone: "bg-muted text-muted-foreground" },
   bought: { label: "Bought", icon: CheckCircle2, tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
+  in_stock: { label: "In Stock", icon: Tag, tone: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
+  sold: { label: "Sold", icon: DollarSign, tone: "bg-violet-500/15 text-violet-700 dark:text-violet-300" },
+  completed: { label: "Completed", icon: Archive, tone: "bg-slate-500/15 text-slate-700 dark:text-slate-300" },
   passed: { label: "Passed", icon: XCircle, tone: "bg-muted/40 text-muted-foreground line-through" },
 };
 
@@ -118,9 +142,12 @@ const DealList = () => {
   const [priceDraft, setPriceDraft] = useState<string>("");
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [resettingOverrides, setResettingOverrides] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<DealStatus | "active" | "all">(() => {
-    if (typeof window === "undefined") return "active";
-    return (window.localStorage.getItem("dealList:statusFilter") as DealStatus | "active" | "all") || "active";
+  const [statusFilter, setStatusFilter] = useState<DealStatus | "all">(() => {
+    if (typeof window === "undefined") return "lead";
+    const stored = (window.localStorage.getItem("dealList:statusFilter") as DealStatus | "all" | "active" | null);
+    // Migrate legacy stored values
+    if (!stored || stored === "active" || (stored as string) === "watching" || (stored as string) === "negotiating") return "lead";
+    return stored as DealStatus | "all";
   });
   const [buyTarget, setBuyTarget] = useState<MarkAsBoughtTarget | null>(null);
   const [editTarget, setEditTarget] = useState<EditBoughtTarget | null>(null);
@@ -140,6 +167,13 @@ const DealList = () => {
   const [passTarget, setPassTarget] = useState<DealItem | null>(null);
   const [passReason, setPassReason] = useState("");
   const [passSubmitting, setPassSubmitting] = useState(false);
+  // Sell-flow state — capture realized revenue when moving Bought/In Stock → Sold.
+  const [sellTarget, setSellTarget] = useState<DealItem | null>(null);
+  const [sellDraft, setSellDraft] = useState({ sold_price: "", sold_channel: "", sold_buyer: "", sold_fees: "0", sold_shipping: "0" });
+  const [sellSubmitting, setSellSubmitting] = useState(false);
+  // List-for-sale state — sets list_price when moving Bought → In Stock.
+  const [listTarget, setListTarget] = useState<DealItem | null>(null);
+  const [listDraft, setListDraft] = useState({ list_price: "" });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -301,16 +335,15 @@ const DealList = () => {
       acc[it.status] = (acc[it.status] ?? 0) + 1;
       return acc;
     },
-    { watching: 0, negotiating: 0, bought: 0, passed: 0 } as Record<DealStatus, number>,
+    { lead: 0, bought: 0, in_stock: 0, sold: 0, completed: 0, passed: 0 } as Record<DealStatus, number>,
   );
   const visibleItems = items.filter((it) => {
     if (statusFilter === "all") return true;
-    if (statusFilter === "active") return it.status === "watching" || it.status === "negotiating";
     return it.status === statusFilter;
   });
 
-  // Pipeline totals (active deals only — bought/passed shouldn't inflate "spend" math).
-  const pipelineItems = items.filter((it) => it.status === "watching" || it.status === "negotiating");
+  // Pipeline totals (leads only — bought/in-stock/sold/passed shouldn't inflate "spend" math).
+  const pipelineItems = items.filter((it) => it.status === "lead");
   const totalValue = pipelineItems.reduce(
     (sum, i) => sum + (effectivePrice(i) ?? 0) * i.quantity,
     0,
@@ -321,16 +354,32 @@ const DealList = () => {
   );
   const blendedPct = totalValue > 0 ? (targetSpend / totalValue) * 100 : costPct;
 
-  // P&L roll-up across every "Bought" deal: invested = unit×qty + ship + fees, projected = target_sell×qty.
+  // P&L roll-up: any deal that's been purchased is "invested capital", regardless of where
+  // it sits downstream (bought / in_stock / sold / completed).
+  const purchasedItems = items.filter(
+    (it) => it.status === "bought" || it.status === "in_stock" || it.status === "sold" || it.status === "completed",
+  );
   const boughtItems = items.filter((it) => it.status === "bought");
-  const totalInvested = boughtItems.reduce(
+  const inStockItems = items.filter((it) => it.status === "in_stock");
+  const soldItems = items.filter((it) => it.status === "sold" || it.status === "completed");
+  const totalInvested = purchasedItems.reduce(
     (s, i) => s + (i.purchase_price ?? 0) * i.quantity + (i.shipping_cost ?? 0) + (i.fees ?? 0),
     0,
   );
-  const projectedRevenue = boughtItems.reduce(
-    (s, i) => s + (i.target_sell_price ?? 0) * i.quantity,
+  const projectedRevenue = purchasedItems.reduce(
+    (s, i) => s + (i.sold_price ?? i.target_sell_price ?? 0) * i.quantity,
     0,
   );
+  const realizedRevenue = soldItems.reduce(
+    (s, i) => s + (i.sold_price ?? 0) * i.quantity - (i.sold_fees ?? 0) - (i.sold_shipping ?? 0),
+    0,
+  );
+  const realizedCost = soldItems.reduce(
+    (s, i) => s + (i.purchase_price ?? 0) * i.quantity + (i.shipping_cost ?? 0) + (i.fees ?? 0),
+    0,
+  );
+  const realizedProfit = realizedRevenue - realizedCost;
+  const realizedMarginPct = realizedRevenue > 0 ? (realizedProfit / realizedRevenue) * 100 : 0;
   const projectedProfit = projectedRevenue - totalInvested;
   const projectedMarginPct = totalInvested > 0 ? (projectedProfit / totalInvested) * 100 : 0;
 
@@ -363,11 +412,9 @@ const DealList = () => {
   };
   const clearBoughtSelection = () => setSelectedBoughtIds(new Set());
 
-  // Pipeline (watching/negotiating) selection — mirrors the bought-selection helpers above
+  // Pipeline (lead) selection — mirrors the bought-selection helpers above
   // so the row gutter checkbox + lot toolbar can be wired identically.
-  const visiblePipelineItems = visibleItems.filter(
-    (it) => it.status === "watching" || it.status === "negotiating",
-  );
+  const visiblePipelineItems = visibleItems.filter((it) => it.status === "lead");
   const selectedPipelineItems = pipelineItems.filter((p) => selectedPipelineIds.has(p.id));
   const selectedPipelineCount = selectedPipelineItems.length;
   const allVisiblePipelineSelected =
@@ -541,17 +588,97 @@ const DealList = () => {
   };
 
   /**
-   * Move a deal between lifecycle stages (watching → negotiating → bought/passed).
-   * "bought" is intentionally NOT routed through here — it requires the cost-basis dialog
-   * (MarkAsBoughtDialog) so we always capture purchase price + ship/fees and create the
-   * matching inventory row.
+   * Move a deal between lifecycle stages. The "Bought" stage is normally entered through
+   * the cost-basis dialog (MarkAsBoughtDialog), but we still allow this helper to set it
+   * directly when reverting a Sold deal back to Bought (no new inventory row needed).
    */
-  const setDealStatus = async (id: string, next: Exclude<DealStatus, "bought">) => {
+  const setDealStatus = async (id: string, next: DealStatus) => {
     const patch: Partial<DealItem> = {
       status: next,
       passed_at: next === "passed" ? new Date().toISOString() : null,
     };
+    // When reverting out of Sold/Completed, clear realized-sale fields so analytics stay clean.
+    if (next !== "sold" && next !== "completed") {
+      patch.sold_at = null;
+      patch.completed_at = null;
+    }
     await updateItem(id, patch);
+  };
+
+  /** Open the Sold dialog seeded with the deal's existing list price / target sell. */
+  const openSellDialog = (item: DealItem) => {
+    setSellTarget(item);
+    const seedPrice =
+      item.sold_price?.toString() ??
+      item.list_price?.toString() ??
+      item.target_sell_price?.toString() ??
+      "";
+    setSellDraft({
+      sold_price: seedPrice,
+      sold_channel: item.sold_channel ?? "",
+      sold_buyer: item.sold_buyer ?? "",
+      sold_fees: item.sold_fees ? String(item.sold_fees) : "0",
+      sold_shipping: item.sold_shipping ? String(item.sold_shipping) : "0",
+    });
+  };
+
+  /** Take an In-Stock deal off the market — flips back to Bought and clears the listing fields. */
+  const unlistItem = async (item: DealItem) => {
+    await updateItem(item.id, {
+      status: "bought",
+      listing_status: "private",
+      list_price: null,
+    });
+    sonnerToast.success("Listing removed");
+  };
+
+  /** Final archive step — locks the deal as Completed once payout has cleared. */
+  const markCompleted = async (item: DealItem) => {
+    await updateItem(item.id, { status: "completed", completed_at: new Date().toISOString() });
+    sonnerToast.success("Deal completed");
+  };
+
+  /** Confirm a sale and persist all realized-revenue fields. */
+  const confirmSale = async () => {
+    if (!sellTarget) return;
+    const price = parseFloat(sellDraft.sold_price);
+    if (!Number.isFinite(price) || price < 0) {
+      sonnerToast.error("Enter a valid sold price.");
+      return;
+    }
+    setSellSubmitting(true);
+    try {
+      await updateItem(sellTarget.id, {
+        status: "sold",
+        sold_price: Math.round(price * 100) / 100,
+        sold_channel: sellDraft.sold_channel.trim() || null,
+        sold_buyer: sellDraft.sold_buyer.trim() || null,
+        sold_fees: Math.max(0, parseFloat(sellDraft.sold_fees) || 0),
+        sold_shipping: Math.max(0, parseFloat(sellDraft.sold_shipping) || 0),
+        sold_at: new Date().toISOString(),
+      });
+      sonnerToast.success(`Sold · ${sellTarget.card_name}`);
+      setSellTarget(null);
+    } finally {
+      setSellSubmitting(false);
+    }
+  };
+
+  /** Confirm an In-Stock listing — sets list_price and flips status. */
+  const confirmList = async () => {
+    if (!listTarget) return;
+    const price = parseFloat(listDraft.list_price);
+    if (!Number.isFinite(price) || price < 0) {
+      sonnerToast.error("Enter a valid list price.");
+      return;
+    }
+    await updateItem(listTarget.id, {
+      status: "in_stock",
+      list_price: Math.round(price * 100) / 100,
+      listing_status: "for_sale",
+    });
+    sonnerToast.success(`Listed @ $${price.toFixed(2)}`);
+    setListTarget(null);
   };
 
   /**
@@ -785,20 +912,23 @@ const DealList = () => {
           </Card>
         ) : (
           <>
-            {/* Lifecycle tabs — drives which rows render below. Counts come from the unfiltered list. */}
+            {/* Lifecycle tabs — Lead → Bought → In Stock → Sold → Completed. Counts come from the unfiltered list. */}
             <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)} className="mb-4">
               <TabsList className="flex flex-wrap h-auto">
-                <TabsTrigger value="active">
-                  Active <span className="ml-1.5 text-xs opacity-70">{statusCounts.watching + statusCounts.negotiating}</span>
-                </TabsTrigger>
-                <TabsTrigger value="watching">
-                  Watching <span className="ml-1.5 text-xs opacity-70">{statusCounts.watching}</span>
-                </TabsTrigger>
-                <TabsTrigger value="negotiating">
-                  Negotiating <span className="ml-1.5 text-xs opacity-70">{statusCounts.negotiating}</span>
+                <TabsTrigger value="lead">
+                  Lead <span className="ml-1.5 text-xs opacity-70">{statusCounts.lead}</span>
                 </TabsTrigger>
                 <TabsTrigger value="bought">
                   Bought <span className="ml-1.5 text-xs opacity-70">{statusCounts.bought}</span>
+                </TabsTrigger>
+                <TabsTrigger value="in_stock">
+                  In Stock <span className="ml-1.5 text-xs opacity-70">{statusCounts.in_stock}</span>
+                </TabsTrigger>
+                <TabsTrigger value="sold">
+                  Sold <span className="ml-1.5 text-xs opacity-70">{statusCounts.sold}</span>
+                </TabsTrigger>
+                <TabsTrigger value="completed">
+                  Completed <span className="ml-1.5 text-xs opacity-70">{statusCounts.completed}</span>
                 </TabsTrigger>
                 <TabsTrigger value="passed">
                   Passed <span className="ml-1.5 text-xs opacity-70">{statusCounts.passed}</span>
@@ -922,11 +1052,9 @@ const DealList = () => {
               )}
               {visibleItems.map((i) => (
                 <Card key={i.id} className="p-3 flex gap-3">
-                  {/* Selection checkbox: bought rows feed bulk-edit, active rows feed lot-buy.
-                      Passed rows stay un-checkable so the gutter visually distinguishes dead deals. */}
-                  {(i.status === "bought" ||
-                    i.status === "watching" ||
-                    i.status === "negotiating") && (
+                  {/* Selection checkbox: bought rows feed bulk-edit, lead rows feed lot-buy.
+                      Downstream stages (in_stock/sold/completed/passed) aren't multi-selectable. */}
+                  {(i.status === "bought" || i.status === "lead") && (
                     <div className="flex items-start pt-1">
                       <Checkbox
                         checked={
@@ -1178,21 +1306,12 @@ const DealList = () => {
                           <a href={i.ebay_search_url} target="_blank" rel="noreferrer">eBay <ExternalLink className="h-3 w-3 ml-1" /></a>
                         </Button>
                       )}
-                      {/* Lifecycle actions — bought goes through the cost-basis dialog so we capture P&L. */}
-                      <div className="ml-auto flex items-center gap-1">
-                        {i.status !== "bought" && (
+                      {/* Lifecycle actions — bought goes through the cost-basis dialog so we capture P&L.
+                          Downstream stages route through dedicated dialogs (List for sale / Mark sold) so
+                          we always capture list_price, sold_price, channel, buyer, fees, and shipping. */}
+                      <div className="ml-auto flex items-center gap-1 flex-wrap justify-end">
+                        {i.status === "lead" && (
                           <>
-                            {i.status !== "negotiating" && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 text-xs px-2"
-                                onClick={() => setDealStatus(i.id, "negotiating")}
-                                title="Move to Negotiating"
-                              >
-                                <MessageSquare className="h-3 w-3 mr-1" /> Negotiate
-                              </Button>
-                            )}
                             <Button
                               size="sm"
                               className="h-7 text-xs px-2"
@@ -1201,25 +1320,48 @@ const DealList = () => {
                             >
                               <ShoppingCart className="h-3 w-3 mr-1" /> Bought
                             </Button>
-                            {i.status !== "passed" && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 text-xs px-2"
-                                onClick={() => { setPassTarget(i); setPassReason(""); }}
-                                title="Mark as passed"
-                              >
-                                <XCircle className="h-3 w-3 mr-1" /> Pass
-                              </Button>
-                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2"
+                              onClick={() => { setPassTarget(i); setPassReason(""); }}
+                              title="Mark as passed"
+                            >
+                              <XCircle className="h-3 w-3 mr-1" /> Pass
+                            </Button>
                           </>
                         )}
                         {i.status === "bought" && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] text-muted-foreground">
+                          <>
+                            <span className="text-[11px] text-muted-foreground mr-1">
                               Cost ${(((i.purchase_price ?? 0) * i.quantity) + (i.shipping_cost ?? 0) + (i.fees ?? 0)).toFixed(2)}
                               {i.target_sell_price ? ` · target $${(i.target_sell_price * i.quantity).toFixed(2)}` : ""}
                             </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs px-2"
+                              onClick={() => {
+                                setListTarget(i);
+                                setListDraft({
+                                  list_price:
+                                    i.list_price?.toString() ??
+                                    i.target_sell_price?.toString() ??
+                                    "",
+                                });
+                              }}
+                              title="List for sale (move to In Stock)"
+                            >
+                              <Tag className="h-3 w-3 mr-1" /> List
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={() => openSellDialog(i)}
+                              title="Record a sale"
+                            >
+                              <DollarSign className="h-3 w-3 mr-1" /> Sold
+                            </Button>
                             <Button
                               size="sm"
                               variant="ghost"
@@ -1240,15 +1382,80 @@ const DealList = () => {
                             >
                               <Pencil className="h-3 w-3 mr-1" /> Edit
                             </Button>
-                          </div>
+                          </>
+                        )}
+                        {i.status === "in_stock" && (
+                          <>
+                            <span className="text-[11px] text-muted-foreground mr-1">
+                              Listed{i.list_price != null ? ` @ $${i.list_price.toFixed(2)}` : ""}
+                            </span>
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={() => openSellDialog(i)}
+                              title="Record a sale"
+                            >
+                              <DollarSign className="h-3 w-3 mr-1" /> Sold
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2"
+                              onClick={() => unlistItem(i)}
+                              title="Take down listing (back to Bought)"
+                            >
+                              <Undo2 className="h-3 w-3 mr-1" /> Unlist
+                            </Button>
+                          </>
+                        )}
+                        {i.status === "sold" && (
+                          <>
+                            <span className="text-[11px] text-muted-foreground mr-1">
+                              {i.sold_price != null ? `$${(i.sold_price * i.quantity).toFixed(2)}` : "—"}
+                              {i.sold_channel ? ` · ${i.sold_channel}` : ""}
+                            </span>
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={() => markCompleted(i)}
+                              title="Mark deal completed (archive)"
+                            >
+                              <Archive className="h-3 w-3 mr-1" /> Complete
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2"
+                              onClick={() => setDealStatus(i.id, "bought")}
+                              title="Revert sale (back to Bought)"
+                            >
+                              <Undo2 className="h-3 w-3 mr-1" /> Undo
+                            </Button>
+                          </>
+                        )}
+                        {i.status === "completed" && (
+                          <>
+                            <span className="text-[11px] text-muted-foreground mr-1">
+                              Profit ${(((i.sold_price ?? 0) * i.quantity) - (i.sold_fees ?? 0) - (i.sold_shipping ?? 0) - ((i.purchase_price ?? 0) * i.quantity) - (i.shipping_cost ?? 0) - (i.fees ?? 0)).toFixed(2)}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2"
+                              onClick={() => updateItem(i.id, { status: "sold", completed_at: null })}
+                              title="Reopen this deal"
+                            >
+                              <RotateCcw className="h-3 w-3 mr-1" /> Reopen
+                            </Button>
+                          </>
                         )}
                         {i.status === "passed" && (
                           <Button
                             size="sm"
                             variant="ghost"
                             className="h-7 text-xs px-2"
-                            onClick={() => setDealStatus(i.id, "watching")}
-                            title="Restore to Watching"
+                            onClick={() => setDealStatus(i.id, "lead")}
+                            title="Restore to Lead"
                           >
                             <RotateCcw className="h-3 w-3 mr-1" /> Restore
                           </Button>
@@ -1421,6 +1628,106 @@ const DealList = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* List for sale — flips Bought → In Stock with a list price. */}
+        <Dialog open={!!listTarget} onOpenChange={(o) => !o && setListTarget(null)}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>List for sale</DialogTitle>
+              <DialogDescription>
+                {listTarget?.card_name} · qty {listTarget?.quantity ?? 1}. Moves this deal to <strong>In Stock</strong>.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="list-price" className="text-xs">List price (per card)</Label>
+              <Input
+                id="list-price"
+                type="number"
+                step="0.01"
+                min={0}
+                value={listDraft.list_price}
+                onChange={(e) => setListDraft({ list_price: e.target.value })}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setListTarget(null)}>Cancel</Button>
+              <Button onClick={confirmList}>List</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Mark sold — captures realized revenue, channel, buyer, fees and shipping. */}
+        <Dialog open={!!sellTarget} onOpenChange={(o) => !o && !sellSubmitting && setSellTarget(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Record sale</DialogTitle>
+              <DialogDescription>
+                {sellTarget?.card_name} · qty {sellTarget?.quantity ?? 1}.
+              </DialogDescription>
+            </DialogHeader>
+            {(() => {
+              if (!sellTarget) return null;
+              const qty = sellTarget.quantity || 1;
+              const price = parseFloat(sellDraft.sold_price) || 0;
+              const fees = parseFloat(sellDraft.sold_fees) || 0;
+              const ship = parseFloat(sellDraft.sold_shipping) || 0;
+              const revenue = price * qty - fees - ship;
+              const cost = (sellTarget.purchase_price ?? 0) * qty + (sellTarget.shipping_cost ?? 0) + (sellTarget.fees ?? 0);
+              const profit = revenue - cost;
+              const marginPct = revenue > 0 ? (profit / revenue) * 100 : 0;
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <Label htmlFor="sold-price" className="text-xs">Sold price (per card)</Label>
+                      <Input id="sold-price" type="number" step="0.01" min={0} value={sellDraft.sold_price}
+                        onChange={(e) => setSellDraft({ ...sellDraft, sold_price: e.target.value })} autoFocus />
+                    </div>
+                    <div>
+                      <Label htmlFor="sold-fees" className="text-xs">Fees (total)</Label>
+                      <Input id="sold-fees" type="number" step="0.01" min={0} value={sellDraft.sold_fees}
+                        onChange={(e) => setSellDraft({ ...sellDraft, sold_fees: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="sold-shipping" className="text-xs">Shipping (total)</Label>
+                      <Input id="sold-shipping" type="number" step="0.01" min={0} value={sellDraft.sold_shipping}
+                        onChange={(e) => setSellDraft({ ...sellDraft, sold_shipping: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label htmlFor="sold-channel" className="text-xs">Channel</Label>
+                      <Input id="sold-channel" value={sellDraft.sold_channel}
+                        onChange={(e) => setSellDraft({ ...sellDraft, sold_channel: e.target.value })}
+                        placeholder="eBay, show, in-person…" />
+                    </div>
+                    <div>
+                      <Label htmlFor="sold-buyer" className="text-xs">Buyer</Label>
+                      <Input id="sold-buyer" value={sellDraft.sold_buyer}
+                        onChange={(e) => setSellDraft({ ...sellDraft, sold_buyer: e.target.value })}
+                        placeholder="Optional" />
+                    </div>
+                  </div>
+                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs space-y-1">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Net revenue</span><span>${revenue.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Cost basis</span><span>${cost.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Realized profit</span>
+                      <span className={profit >= 0 ? "font-semibold text-emerald-600" : "font-semibold text-destructive"}>
+                        ${profit.toFixed(2)} ({marginPct.toFixed(0)}%)
+                      </span>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSellTarget(null)} disabled={sellSubmitting}>Cancel</Button>
+              <Button onClick={confirmSale} disabled={sellSubmitting}>
+                {sellSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Mark sold
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
