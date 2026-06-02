@@ -533,11 +533,8 @@ const Inventory = () => {
           </div>
         )}
 
-        {/* spacer placeholder */}
-        {false && <div></div>
-        </div>
-
         {/* Totals */}
+
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
           <Card className="p-3">
             <p className="text-xs text-muted-foreground">Items</p>
