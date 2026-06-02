@@ -60,6 +60,13 @@ interface InventoryItem {
   listing_status: "private" | "for_sale" | "sold" | "hold";
   list_price: number | null;
   public_notes: string | null;
+  notes: string | null;
+}
+
+interface EventOpt {
+  id: string;
+  title: string;
+  date: string;
 }
 
 type SortKey = "bought_at" | "card_name" | "invested" | "projected" | "profit" | "margin";
