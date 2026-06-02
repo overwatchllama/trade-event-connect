@@ -272,7 +272,20 @@ const Inventory = () => {
                     const { invested, projected, profit, margin } = calc(i);
                     const positive = profit >= 0;
                     return (
-                      <TableRow key={i.id}>
+                      <TableRow key={i.id} data-state={selected.has(i.id) ? "selected" : undefined}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selected.has(i.id)}
+                            onCheckedChange={(v) => {
+                              setSelected((prev) => {
+                                const next = new Set(prev);
+                                if (v) next.add(i.id); else next.delete(i.id);
+                                return next;
+                              });
+                            }}
+                            aria-label={`Select ${i.card_name}`}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="h-12 w-9 rounded bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
