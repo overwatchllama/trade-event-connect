@@ -155,36 +155,52 @@ const VendorTableListings = ({ vendorId }: VendorTableListingsProps) => {
         setMyListings([]);
       }
 
-      // Fetch available listings from other vendors
+      // Fetch available listings from other vendors. RLS already restricts which
+      // group listings the current user can see, so we just request both types.
       const { data: available } = await supabase
         .from('vendor_table_listings')
-        .select('id, tables_offered, price_per_table, notes, event_id, seller_vendor_id')
+        .select('id, tables_offered, price_per_table, notes, event_id, seller_vendor_id, listing_type, target_group_id')
         .eq('status', 'available')
-        .eq('listing_type', 'public')
+        .in('listing_type', ['public', 'group'])
         .neq('seller_vendor_id', vendorId);
 
       if (available && available.length > 0) {
         const eventIds = [...new Set(available.map(a => a.event_id))];
         const vendorIds = [...new Set(available.map(a => a.seller_vendor_id))];
-        
-        const [eventsRes, vendorsRes] = await Promise.all([
+        const groupIds = [...new Set(available.map((a: any) => a.target_group_id).filter(Boolean))] as string[];
+
+        const [eventsRes, vendorsRes, groupsRes] = await Promise.all([
           supabase.from('events').select('id, title, date, state').in('id', eventIds),
           supabase.from('vendors').select('id, business_name').in('id', vendorIds),
+          groupIds.length > 0
+            ? supabase.from('vendor_trusted_groups' as any).select('id, name').in('id', groupIds)
+            : Promise.resolve({ data: [] as any[] }),
         ]);
-        
+
         const eventsMap = new Map(eventsRes.data?.map(e => [e.id, e]) || []);
         const vendorsMap = new Map(vendorsRes.data?.map(v => [v.id, v]) || []);
+        const groupsMap = new Map(((groupsRes as any).data ?? []).map((g: any) => [g.id, g.name]));
 
-        setAvailableListings(available.map(a => ({
+        setAvailableListings(available.map((a: any) => ({
           ...a,
           event_title: eventsMap.get(a.event_id)?.title,
           event_date: eventsMap.get(a.event_id)?.date,
           event_state: eventsMap.get(a.event_id)?.state,
           seller_name: vendorsMap.get(a.seller_vendor_id)?.business_name,
+          target_group_name: a.target_group_id ? (groupsMap.get(a.target_group_id) as string | undefined) : undefined,
         })));
       } else {
         setAvailableListings([]);
       }
+
+      // Load my trusted groups (for the create listing dialog)
+      const { data: groupsOwned } = await supabase
+        .from('vendor_trusted_groups' as any)
+        .select('id, name')
+        .eq('owner_user_id', user.id)
+        .order('name');
+      setMyGroups(((groupsOwned ?? []) as any[]).map((g) => ({ id: g.id, name: g.name })));
+
 
       // Fetch all vendors for direct transfer
       const [vendorsRes, notesRes] = await Promise.all([
