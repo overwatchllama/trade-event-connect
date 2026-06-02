@@ -54,11 +54,15 @@ interface AvailableListing {
   notes: string | null;
   event_id: string;
   seller_vendor_id: string;
+  listing_type: string;
+  target_group_id: string | null;
   event_title?: string;
   event_date?: string;
   event_state?: string;
   seller_name?: string;
+  target_group_name?: string;
 }
+
 
 interface VendorTableListingsProps {
   vendorId: string;
