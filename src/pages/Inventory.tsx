@@ -75,6 +75,8 @@ const Inventory = () => {
   const [printItemIds, setPrintItemIds] = useState<string[] | null>(null);
   const [printSource, setPrintSource] = useState<string>("all_visible");
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [featureItemIds, setFeatureItemIds] = useState<string[] | null>(null);
+  const [featureLabel, setFeatureLabel] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!user) return;
