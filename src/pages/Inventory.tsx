@@ -244,6 +244,16 @@ const Inventory = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[36px]">
+                      <Checkbox
+                        checked={filtered.length > 0 && filtered.every((i) => selected.has(i.id))}
+                        onCheckedChange={(v) => {
+                          if (v) setSelected(new Set(filtered.map((i) => i.id)));
+                          else setSelected(new Set());
+                        }}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead className="w-[280px]"><SortBtn k="card_name">Card</SortBtn></TableHead>
                     <TableHead><SortBtn k="bought_at">Bought</SortBtn></TableHead>
                     <TableHead className="text-right">Qty</TableHead>
