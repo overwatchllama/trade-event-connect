@@ -200,19 +200,21 @@ const Inventory = () => {
               const target = selArr.length > 0 ? selArr : visible;
               const unprinted = target.filter((i) => !i.label_printed_at);
               const printed = target.filter((i) => i.label_printed_at);
-              const openWith = (ids: string[]) => {
+              const openWith = (ids: string[], source: string) => {
                 if (ids.length === 0) {
                   toast({ title: "Nothing to print", description: "No matching rows.", variant: "destructive" });
                   return;
                 }
                 setPrintItemIds(ids);
+                setPrintSource(source);
                 setPrintOpen(true);
               };
+              const primarySource = selArr.length > 0 ? "selection" : "all_visible";
               return (
                 <div className="inline-flex rounded-md shadow-sm">
                   <Button
                     variant="default"
-                    onClick={() => openWith(target.map((i) => i.id))}
+                    onClick={() => openWith(target.map((i) => i.id), primarySource)}
                     disabled={visible.length === 0}
                     className="rounded-r-none"
                     title={selArr.length > 0 ? `Print ${selArr.length} selected` : "Print all visible"}
@@ -227,21 +229,26 @@ const Inventory = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-64">
-                      <DropdownMenuItem onClick={() => openWith(unprinted.map((i) => i.id))} disabled={unprinted.length === 0}>
+                      <DropdownMenuItem onClick={() => openWith(unprinted.map((i) => i.id), "unprinted")} disabled={unprinted.length === 0}>
                         <Printer className="h-4 w-4 mr-2" />
                         Print unprinted ({unprinted.length})
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => openWith(printed.map((i) => i.id))} disabled={printed.length === 0}>
+                      <DropdownMenuItem onClick={() => openWith(printed.map((i) => i.id), "reprint_printed")} disabled={printed.length === 0}>
                         <RotateCw className="h-4 w-4 mr-2" />
                         Reprint already-printed ({printed.length})
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => openWith(visible.filter((i) => i.label_printed_at).map((i) => i.id))}
+                        onClick={() => openWith(visible.filter((i) => i.label_printed_at).map((i) => i.id), "reprint_view")}
                         disabled={visible.every((i) => !i.label_printed_at)}
                       >
                         <RotateCw className="h-4 w-4 mr-2" />
                         Reprint all printed in view
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setHistoryOpen(true)}>
+                        <History className="h-4 w-4 mr-2" />
+                        View print history
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
