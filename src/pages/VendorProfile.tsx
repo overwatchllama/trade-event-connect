@@ -287,8 +287,12 @@ const VendorProfile = () => {
         {/* Profile Content */}
         <div className="pt-16">
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className={`grid w-full ${isOwner ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <TabsList className={`grid w-full ${isOwner ? 'grid-cols-4' : 'grid-cols-3'}`}>
               <TabsTrigger value="profile">Profile</TabsTrigger>
+              <TabsTrigger value="inventory" className="flex items-center gap-2">
+                <Store className="w-4 h-4" />
+                Inventory
+              </TabsTrigger>
               <TabsTrigger value="calendar" className="flex items-center gap-2">
                 <CalendarDays className="w-4 h-4" />
                 Event Calendar
