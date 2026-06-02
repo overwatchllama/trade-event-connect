@@ -405,11 +405,9 @@ const DealList = () => {
   };
   const clearBoughtSelection = () => setSelectedBoughtIds(new Set());
 
-  // Pipeline (watching/negotiating) selection — mirrors the bought-selection helpers above
+  // Pipeline (lead) selection — mirrors the bought-selection helpers above
   // so the row gutter checkbox + lot toolbar can be wired identically.
-  const visiblePipelineItems = visibleItems.filter(
-    (it) => it.status === "watching" || it.status === "negotiating",
-  );
+  const visiblePipelineItems = visibleItems.filter((it) => it.status === "lead");
   const selectedPipelineItems = pipelineItems.filter((p) => selectedPipelineIds.has(p.id));
   const selectedPipelineCount = selectedPipelineItems.length;
   const allVisiblePipelineSelected =
