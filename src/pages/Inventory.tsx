@@ -502,6 +502,14 @@ const Inventory = () => {
                   <CalendarPlus className="h-4 w-4 mr-2" />
                   Feature ({selected.size})
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setAdjustItemIds(Array.from(selected))}
+                  title={`Adjust stock for ${selected.size} selected item(s)`}
+                >
+                  <ClipboardCheck className="h-4 w-4 mr-2" />
+                  Adjust stock ({selected.size})
+                </Button>
                 {eventScope !== "all" && (
                   <Button
                     variant="outline"
