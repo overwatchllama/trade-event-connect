@@ -459,14 +459,61 @@ const Inventory = () => {
                         <TableCell className={`text-right font-semibold ${positive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
                           {projected > 0 ? `${margin.toFixed(1)}%` : "—"}
                         </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <Select
+                              value={i.listing_status}
+                              onValueChange={(v) =>
+                                updateListing(i, { listing_status: v as InventoryItem["listing_status"] })
+                              }
+                            >
+                              <SelectTrigger className="h-8 w-[110px] text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="private">Private</SelectItem>
+                                <SelectItem value="for_sale">For sale</SelectItem>
+                                <SelectItem value="hold">Hold</SelectItem>
+                                <SelectItem value="sold">Sold</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="Price"
+                              defaultValue={i.list_price ?? ""}
+                              onBlur={(e) => {
+                                const raw = e.target.value;
+                                const val = raw === "" ? null : Number(raw);
+                                if (val === i.list_price) return;
+                                updateListing(i, { list_price: val });
+                              }}
+                              className="h-8 w-[80px] text-xs"
+                            />
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right">
-                          {i.tcgplayer_url && (
-                            <Button variant="ghost" size="icon" asChild title="View on TCGplayer">
-                              <a href={i.tcgplayer_url} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
-                            </Button>
-                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" aria-label="Item actions">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openFeature([i.id], i.card_name)}>
+                                <CalendarPlus className="h-4 w-4 mr-2" />
+                                Feature at event…
+                              </DropdownMenuItem>
+                              {i.tcgplayer_url && (
+                                <DropdownMenuItem asChild>
+                                  <a href={i.tcgplayer_url} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    View on TCGplayer
+                                  </a>
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     );
