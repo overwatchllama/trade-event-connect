@@ -101,14 +101,32 @@ const Header = () => {
               Vendors
             </Link>
             {isVendor && (
-              <Link 
-                to="/vending" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === '/vending' ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                Vending
-              </Link>
+              <>
+                <Link 
+                  to="/vending" 
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    location.pathname === '/vending' ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  Vending
+                </Link>
+                <Link 
+                  to="/deal-list" 
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    location.pathname === '/deal-list' ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  Pipeline
+                </Link>
+                <Link 
+                  to="/inventory" 
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    location.pathname === '/inventory' || location.pathname === '/inventory/pnl' ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  Inventory
+                </Link>
+              </>
             )}
             {isVenue && (
               <Link 

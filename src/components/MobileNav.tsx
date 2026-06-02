@@ -106,10 +106,24 @@ const MobileNav = () => {
               Vendors
             </button>
             {isVendor && (
-              <button onClick={() => handleNavigate('/vending')} className={navLinkClass('/vending')}>
-                <Store className="h-4 w-4" />
-                Vending
-              </button>
+              <>
+                <button onClick={() => handleNavigate('/vending')} className={navLinkClass('/vending')}>
+                  <Store className="h-4 w-4" />
+                  Vending
+                </button>
+                <button onClick={() => handleNavigate('/deal-list')} className={navLinkClass('/deal-list')}>
+                  <ShoppingBag className="h-4 w-4" />
+                  Pipeline
+                </button>
+                <button onClick={() => handleNavigate('/inventory')} className={navLinkClass('/inventory')}>
+                  <Store className="h-4 w-4" />
+                  Inventory
+                </button>
+                <button onClick={() => handleNavigate('/inventory/pnl')} className={navLinkClass('/inventory/pnl')}>
+                  <Store className="h-4 w-4" />
+                  P&amp;L Report
+                </button>
+              </>
             )}
             {isVenue && (
               <button onClick={() => handleNavigate('/organize-venue')} className={navLinkClass('/organize-venue')}>
