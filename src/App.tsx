@@ -136,6 +136,11 @@ const App = () => (
                 <Inventory />
               </ProtectedRoute>
             } />
+            <Route path="/inventory/pnl" element={
+              <ProtectedRoute>
+                <InventoryPnL />
+              </ProtectedRoute>
+            } />
             <Route path="/markets" element={
               <ProtectedRoute>
                 <Markets />
