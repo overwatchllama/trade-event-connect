@@ -38,11 +38,14 @@ interface TableListing {
   status: string;
   buyer_vendor_id: string | null;
   notes: string | null;
+  target_group_id: string | null;
   created_at: string;
   event_title?: string;
   buyer_name?: string;
   target_name?: string;
+  target_group_name?: string;
 }
+
 
 interface AvailableListing {
   id: string;
