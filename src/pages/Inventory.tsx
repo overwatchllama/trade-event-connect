@@ -54,6 +54,8 @@ const Inventory = () => {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("bought_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [printOpen, setPrintOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
