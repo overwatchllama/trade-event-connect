@@ -85,7 +85,7 @@ const Inventory = () => {
       const { data, error } = await supabase
         .from("deal_list_items")
         .select(
-          "id, card_name, set_name, card_number, rarity, image_url, game, condition, quantity, purchase_price, shipping_cost, fees, target_sell_price, source, bought_at, tcgplayer_url, tcgplayer_market_price, label_printed_at, label_print_count"
+          "id, card_name, set_name, card_number, rarity, image_url, game, condition, quantity, purchase_price, shipping_cost, fees, target_sell_price, source, bought_at, tcgplayer_url, tcgplayer_market_price, label_printed_at, label_print_count, listing_status, list_price, public_notes"
         )
         .eq("user_id", user.id)
         .eq("status", "bought")
