@@ -581,17 +581,97 @@ const DealList = () => {
   };
 
   /**
-   * Move a deal between lifecycle stages (watching → negotiating → bought/passed).
-   * "bought" is intentionally NOT routed through here — it requires the cost-basis dialog
-   * (MarkAsBoughtDialog) so we always capture purchase price + ship/fees and create the
-   * matching inventory row.
+   * Move a deal between lifecycle stages. The "Bought" stage is normally entered through
+   * the cost-basis dialog (MarkAsBoughtDialog), but we still allow this helper to set it
+   * directly when reverting a Sold deal back to Bought (no new inventory row needed).
    */
-  const setDealStatus = async (id: string, next: Exclude<DealStatus, "bought">) => {
+  const setDealStatus = async (id: string, next: DealStatus) => {
     const patch: Partial<DealItem> = {
       status: next,
       passed_at: next === "passed" ? new Date().toISOString() : null,
     };
+    // When reverting out of Sold/Completed, clear realized-sale fields so analytics stay clean.
+    if (next !== "sold" && next !== "completed") {
+      patch.sold_at = null;
+      patch.completed_at = null;
+    }
     await updateItem(id, patch);
+  };
+
+  /** Open the Sold dialog seeded with the deal's existing list price / target sell. */
+  const openSellDialog = (item: DealItem) => {
+    setSellTarget(item);
+    const seedPrice =
+      item.sold_price?.toString() ??
+      item.list_price?.toString() ??
+      item.target_sell_price?.toString() ??
+      "";
+    setSellDraft({
+      sold_price: seedPrice,
+      sold_channel: item.sold_channel ?? "",
+      sold_buyer: item.sold_buyer ?? "",
+      sold_fees: item.sold_fees ? String(item.sold_fees) : "0",
+      sold_shipping: item.sold_shipping ? String(item.sold_shipping) : "0",
+    });
+  };
+
+  /** Take an In-Stock deal off the market — flips back to Bought and clears the listing fields. */
+  const unlistItem = async (item: DealItem) => {
+    await updateItem(item.id, {
+      status: "bought",
+      listing_status: "private",
+      list_price: null,
+    });
+    sonnerToast.success("Listing removed");
+  };
+
+  /** Final archive step — locks the deal as Completed once payout has cleared. */
+  const markCompleted = async (item: DealItem) => {
+    await updateItem(item.id, { status: "completed", completed_at: new Date().toISOString() });
+    sonnerToast.success("Deal completed");
+  };
+
+  /** Confirm a sale and persist all realized-revenue fields. */
+  const confirmSale = async () => {
+    if (!sellTarget) return;
+    const price = parseFloat(sellDraft.sold_price);
+    if (!Number.isFinite(price) || price < 0) {
+      sonnerToast.error("Enter a valid sold price.");
+      return;
+    }
+    setSellSubmitting(true);
+    try {
+      await updateItem(sellTarget.id, {
+        status: "sold",
+        sold_price: Math.round(price * 100) / 100,
+        sold_channel: sellDraft.sold_channel.trim() || null,
+        sold_buyer: sellDraft.sold_buyer.trim() || null,
+        sold_fees: Math.max(0, parseFloat(sellDraft.sold_fees) || 0),
+        sold_shipping: Math.max(0, parseFloat(sellDraft.sold_shipping) || 0),
+        sold_at: new Date().toISOString(),
+      });
+      sonnerToast.success(`Sold · ${sellTarget.card_name}`);
+      setSellTarget(null);
+    } finally {
+      setSellSubmitting(false);
+    }
+  };
+
+  /** Confirm an In-Stock listing — sets list_price and flips status. */
+  const confirmList = async () => {
+    if (!listTarget) return;
+    const price = parseFloat(listDraft.list_price);
+    if (!Number.isFinite(price) || price < 0) {
+      sonnerToast.error("Enter a valid list price.");
+      return;
+    }
+    await updateItem(listTarget.id, {
+      status: "in_stock",
+      list_price: Math.round(price * 100) / 100,
+      listing_status: "for_sale",
+    });
+    sonnerToast.success(`Listed @ $${price.toFixed(2)}`);
+    setListTarget(null);
   };
 
   /**
