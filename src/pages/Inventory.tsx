@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer, ChevronDown, RotateCw, History as HistoryIcon, Store, CalendarPlus, MoreHorizontal, Plus, Pencil, Trash2, CalendarX } from "lucide-react";
+import { Loader2, ImageOff, ExternalLink, Package, ArrowUpDown, Printer, ChevronDown, RotateCw, History as HistoryIcon, Store, CalendarPlus, MoreHorizontal, Plus, Pencil, Trash2, CalendarX, ClipboardCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge as BadgeUi } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,6 +35,7 @@ import { PrintLabelsDialog } from "@/components/inventory/PrintLabelsDialog";
 import { PrintHistoryDialog } from "@/components/inventory/PrintHistoryDialog";
 import { FeatureAtEventDialog } from "@/components/inventory/FeatureAtEventDialog";
 import { InventoryItemDialog, type InventoryItemFormValues } from "@/components/inventory/InventoryItemDialog";
+import { StockAdjustmentDialog, type AdjustableItem } from "@/components/inventory/StockAdjustmentDialog";
 import { useVendorProfile } from "@/hooks/useVendorProfile";
 
 interface InventoryItem {
@@ -104,6 +105,7 @@ const Inventory = () => {
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<(Partial<InventoryItemFormValues> & { id?: string }) | undefined>(undefined);
   const [confirmDelete, setConfirmDelete] = useState<{ ids: string[]; label: string } | null>(null);
+  const [adjustItemIds, setAdjustItemIds] = useState<string[] | null>(null);
 
   const loadInventory = async () => {
     if (!user) return;
@@ -500,6 +502,14 @@ const Inventory = () => {
                   <CalendarPlus className="h-4 w-4 mr-2" />
                   Feature ({selected.size})
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setAdjustItemIds(Array.from(selected))}
+                  title={`Adjust stock for ${selected.size} selected item(s)`}
+                >
+                  <ClipboardCheck className="h-4 w-4 mr-2" />
+                  Adjust stock ({selected.size})
+                </Button>
                 {eventScope !== "all" && (
                   <Button
                     variant="outline"
@@ -734,6 +744,10 @@ const Inventory = () => {
                                 <CalendarPlus className="h-4 w-4 mr-2" />
                                 Feature at event…
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setAdjustItemIds([i.id])}>
+                                <ClipboardCheck className="h-4 w-4 mr-2" />
+                                Adjust stock…
+                              </DropdownMenuItem>
                               {eventScope !== "all" && (
                                 <DropdownMenuItem onClick={() => removeFromEvent([i.id])}>
                                   <CalendarX className="h-4 w-4 mr-2" />
@@ -858,6 +872,24 @@ const Inventory = () => {
           loadInventory();
         }}
       />
+
+      <StockAdjustmentDialog
+        open={adjustItemIds !== null}
+        onOpenChange={(v) => { if (!v) setAdjustItemIds(null); }}
+        items={(adjustItemIds ? items.filter((i) => adjustItemIds.includes(i.id)) : []).map<AdjustableItem>((i) => ({
+          id: i.id,
+          card_name: i.card_name,
+          set_name: i.set_name,
+          card_number: i.card_number,
+          condition: i.condition,
+          quantity: i.quantity,
+        }))}
+        onApplied={(updated) => {
+          setItems((cur) => cur.map((x) => (updated.has(x.id) ? { ...x, quantity: updated.get(x.id)! } : x)));
+          setSelected(new Set());
+        }}
+      />
+
 
       <AlertDialog open={confirmDelete !== null} onOpenChange={(v) => { if (!v) setConfirmDelete(null); }}>
         <AlertDialogContent>

@@ -1740,6 +1740,48 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_adjustments: {
+        Row: {
+          counted_quantity: number
+          created_at: string
+          delta: number
+          event_id: string | null
+          id: string
+          item_id: string
+          notes: string | null
+          previous_quantity: number
+          reason: string | null
+          source: string | null
+          user_id: string
+        }
+        Insert: {
+          counted_quantity: number
+          created_at?: string
+          delta: number
+          event_id?: string | null
+          id?: string
+          item_id: string
+          notes?: string | null
+          previous_quantity: number
+          reason?: string | null
+          source?: string | null
+          user_id: string
+        }
+        Update: {
+          counted_quantity?: number
+          created_at?: string
+          delta?: number
+          event_id?: string | null
+          id?: string
+          item_id?: string
+          notes?: string | null
+          previous_quantity?: number
+          reason?: string | null
+          source?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscribers: {
         Row: {
           billing_period: string | null
