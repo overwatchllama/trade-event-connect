@@ -166,7 +166,7 @@ const Inventory = () => {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const base = q
+    let base = q
       ? items.filter(
           (i) =>
             i.card_name.toLowerCase().includes(q) ||
@@ -174,6 +174,9 @@ const Inventory = () => {
             (i.source ?? "").toLowerCase().includes(q),
         )
       : items;
+    if (eventScope !== "all") {
+      base = base.filter((i) => eventMemberships.get(i.id)?.has(eventScope));
+    }
     const sorted = [...base].sort((a, b) => {
       const ca = calc(a);
       const cb = calc(b);
@@ -202,7 +205,8 @@ const Inventory = () => {
       return 0;
     });
     return sorted;
-  }, [items, search, sortKey, sortDir]);
+  }, [items, search, sortKey, sortDir, eventScope, eventMemberships]);
+
 
   const totals = useMemo(() => {
     return filtered.reduce(
