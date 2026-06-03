@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, ExternalLink, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Header } from "@/components/Header";
-import { useAuth } from "@/contexts/AuthContext";
+import Header from "@/components/Header";
+import { useAuth } from "@/hooks/useAuth";
 
 type Proposal = {
   id: string;
