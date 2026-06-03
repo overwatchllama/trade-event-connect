@@ -39,11 +39,10 @@ export const AddCardToDealDialog = ({ open, onOpenChange, onAdded }: AddCardToDe
   const insertDeal = async (payload: Record<string, unknown>) => {
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase.from("deal_list_items").insert({
-      user_id: user.id,
-      status: "lead",
-      ...payload,
-    });
+    const row = { user_id: user.id, status: "lead", card_name: "", ...payload } as Parameters<
+      ReturnType<typeof supabase.from<"deal_list_items">>["insert"]
+    >[0];
+    const { error } = await supabase.from("deal_list_items").insert(row);
     setSaving(false);
     if (error) {
       toast({ title: "Could not add", description: error.message, variant: "destructive" });
