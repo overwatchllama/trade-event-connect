@@ -64,8 +64,10 @@ interface DealItem {
   created_at: string;
   /** Manual per-card price entered by the user. When non-null, wins over the condition-adjusted market price. */
   price_override: number | null;
-  /** Per-card trade % (0-200). When non-null, this card uses its own buy-at % instead of the global one. */
+  /** Per-card trade % (0-200). When non-null AND no dollar override, this card uses its own buy-at % instead of the global one. */
   trade_pct_override: number | null;
+  /** Per-card $ discount off condition-adjusted market. When non-null, takes precedence over % override and the global adjuster. */
+  trade_dollar_override: number | null;
   status: DealStatus;
   purchase_price: number | null;
   shipping_cost: number;
@@ -134,11 +136,19 @@ const DealList = () => {
   const [collections, setCollections] = useState<{ id: string; name: string; category: string }[]>([]);
   const [targetCollection, setTargetCollection] = useState<string>("");
   const [savingAll, setSavingAll] = useState(false);
-  /** Buy-side cost target as a % of total market value (e.g. 60 = pay 60% of comps). Persists locally. */
-  const [costPct, setCostPct] = useState<number>(() => {
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem("dealList:costPct") : null;
+  /** Global buy-side discount. `mode='pct'` means costValue is a % of market (e.g. 60 = pay 60%);
+   *  `mode='usd'` means costValue is a flat $ off market (e.g. 5 = pay $5 less). Persists locally. */
+  const [costMode, setCostMode] = useState<"pct" | "usd">(() => {
+    if (typeof window === "undefined") return "pct";
+    const stored = window.localStorage.getItem("dealList:costMode");
+    return stored === "usd" ? "usd" : "pct";
+  });
+  const [costValue, setCostValue] = useState<number>(() => {
+    if (typeof window === "undefined") return 60;
+    const key = window.localStorage.getItem("dealList:costMode") === "usd" ? "dealList:costUsd" : "dealList:costPct";
+    const stored = window.localStorage.getItem(key);
     const parsed = stored ? parseFloat(stored) : NaN;
-    return Number.isFinite(parsed) ? parsed : 60;
+    return Number.isFinite(parsed) ? parsed : (key === "dealList:costUsd" ? 5 : 60);
   });
   /** Track which row's price is being inline-edited and its draft string value. */
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
@@ -186,10 +196,13 @@ const DealList = () => {
   }, [statusFilter]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("dealList:costPct", String(costPct));
-    }
-  }, [costPct]);
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("dealList:costMode", costMode);
+    window.localStorage.setItem(
+      costMode === "usd" ? "dealList:costUsd" : "dealList:costPct",
+      String(costValue),
+    );
+  }, [costMode, costValue]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -330,15 +343,39 @@ const DealList = () => {
     }
   };
 
-  /** Effective trade % for a row: per-card override (if set) > global costPct. */
-  const effectiveTradePct = (item: DealItem): number =>
-    item.trade_pct_override ?? costPct;
+  /**
+   * Resolve the effective discount for a single row.
+   * Precedence: per-card $ override → per-card % override → global (mode + value).
+   */
+  const effectiveAdjustment = (
+    item: DealItem,
+  ): { mode: "pct" | "usd"; value: number; source: "card" | "global" } => {
+    if (item.trade_dollar_override != null) {
+      return { mode: "usd", value: item.trade_dollar_override, source: "card" };
+    }
+    if (item.trade_pct_override != null) {
+      return { mode: "pct", value: item.trade_pct_override, source: "card" };
+    }
+    return { mode: costMode, value: costValue, source: "global" };
+  };
 
-  /** Per-card modified (deal) price = effective price × effective trade % / 100. */
+  /** Effective trade % for a row — used by CSV/export and the blended % display.
+   *  For $-mode rows we derive the equivalent %; if market is 0/null, fall back to 0. */
+  const effectiveTradePct = (item: DealItem): number => {
+    const adj = effectiveAdjustment(item);
+    if (adj.mode === "pct") return adj.value;
+    const eff = effectivePrice(item);
+    if (!eff || eff <= 0) return 0;
+    return Math.max(0, ((eff - adj.value) / eff) * 100);
+  };
+
+  /** Per-card modified (deal) price after applying the effective discount. Clamped at 0. */
   const modifiedPrice = (item: DealItem): number | null => {
     const eff = effectivePrice(item);
     if (eff == null) return null;
-    return Math.round(eff * (effectiveTradePct(item) / 100) * 100) / 100;
+    const adj = effectiveAdjustment(item);
+    const raw = adj.mode === "pct" ? eff * (adj.value / 100) : eff - adj.value;
+    return Math.round(Math.max(0, raw) * 100) / 100;
   };
 
   // Group items by status for tab counts and the visible filter.
@@ -365,7 +402,10 @@ const DealList = () => {
     (sum, i) => sum + (modifiedPrice(i) ?? 0) * i.quantity,
     0,
   );
-  const blendedPct = totalValue > 0 ? (targetSpend / totalValue) * 100 : costPct;
+  const blendedPct = totalValue > 0 ? (targetSpend / totalValue) * 100 : (costMode === "pct" ? costValue : 0);
+  const hasCardAdjustmentOverrides = items.some(
+    (i) => i.trade_pct_override != null || i.trade_dollar_override != null,
+  );
 
   // P&L roll-up: any deal that's been purchased is "invested capital", regardless of where
   // it sits downstream (bought / in_stock / sold / completed).
@@ -840,27 +880,53 @@ const DealList = () => {
             </p>
             {items.length > 0 && (
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                <label htmlFor="cost-pct" className="text-xs text-muted-foreground">
+                <label htmlFor="cost-value" className="text-xs text-muted-foreground">
                   Buy at
                 </label>
+                {/* Unified discount adjuster: toggle between paying a % of market or a flat $ off market. */}
+                <div className="inline-flex rounded-md border border-input overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setCostMode("pct")}
+                    className={`px-2 py-0.5 text-xs ${costMode === "pct" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                    aria-pressed={costMode === "pct"}
+                  >
+                    %
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCostMode("usd")}
+                    className={`px-2 py-0.5 text-xs ${costMode === "usd" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                    aria-pressed={costMode === "usd"}
+                  >
+                    $
+                  </button>
+                </div>
                 <div className="relative">
+                  {costMode === "usd" && (
+                    <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                  )}
                   <Input
-                    id="cost-pct"
+                    id="cost-value"
                     type="number"
                     min={0}
-                    max={200}
-                    step={1}
-                    value={costPct}
-                    onChange={(e) => setCostPct(Math.max(0, Math.min(200, parseFloat(e.target.value) || 0)))}
-                    className="h-7 w-20 pr-6 text-xs"
+                    max={costMode === "pct" ? 200 : undefined}
+                    step={costMode === "pct" ? 1 : 0.5}
+                    value={costValue}
+                    onChange={(e) => {
+                      const num = parseFloat(e.target.value);
+                      const safe = Number.isFinite(num) ? Math.max(0, num) : 0;
+                      setCostValue(costMode === "pct" ? Math.min(200, safe) : safe);
+                    }}
+                    className={`h-7 w-24 text-xs ${costMode === "usd" ? "pl-5 pr-2" : "pr-6"}`}
                   />
-                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                    %
-                  </span>
+                  {costMode === "pct" && (
+                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                  )}
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  of market = <span className="font-semibold text-foreground">${targetSpend.toFixed(2)}</span> target spend
-                  {items.some((i) => i.trade_pct_override != null) && (
+                  {costMode === "pct" ? "of market" : "off market"} = <span className="font-semibold text-foreground">${targetSpend.toFixed(2)}</span> target spend
+                  {hasCardAdjustmentOverrides && (
                     <span className="ml-1 opacity-80">
                       (blended {blendedPct.toFixed(1)}% — some cards overridden)
                     </span>
@@ -1239,25 +1305,30 @@ const DealList = () => {
                           </Badge>
                         );
                       })()}
-                      {/* Live "deal price" badge: market × this card's trade %. Highlights when the row uses a per-card override. */}
+                      {/* Live "deal price" badge: market with the effective discount applied. Highlights when this row uses a per-card override. */}
                       {(() => {
                         const mod = modifiedPrice(i);
                         if (mod == null) return null;
-                        const pct = effectiveTradePct(i);
-                        const hasPctOverride = i.trade_pct_override != null;
+                        const adj = effectiveAdjustment(i);
+                        const isCardOverride = adj.source === "card";
+                        const adjLabel = adj.mode === "pct"
+                          ? `${adj.value}%`
+                          : `-$${adj.value.toFixed(2)}`;
                         return (
                           <Badge
-                            variant={hasPctOverride ? "default" : "outline"}
+                            variant={isCardOverride ? "default" : "outline"}
                             className="text-[10px] gap-1"
                             title={
-                              hasPctOverride
-                                ? `Per-card trade ${pct}% applied to this row.`
-                                : `Using global ${costPct}% buy-at rate.`
+                              isCardOverride
+                                ? `Per-card ${adj.mode === "pct" ? "trade %" : "$ discount"} applied to this row.`
+                                : `Using global buy-at ${adjLabel}.`
                             }
                           >
                             <span className="opacity-70">deal</span>
                             <span className="font-semibold">${mod.toFixed(2)}</span>
-                            <span className="opacity-70">@ {pct}%</span>
+                            <span className="opacity-70">
+                              {adj.mode === "pct" ? `@ ${adj.value}%` : `(-$${adj.value.toFixed(2)})`}
+                            </span>
                           </Badge>
                         );
                       })()}
@@ -1285,47 +1356,115 @@ const DealList = () => {
                           ))}
                         </SelectContent>
                       </Select>
-                      {/* Per-card trade % override. Empty = inherit the global costPct. */}
-                      <div className="flex items-center gap-1" title="Override the buy-at % for just this card. Leave blank to use the global rate.">
-                        <span className="text-xs text-muted-foreground">Trade</span>
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            min={0}
-                            max={200}
-                            step={1}
-                            value={i.trade_pct_override ?? ""}
-                            placeholder={String(costPct)}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              if (raw === "") {
-                                updateItem(i.id, { trade_pct_override: null });
-                                return;
-                              }
-                              const num = parseFloat(raw);
-                              if (!Number.isFinite(num)) return;
-                              updateItem(i.id, {
-                                trade_pct_override: Math.max(0, Math.min(200, num)),
-                              });
-                            }}
-                            className="h-7 w-16 pr-5 text-xs"
-                          />
-                          <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">
-                            %
-                          </span>
-                        </div>
-                        {i.trade_pct_override != null && (
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6"
-                            title="Clear per-card trade % (use global rate)"
-                            onClick={() => updateItem(i.id, { trade_pct_override: null })}
+                      {/* Per-card adjuster: pick % or $ off market. Empty input = inherit the global adjuster. */}
+                      {(() => {
+                        const cardMode: "pct" | "usd" = i.trade_dollar_override != null ? "usd" : "pct";
+                        const cardValue: number | "" =
+                          i.trade_dollar_override != null
+                            ? i.trade_dollar_override
+                            : i.trade_pct_override ?? "";
+                        const hasCardOverride =
+                          i.trade_pct_override != null || i.trade_dollar_override != null;
+                        const setCardMode = (m: "pct" | "usd") => {
+                          if (m === cardMode) return;
+                          // Swap which column holds the override; preserve raw numeric value (semantics differ but UX is intuitive)
+                          if (m === "usd") {
+                            updateItem(i.id, {
+                              trade_dollar_override: i.trade_pct_override ?? null,
+                              trade_pct_override: null,
+                            });
+                          } else {
+                            updateItem(i.id, {
+                              trade_pct_override: i.trade_dollar_override ?? null,
+                              trade_dollar_override: null,
+                            });
+                          }
+                        };
+                        return (
+                          <div
+                            className="flex items-center gap-1"
+                            title="Discount off market for just this card. Toggle between % and $; leave blank to use the global rate."
                           >
-                            <RotateCcw className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
+                            <span className="text-xs text-muted-foreground">Trade</span>
+                            <div className="inline-flex rounded-md border border-input overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => setCardMode("pct")}
+                                className={`px-1.5 py-0.5 text-[10px] ${cardMode === "pct" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                              >
+                                %
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCardMode("usd")}
+                                className={`px-1.5 py-0.5 text-[10px] ${cardMode === "usd" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                              >
+                                $
+                              </button>
+                            </div>
+                            <div className="relative">
+                              {cardMode === "usd" && (
+                                <span className="pointer-events-none absolute left-1.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">$</span>
+                              )}
+                              <Input
+                                type="number"
+                                min={0}
+                                max={cardMode === "pct" ? 200 : undefined}
+                                step={cardMode === "pct" ? 1 : 0.5}
+                                value={cardValue}
+                                placeholder={
+                                  costMode === cardMode
+                                    ? String(costValue)
+                                    : (cardMode === "pct" ? "%" : "$")
+                                }
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  if (raw === "") {
+                                    updateItem(i.id, {
+                                      trade_pct_override: null,
+                                      trade_dollar_override: null,
+                                    });
+                                    return;
+                                  }
+                                  const num = parseFloat(raw);
+                                  if (!Number.isFinite(num)) return;
+                                  if (cardMode === "pct") {
+                                    updateItem(i.id, {
+                                      trade_pct_override: Math.max(0, Math.min(200, num)),
+                                      trade_dollar_override: null,
+                                    });
+                                  } else {
+                                    updateItem(i.id, {
+                                      trade_dollar_override: Math.max(0, num),
+                                      trade_pct_override: null,
+                                    });
+                                  }
+                                }}
+                                className={`h-7 w-16 text-xs ${cardMode === "usd" ? "pl-4 pr-1.5" : "pr-5"}`}
+                              />
+                              {cardMode === "pct" && (
+                                <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">%</span>
+                              )}
+                            </div>
+                            {hasCardOverride && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6"
+                                title="Clear per-card override (use global rate)"
+                                onClick={() =>
+                                  updateItem(i.id, {
+                                    trade_pct_override: null,
+                                    trade_dollar_override: null,
+                                  })
+                                }
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })()}
                       {i.tcgplayer_url && (
                         <Button asChild size="sm" variant="ghost" className="h-7 text-xs px-2">
                           <a href={i.tcgplayer_url} target="_blank" rel="noreferrer">TCG <ExternalLink className="h-3 w-3 ml-1" /></a>
