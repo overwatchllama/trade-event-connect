@@ -402,7 +402,10 @@ const DealList = () => {
     (sum, i) => sum + (modifiedPrice(i) ?? 0) * i.quantity,
     0,
   );
-  const blendedPct = totalValue > 0 ? (targetSpend / totalValue) * 100 : costPct;
+  const blendedPct = totalValue > 0 ? (targetSpend / totalValue) * 100 : (costMode === "pct" ? costValue : 0);
+  const hasCardAdjustmentOverrides = items.some(
+    (i) => i.trade_pct_override != null || i.trade_dollar_override != null,
+  );
 
   // P&L roll-up: any deal that's been purchased is "invested capital", regardless of where
   // it sits downstream (bought / in_stock / sold / completed).
