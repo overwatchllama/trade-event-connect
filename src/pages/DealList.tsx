@@ -197,32 +197,40 @@ const DealList = () => {
     }
   }, [authLoading, user, navigate]);
 
+  const loadItems = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("deal_list_items")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      toast({ title: "Failed to load", description: error.message, variant: "destructive" });
+      return;
+    }
+    const legacyMap: Record<string, string> = {
+      mint: "near_mint",
+      excellent: "light_play",
+      good: "moderate_play",
+    };
+    const normalized = (data as DealItem[]).map((it) => ({
+      ...it,
+      condition: legacyMap[it.condition] ?? it.condition,
+    }));
+    setItems(normalized);
+  };
+
   useEffect(() => {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const [itemsRes, colsRes] = await Promise.all([
-        supabase.from("deal_list_items").select("*").order("created_at", { ascending: false }),
+      const [, colsRes] = await Promise.all([
+        loadItems(),
         supabase.from("collections").select("id, name, category").order("created_at", { ascending: false }),
       ]);
-      if (itemsRes.error) toast({ title: "Failed to load", description: itemsRes.error.message, variant: "destructive" });
-      else {
-        // Map legacy non-TCGplayer condition values to the closest TCGplayer-style equivalent
-        // so the Select always reflects a valid option.
-        const legacyMap: Record<string, string> = {
-          mint: "near_mint",
-          excellent: "light_play",
-          good: "moderate_play",
-        };
-        const normalized = (itemsRes.data as DealItem[]).map((it) => ({
-          ...it,
-          condition: legacyMap[it.condition] ?? it.condition,
-        }));
-        setItems(normalized);
-      }
       if (colsRes.data) setCollections(colsRes.data as typeof collections);
       setLoading(false);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   /**
