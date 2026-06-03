@@ -145,6 +145,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/p/deal/:token" element={<PublicDealProposal />} />
+            <Route path="/inventory" element={
               <ProtectedRoute>
                 <Inventory />
               </ProtectedRoute>
