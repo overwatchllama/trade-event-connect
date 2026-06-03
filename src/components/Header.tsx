@@ -119,6 +119,13 @@ const Header = () => {
                 >
                   Pipeline
                 </Link>
+                <Link
+                  to="/deal-proposals"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    location.pathname.startsWith('/deal-proposals') ? 'text-primary' : 'text-muted-foreground'
+                  }`}
+                >
+                  Proposals
                 <Link 
                   to="/inventory" 
                   state={{ from: location.pathname + location.search }}
