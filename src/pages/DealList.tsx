@@ -356,6 +356,7 @@ const DealList = () => {
 
   // Pipeline totals (leads only — bought/in-stock/sold/passed shouldn't inflate "spend" math).
   const pipelineItems = items.filter((it) => it.status === "lead");
+  const pipelineCardCount = pipelineItems.reduce((s, i) => s + (i.quantity || 1), 0);
   const totalValue = pipelineItems.reduce(
     (sum, i) => sum + (effectivePrice(i) ?? 0) * i.quantity,
     0,
