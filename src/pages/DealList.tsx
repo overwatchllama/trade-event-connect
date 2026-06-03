@@ -136,11 +136,19 @@ const DealList = () => {
   const [collections, setCollections] = useState<{ id: string; name: string; category: string }[]>([]);
   const [targetCollection, setTargetCollection] = useState<string>("");
   const [savingAll, setSavingAll] = useState(false);
-  /** Buy-side cost target as a % of total market value (e.g. 60 = pay 60% of comps). Persists locally. */
-  const [costPct, setCostPct] = useState<number>(() => {
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem("dealList:costPct") : null;
+  /** Global buy-side discount. `mode='pct'` means costValue is a % of market (e.g. 60 = pay 60%);
+   *  `mode='usd'` means costValue is a flat $ off market (e.g. 5 = pay $5 less). Persists locally. */
+  const [costMode, setCostMode] = useState<"pct" | "usd">(() => {
+    if (typeof window === "undefined") return "pct";
+    const stored = window.localStorage.getItem("dealList:costMode");
+    return stored === "usd" ? "usd" : "pct";
+  });
+  const [costValue, setCostValue] = useState<number>(() => {
+    if (typeof window === "undefined") return 60;
+    const key = window.localStorage.getItem("dealList:costMode") === "usd" ? "dealList:costUsd" : "dealList:costPct";
+    const stored = window.localStorage.getItem(key);
     const parsed = stored ? parseFloat(stored) : NaN;
-    return Number.isFinite(parsed) ? parsed : 60;
+    return Number.isFinite(parsed) ? parsed : (key === "dealList:costUsd" ? 5 : 60);
   });
   /** Track which row's price is being inline-edited and its draft string value. */
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
