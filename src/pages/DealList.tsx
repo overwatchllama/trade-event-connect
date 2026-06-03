@@ -1305,25 +1305,30 @@ const DealList = () => {
                           </Badge>
                         );
                       })()}
-                      {/* Live "deal price" badge: market × this card's trade %. Highlights when the row uses a per-card override. */}
+                      {/* Live "deal price" badge: market with the effective discount applied. Highlights when this row uses a per-card override. */}
                       {(() => {
                         const mod = modifiedPrice(i);
                         if (mod == null) return null;
-                        const pct = effectiveTradePct(i);
-                        const hasPctOverride = i.trade_pct_override != null;
+                        const adj = effectiveAdjustment(i);
+                        const isCardOverride = adj.source === "card";
+                        const adjLabel = adj.mode === "pct"
+                          ? `${adj.value}%`
+                          : `-$${adj.value.toFixed(2)}`;
                         return (
                           <Badge
-                            variant={hasPctOverride ? "default" : "outline"}
+                            variant={isCardOverride ? "default" : "outline"}
                             className="text-[10px] gap-1"
                             title={
-                              hasPctOverride
-                                ? `Per-card trade ${pct}% applied to this row.`
-                                : `Using global ${costPct}% buy-at rate.`
+                              isCardOverride
+                                ? `Per-card ${adj.mode === "pct" ? "trade %" : "$ discount"} applied to this row.`
+                                : `Using global buy-at ${adjLabel}.`
                             }
                           >
                             <span className="opacity-70">deal</span>
                             <span className="font-semibold">${mod.toFixed(2)}</span>
-                            <span className="opacity-70">@ {pct}%</span>
+                            <span className="opacity-70">
+                              {adj.mode === "pct" ? `@ ${adj.value}%` : `(-$${adj.value.toFixed(2)})`}
+                            </span>
                           </Badge>
                         );
                       })()}
