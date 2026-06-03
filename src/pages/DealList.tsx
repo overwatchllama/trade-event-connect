@@ -1755,6 +1755,12 @@ const DealList = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <AddCardToDealDialog
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          onAdded={() => { void loadItems(); }}
+        />
       </main>
     </div>
   );
