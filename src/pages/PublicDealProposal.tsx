@@ -72,7 +72,7 @@ export default function PublicDealProposal() {
   const outputs = lines.filter((l) => l.side === "output");
   const inputTotal = inputs.reduce((s, l) => s + lineTotal(l), 0);
   const outputTotal = outputs.reduce((s, l) => s + lineTotal(l), 0);
-  const url = typeof window !== "undefined" ? window.location.href : "";
+  const url = typeof window !== "undefined" ? `${window.location.origin}/p/deal/${token}` : `/p/deal/${token}`;
 
   return (
     <div className="min-h-screen bg-background">
