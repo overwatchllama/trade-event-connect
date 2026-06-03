@@ -126,6 +126,7 @@ const Header = () => {
                   }`}
                 >
                   Proposals
+                </Link>
                 <Link 
                   to="/inventory" 
                   state={{ from: location.pathname + location.search }}
