@@ -51,8 +51,12 @@ const MobileNav = () => {
     enabled: !!user?.id,
   });
 
-  const handleNavigate = (path: string) => {
-    navigate(path);
+  const handleNavigate = (path: string, opts?: { withReferrer?: boolean }) => {
+    if (opts?.withReferrer) {
+      navigate(path, { state: { from: location.pathname + location.search } });
+    } else {
+      navigate(path);
+    }
     setOpen(false);
   };
 
@@ -111,15 +115,15 @@ const MobileNav = () => {
                   <Store className="h-4 w-4" />
                   Vending
                 </button>
-                <button onClick={() => handleNavigate('/deal-list')} className={navLinkClass('/deal-list')}>
+                <button onClick={() => handleNavigate('/deal-list', { withReferrer: true })} className={navLinkClass('/deal-list')}>
                   <ShoppingBag className="h-4 w-4" />
                   Pipeline
                 </button>
-                <button onClick={() => handleNavigate('/inventory')} className={navLinkClass('/inventory')}>
+                <button onClick={() => handleNavigate('/inventory', { withReferrer: true })} className={navLinkClass('/inventory')}>
                   <Store className="h-4 w-4" />
                   Inventory
                 </button>
-                <button onClick={() => handleNavigate('/inventory/pnl')} className={navLinkClass('/inventory/pnl')}>
+                <button onClick={() => handleNavigate('/inventory/pnl', { withReferrer: true })} className={navLinkClass('/inventory/pnl')}>
                   <Store className="h-4 w-4" />
                   P&amp;L Report
                 </button>

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Link, useLocation } from "react-router-dom";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import SmartCrumbLink from "@/components/SmartCrumbLink";
 import Header from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -88,6 +89,7 @@ const calc = (i: InventoryItem) => {
 const Inventory = () => {
   const { user } = useAuth();
   const { vendorProfile } = useVendorProfile();
+  const location = useLocation();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -401,7 +403,7 @@ const Inventory = () => {
       <main className="container mx-auto px-3 md:px-4 py-6 max-w-7xl">
         <Breadcrumb className="mb-4">
           <BreadcrumbList>
-            <BreadcrumbItem><BreadcrumbLink asChild><Link to="/vending">Vending</Link></BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbItem><SmartCrumbLink to="/vending">Vending</SmartCrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem><BreadcrumbPage>Inventory</BreadcrumbPage></BreadcrumbItem>
           </BreadcrumbList>
@@ -438,7 +440,11 @@ const Inventory = () => {
               </Select>
             )}
             <Button asChild variant="outline">
-              <Link to="/inventory/pnl" title="View cost basis, sell-through, revenue and profit by SKU or lot">
+              <Link
+                to="/inventory/pnl"
+                state={{ from: location.pathname + location.search }}
+                title="View cost basis, sell-through, revenue and profit by SKU or lot"
+              >
                 <TrendingUp className="h-4 w-4 mr-2" />
                 P&amp;L report
               </Link>
