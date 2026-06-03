@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import SmartCrumbLink from "@/components/SmartCrumbLink";
 import Header from "@/components/Header";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -372,9 +373,9 @@ const InventoryPnL = () => {
       <main className="container mx-auto px-3 md:px-4 py-6 max-w-7xl">
         <Breadcrumb className="mb-4">
           <BreadcrumbList>
-            <BreadcrumbItem><BreadcrumbLink asChild><Link to="/vending">Vending</Link></BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbItem><SmartCrumbLink to="/vending">Vending</SmartCrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbLink asChild><Link to="/inventory">Inventory</Link></BreadcrumbLink></BreadcrumbItem>
+            <BreadcrumbItem><SmartCrumbLink to="/inventory">Inventory</SmartCrumbLink></BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem><BreadcrumbPage>P&amp;L Report</BreadcrumbPage></BreadcrumbItem>
           </BreadcrumbList>
