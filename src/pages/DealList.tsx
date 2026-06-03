@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, Download, Pencil, ListChecks, Undo2, PackageCheck, Tag, DollarSign, Archive } from "lucide-react";
+import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, Download, Pencil, ListChecks, Undo2, PackageCheck, Tag, DollarSign, Archive, Plus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -33,6 +33,7 @@ import { MarkAsBoughtDialog, type MarkAsBoughtTarget } from "@/components/deals/
 import { EditBoughtDialog, type EditBoughtTarget } from "@/components/deals/EditBoughtDialog";
 import { BulkEditBoughtDialog, type BulkEditTarget } from "@/components/deals/BulkEditBoughtDialog";
 import { LotBuyDialog, type LotBuyTarget } from "@/components/deals/LotBuyDialog";
+import { AddCardToDealDialog } from "@/components/deals/AddCardToDealDialog";
 
 /**
  * Deal pipeline stages:
@@ -176,6 +177,7 @@ const DealList = () => {
   // List-for-sale state — sets list_price when moving Bought → In Stock.
   const [listTarget, setListTarget] = useState<DealItem | null>(null);
   const [listDraft, setListDraft] = useState({ list_price: "" });
+  const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -195,32 +197,40 @@ const DealList = () => {
     }
   }, [authLoading, user, navigate]);
 
+  const loadItems = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("deal_list_items")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      toast({ title: "Failed to load", description: error.message, variant: "destructive" });
+      return;
+    }
+    const legacyMap: Record<string, string> = {
+      mint: "near_mint",
+      excellent: "light_play",
+      good: "moderate_play",
+    };
+    const normalized = (data as DealItem[]).map((it) => ({
+      ...it,
+      condition: legacyMap[it.condition] ?? it.condition,
+    }));
+    setItems(normalized);
+  };
+
   useEffect(() => {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const [itemsRes, colsRes] = await Promise.all([
-        supabase.from("deal_list_items").select("*").order("created_at", { ascending: false }),
+      const [, colsRes] = await Promise.all([
+        loadItems(),
         supabase.from("collections").select("id, name, category").order("created_at", { ascending: false }),
       ]);
-      if (itemsRes.error) toast({ title: "Failed to load", description: itemsRes.error.message, variant: "destructive" });
-      else {
-        // Map legacy non-TCGplayer condition values to the closest TCGplayer-style equivalent
-        // so the Select always reflects a valid option.
-        const legacyMap: Record<string, string> = {
-          mint: "near_mint",
-          excellent: "light_play",
-          good: "moderate_play",
-        };
-        const normalized = (itemsRes.data as DealItem[]).map((it) => ({
-          ...it,
-          condition: legacyMap[it.condition] ?? it.condition,
-        }));
-        setItems(normalized);
-      }
       if (colsRes.data) setCollections(colsRes.data as typeof collections);
       setLoading(false);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   /**
@@ -870,6 +880,9 @@ const DealList = () => {
             <Button variant="outline" onClick={exportCsv} disabled={visibleItems.length === 0} title="Download current view + P&L summary as CSV">
               <Download className="h-4 w-4 mr-2" /> Export CSV
             </Button>
+            <Button variant="outline" onClick={() => setAddOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" /> Add card
+            </Button>
             <Button variant="outline" onClick={() => navigate("/scanner")}>
               <ScanLine className="h-4 w-4 mr-2" /> Scan more
             </Button>
@@ -915,9 +928,14 @@ const DealList = () => {
         ) : items.length === 0 ? (
           <Card className="p-12 text-center border-dashed">
             <p className="text-muted-foreground mb-4">Your Deal List is empty.</p>
-            <Button onClick={() => navigate("/scanner")}>
-              <ScanLine className="h-4 w-4 mr-2" /> Start scanning
-            </Button>
+            <div className="flex gap-2 justify-center flex-wrap">
+              <Button onClick={() => setAddOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" /> Add card
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/scanner")}>
+                <ScanLine className="h-4 w-4 mr-2" /> Start scanning
+              </Button>
+            </div>
           </Card>
         ) : (
           <>
@@ -1737,6 +1755,12 @@ const DealList = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <AddCardToDealDialog
+          open={addOpen}
+          onOpenChange={setAddOpen}
+          onAdded={() => { void loadItems(); }}
+        />
       </main>
     </div>
   );
