@@ -343,15 +343,39 @@ const DealList = () => {
     }
   };
 
-  /** Effective trade % for a row: per-card override (if set) > global costPct. */
-  const effectiveTradePct = (item: DealItem): number =>
-    item.trade_pct_override ?? costPct;
+  /**
+   * Resolve the effective discount for a single row.
+   * Precedence: per-card $ override → per-card % override → global (mode + value).
+   */
+  const effectiveAdjustment = (
+    item: DealItem,
+  ): { mode: "pct" | "usd"; value: number; source: "card" | "global" } => {
+    if (item.trade_dollar_override != null) {
+      return { mode: "usd", value: item.trade_dollar_override, source: "card" };
+    }
+    if (item.trade_pct_override != null) {
+      return { mode: "pct", value: item.trade_pct_override, source: "card" };
+    }
+    return { mode: costMode, value: costValue, source: "global" };
+  };
 
-  /** Per-card modified (deal) price = effective price × effective trade % / 100. */
+  /** Effective trade % for a row — used by CSV/export and the blended % display.
+   *  For $-mode rows we derive the equivalent %; if market is 0/null, fall back to 0. */
+  const effectiveTradePct = (item: DealItem): number => {
+    const adj = effectiveAdjustment(item);
+    if (adj.mode === "pct") return adj.value;
+    const eff = effectivePrice(item);
+    if (!eff || eff <= 0) return 0;
+    return Math.max(0, ((eff - adj.value) / eff) * 100);
+  };
+
+  /** Per-card modified (deal) price after applying the effective discount. Clamped at 0. */
   const modifiedPrice = (item: DealItem): number | null => {
     const eff = effectivePrice(item);
     if (eff == null) return null;
-    return Math.round(eff * (effectiveTradePct(item) / 100) * 100) / 100;
+    const adj = effectiveAdjustment(item);
+    const raw = adj.mode === "pct" ? eff * (adj.value / 100) : eff - adj.value;
+    return Math.round(Math.max(0, raw) * 100) / 100;
   };
 
   // Group items by status for tab counts and the visible filter.
