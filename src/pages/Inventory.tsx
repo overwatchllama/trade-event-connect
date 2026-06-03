@@ -89,6 +89,7 @@ const calc = (i: InventoryItem) => {
 const Inventory = () => {
   const { user } = useAuth();
   const { vendorProfile } = useVendorProfile();
+  const location = useLocation();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
