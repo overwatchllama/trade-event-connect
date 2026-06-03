@@ -339,6 +339,110 @@ export type Database = {
         }
         Relationships: []
       }
+      deal_proposal_lines: {
+        Row: {
+          amount: number | null
+          card_name: string | null
+          card_number: string | null
+          condition: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          kind: string
+          notes: string | null
+          proposal_id: string
+          quantity: number
+          set_name: string | null
+          side: string
+          sort_order: number
+          unit_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          card_name?: string | null
+          card_number?: string | null
+          condition?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          kind: string
+          notes?: string | null
+          proposal_id: string
+          quantity?: number
+          set_name?: string | null
+          side: string
+          sort_order?: number
+          unit_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          card_name?: string | null
+          card_number?: string | null
+          condition?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          kind?: string
+          notes?: string | null
+          proposal_id?: string
+          quantity?: number
+          set_name?: string | null
+          side?: string
+          sort_order?: number
+          unit_value?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_proposal_lines_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "deal_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_proposals: {
+        Row: {
+          created_at: string
+          customer_name: string | null
+          id: string
+          notes: string | null
+          proposed_at: string | null
+          public_token: string
+          status: string
+          title: string
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          notes?: string | null
+          proposed_at?: string | null
+          public_token?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          notes?: string | null
+          proposed_at?: string | null
+          public_token?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       demo_snapshots: {
         Row: {
           created_at: string
