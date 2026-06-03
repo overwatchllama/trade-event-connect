@@ -438,7 +438,11 @@ const Inventory = () => {
               </Select>
             )}
             <Button asChild variant="outline">
-              <Link to="/inventory/pnl" title="View cost basis, sell-through, revenue and profit by SKU or lot">
+              <Link
+                to="/inventory/pnl"
+                state={{ from: location.pathname + location.search }}
+                title="View cost basis, sell-through, revenue and profit by SKU or lot"
+              >
                 <TrendingUp className="h-4 w-4 mr-2" />
                 P&amp;L report
               </Link>

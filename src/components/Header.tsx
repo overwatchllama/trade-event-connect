@@ -112,6 +112,7 @@ const Header = () => {
                 </Link>
                 <Link 
                   to="/deal-list" 
+                  state={{ from: location.pathname + location.search }}
                   className={`text-sm font-medium transition-colors hover:text-primary ${
                     location.pathname === '/deal-list' ? 'text-primary' : 'text-muted-foreground'
                   }`}
@@ -120,6 +121,7 @@ const Header = () => {
                 </Link>
                 <Link 
                   to="/inventory" 
+                  state={{ from: location.pathname + location.search }}
                   className={`text-sm font-medium transition-colors hover:text-primary ${
                     location.pathname === '/inventory' || location.pathname === '/inventory/pnl' ? 'text-primary' : 'text-muted-foreground'
                   }`}
