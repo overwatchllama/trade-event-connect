@@ -8,10 +8,31 @@ import { toast } from "@/hooks/use-toast";
 import { Plus, Search, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { PokemonCard } from "@/services/pokemonTcgApi";
 import type { ScryfallCard } from "@/services/scryfallApi";
 
 type Game = "pokemon" | "mtg";
+type Condition =
+  | "mint"
+  | "near_mint"
+  | "excellent"
+  | "good"
+  | "light_play"
+  | "moderate_play"
+  | "heavy_play"
+  | "damaged";
+
+const CONDITION_OPTIONS: { value: Condition; label: string }[] = [
+  { value: "mint", label: "Mint" },
+  { value: "near_mint", label: "Near Mint" },
+  { value: "excellent", label: "Excellent" },
+  { value: "good", label: "Good" },
+  { value: "light_play", label: "Light Play" },
+  { value: "moderate_play", label: "Moderate Play" },
+  { value: "heavy_play", label: "Heavy Play" },
+  { value: "damaged", label: "Damaged" },
+];
 
 interface AddCardToDealDialogProps {
   open: boolean;
@@ -23,12 +44,19 @@ interface AddCardToDealDialogProps {
  * Manual entry point into the deal pipeline — no scanner required.
  * Two paths: search a known card via the existing CardSearchDialog,
  * or type one in by hand if it's not in the API (vintage, custom, etc.).
+ * Shared meta (quantity, condition, optional price paid) applies to both paths.
  */
 export const AddCardToDealDialog = ({ open, onOpenChange, onAdded }: AddCardToDealDialogProps) => {
   const { user } = useAuth();
   const [game, setGame] = useState<Game>("pokemon");
   const [saving, setSaving] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
+
+  // Shared across search + manual paths
+  const [quantity, setQuantity] = useState<number>(1);
+  const [condition, setCondition] = useState<Condition>("near_mint");
+  const [priceText, setPriceText] = useState<string>("");
+
   const [manual, setManual] = useState({
     card_name: "",
     set_name: "",
@@ -36,14 +64,34 @@ export const AddCardToDealDialog = ({ open, onOpenChange, onAdded }: AddCardToDe
     rarity: "",
   });
 
+  const resetForm = () => {
+    setQuantity(1);
+    setCondition("near_mint");
+    setPriceText("");
+    setManual({ card_name: "", set_name: "", card_number: "", rarity: "" });
+    setManualOpen(false);
+  };
+
+  const parsedPrice = (): number | null => {
+    const t = priceText.trim();
+    if (!t) return null;
+    const n = Number(t);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  };
+
   const insertDeal = async (payload: Record<string, unknown>) => {
     if (!user) return;
     setSaving(true);
-    const row = { user_id: user.id, status: "lead", card_name: "", ...payload } as {
-      user_id: string;
-      card_name: string;
-      [k: string]: unknown;
-    };
+    const price = parsedPrice();
+    const row = {
+      user_id: user.id,
+      status: "lead",
+      card_name: "",
+      quantity: Math.max(1, quantity || 1),
+      condition,
+      purchase_price: price,
+      ...payload,
+    } as { user_id: string; card_name: string; [k: string]: unknown };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from("deal_list_items").insert(row as any);
     setSaving(false);
@@ -52,6 +100,7 @@ export const AddCardToDealDialog = ({ open, onOpenChange, onAdded }: AddCardToDe
       return;
     }
     toast({ title: "Added to pipeline", description: String(payload.card_name ?? "Card") });
+    resetForm();
     onAdded();
     onOpenChange(false);
   };
@@ -97,6 +146,10 @@ export const AddCardToDealDialog = ({ open, onOpenChange, onAdded }: AddCardToDe
       toast({ title: "Card name required", variant: "destructive" });
       return;
     }
+    if (priceText.trim() && parsedPrice() === null) {
+      toast({ title: "Invalid price", description: "Enter a number or leave blank.", variant: "destructive" });
+      return;
+    }
     await insertDeal({
       game,
       card_name: manual.card_name.trim(),
@@ -104,12 +157,10 @@ export const AddCardToDealDialog = ({ open, onOpenChange, onAdded }: AddCardToDe
       card_number: manual.card_number.trim() || null,
       rarity: manual.rarity.trim() || null,
     });
-    setManual({ card_name: "", set_name: "", card_number: "", rarity: "" });
-    setManualOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) resetForm(); onOpenChange(o); }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add card to pipeline</DialogTitle>
@@ -138,6 +189,46 @@ export const AddCardToDealDialog = ({ open, onOpenChange, onAdded }: AddCardToDe
               >
                 Magic
               </Button>
+            </div>
+          </div>
+
+          {/* Shared meta — applies to both search-selected and manual cards */}
+          <div className="grid grid-cols-3 gap-2 rounded-md border p-3">
+            <div className="grid gap-2">
+              <Label htmlFor="qty">Quantity</Label>
+              <Input
+                id="qty"
+                type="number"
+                min={1}
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="cond">Condition</Label>
+              <Select value={condition} onValueChange={(v) => setCondition(v as Condition)}>
+                <SelectTrigger id="cond">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONDITION_OPTIONS.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="price">Price paid</Label>
+              <Input
+                id="price"
+                type="number"
+                min={0}
+                step="0.01"
+                inputMode="decimal"
+                placeholder="Optional"
+                value={priceText}
+                onChange={(e) => setPriceText(e.target.value)}
+              />
             </div>
           </div>
 
