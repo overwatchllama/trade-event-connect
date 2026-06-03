@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, Download, Pencil, ListChecks, Undo2, PackageCheck, Tag, DollarSign, Archive } from "lucide-react";
+import { Trash2, ExternalLink, Loader2, Library, ScanLine, ImageOff, RotateCcw, ShoppingCart, CheckCircle2, XCircle, Eye, Download, Pencil, ListChecks, Undo2, PackageCheck, Tag, DollarSign, Archive, Plus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -880,6 +880,9 @@ const DealList = () => {
             <Button variant="outline" onClick={exportCsv} disabled={visibleItems.length === 0} title="Download current view + P&L summary as CSV">
               <Download className="h-4 w-4 mr-2" /> Export CSV
             </Button>
+            <Button variant="outline" onClick={() => setAddOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" /> Add card
+            </Button>
             <Button variant="outline" onClick={() => navigate("/scanner")}>
               <ScanLine className="h-4 w-4 mr-2" /> Scan more
             </Button>
@@ -925,9 +928,14 @@ const DealList = () => {
         ) : items.length === 0 ? (
           <Card className="p-12 text-center border-dashed">
             <p className="text-muted-foreground mb-4">Your Deal List is empty.</p>
-            <Button onClick={() => navigate("/scanner")}>
-              <ScanLine className="h-4 w-4 mr-2" /> Start scanning
-            </Button>
+            <div className="flex gap-2 justify-center flex-wrap">
+              <Button onClick={() => setAddOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" /> Add card
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/scanner")}>
+                <ScanLine className="h-4 w-4 mr-2" /> Start scanning
+              </Button>
+            </div>
           </Card>
         ) : (
           <>
