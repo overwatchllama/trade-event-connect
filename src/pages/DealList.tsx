@@ -880,27 +880,53 @@ const DealList = () => {
             </p>
             {items.length > 0 && (
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                <label htmlFor="cost-pct" className="text-xs text-muted-foreground">
+                <label htmlFor="cost-value" className="text-xs text-muted-foreground">
                   Buy at
                 </label>
+                {/* Unified discount adjuster: toggle between paying a % of market or a flat $ off market. */}
+                <div className="inline-flex rounded-md border border-input overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setCostMode("pct")}
+                    className={`px-2 py-0.5 text-xs ${costMode === "pct" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                    aria-pressed={costMode === "pct"}
+                  >
+                    %
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCostMode("usd")}
+                    className={`px-2 py-0.5 text-xs ${costMode === "usd" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+                    aria-pressed={costMode === "usd"}
+                  >
+                    $
+                  </button>
+                </div>
                 <div className="relative">
+                  {costMode === "usd" && (
+                    <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                  )}
                   <Input
-                    id="cost-pct"
+                    id="cost-value"
                     type="number"
                     min={0}
-                    max={200}
-                    step={1}
-                    value={costPct}
-                    onChange={(e) => setCostPct(Math.max(0, Math.min(200, parseFloat(e.target.value) || 0)))}
-                    className="h-7 w-20 pr-6 text-xs"
+                    max={costMode === "pct" ? 200 : undefined}
+                    step={costMode === "pct" ? 1 : 0.5}
+                    value={costValue}
+                    onChange={(e) => {
+                      const num = parseFloat(e.target.value);
+                      const safe = Number.isFinite(num) ? Math.max(0, num) : 0;
+                      setCostValue(costMode === "pct" ? Math.min(200, safe) : safe);
+                    }}
+                    className={`h-7 w-24 text-xs ${costMode === "usd" ? "pl-5 pr-2" : "pr-6"}`}
                   />
-                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                    %
-                  </span>
+                  {costMode === "pct" && (
+                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                  )}
                 </div>
                 <span className="text-xs text-muted-foreground">
-                  of market = <span className="font-semibold text-foreground">${targetSpend.toFixed(2)}</span> target spend
-                  {items.some((i) => i.trade_pct_override != null) && (
+                  {costMode === "pct" ? "of market" : "off market"} = <span className="font-semibold text-foreground">${targetSpend.toFixed(2)}</span> target spend
+                  {hasCardAdjustmentOverrides && (
                     <span className="ml-1 opacity-80">
                       (blended {blendedPct.toFixed(1)}% — some cards overridden)
                     </span>
