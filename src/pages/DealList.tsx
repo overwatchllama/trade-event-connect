@@ -196,10 +196,13 @@ const DealList = () => {
   }, [statusFilter]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("dealList:costPct", String(costPct));
-    }
-  }, [costPct]);
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("dealList:costMode", costMode);
+    window.localStorage.setItem(
+      costMode === "usd" ? "dealList:costUsd" : "dealList:costPct",
+      String(costValue),
+    );
+  }, [costMode, costValue]);
 
   useEffect(() => {
     if (!authLoading && !user) {
