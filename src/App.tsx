@@ -134,7 +134,17 @@ const App = () => (
                 <DealList />
               </ProtectedRoute>
             } />
-            <Route path="/inventory" element={
+            <Route path="/deal-proposals" element={
+              <ProtectedRoute>
+                <DealProposals />
+              </ProtectedRoute>
+            } />
+            <Route path="/deal-proposals/:id" element={
+              <ProtectedRoute>
+                <DealProposalEdit />
+              </ProtectedRoute>
+            } />
+            <Route path="/p/deal/:token" element={<PublicDealProposal />} />
               <ProtectedRoute>
                 <Inventory />
               </ProtectedRoute>
