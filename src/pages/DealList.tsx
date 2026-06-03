@@ -356,6 +356,7 @@ const DealList = () => {
 
   // Pipeline totals (leads only — bought/in-stock/sold/passed shouldn't inflate "spend" math).
   const pipelineItems = items.filter((it) => it.status === "lead");
+  const pipelineCardCount = pipelineItems.reduce((s, i) => s + (i.quantity || 1), 0);
   const totalValue = pipelineItems.reduce(
     (sum, i) => sum + (effectivePrice(i) ?? 0) * i.quantity,
     0,
@@ -833,7 +834,9 @@ const DealList = () => {
           <div className="space-y-1">
             <h1 className="text-2xl md:text-3xl font-bold">Deal Pipeline</h1>
             <p className="text-muted-foreground text-sm">
-              {pipelineItems.length} active deal{pipelineItems.length === 1 ? "" : "s"} · est. ${totalValue.toFixed(2)} pipeline
+              {pipelineItems.length} active deal{pipelineItems.length === 1 ? "" : "s"}
+              {pipelineCardCount !== pipelineItems.length && ` · ${pipelineCardCount} cards`}
+              {" · "}est. ${totalValue.toFixed(2)} pipeline
             </p>
             {items.length > 0 && (
               <div className="flex flex-wrap items-center gap-2 pt-1">
