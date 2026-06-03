@@ -39,10 +39,13 @@ export const AddCardToDealDialog = ({ open, onOpenChange, onAdded }: AddCardToDe
   const insertDeal = async (payload: Record<string, unknown>) => {
     if (!user) return;
     setSaving(true);
-    const row = { user_id: user.id, status: "lead", card_name: "", ...payload } as Parameters<
-      ReturnType<typeof supabase.from<"deal_list_items">>["insert"]
-    >[0];
-    const { error } = await supabase.from("deal_list_items").insert(row);
+    const row = { user_id: user.id, status: "lead", card_name: "", ...payload } as {
+      user_id: string;
+      card_name: string;
+      [k: string]: unknown;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await supabase.from("deal_list_items").insert(row as any);
     setSaving(false);
     if (error) {
       toast({ title: "Could not add", description: error.message, variant: "destructive" });
