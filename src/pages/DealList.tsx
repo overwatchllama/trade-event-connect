@@ -33,6 +33,7 @@ import { MarkAsBoughtDialog, type MarkAsBoughtTarget } from "@/components/deals/
 import { EditBoughtDialog, type EditBoughtTarget } from "@/components/deals/EditBoughtDialog";
 import { BulkEditBoughtDialog, type BulkEditTarget } from "@/components/deals/BulkEditBoughtDialog";
 import { LotBuyDialog, type LotBuyTarget } from "@/components/deals/LotBuyDialog";
+import { AddCardToDealDialog } from "@/components/deals/AddCardToDealDialog";
 
 /**
  * Deal pipeline stages:
@@ -176,6 +177,7 @@ const DealList = () => {
   // List-for-sale state — sets list_price when moving Bought → In Stock.
   const [listTarget, setListTarget] = useState<DealItem | null>(null);
   const [listDraft, setListDraft] = useState({ list_price: "" });
+  const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
