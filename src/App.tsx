@@ -35,6 +35,9 @@ const StaffCheckIn = lazy(() => import("./pages/StaffCheckIn"));
 const OrganizeVenue = lazy(() => import("./pages/OrganizeVenue"));
 const CardScanner = lazy(() => import("./pages/CardScanner"));
 const DealList = lazy(() => import("./pages/DealList"));
+const DealProposals = lazy(() => import("./pages/DealProposals"));
+const DealProposalEdit = lazy(() => import("./pages/DealProposalEdit"));
+const PublicDealProposal = lazy(() => import("./pages/PublicDealProposal"));
 const Inventory = lazy(() => import("./pages/Inventory"));
 const InventoryPnL = lazy(() => import("./pages/InventoryPnL"));
 const Markets = lazy(() => import("./pages/Markets"));
@@ -131,6 +134,17 @@ const App = () => (
                 <DealList />
               </ProtectedRoute>
             } />
+            <Route path="/deal-proposals" element={
+              <ProtectedRoute>
+                <DealProposals />
+              </ProtectedRoute>
+            } />
+            <Route path="/deal-proposals/:id" element={
+              <ProtectedRoute>
+                <DealProposalEdit />
+              </ProtectedRoute>
+            } />
+            <Route path="/p/deal/:token" element={<PublicDealProposal />} />
             <Route path="/inventory" element={
               <ProtectedRoute>
                 <Inventory />
