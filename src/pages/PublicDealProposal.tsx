@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { QRCodeSVG } from "qrcode.react";
 import { Helmet } from "react-helmet-async";
 import { Copy, Check, Download } from "lucide-react";
+import { toast } from "sonner";
 
 type Line = {
   id: string;
@@ -123,33 +124,53 @@ export default function PublicDealProposal() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  const svg = document.querySelector("#proposal-qr svg") as SVGSVGElement | null;
-                  if (!svg) return;
-                  const xml = new XMLSerializer().serializeToString(svg);
-                  const svgBlob = new Blob(['<?xml version="1.0" standalone="no"?>\r\n', xml], { type: "image/svg+xml;charset=utf-8" });
-                  const svgUrl = URL.createObjectURL(svgBlob);
-                  const img = new Image();
-                  img.onload = () => {
-                    const size = 512;
-                    const canvas = document.createElement("canvas");
-                    canvas.width = size;
-                    canvas.height = size;
-                    const ctx = canvas.getContext("2d");
-                    if (!ctx) return;
-                    ctx.fillStyle = "#ffffff";
-                    ctx.fillRect(0, 0, size, size);
-                    ctx.drawImage(img, 0, 0, size, size);
-                    URL.revokeObjectURL(svgUrl);
-                    canvas.toBlob((blob) => {
-                      if (!blob) return;
-                      const a = document.createElement("a");
-                      a.href = URL.createObjectURL(blob);
-                      a.download = `deal-proposal-${token}.png`;
-                      a.click();
-                      URL.revokeObjectURL(a.href);
-                    }, "image/png");
-                  };
-                  img.src = svgUrl;
+                  try {
+                    const svg = document.querySelector("#proposal-qr svg") as SVGSVGElement | null;
+                    if (!svg) {
+                      toast.error("QR code not found");
+                      return;
+                    }
+                    const toastId = toast.loading("Preparing QR download…");
+                    const xml = new XMLSerializer().serializeToString(svg);
+                    const svgBlob = new Blob(['<?xml version="1.0" standalone="no"?>\r\n', xml], { type: "image/svg+xml;charset=utf-8" });
+                    const svgUrl = URL.createObjectURL(svgBlob);
+                    const img = new Image();
+                    img.onload = () => {
+                      try {
+                        const size = 512;
+                        const canvas = document.createElement("canvas");
+                        canvas.width = size;
+                        canvas.height = size;
+                        const ctx = canvas.getContext("2d");
+                        if (!ctx) throw new Error("Canvas unsupported");
+                        ctx.fillStyle = "#ffffff";
+                        ctx.fillRect(0, 0, size, size);
+                        ctx.drawImage(img, 0, 0, size, size);
+                        URL.revokeObjectURL(svgUrl);
+                        canvas.toBlob((blob) => {
+                          if (!blob) {
+                            toast.error("Failed to export QR code", { id: toastId });
+                            return;
+                          }
+                          const a = document.createElement("a");
+                          a.href = URL.createObjectURL(blob);
+                          a.download = `deal-proposal-${token}.png`;
+                          a.click();
+                          URL.revokeObjectURL(a.href);
+                          toast.success("QR code downloaded", { id: toastId });
+                        }, "image/png");
+                      } catch (err) {
+                        toast.error("Failed to export QR code", { id: toastId });
+                      }
+                    };
+                    img.onerror = () => {
+                      URL.revokeObjectURL(svgUrl);
+                      toast.error("Failed to export QR code", { id: toastId });
+                    };
+                    img.src = svgUrl;
+                  } catch {
+                    toast.error("Failed to export QR code");
+                  }
                 }}
               >
                 <Download className="h-4 w-4 mr-1" /> Download QR
