@@ -223,9 +223,7 @@ function Section({ title, total, lines }: { title: string; total: number; lines:
                     .join(" · ")}
                 </div>
               </div>
-            ) : (
-              <div className="text-xs text-muted-foreground mt-1">${(l.amount || 0).toFixed(2)}</div>
-            )}
+            ) : null}
           </div>
         ))}
       </CardContent>
