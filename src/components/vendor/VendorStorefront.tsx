@@ -48,7 +48,7 @@ export function VendorStorefront({ vendorUserId, vendorId }: VendorStorefrontPro
         .limit(500);
 
       if (!error && data) {
-        setItems(data as StorefrontItem[]);
+        setItems(data as unknown as StorefrontItem[]);
 
         // Fetch event-featured tags for these items
         const ids = data.map((d: any) => d.id);

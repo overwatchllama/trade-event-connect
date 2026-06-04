@@ -48,7 +48,7 @@ export const VenuesList = () => {
   const fetchVenues = async () => {
     try {
       const { data, error } = await supabase
-        .from('venues')
+        .from('public_venues' as any)
         .select('*')
         .order('name');
 
