@@ -39,12 +39,11 @@ export function VendorStorefront({ vendorUserId, vendorId }: VendorStorefrontPro
     (async () => {
       setLoading(true);
       const { data, error } = await supabase
-        .from("deal_list_items")
+        .from("public_deal_list_items" as any)
         .select(
-          "id, card_name, set_name, card_number, rarity, image_url, condition, quantity, list_price, target_sell_price, public_notes, tcgplayer_url",
+          "id, card_name, set_name, card_number, rarity, image_url, condition, quantity, list_price, public_notes, tcgplayer_url",
         )
         .eq("user_id", vendorUserId)
-        .eq("listing_status", "for_sale")
         .order("listed_at", { ascending: false, nullsFirst: false })
         .limit(500);
 
