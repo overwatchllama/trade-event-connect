@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { QRCodeSVG } from "qrcode.react";
 import { Helmet } from "react-helmet-async";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Download } from "lucide-react";
 
 type Line = {
   id: string;
@@ -106,18 +106,55 @@ export default function PublicDealProposal() {
         <Card className="mt-6">
           <CardHeader className="pb-2"><CardTitle className="text-base">Share this proposal</CardTitle></CardHeader>
           <CardContent className="flex flex-col items-center gap-3">
-            <div className="bg-white p-3 rounded-md"><QRCodeSVG value={url} size={160} /></div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                navigator.clipboard.writeText(url);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              }}
-            >
-              {copied ? <><Check className="h-4 w-4 mr-1" /> Copied</> : <><Copy className="h-4 w-4 mr-1" /> Copy link</>}
-            </Button>
+            <div id="proposal-qr" className="bg-white p-3 rounded-md"><QRCodeSVG value={url} size={160} /></div>
+            <div className="flex gap-2 flex-wrap justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(url);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                }}
+              >
+                {copied ? <><Check className="h-4 w-4 mr-1" /> Copied</> : <><Copy className="h-4 w-4 mr-1" /> Copy link</>}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const svg = document.querySelector("#proposal-qr svg") as SVGSVGElement | null;
+                  if (!svg) return;
+                  const xml = new XMLSerializer().serializeToString(svg);
+                  const svgBlob = new Blob(['<?xml version="1.0" standalone="no"?>\r\n', xml], { type: "image/svg+xml;charset=utf-8" });
+                  const svgUrl = URL.createObjectURL(svgBlob);
+                  const img = new Image();
+                  img.onload = () => {
+                    const size = 512;
+                    const canvas = document.createElement("canvas");
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) return;
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(0, 0, size, size);
+                    ctx.drawImage(img, 0, 0, size, size);
+                    URL.revokeObjectURL(svgUrl);
+                    canvas.toBlob((blob) => {
+                      if (!blob) return;
+                      const a = document.createElement("a");
+                      a.href = URL.createObjectURL(blob);
+                      a.download = `deal-proposal-${token}.png`;
+                      a.click();
+                      URL.revokeObjectURL(a.href);
+                    }, "image/png");
+                  };
+                  img.src = svgUrl;
+                }}
+              >
+                <Download className="h-4 w-4 mr-1" /> Download QR
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
