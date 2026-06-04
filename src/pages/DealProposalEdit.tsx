@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,6 +41,7 @@ type Proposal = {
   notes: string | null;
   status: string;
   public_token: string;
+  proposed_at: string | null;
 };
 
 const CONDITIONS = ["mint", "near_mint", "lightly_played", "moderately_played", "heavily_played", "damaged"];
@@ -59,6 +60,8 @@ export default function DealProposalEdit() {
   const [loading, setLoading] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const pendingLinePatch = useRef<Record<string, Partial<Line>>>({});
 
   useEffect(() => {
     if (!id) return;
@@ -79,10 +82,18 @@ export default function DealProposalEdit() {
   const inputTotal = inputs.reduce((s, l) => s + lineTotal(l), 0);
   const outputTotal = outputs.reduce((s, l) => s + lineTotal(l), 0);
 
-  const updateField = async <K extends keyof Proposal>(k: K, v: Proposal[K]) => {
+  const updateField = <K extends keyof Proposal>(k: K, v: Proposal[K], immediate = false) => {
     if (!p) return;
-    setP({ ...p, [k]: v });
-    await supabase.from("deal_proposals").update({ [k]: v }).eq("id", p.id);
+    const pid = p.id;
+    setP((prev) => (prev ? { ...prev, [k]: v } : prev));
+    const key = `p:${String(k)}`;
+    if (saveTimers.current[key]) clearTimeout(saveTimers.current[key]);
+    const flush = () =>
+      supabase.from("deal_proposals").update({ [k]: v }).eq("id", pid).then(({ error }) => {
+        if (error) toast.error(error.message);
+      });
+    if (immediate) flush();
+    else saveTimers.current[key] = setTimeout(flush, 500);
   };
 
   const addLine = async (side: Side, kind: Kind) => {
@@ -106,10 +117,17 @@ export default function DealProposalEdit() {
 
   const updateLine = (lineId: string, patch: Partial<Line>) => {
     setLines((prev) => prev.map((l) => (l.id === lineId ? { ...l, ...patch } : l)));
-    // debounce-light: fire-and-forget
-    supabase.from("deal_proposal_lines").update(patch).eq("id", lineId).then(({ error }) => {
-      if (error) toast.error(error.message);
-    });
+    pendingLinePatch.current[lineId] = { ...(pendingLinePatch.current[lineId] || {}), ...patch };
+    const key = `l:${lineId}`;
+    if (saveTimers.current[key]) clearTimeout(saveTimers.current[key]);
+    saveTimers.current[key] = setTimeout(() => {
+      const merged = pendingLinePatch.current[lineId];
+      delete pendingLinePatch.current[lineId];
+      if (!merged) return;
+      supabase.from("deal_proposal_lines").update(merged).eq("id", lineId).then(({ error }) => {
+        if (error) toast.error(error.message);
+      });
+    }, 500);
   };
 
   const removeLine = async (lineId: string) => {
@@ -119,10 +137,21 @@ export default function DealProposalEdit() {
 
   const propose = async () => {
     if (!p) return;
-    const patch = { status: "proposed", proposed_at: new Date().toISOString() };
-    const { error } = await supabase.from("deal_proposals").update(patch).eq("id", p.id);
+    if (lines.length === 0) {
+      toast.error("Add at least one line before proposing");
+      return;
+    }
+    if (!p.title.trim()) {
+      toast.error("Add a title before proposing");
+      return;
+    }
+    const proposedAt = new Date().toISOString();
+    const { error } = await supabase
+      .from("deal_proposals")
+      .update({ status: "proposed", proposed_at: proposedAt })
+      .eq("id", p.id);
     if (error) return toast.error(error.message);
-    setP({ ...p, status: "proposed" });
+    setP({ ...p, status: "proposed", proposed_at: proposedAt });
     setShareOpen(true);
     toast.success("Proposal is now shareable");
   };
@@ -135,7 +164,7 @@ export default function DealProposalEdit() {
 
   if (loading) return <div className="min-h-screen bg-background"><Header /><div className="container py-8">Loading…</div></div>;
   if (!p) return <div className="min-h-screen bg-background"><Header /><div className="container py-8">Not found.</div></div>;
-  if (user && p.vendor_id !== user.id) return <div className="min-h-screen bg-background"><Header /><div className="container py-8">Not authorized.</div></div>;
+  if (!user || p.vendor_id !== user.id) return <div className="min-h-screen bg-background"><Header /><div className="container py-8">Not authorized.</div></div>;
 
   const publicUrl = `${window.location.origin}/p/deal/${p.public_token}`;
   const isDraft = p.status === "draft";
