@@ -48,20 +48,14 @@ export default function PublicDealProposal() {
   useEffect(() => {
     if (!token) return;
     (async () => {
-      const { data: pr } = await supabase
-        .from("deal_proposals")
-        .select("id,title,customer_name,notes,status,proposed_at")
-        .eq("public_token", token)
-        .maybeSingle();
-      if (pr) {
-        const { data: ls } = await supabase
-          .from("deal_proposal_lines")
-          .select("*")
-          .eq("proposal_id", pr.id)
-          .order("sort_order");
-        setLines((ls as Line[]) || []);
+      const { data, error } = await supabase.rpc("get_public_deal_proposal", { p_token: token });
+      if (!error && data) {
+        const payload = data as { proposal: Proposal; lines: Line[] } | null;
+        if (payload) {
+          setP(payload.proposal);
+          setLines(payload.lines || []);
+        }
       }
-      setP(pr as Proposal | null);
       setLoading(false);
     })();
   }, [token]);
