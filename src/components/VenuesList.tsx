@@ -53,7 +53,7 @@ export const VenuesList = () => {
         .order('name');
 
       if (error) throw error;
-      setVenues(data || []);
+      setVenues((data || []) as unknown as Venue[]);
     } catch (error) {
       console.error('Error fetching venues:', error);
       toast.error('Failed to load venues');
