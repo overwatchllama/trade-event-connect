@@ -164,7 +164,7 @@ export default function DealProposalEdit() {
 
   if (loading) return <div className="min-h-screen bg-background"><Header /><div className="container py-8">Loading…</div></div>;
   if (!p) return <div className="min-h-screen bg-background"><Header /><div className="container py-8">Not found.</div></div>;
-  if (user && p.vendor_id !== user.id) return <div className="min-h-screen bg-background"><Header /><div className="container py-8">Not authorized.</div></div>;
+  if (!user || p.vendor_id !== user.id) return <div className="min-h-screen bg-background"><Header /><div className="container py-8">Not authorized.</div></div>;
 
   const publicUrl = `${window.location.origin}/p/deal/${p.public_token}`;
   const isDraft = p.status === "draft";
