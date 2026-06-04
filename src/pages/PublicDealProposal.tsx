@@ -68,6 +68,16 @@ export default function PublicDealProposal() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   if (!p) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">This proposal is unavailable.</div>;
+  if (p.status === "draft") return (
+    <div className="min-h-screen flex items-center justify-center px-4 text-center">
+      <div className="max-w-sm">
+        <h1 className="text-lg font-semibold mb-2">Not shared yet</h1>
+        <p className="text-sm text-muted-foreground">
+          This proposal is still a draft. The vendor needs to propose it before the public link becomes active.
+        </p>
+      </div>
+    </div>
+  );
 
   const inputs = lines.filter((l) => l.side === "input");
   const outputs = lines.filter((l) => l.side === "output");
