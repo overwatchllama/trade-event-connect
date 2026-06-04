@@ -617,6 +617,7 @@ export type Database = {
           signed_by: string | null
           updated_at: string | null
           uploaded_by: string
+          vendor_accessible: boolean
         }
         Insert: {
           created_at?: string | null
@@ -632,6 +633,7 @@ export type Database = {
           signed_by?: string | null
           updated_at?: string | null
           uploaded_by: string
+          vendor_accessible?: boolean
         }
         Update: {
           created_at?: string | null
@@ -647,6 +649,7 @@ export type Database = {
           signed_by?: string | null
           updated_at?: string | null
           uploaded_by?: string
+          vendor_accessible?: boolean
         }
         Relationships: [
           {
@@ -970,6 +973,13 @@ export type Database = {
           zip_code?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "events_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "public_venues"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "events_venue_id_fkey"
             columns: ["venue_id"]
@@ -2784,6 +2794,13 @@ export type Database = {
             foreignKeyName: "vendor_venue_ratings_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
+            referencedRelation: "public_venues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_venue_ratings_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
             referencedRelation: "venues"
             referencedColumns: ["id"]
           },
@@ -2931,6 +2948,13 @@ export type Database = {
             foreignKeyName: "venue_claims_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
+            referencedRelation: "public_venues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_claims_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
             referencedRelation: "venues"
             referencedColumns: ["id"]
           },
@@ -3013,6 +3037,63 @@ export type Database = {
       }
     }
     Views: {
+      public_deal_list_items: {
+        Row: {
+          card_name: string | null
+          card_number: string | null
+          condition: string | null
+          external_id: string | null
+          game: string | null
+          id: string | null
+          image_url: string | null
+          list_price: number | null
+          listed_at: string | null
+          listing_status: string | null
+          public_notes: string | null
+          quantity: number | null
+          rarity: string | null
+          set_name: string | null
+          tcgplayer_url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          card_name?: string | null
+          card_number?: string | null
+          condition?: string | null
+          external_id?: string | null
+          game?: string | null
+          id?: string | null
+          image_url?: string | null
+          list_price?: number | null
+          listed_at?: string | null
+          listing_status?: string | null
+          public_notes?: string | null
+          quantity?: number | null
+          rarity?: string | null
+          set_name?: string | null
+          tcgplayer_url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          card_name?: string | null
+          card_number?: string | null
+          condition?: string | null
+          external_id?: string | null
+          game?: string | null
+          id?: string | null
+          image_url?: string | null
+          list_price?: number | null
+          listed_at?: string | null
+          listing_status?: string | null
+          public_notes?: string | null
+          quantity?: number | null
+          rarity?: string | null
+          set_name?: string | null
+          tcgplayer_url?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       public_vendor_applications: {
         Row: {
           application_date: string | null
@@ -3112,6 +3193,54 @@ export type Database = {
         }
         Relationships: []
       }
+      public_venues: {
+        Row: {
+          address: string | null
+          amenities: string[] | null
+          capacity: number | null
+          city: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          image_url: string | null
+          name: string | null
+          state: string | null
+          verified: boolean | null
+          website_url: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          amenities?: string[] | null
+          capacity?: number | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          name?: string | null
+          state?: string | null
+          verified?: boolean | null
+          website_url?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          amenities?: string[] | null
+          capacity?: number | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          name?: string | null
+          state?: string | null
+          verified?: boolean | null
+          website_url?: string | null
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       claim_vendor_invite: {
@@ -3142,6 +3271,7 @@ export type Database = {
           id: string
         }[]
       }
+      get_public_deal_proposal: { Args: { p_token: string }; Returns: Json }
       get_public_vendor_profiles: {
         Args: { user_ids: string[] }
         Returns: {
