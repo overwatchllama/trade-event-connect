@@ -156,21 +156,6 @@ export default function DealProposalEdit() {
     toast.success("Proposal is now shareable");
   };
 
-  const removeLine = async (lineId: string) => {
-    setLines((prev) => prev.filter((l) => l.id !== lineId));
-    await supabase.from("deal_proposal_lines").delete().eq("id", lineId);
-  };
-
-  const propose = async () => {
-    if (!p) return;
-    const patch = { status: "proposed", proposed_at: new Date().toISOString() };
-    const { error } = await supabase.from("deal_proposals").update(patch).eq("id", p.id);
-    if (error) return toast.error(error.message);
-    setP({ ...p, status: "proposed" });
-    setShareOpen(true);
-    toast.success("Proposal is now shareable");
-  };
-
   const setStatus = async (status: string) => {
     if (!p) return;
     await supabase.from("deal_proposals").update({ status }).eq("id", p.id);
