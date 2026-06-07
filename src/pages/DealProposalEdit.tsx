@@ -60,6 +60,7 @@ export default function DealProposalEdit() {
   const [lines, setLines] = useState<Line[]>([]);
   const [loading, setLoading] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const pendingLinePatch = useRef<Record<string, Partial<Line>>>({});
