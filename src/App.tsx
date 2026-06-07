@@ -161,6 +161,11 @@ const App = () => (
                 <Markets />
               </ProtectedRoute>
             } />
+            <Route path="/pos" element={
+              <ProtectedRoute>
+                <POS />
+              </ProtectedRoute>
+            } />
 
             <Route path="/security" element={<Security />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
