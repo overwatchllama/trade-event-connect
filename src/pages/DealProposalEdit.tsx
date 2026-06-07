@@ -241,7 +241,10 @@ export default function DealProposalEdit() {
               <span className="text-muted-foreground">Inputs:</span> ${inputTotal.toFixed(2)} ·{" "}
               <span className="text-muted-foreground">Outputs:</span> ${outputTotal.toFixed(2)}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <Link2 className="h-4 w-4 mr-1" /> Import from link
+              </Button>
               {isDraft ? (
                 <Button onClick={propose}>
                   <Share2 className="h-4 w-4 mr-1" /> Propose &amp; share
@@ -254,6 +257,20 @@ export default function DealProposalEdit() {
             </div>
           </CardContent>
         </Card>
+
+        <ImportFromUrlDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          proposalId={p.id}
+          onImported={async () => {
+            const { data: ls } = await supabase
+              .from("deal_proposal_lines")
+              .select("*")
+              .eq("proposal_id", p.id)
+              .order("sort_order");
+            setLines((ls as Line[]) || []);
+          }}
+        />
 
         <Dialog open={shareOpen} onOpenChange={setShareOpen}>
           <DialogContent className="max-w-sm">
