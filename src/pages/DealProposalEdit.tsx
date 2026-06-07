@@ -12,8 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
-import { ArrowLeft, Plus, Trash2, Share2, Copy, Check } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Share2, Copy, Check, Link2 } from "lucide-react";
 import { toast } from "sonner";
+import { ImportFromUrlDialog } from "@/components/deals/ImportFromUrlDialog";
 
 type Side = "input" | "output";
 type Kind = "cash" | "card" | "store_credit";
