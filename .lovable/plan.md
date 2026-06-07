@@ -1,102 +1,76 @@
 ## Goal
-Replace the live, eBay-scraping Markets page with a proper data product: a daily job stores **raw price**, **PSA 10 price**, **PSA 10 ratio**, and **PSA gem rate / pop counts** for every Pokémon and One Piece card. Users browse, search, filter, and sort that snapshot — no per-request scraping.
 
----
+Match Decktradr's vendor POS flow as Phase 1: a fast, loose-entry **transaction ledger** that rolls up into **per-event P&L**. Phase 2 (inventory intelligence dashboard) and Phase 3 (bulk-buy / lot pricing) come after this lands.
 
-## Architecture
+## What you'll see when this ships
+
+1. A new **POS** page (`/pos`) — pick an event, add lines fast, save. Three transaction types: **Buy**, **Sell**, **Trade**.
+2. A new **Event P&L** tab on every event (yours, plus unlisted personal events) showing revenue, cost-of-goods, fees, net profit, # of transactions, top sellers.
+3. A **Ledger** tab on the vending dashboard — every transaction across all shows, searchable, editable.
+4. Optional one-tap "link to inventory" on a sale line that marks the matching `deal_list_items` row as sold (so your existing P&L page stays accurate when you choose to link).
+
+## Data model
+
+Two new tables. Both vendor-scoped (RLS: owner only).
 
 ```text
-                  ┌───────────────────────┐
-   Daily cron ──► │ refresh-market-data   │ ──► Pokémon TCG API  (raw + PSA 10 mid)
-   (pg_cron)      │   edge function       │ ──► One Piece API    (raw)
-                  │                       │ ──► PSA Public API   (pop report + APR)
-                  └───────────┬───────────┘
-                              ▼
-                     market_cards  +  market_snapshots
-                              ▲
-                              │ select / filter / sort
-                  ┌───────────┴───────────┐
-                  │   /markets page       │
-                  │   (search + filters)  │
-                  └───────────────────────┘
+transactions
+  id, user_id, kind ('buy'|'sell'|'trade'),
+  event_id (uuid, nullable)         -- public events.id
+  personal_event_id (uuid, nullable) -- vendor_personal_events.id
+  occurred_at, customer_label, payment_method,
+  subtotal, fees, total, notes
+  created_at, updated_at
+
+transaction_items
+  id, transaction_id,
+  card_name, set_name, card_number, condition, quantity,
+  unit_cost      -- what we paid (buy/trade-in side)
+  unit_price     -- what we charged (sell/trade-out side)
+  market_snapshot -- live market at time of entry, for analytics
+  deal_list_item_id (nullable) -- optional link to inventory row
+  created_at
 ```
 
----
+Loose-entry rules:
+- A **Sell** line only needs `unit_price`; `unit_cost` is optional. If linked to a `deal_list_items` row, cost auto-fills from `purchase_price`.
+- A **Buy** line only needs `unit_cost`.
+- A **Trade** is one transaction holding both buy-side and sell-side line items; net = sells − buys.
 
-## Database
+## P&L math (per event)
 
-**`market_cards`** — one row per card, slowly-changing
-- `id` (uuid), `game` (`pokemon` | `onepiece`), `external_id` (TCG API id), `name`, `set_name`, `set_id`, `number`, `rarity`, `image_url`, `tcgplayer_url`, `created_at`, `updated_at`
-- Unique on (`game`, `external_id`)
+```text
+revenue  = sum(sells.unit_price * qty)
+cogs     = sum(sells.unit_cost  * qty)   -- skipped when null
+buys     = sum(buys.unit_cost   * qty)   -- new inventory added at this show
+fees     = sum(transactions.fees)
+net      = revenue − cogs − fees         -- "show profit on goods sold"
+spend    = buys                          -- cash out at the show
+```
 
-**`market_snapshots`** — latest pricing/grading numbers (one current row per card; we overwrite daily and keep a `history` table later if needed)
-- `card_id` (FK → market_cards), `raw_price` numeric, `psa10_price` numeric, `psa10_ratio` numeric (psa10/raw), `gem_rate` numeric (psa10_pop / total_pop), `psa_total_pop` int, `psa10_pop` int, `sample_size` int (eBay/APR comps used), `last_refreshed_at` timestamptz
-- Public read RLS, no write from clients (only service role).
+## UI
 
-**Indexes**: `(game)`, `(psa10_ratio desc)`, `(gem_rate desc)`, `(raw_price)`, `(set_name)`, `(rarity)`, `name trigram` for search.
+- **`/pos`** (mobile-first):
+  - Sticky header: event picker, transaction kind toggle (Buy / Sell / Trade), running total.
+  - Add-line row: scan button (reuses existing scanner) **or** manual name+price entry — name is the only required field.
+  - Lines list with inline qty / price edit, swipe-to-delete.
+  - "Link to inventory" affordance on sell lines (search `deal_list_items` for_sale rows).
+  - Big "Save transaction" button → clears for the next deal.
+- **Event detail → "P&L" tab** (vendor-only, owner-only): KPI cards (Revenue, COGS, Fees, Net, Spend), tx count, top-5 items by revenue, ledger list filtered to this event.
+- **Vending dashboard → "Ledger" tab**: cross-event list, filters by date / event / kind, edit-in-place.
 
----
+## Out of scope for this phase
+- Inventory intelligence dashboard upgrades (gainers/losers/aging) — Phase 2.
+- Bulk binder pricing flow — Phase 3.
+- Multi-currency, tax breakdown, staff-attributed sales.
 
-## Edge function: `refresh-market-data`
-- Auth: service-role only (called by pg_cron with anon key + internal token).
-- For each game:
-  1. Page through TCG API to upsert `market_cards` (id, name, set, number, image, raw price).
-  2. For each card with `raw_price >= $1`, look up PSA pop report + Auction Prices Realized via PSA API (`PSA_API_TOKEN`) → get `psa10_pop`, `total_pop`, recent PSA 10 sale median.
-  3. Compute `gem_rate = psa10_pop / total_pop`, `psa10_ratio = psa10_price / raw_price`.
-  4. Upsert into `market_snapshots`.
-- Batched, throttled (PSA API limits), resumable via cursor in a `market_refresh_runs` table.
-- Logs progress so we can monitor.
+## Technical notes
+- New migration: tables + GRANTs + RLS (owner via `user_id = auth.uid()`).
+- Helper RPC `get_event_pnl(p_event_id, p_personal_event_id)` returning the KPI rollup (security definer, validates ownership).
+- "Link to inventory" updates `deal_list_items.sold_price/sold_at/sold_channel='pos'/listing_status='sold'`.
+- Scanner reuses the existing slab/raw scanner component; no new model work.
+- All P&L numbers are stored in cents-safe `numeric(12,2)`.
 
-Manual trigger: an admin-only "Refresh now" button on the Markets page that invokes the function.
+## Approval
 
----
-
-## Cron
-`pg_cron` + `pg_net` → daily at 08:00 UTC, `POST /functions/v1/refresh-market-data`.
-Inserted via the **insert tool** (not migration) because it embeds the project URL + anon key.
-
----
-
-## Markets page rewrite
-Server-paginated query against `market_snapshots` joined to `market_cards`.
-
-**Filters**
-- Game (Pokémon / One Piece / All)
-- Set (combobox, populated from distinct sets)
-- Rarity (multi-select)
-- Raw price range (min / max)
-- Min gem rate (slider 0–100%)
-- Min total pop (number)
-- Search by card name (ilike / trigram)
-
-**Sorts**
-- PSA 10 ratio desc (default)
-- Absolute gap desc
-- Gem rate desc
-- Raw price asc/desc
-- PSA 10 price desc
-- Last refreshed desc
-
-**Row display**: image, name, set · #, rarity, raw, PSA 10, ratio, gem rate, pop · psa10 pop, last refreshed.
-
-**Empty / loading**: skeletons; if `market_snapshots` is empty, show "Market data has not been collected yet — run the daily job."
-
-Removes: live eBay scrape, blocked-state UI, "Load gaps" button.
-
----
-
-## Secrets needed
-- `PSA_API_TOKEN` — PSA Public API bearer token (user must add via secrets prompt).
-
----
-
-## Phasing
-1. **Schema + RLS** (migration) — `market_cards`, `market_snapshots`, indexes.
-2. **Edge function** `refresh-market-data` — Pokémon first, One Piece second, PSA enrichment last.
-3. **Cron job** via pg_net.
-4. **Markets page rewrite** — query, filters, sort, search, pagination.
-5. **Manual refresh button** for admins.
-
-## Open caveats
-- PSA Public API access is paid and rate-limited; the first full backfill of ~30k cards will take many hours and must be chunked across several invocations. The daily job will only refresh cards whose `last_refreshed_at` is >24h old, so steady-state cost stays small.
-- One Piece pricing in the project is currently disabled per memory; we'll store raw price for One Piece but skip PSA enrichment until you confirm One Piece grading data is desired.
+Reply "go" and I'll start with the migration, then build the POS page and Event P&L tab.

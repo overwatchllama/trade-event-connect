@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store, UserCheck, Megaphone, NotebookPen, TableProperties, Gift } from "lucide-react";
+import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store, UserCheck, Megaphone, NotebookPen, TableProperties, Gift, Receipt } from "lucide-react";
 import { VendorApplicationsList } from "@/components/VendorApplicationsList";
 import NearbyEventsPanel from "@/components/vending/NearbyEventsPanel";
 import CreatePersonalEventDialog from "@/components/vending/CreatePersonalEventDialog";
@@ -279,7 +279,12 @@ const VendingDashboard = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <h2 className="text-2xl font-bold text-foreground mb-6">Manage Vending</h2>
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+        <h2 className="text-2xl font-bold text-foreground">Manage Vending</h2>
+        <Button onClick={() => navigate("/pos")} className="gap-2">
+          <Receipt className="h-4 w-4" /> Open POS
+        </Button>
+      </div>
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <div className="overflow-x-auto -mx-4 px-4 mb-6">

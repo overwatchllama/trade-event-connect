@@ -41,6 +41,7 @@ const PublicDealProposal = lazy(() => import("./pages/PublicDealProposal"));
 const Inventory = lazy(() => import("./pages/Inventory"));
 const InventoryPnL = lazy(() => import("./pages/InventoryPnL"));
 const Markets = lazy(() => import("./pages/Markets"));
+const POS = lazy(() => import("./pages/POS"));
 const Demo = lazy(() => import("./pages/Demo"));
 const Security = lazy(() => import("./pages/Security"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -158,6 +159,11 @@ const App = () => (
             <Route path="/markets" element={
               <ProtectedRoute>
                 <Markets />
+              </ProtectedRoute>
+            } />
+            <Route path="/pos" element={
+              <ProtectedRoute>
+                <POS />
               </ProtectedRoute>
             } />
 
