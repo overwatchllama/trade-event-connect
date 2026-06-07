@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, ExternalLink, Trash2 } from "lucide-react";
+import { Plus, ExternalLink, Trash2, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
+import { ImportFromUrlDialog } from "@/components/deals/ImportFromUrlDialog";
 
 type Proposal = {
   id: string;
