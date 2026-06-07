@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store, UserCheck, Megaphone, NotebookPen, TableProperties, Gift } from "lucide-react";
+import { CalendarIcon, MapPin, Users, Star, Building2, ChevronRight, Store, UserCheck, Megaphone, NotebookPen, TableProperties, Gift, Receipt } from "lucide-react";
 import { VendorApplicationsList } from "@/components/VendorApplicationsList";
 import NearbyEventsPanel from "@/components/vending/NearbyEventsPanel";
 import CreatePersonalEventDialog from "@/components/vending/CreatePersonalEventDialog";
