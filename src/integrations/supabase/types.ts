@@ -1968,6 +1968,145 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_items: {
+        Row: {
+          card_name: string
+          card_number: string | null
+          condition: string | null
+          created_at: string
+          deal_list_item_id: string | null
+          id: string
+          image_url: string | null
+          market_snapshot: number | null
+          quantity: number
+          set_name: string | null
+          side: string
+          transaction_id: string
+          unit_cost: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          card_name: string
+          card_number?: string | null
+          condition?: string | null
+          created_at?: string
+          deal_list_item_id?: string | null
+          id?: string
+          image_url?: string | null
+          market_snapshot?: number | null
+          quantity?: number
+          set_name?: string | null
+          side?: string
+          transaction_id: string
+          unit_cost?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          card_name?: string
+          card_number?: string | null
+          condition?: string | null
+          created_at?: string
+          deal_list_item_id?: string | null
+          id?: string
+          image_url?: string | null
+          market_snapshot?: number | null
+          quantity?: number
+          set_name?: string | null
+          side?: string
+          transaction_id?: string
+          unit_cost?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_items_deal_list_item_id_fkey"
+            columns: ["deal_list_item_id"]
+            isOneToOne: false
+            referencedRelation: "deal_list_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_items_deal_list_item_id_fkey"
+            columns: ["deal_list_item_id"]
+            isOneToOne: false
+            referencedRelation: "public_deal_list_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_items_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          created_at: string
+          customer_label: string | null
+          event_id: string | null
+          fees: number
+          id: string
+          kind: string
+          notes: string | null
+          occurred_at: string
+          payment_method: string | null
+          personal_event_id: string | null
+          subtotal: number
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_label?: string | null
+          event_id?: string | null
+          fees?: number
+          id?: string
+          kind: string
+          notes?: string | null
+          occurred_at?: string
+          payment_method?: string | null
+          personal_event_id?: string | null
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_label?: string | null
+          event_id?: string | null
+          fees?: number
+          id?: string
+          kind?: string
+          notes?: string | null
+          occurred_at?: string
+          payment_method?: string | null
+          personal_event_id?: string | null
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_personal_event_id_fkey"
+            columns: ["personal_event_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_personal_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -3263,6 +3402,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      get_event_pnl: {
+        Args: { p_event_id?: string; p_personal_event_id?: string }
+        Returns: Json
       }
       get_event_sponsor_amounts: {
         Args: { p_event_id: string }
