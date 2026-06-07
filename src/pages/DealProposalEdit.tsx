@@ -12,8 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
-import { ArrowLeft, Plus, Trash2, Share2, Copy, Check } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Share2, Copy, Check, Link2 } from "lucide-react";
 import { toast } from "sonner";
+import { ImportFromUrlDialog } from "@/components/deals/ImportFromUrlDialog";
 
 type Side = "input" | "output";
 type Kind = "cash" | "card" | "store_credit";
@@ -59,6 +60,7 @@ export default function DealProposalEdit() {
   const [lines, setLines] = useState<Line[]>([]);
   const [loading, setLoading] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const pendingLinePatch = useRef<Record<string, Partial<Line>>>({});
@@ -239,7 +241,10 @@ export default function DealProposalEdit() {
               <span className="text-muted-foreground">Inputs:</span> ${inputTotal.toFixed(2)} ·{" "}
               <span className="text-muted-foreground">Outputs:</span> ${outputTotal.toFixed(2)}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <Link2 className="h-4 w-4 mr-1" /> Import from link
+              </Button>
               {isDraft ? (
                 <Button onClick={propose}>
                   <Share2 className="h-4 w-4 mr-1" /> Propose &amp; share
@@ -252,6 +257,20 @@ export default function DealProposalEdit() {
             </div>
           </CardContent>
         </Card>
+
+        <ImportFromUrlDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          proposalId={p.id}
+          onImported={async () => {
+            const { data: ls } = await supabase
+              .from("deal_proposal_lines")
+              .select("*")
+              .eq("proposal_id", p.id)
+              .order("sort_order");
+            setLines((ls as Line[]) || []);
+          }}
+        />
 
         <Dialog open={shareOpen} onOpenChange={setShareOpen}>
           <DialogContent className="max-w-sm">

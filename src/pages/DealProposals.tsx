@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, ExternalLink, Trash2 } from "lucide-react";
+import { Plus, ExternalLink, Trash2, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
+import { ImportFromUrlDialog } from "@/components/deals/ImportFromUrlDialog";
 
 type Proposal = {
   id: string;
@@ -34,6 +35,7 @@ export default function DealProposals() {
   const [items, setItems] = useState<Proposal[] | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -93,8 +95,17 @@ export default function DealProposals() {
             <Button onClick={create} disabled={creating}>
               <Plus className="h-4 w-4 mr-1" /> Create
             </Button>
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Link2 className="h-4 w-4 mr-1" /> Import from link
+            </Button>
           </CardContent>
         </Card>
+
+        <ImportFromUrlDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onImported={({ proposalId }) => navigate(`/deal-proposals/${proposalId}`)}
+        />
 
         {items === null ? (
           <div className="space-y-2">
