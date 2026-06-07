@@ -279,7 +279,12 @@ const VendingDashboard = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <h2 className="text-2xl font-bold text-foreground mb-6">Manage Vending</h2>
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+        <h2 className="text-2xl font-bold text-foreground">Manage Vending</h2>
+        <Button onClick={() => navigate("/pos")} className="gap-2">
+          <Receipt className="h-4 w-4" /> Open POS
+        </Button>
+      </div>
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <div className="overflow-x-auto -mx-4 px-4 mb-6">
