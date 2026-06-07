@@ -95,8 +95,17 @@ export default function DealProposals() {
             <Button onClick={create} disabled={creating}>
               <Plus className="h-4 w-4 mr-1" /> Create
             </Button>
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Link2 className="h-4 w-4 mr-1" /> Import from link
+            </Button>
           </CardContent>
         </Card>
+
+        <ImportFromUrlDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onImported={({ proposalId }) => navigate(`/deal-proposals/${proposalId}`)}
+        />
 
         {items === null ? (
           <div className="space-y-2">
