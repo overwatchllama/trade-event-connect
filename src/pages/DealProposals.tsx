@@ -35,6 +35,7 @@ export default function DealProposals() {
   const [items, setItems] = useState<Proposal[] | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [creating, setCreating] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
