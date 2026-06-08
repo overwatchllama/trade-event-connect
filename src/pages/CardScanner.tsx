@@ -9,8 +9,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { searchCards, type ResolvedCard } from "@/services/cardLookup";
-import { Camera, Upload, Loader2, ListPlus, ScanLine, ArrowRight, TrendingUp } from "lucide-react";
+import { Camera, Upload, Loader2, ListPlus, ScanLine, ArrowRight, TrendingUp, Video } from "lucide-react";
 import { CardMatchPanel } from "@/components/scanner/CardMatchPanel";
+import { LiveScanCapture } from "@/components/scanner/LiveScanCapture";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
 
