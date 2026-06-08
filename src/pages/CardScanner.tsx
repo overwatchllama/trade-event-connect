@@ -113,6 +113,7 @@ const CardScanner = () => {
   // Per-match graded sold-comp stats, keyed by `${game}-${externalId}`.
   const [slabComps, setSlabComps] = useState<Record<string, SlabComps>>({});
   const [slabCompsLoading, setSlabCompsLoading] = useState(false);
+  const [liveMode, setLiveMode] = useState(false);
 
   const handleFile = useCallback(
     async (file: File) => {
