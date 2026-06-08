@@ -300,15 +300,32 @@ const CardScanner = () => {
           </div>
         </div>
 
-        {!imageUrl && (
+        {!imageUrl && liveMode && (
+          <LiveScanCapture
+            userId={user!.id}
+            onCancel={() => setLiveMode(false)}
+            onPriceIt={({ imageUrl: url, detected: cards }) => {
+              setImageUrl(url);
+              setDetected(cards);
+              setLiveMode(false);
+              // Auto-load pricing for the first (usually only) identified card
+              setTimeout(() => onPickCard(0), 0);
+            }}
+          />
+        )}
+
+        {!imageUrl && !liveMode && (
           <Card className="p-8 border-dashed border-2 flex flex-col items-center justify-center text-center gap-4">
             <ScanLine className="h-12 w-12 text-muted-foreground" />
             <div>
-              <p className="font-medium">Upload or snap a photo of your cards</p>
+              <p className="font-medium">Upload, snap, or live-scan your cards</p>
               <p className="text-sm text-muted-foreground">Pokémon and One Piece TCG supported</p>
             </div>
             <div className="flex gap-2 flex-wrap justify-center">
-              <Button onClick={() => cameraInputRef.current?.click()}>
+              <Button onClick={() => setLiveMode(true)}>
+                <Video className="h-4 w-4 mr-2" /> Live Scan
+              </Button>
+              <Button variant="outline" onClick={() => cameraInputRef.current?.click()}>
                 <Camera className="h-4 w-4 mr-2" /> Take Photo
               </Button>
               <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
