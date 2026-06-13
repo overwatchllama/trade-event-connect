@@ -537,6 +537,33 @@ const POS = () => {
                     )}
                   </div>
 
+                  {kind !== "buy" && (
+                    <div className="flex gap-2">
+                      <Input
+                        autoFocus={kind === "sell"}
+                        placeholder="Scan inventory label (Code 128) or paste item ID…"
+                        value={scanValue}
+                        onChange={(e) => setScanValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleScan(scanValue);
+                          }
+                        }}
+                        disabled={scanBusy}
+                        className="font-mono text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => handleScan(scanValue)}
+                        disabled={scanBusy || !scanValue.trim()}
+                      >
+                        {scanBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
+                      </Button>
+                    </div>
+                  )}
+
                   {lines.length === 0 && (
                     <p className="text-sm text-muted-foreground">No lines yet.</p>
                   )}
