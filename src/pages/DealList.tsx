@@ -164,6 +164,7 @@ const DealList = () => {
     return stored as DealStatus | "all";
   });
   const [buyTarget, setBuyTarget] = useState<MarkAsBoughtTarget | null>(null);
+  const [labelQueue, setLabelQueue] = useState<PrintLabelItem[]>([]);
   const [editTarget, setEditTarget] = useState<EditBoughtTarget | null>(null);
   // Bulk-edit state for the Bought tab — Set<id> survives status filter changes so users
   // can re-find a row in another tab without losing their selection.
