@@ -1712,7 +1712,7 @@ const DealList = () => {
               .update({ label_printed_at: nowIso })
               .in("id", ids);
             setItems((prev) => prev.map((i) => ids.includes(i.id)
-              ? { ...i, label_printed_at: nowIso, label_print_count: (i.label_print_count ?? 0) + 1 }
+              ? { ...i, label_printed_at: nowIso, label_print_count: (((i as any).label_print_count) ?? 0) + 1 } as any
               : i));
           }}
         />
