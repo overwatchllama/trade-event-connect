@@ -34,6 +34,7 @@ import { EditBoughtDialog, type EditBoughtTarget } from "@/components/deals/Edit
 import { BulkEditBoughtDialog, type BulkEditTarget } from "@/components/deals/BulkEditBoughtDialog";
 import { LotBuyDialog, type LotBuyTarget } from "@/components/deals/LotBuyDialog";
 import { AddCardToDealDialog } from "@/components/deals/AddCardToDealDialog";
+import { PrintLabelsDialog, type PrintLabelItem } from "@/components/inventory/PrintLabelsDialog";
 
 /**
  * Deal pipeline stages:
