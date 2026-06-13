@@ -91,16 +91,19 @@ export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Prop
           JsBarcode(svg, it.id, { format: "CODE128", width: 1.6, height: 48, displayValue: false, margin: 0 });
         } catch {}
         const barcodeHtml = svg.outerHTML;
-        const meta = [it.set_name, it.card_number && `#${it.card_number}`, it.condition?.replace("_", " ")]
-          .filter(Boolean)
-          .join(" · ");
-        const priceLine = showPrice
-          ? `<div class="price">${it.target_sell_price != null ? fmt(it.target_sell_price) : it.purchase_price != null ? `cost ${fmt(it.purchase_price)}` : ""}</div>`
+        const setLine = [it.set_name, it.card_number && `#${it.card_number}`].filter(Boolean).join(" · ");
+        const conditionTxt = it.condition?.replace(/_/g, " ").toUpperCase() ?? "";
+        const priceVal = it.target_sell_price ?? it.purchase_price;
+        const priceLine = showPrice && priceVal != null
+          ? `<div class="price">${it.target_sell_price != null ? fmt(it.target_sell_price) : `cost ${fmt(it.purchase_price!)}`}</div>`
           : "";
         return `
           <div class="label">
-            <div class="title">${escapeHtml(it.card_name)}</div>
-            <div class="meta">${escapeHtml(meta)}</div>
+            <div class="header">
+              <div class="title">${escapeHtml(it.card_name)}</div>
+              ${conditionTxt ? `<div class="cond">${escapeHtml(conditionTxt)}</div>` : ""}
+            </div>
+            <div class="meta">${escapeHtml(setLine)}</div>
             <div class="barcode">${barcodeHtml}</div>
             <div class="row"><div class="code">${escapeHtml(it.id.slice(0, 8))}</div>${priceLine}</div>
           </div>
