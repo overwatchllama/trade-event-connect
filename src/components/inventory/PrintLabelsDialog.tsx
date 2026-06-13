@@ -132,13 +132,15 @@ export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Prop
     overflow: hidden;
     display: flex; flex-direction: column; justify-content: space-between;
   }
-  .title { font-size: 9pt; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .header { display: flex; align-items: flex-start; gap: 4px; }
+  .title { flex: 1; font-size: 10pt; font-weight: 800; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cond { font-size: 6pt; font-weight: 700; color: #fff; background: #000; padding: 1px 4px; border-radius: 2px; white-space: nowrap; letter-spacing: 0.04em; }
   .meta { font-size: 7pt; color: #333; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .barcode { display: flex; justify-content: center; align-items: center; flex: 1; min-height: 0; }
   .barcode svg { width: 100%; height: 100%; }
-  .row { display: flex; justify-content: space-between; align-items: center; font-size: 6.5pt; color: #000; }
-  .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; }
-  .price { font-weight: 700; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; font-size: 7pt; color: #000; }
+  .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; color: #555; }
+  .price { font-weight: 800; font-size: 11pt; }
   @media print { .sheet { page-break-after: always; } }
 </style></head>
 <body>${chunkIntoSheets(labels, cfg.cols * cfg.rows)}
