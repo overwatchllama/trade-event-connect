@@ -1693,8 +1693,8 @@ const DealList = () => {
                   purchase_price: patch.purchase_price ?? it.purchase_price,
                   target_sell_price: patch.target_sell_price ?? it.target_sell_price,
                   quantity: it.quantity,
-                  label_printed_at: it.label_printed_at ?? null,
-                  label_print_count: it.label_print_count ?? 0,
+                  label_printed_at: (it as any).label_printed_at ?? null,
+                  label_print_count: (it as any).label_print_count ?? 0,
                 }]);
               }
             }}
