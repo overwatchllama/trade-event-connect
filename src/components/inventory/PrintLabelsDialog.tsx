@@ -49,7 +49,7 @@ const fmt = (n?: number | null) =>
   n == null ? "" : n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
 
 export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Props) => {
-  const [preset, setPreset] = useState<Preset>("avery-5160");
+  const [preset, setPreset] = useState<Preset>("brother-dk1201");
   const [copies, setCopies] = useState(1);
   const [perQuantity, setPerQuantity] = useState(true);
   const [showPrice, setShowPrice] = useState(true);
