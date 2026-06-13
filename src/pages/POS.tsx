@@ -24,9 +24,13 @@ interface DraftLine {
   side: Side;
   card_name: string;
   set_name?: string;
+  card_number?: string;
+  condition?: string;
   quantity: number;
   unit_price?: number;
   unit_cost?: number;
+  deal_list_item_id?: string;
+  image_url?: string;
 }
 
 interface EventOption {
