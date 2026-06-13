@@ -270,13 +270,31 @@ const POS = () => {
         side: kind === "buy" ? "buy" : kind === "sell" ? "sell" : l.side,
         card_name: l.card_name.trim(),
         set_name: l.set_name || null,
+        card_number: l.card_number || null,
+        condition: l.condition || null,
         quantity: l.quantity || 1,
         unit_price: l.unit_price ?? null,
         unit_cost: l.unit_cost ?? null,
+        deal_list_item_id: l.deal_list_item_id || null,
+        image_url: l.image_url || null,
       }));
 
       const { error: itemErr } = await supabase.from("transaction_items").insert(rows);
       if (itemErr) throw itemErr;
+
+      // Mark linked inventory items as sold (only sell-side lines with a link).
+      const soldLinks = valid.filter((l) => l.side === "sell" && l.deal_list_item_id);
+      for (const l of soldLinks) {
+        await supabase
+          .from("deal_list_items")
+          .update({
+            listing_status: "sold",
+            sold_at: new Date().toISOString(),
+            sold_price: l.unit_price ?? null,
+            sold_channel: "pos",
+          })
+          .eq("id", l.deal_list_item_id!);
+      }
 
       toast.success(
         `${kind === "buy" ? "Buy" : kind === "sell" ? "Sale" : "Trade"} saved · ${fmt(total)}`
