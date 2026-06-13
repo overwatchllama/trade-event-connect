@@ -578,6 +578,7 @@ const POS = () => {
                           <Badge variant={l.side === "sell" ? "default" : "secondary"} className="mb-1">
                             {l.side === "sell" ? "Customer gets" : "You get"}
                           </Badge>
+                        )}
                         {l.deal_list_item_id && (
                           <Badge variant="outline" className="mb-1 font-mono text-[10px]">
                             inv · {l.deal_list_item_id.slice(0, 8)}{l.condition ? ` · ${l.condition.replace(/_/g, " ")}` : ""}
