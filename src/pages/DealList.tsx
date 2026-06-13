@@ -1682,9 +1682,40 @@ const DealList = () => {
             onClose={() => setBuyTarget(null)}
             onSuccess={(dealId, patch) => {
               setItems((prev) => prev.map((it) => (it.id === dealId ? { ...it, ...patch } : it)));
+              const it = items.find((x) => x.id === dealId);
+              if (it) {
+                setLabelQueue([{
+                  id: it.id,
+                  card_name: it.card_name,
+                  set_name: it.set_name,
+                  card_number: it.card_number,
+                  condition: it.condition,
+                  purchase_price: patch.purchase_price ?? it.purchase_price,
+                  target_sell_price: patch.target_sell_price ?? it.target_sell_price,
+                  quantity: it.quantity,
+                  label_printed_at: it.label_printed_at ?? null,
+                  label_print_count: it.label_print_count ?? 0,
+                }]);
+              }
             }}
           />
         )}
+
+        <PrintLabelsDialog
+          open={labelQueue.length > 0}
+          onOpenChange={(o) => { if (!o) setLabelQueue([]); }}
+          items={labelQueue}
+          onPrinted={async (ids) => {
+            const nowIso = new Date().toISOString();
+            await supabase
+              .from("deal_list_items")
+              .update({ label_printed_at: nowIso })
+              .in("id", ids);
+            setItems((prev) => prev.map((i) => ids.includes(i.id)
+              ? { ...i, label_printed_at: nowIso, label_print_count: (i.label_print_count ?? 0) + 1 }
+              : i));
+          }}
+        />
 
         <EditBoughtDialog
           open={!!editTarget}
