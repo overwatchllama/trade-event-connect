@@ -34,6 +34,7 @@ import { EditBoughtDialog, type EditBoughtTarget } from "@/components/deals/Edit
 import { BulkEditBoughtDialog, type BulkEditTarget } from "@/components/deals/BulkEditBoughtDialog";
 import { LotBuyDialog, type LotBuyTarget } from "@/components/deals/LotBuyDialog";
 import { AddCardToDealDialog } from "@/components/deals/AddCardToDealDialog";
+import { PrintLabelsDialog, type PrintLabelItem } from "@/components/inventory/PrintLabelsDialog";
 
 /**
  * Deal pipeline stages:
@@ -163,6 +164,7 @@ const DealList = () => {
     return stored as DealStatus | "all";
   });
   const [buyTarget, setBuyTarget] = useState<MarkAsBoughtTarget | null>(null);
+  const [labelQueue, setLabelQueue] = useState<PrintLabelItem[]>([]);
   const [editTarget, setEditTarget] = useState<EditBoughtTarget | null>(null);
   // Bulk-edit state for the Bought tab — Set<id> survives status filter changes so users
   // can re-find a row in another tab without losing their selection.
@@ -1680,9 +1682,40 @@ const DealList = () => {
             onClose={() => setBuyTarget(null)}
             onSuccess={(dealId, patch) => {
               setItems((prev) => prev.map((it) => (it.id === dealId ? { ...it, ...patch } : it)));
+              const it = items.find((x) => x.id === dealId);
+              if (it) {
+                setLabelQueue([{
+                  id: it.id,
+                  card_name: it.card_name,
+                  set_name: it.set_name,
+                  card_number: it.card_number,
+                  condition: it.condition,
+                  purchase_price: patch.purchase_price ?? it.purchase_price,
+                  target_sell_price: patch.target_sell_price ?? it.target_sell_price,
+                  quantity: it.quantity,
+                  label_printed_at: (it as any).label_printed_at ?? null,
+                  label_print_count: (it as any).label_print_count ?? 0,
+                }]);
+              }
             }}
           />
         )}
+
+        <PrintLabelsDialog
+          open={labelQueue.length > 0}
+          onOpenChange={(o) => { if (!o) setLabelQueue([]); }}
+          items={labelQueue}
+          onPrinted={async (ids) => {
+            const nowIso = new Date().toISOString();
+            await supabase
+              .from("deal_list_items")
+              .update({ label_printed_at: nowIso })
+              .in("id", ids);
+            setItems((prev) => prev.map((i) => ids.includes(i.id)
+              ? { ...i, label_printed_at: nowIso, label_print_count: (((i as any).label_print_count) ?? 0) + 1 } as any
+              : i));
+          }}
+        />
 
         <EditBoughtDialog
           open={!!editTarget}

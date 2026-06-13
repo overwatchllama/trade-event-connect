@@ -49,7 +49,7 @@ const fmt = (n?: number | null) =>
   n == null ? "" : n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
 
 export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Props) => {
-  const [preset, setPreset] = useState<Preset>("avery-5160");
+  const [preset, setPreset] = useState<Preset>("brother-dk1201");
   const [copies, setCopies] = useState(1);
   const [perQuantity, setPerQuantity] = useState(true);
   const [showPrice, setShowPrice] = useState(true);
@@ -91,16 +91,19 @@ export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Prop
           JsBarcode(svg, it.id, { format: "CODE128", width: 1.6, height: 48, displayValue: false, margin: 0 });
         } catch {}
         const barcodeHtml = svg.outerHTML;
-        const meta = [it.set_name, it.card_number && `#${it.card_number}`, it.condition?.replace("_", " ")]
-          .filter(Boolean)
-          .join(" · ");
-        const priceLine = showPrice
-          ? `<div class="price">${it.target_sell_price != null ? fmt(it.target_sell_price) : it.purchase_price != null ? `cost ${fmt(it.purchase_price)}` : ""}</div>`
+        const setLine = [it.set_name, it.card_number && `#${it.card_number}`].filter(Boolean).join(" · ");
+        const conditionTxt = it.condition?.replace(/_/g, " ").toUpperCase() ?? "";
+        const priceVal = it.target_sell_price ?? it.purchase_price;
+        const priceLine = showPrice && priceVal != null
+          ? `<div class="price">${it.target_sell_price != null ? fmt(it.target_sell_price) : `cost ${fmt(it.purchase_price!)}`}</div>`
           : "";
         return `
           <div class="label">
-            <div class="title">${escapeHtml(it.card_name)}</div>
-            <div class="meta">${escapeHtml(meta)}</div>
+            <div class="header">
+              <div class="title">${escapeHtml(it.card_name)}</div>
+              ${conditionTxt ? `<div class="cond">${escapeHtml(conditionTxt)}</div>` : ""}
+            </div>
+            <div class="meta">${escapeHtml(setLine)}</div>
             <div class="barcode">${barcodeHtml}</div>
             <div class="row"><div class="code">${escapeHtml(it.id.slice(0, 8))}</div>${priceLine}</div>
           </div>
@@ -129,13 +132,15 @@ export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Prop
     overflow: hidden;
     display: flex; flex-direction: column; justify-content: space-between;
   }
-  .title { font-size: 9pt; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .header { display: flex; align-items: flex-start; gap: 4px; }
+  .title { flex: 1; font-size: 10pt; font-weight: 800; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cond { font-size: 6pt; font-weight: 700; color: #fff; background: #000; padding: 1px 4px; border-radius: 2px; white-space: nowrap; letter-spacing: 0.04em; }
   .meta { font-size: 7pt; color: #333; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .barcode { display: flex; justify-content: center; align-items: center; flex: 1; min-height: 0; }
   .barcode svg { width: 100%; height: 100%; }
-  .row { display: flex; justify-content: space-between; align-items: center; font-size: 6.5pt; color: #000; }
-  .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; }
-  .price { font-weight: 700; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; font-size: 7pt; color: #000; }
+  .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; color: #555; }
+  .price { font-weight: 800; font-size: 11pt; }
   @media print { .sheet { page-break-after: always; } }
 </style></head>
 <body>${chunkIntoSheets(labels, cfg.cols * cfg.rows)}

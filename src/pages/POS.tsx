@@ -24,9 +24,13 @@ interface DraftLine {
   side: Side;
   card_name: string;
   set_name?: string;
+  card_number?: string;
+  condition?: string;
   quantity: number;
   unit_price?: number;
   unit_cost?: number;
+  deal_list_item_id?: string;
+  image_url?: string;
 }
 
 interface EventOption {
@@ -136,6 +140,53 @@ const POS = () => {
   const removeLine = (id: string) =>
     setLines((prev) => prev.filter((l) => l.tempId !== id));
 
+  // Barcode scan → fetch inventory row and add a linked sell line.
+  const [scanValue, setScanValue] = useState("");
+  const [scanBusy, setScanBusy] = useState(false);
+  const handleScan = async (raw: string) => {
+    const id = raw.trim();
+    if (!id) return;
+    setScanBusy(true);
+    try {
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      let query = supabase
+        .from("deal_list_items")
+        .select("id, card_name, set_name, card_number, condition, target_sell_price, purchase_price, image_url, listing_status")
+        .eq("user_id", user?.id ?? "")
+        .eq("status", "bought")
+        .limit(1);
+      query = uuidRe.test(id) ? query.eq("id", id) : query.ilike("id", `${id}%`);
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      if (!data) { toast.error("No inventory found for that label"); return; }
+      if (data.listing_status === "sold") {
+        toast.warning(`${data.card_name} is already marked sold`);
+      }
+      setLines((prev) => [
+        ...prev,
+        {
+          tempId: crypto.randomUUID(),
+          side: "sell",
+          card_name: data.card_name,
+          set_name: data.set_name ?? undefined,
+          card_number: data.card_number ?? undefined,
+          condition: data.condition ?? undefined,
+          quantity: 1,
+          unit_price: data.target_sell_price ?? undefined,
+          unit_cost: data.purchase_price ?? undefined,
+          deal_list_item_id: data.id,
+          image_url: data.image_url ?? undefined,
+        },
+      ]);
+      toast.success(`Added ${data.card_name}`);
+      setScanValue("");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Scan failed");
+    } finally {
+      setScanBusy(false);
+    }
+  };
+
   // Auto-create first line when kind changes
   useEffect(() => {
     if (lines.length === 0) {
@@ -219,13 +270,31 @@ const POS = () => {
         side: kind === "buy" ? "buy" : kind === "sell" ? "sell" : l.side,
         card_name: l.card_name.trim(),
         set_name: l.set_name || null,
+        card_number: l.card_number || null,
+        condition: l.condition || null,
         quantity: l.quantity || 1,
         unit_price: l.unit_price ?? null,
         unit_cost: l.unit_cost ?? null,
+        deal_list_item_id: l.deal_list_item_id || null,
+        image_url: l.image_url || null,
       }));
 
       const { error: itemErr } = await supabase.from("transaction_items").insert(rows);
       if (itemErr) throw itemErr;
+
+      // Mark linked inventory items as sold (only sell-side lines with a link).
+      const soldLinks = valid.filter((l) => l.side === "sell" && l.deal_list_item_id);
+      for (const l of soldLinks) {
+        await supabase
+          .from("deal_list_items")
+          .update({
+            listing_status: "sold",
+            sold_at: new Date().toISOString(),
+            sold_price: l.unit_price ?? null,
+            sold_channel: "pos",
+          })
+          .eq("id", l.deal_list_item_id!);
+      }
 
       toast.success(
         `${kind === "buy" ? "Buy" : kind === "sell" ? "Sale" : "Trade"} saved · ${fmt(total)}`
@@ -468,6 +537,33 @@ const POS = () => {
                     )}
                   </div>
 
+                  {kind !== "buy" && (
+                    <div className="flex gap-2">
+                      <Input
+                        autoFocus={kind === "sell"}
+                        placeholder="Scan inventory label (Code 128) or paste item ID…"
+                        value={scanValue}
+                        onChange={(e) => setScanValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleScan(scanValue);
+                          }
+                        }}
+                        disabled={scanBusy}
+                        className="font-mono text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => handleScan(scanValue)}
+                        disabled={scanBusy || !scanValue.trim()}
+                      >
+                        {scanBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add"}
+                      </Button>
+                    </div>
+                  )}
+
                   {lines.length === 0 && (
                     <p className="text-sm text-muted-foreground">No lines yet.</p>
                   )}
@@ -481,6 +577,11 @@ const POS = () => {
                         {kind === "trade" && (
                           <Badge variant={l.side === "sell" ? "default" : "secondary"} className="mb-1">
                             {l.side === "sell" ? "Customer gets" : "You get"}
+                          </Badge>
+                        )}
+                        {l.deal_list_item_id && (
+                          <Badge variant="outline" className="mb-1 font-mono text-[10px]">
+                            inv · {l.deal_list_item_id.slice(0, 8)}{l.condition ? ` · ${l.condition.replace(/_/g, " ")}` : ""}
                           </Badge>
                         )}
                         <Input
