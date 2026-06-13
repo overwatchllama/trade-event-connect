@@ -140,6 +140,53 @@ const POS = () => {
   const removeLine = (id: string) =>
     setLines((prev) => prev.filter((l) => l.tempId !== id));
 
+  // Barcode scan → fetch inventory row and add a linked sell line.
+  const [scanValue, setScanValue] = useState("");
+  const [scanBusy, setScanBusy] = useState(false);
+  const handleScan = async (raw: string) => {
+    const id = raw.trim();
+    if (!id) return;
+    setScanBusy(true);
+    try {
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      let query = supabase
+        .from("deal_list_items")
+        .select("id, card_name, set_name, card_number, condition, target_sell_price, purchase_price, image_url, listing_status")
+        .eq("user_id", user?.id ?? "")
+        .eq("status", "bought")
+        .limit(1);
+      query = uuidRe.test(id) ? query.eq("id", id) : query.ilike("id", `${id}%`);
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      if (!data) { toast.error("No inventory found for that label"); return; }
+      if (data.listing_status === "sold") {
+        toast.warning(`${data.card_name} is already marked sold`);
+      }
+      setLines((prev) => [
+        ...prev,
+        {
+          tempId: crypto.randomUUID(),
+          side: "sell",
+          card_name: data.card_name,
+          set_name: data.set_name ?? undefined,
+          card_number: data.card_number ?? undefined,
+          condition: data.condition ?? undefined,
+          quantity: 1,
+          unit_price: data.target_sell_price ?? undefined,
+          unit_cost: data.purchase_price ?? undefined,
+          deal_list_item_id: data.id,
+          image_url: data.image_url ?? undefined,
+        },
+      ]);
+      toast.success(`Added ${data.card_name}`);
+      setScanValue("");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Scan failed");
+    } finally {
+      setScanBusy(false);
+    }
+  };
+
   // Auto-create first line when kind changes
   useEffect(() => {
     if (lines.length === 0) {
