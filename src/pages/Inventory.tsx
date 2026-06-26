@@ -681,8 +681,9 @@ const Inventory = () => {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((i) => {
-                    const { invested, projected, profit, margin } = calc(i);
+                    const { invested, projected, profit, margin, marketUnit, marketValue, unrealized, unrealizedMargin } = calc(i);
                     const positive = profit >= 0;
+                    const unrealizedPositive = (unrealized ?? 0) >= 0;
                     return (
                       <TableRow key={i.id} data-state={selected.has(i.id) ? "selected" : undefined}>
                         <TableCell>
