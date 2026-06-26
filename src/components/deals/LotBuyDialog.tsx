@@ -60,6 +60,7 @@ interface Props {
         target_sell_price: number | null;
         bought_at: string;
         collection_item_id: string;
+        lot_id: string;
       };
     }>,
   ) => void;
