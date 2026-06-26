@@ -668,6 +668,9 @@ const Inventory = () => {
                     <TableHead className="text-right">Unit cost</TableHead>
                     <TableHead className="text-right">Ship + fees</TableHead>
                     <TableHead className="text-right"><SortBtn k="invested">Invested</SortBtn></TableHead>
+                    <TableHead className="text-right">Market / unit</TableHead>
+                    <TableHead className="text-right"><SortBtn k="market_value">Market value</SortBtn></TableHead>
+                    <TableHead className="text-right"><SortBtn k="unrealized">Unrealized P&amp;L</SortBtn></TableHead>
                     <TableHead className="text-right">Target / unit</TableHead>
                     <TableHead className="text-right"><SortBtn k="projected">Projected</SortBtn></TableHead>
                     <TableHead className="text-right"><SortBtn k="profit">Profit</SortBtn></TableHead>
