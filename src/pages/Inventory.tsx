@@ -712,7 +712,7 @@ const Inventory = () => {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((i) => {
-                    const { invested, projected, profit, margin, marketUnit, marketValue, unrealized, unrealizedMargin } = calc(i);
+                    const { invested, unitCost, projected, profit, margin, marketUnit, marketValue, unrealized, unrealizedMargin } = calcRow(i);
                     const positive = profit >= 0;
                     const unrealizedPositive = (unrealized ?? 0) >= 0;
                     return (
