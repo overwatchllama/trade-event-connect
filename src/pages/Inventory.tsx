@@ -777,7 +777,13 @@ const Inventory = () => {
                           {i.bought_at ? new Date(i.bought_at).toLocaleDateString() : "—"}
                         </TableCell>
                         <TableCell className="text-right">{i.quantity}</TableCell>
-                        <TableCell className="text-right">{i.purchase_price != null ? fmt(i.purchase_price) : "—"}</TableCell>
+                        <TableCell className="text-right">
+                          {costMode === "avg" ? (
+                            <span title="Weighted average unit cost across all lots of this SKU">{fmt(unitCost)}</span>
+                          ) : (
+                            i.purchase_price != null ? fmt(i.purchase_price) : "—"
+                          )}
+                        </TableCell>
                         <TableCell className="text-right text-muted-foreground">
                           {fmt((i.shipping_cost ?? 0) + (i.fees ?? 0))}
                         </TableCell>
