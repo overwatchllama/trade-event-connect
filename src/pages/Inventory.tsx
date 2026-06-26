@@ -622,6 +622,37 @@ const Inventory = () => {
 
         {/* Totals */}
 
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <div className="inline-flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">Cost basis:</span>
+            <div className="inline-flex rounded-md border bg-muted/40 p-0.5">
+              <button
+                type="button"
+                onClick={() => setCostMode("lot")}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${costMode === "lot" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                aria-pressed={costMode === "lot"}
+                title="Use each lot's actual purchase price + ship/fees"
+              >
+                Lot cost
+              </button>
+              <button
+                type="button"
+                onClick={() => setCostMode("avg")}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${costMode === "avg" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                aria-pressed={costMode === "avg"}
+                title="Weighted average unit cost across all lots of the same SKU"
+              >
+                Avg cost
+              </button>
+            </div>
+          </div>
+          {costMode === "avg" && (
+            <span className="text-[11px] text-muted-foreground">
+              Unrealized P&amp;L uses a weighted average across all lots of the same card + condition.
+            </span>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">
           <Card className="p-3">
             <p className="text-xs text-muted-foreground">Items</p>
