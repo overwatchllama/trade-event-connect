@@ -74,6 +74,13 @@ const POS = () => {
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [saving, setSaving] = useState(false);
+  // Split tender: many real tickets are paid with cash + card + store credit.
+  // We keep this as a side state and reconcile against the computed `total`
+  // on save so the user can't accidentally undercollect.
+  const [tenderSplits, setTenderSplits] = useState<Array<{ method: string; amount: string }>>([]);
+  // Trade settlement: when the two sides don't balance, we let the user pick
+  // whether the gap is paid in cash now or carried as store credit.
+  const [tradeSettlement, setTradeSettlement] = useState<"cash" | "store_credit">("cash");
 
   // Ledger state
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
