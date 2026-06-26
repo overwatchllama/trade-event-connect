@@ -74,6 +74,13 @@ const POS = () => {
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [saving, setSaving] = useState(false);
+  // Split tender: many real tickets are paid with cash + card + store credit.
+  // We keep this as a side state and reconcile against the computed `total`
+  // on save so the user can't accidentally undercollect.
+  const [tenderSplits, setTenderSplits] = useState<Array<{ method: string; amount: string }>>([]);
+  // Trade settlement: when the two sides don't balance, we let the user pick
+  // whether the gap is paid in cash now or carried as store credit.
+  const [tradeSettlement, setTradeSettlement] = useState<"cash" | "store_credit">("cash");
 
   // Ledger state
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
@@ -214,11 +221,28 @@ const POS = () => {
     return { revenue, cost, subtotal, fees: feesNum, total: subtotal - feesNum };
   }, [lines, fees]);
 
+  // Trade balance: positive = customer owes (must tender cash or take less),
+  // negative = vendor owes the customer (issue store credit or pay out).
+  const tradeBalance = useMemo(() => {
+    if (kind !== "trade") return 0;
+    return totals.revenue - totals.cost; // sell-side value - buy-side value
+  }, [kind, totals.revenue, totals.cost]);
+
+  // Split tender totals; expected = trade balance for trade, full total otherwise.
+  const tenderExpected = kind === "trade" ? Math.max(0, tradeBalance) : Math.max(0, totals.total);
+  const tenderCollected = useMemo(
+    () => tenderSplits.reduce((s, t) => s + Number(t.amount || 0), 0),
+    [tenderSplits],
+  );
+  const tenderDelta = +(tenderExpected - tenderCollected).toFixed(2);
+
   const resetDraft = () => {
     setLines([]);
     setCustomerLabel("");
     setNotes("");
     setFees("0");
+    setTenderSplits([]);
+    setTradeSettlement("cash");
   };
 
   const saveTransaction = async () => {
@@ -246,6 +270,20 @@ const POS = () => {
       const subtotal = totals.subtotal;
       const total = totals.total;
 
+      // Build a tender breakdown payload. We always store something: even single-method
+      // tickets get a one-row breakdown so reports don't have to special-case nulls.
+      const tenderRows = tenderSplits
+        .map((t) => ({ method: t.method, amount: Number(t.amount || 0) }))
+        .filter((t) => t.amount > 0 || t.method === "store_credit");
+      const tenderPayload =
+        kind === "trade"
+          ? {
+              settlement: tradeSettlement,
+              balance: tradeBalance, // positive = customer owes, negative = vendor owes
+              splits: tenderRows,
+            }
+          : { splits: tenderRows.length ? tenderRows : [{ method: paymentMethod, amount: total }] };
+
       const { data: tx, error: txErr } = await supabase
         .from("transactions")
         .insert({
@@ -255,6 +293,7 @@ const POS = () => {
           personal_event_id: eventOpt?.kind === "personal" ? eventOpt.id : null,
           customer_label: customerLabel || null,
           payment_method: paymentMethod || null,
+          tender_breakdown: tenderPayload,
           subtotal,
           fees: Number(fees || 0),
           total,
@@ -622,13 +661,27 @@ const POS = () => {
                           }}
                         />
                       </div>
-                      <div className="col-span-4 sm:col-span-2 flex items-end justify-end h-full">
+                      <div className="col-span-4 sm:col-span-2 flex flex-col items-end justify-end h-full gap-0.5">
                         <div className="text-sm font-medium">
                           {fmt(
                             (l.side === "sell" ? l.unit_price ?? 0 : l.unit_cost ?? 0) *
                               (l.quantity || 0)
                           )}
                         </div>
+                        {/* Margin chip: only meaningful on sell lines that carry a known cost
+                            (linked inventory or manually typed). Helps the clerk see if a hand-keyed
+                            price is selling the card under cost. */}
+                        {l.side === "sell" && (l.unit_cost ?? 0) > 0 && (l.unit_price ?? 0) > 0 && (() => {
+                          const margin = ((l.unit_price! - l.unit_cost!) / l.unit_price!) * 100;
+                          return (
+                            <Badge
+                              variant={margin >= 30 ? "default" : margin >= 0 ? "secondary" : "destructive"}
+                              className="text-[10px]"
+                            >
+                              {margin >= 0 ? "+" : ""}{margin.toFixed(0)}% margin
+                            </Badge>
+                          );
+                        })()}
                       </div>
                       <div className="col-span-1 flex items-end justify-end">
                         <Button
@@ -680,6 +733,151 @@ const POS = () => {
                     </span>
                   </div>
                 </div>
+
+                {/* Trade balance helper: when a trade doesn't balance, we make the gap explicit
+                    and force the user to declare cash-out vs. store-credit settlement. */}
+                {kind === "trade" && (
+                  <div className="rounded-lg border p-4 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Customer gives (you get)</span>
+                      <span>{fmt(totals.cost)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Customer gets (you give)</span>
+                      <span>{fmt(totals.revenue)}</span>
+                    </div>
+                    <Separator className="my-1" />
+                    <div className="flex justify-between font-semibold">
+                      <span>
+                        {tradeBalance > 0
+                          ? "Customer owes"
+                          : tradeBalance < 0
+                          ? "You owe customer"
+                          : "Even trade"}
+                      </span>
+                      <span className={tradeBalance < 0 ? "text-destructive" : ""}>
+                        {fmt(Math.abs(tradeBalance))}
+                      </span>
+                    </div>
+                    {Math.abs(tradeBalance) > 0.005 && (
+                      <div className="pt-1">
+                        <Label className="text-xs mb-1.5 block">Settle gap as</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={tradeSettlement === "cash" ? "default" : "outline"}
+                            onClick={() => setTradeSettlement("cash")}
+                          >
+                            Cash now
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={tradeSettlement === "store_credit" ? "default" : "outline"}
+                            onClick={() => setTradeSettlement("store_credit")}
+                          >
+                            Store credit
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Split tender editor: only shown when there's a non-zero amount to collect
+                    and (for trades) only when settling in cash. Keeps simple single-tender
+                    tickets uncluttered. */}
+                {tenderExpected > 0 && (kind !== "trade" || tradeSettlement === "cash") && (
+                  <div className="rounded-lg border p-4 space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">Split tender (optional)</Label>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          setTenderSplits((prev) => [...prev, { method: "cash", amount: "" }])
+                        }
+                      >
+                        <Plus className="h-3 w-3 mr-1" /> Add tender
+                      </Button>
+                    </div>
+                    {tenderSplits.length === 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        One payment ({paymentMethod}) for {fmt(tenderExpected)}. Add a row to split.
+                      </p>
+                    )}
+                    {tenderSplits.map((t, i) => (
+                      <div key={i} className="grid grid-cols-12 gap-2 items-end">
+                        <div className="col-span-6">
+                          <Select
+                            value={t.method}
+                            onValueChange={(v) =>
+                              setTenderSplits((prev) =>
+                                prev.map((row, idx) => (idx === i ? { ...row, method: v } : row)),
+                              )
+                            }
+                          >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="cash">Cash</SelectItem>
+                              <SelectItem value="card">Card</SelectItem>
+                              <SelectItem value="venmo">Venmo</SelectItem>
+                              <SelectItem value="paypal">PayPal</SelectItem>
+                              <SelectItem value="zelle">Zelle</SelectItem>
+                              <SelectItem value="store_credit">Store credit</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="col-span-5">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min={0}
+                            placeholder="0.00"
+                            value={t.amount}
+                            onChange={(e) =>
+                              setTenderSplits((prev) =>
+                                prev.map((row, idx) =>
+                                  idx === i ? { ...row, amount: e.target.value } : row,
+                                ),
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="col-span-1 flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              setTenderSplits((prev) => prev.filter((_, idx) => idx !== i))
+                            }
+                            aria-label="Remove tender"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    {tenderSplits.length > 0 && (
+                      <div className="flex justify-between text-xs pt-1 border-t">
+                        <span className="text-muted-foreground">
+                          Collected {fmt(tenderCollected)} of {fmt(tenderExpected)}
+                        </span>
+                        <span className={Math.abs(tenderDelta) > 0.005 ? "text-amber-600 font-medium" : "text-emerald-600"}>
+                          {Math.abs(tenderDelta) <= 0.005
+                            ? "Balanced ✓"
+                            : tenderDelta > 0
+                            ? `${fmt(tenderDelta)} short`
+                            : `${fmt(-tenderDelta)} over`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+
 
                 <div className="flex gap-2 justify-end">
                   <Button variant="outline" onClick={resetDraft} disabled={saving}>Clear</Button>
