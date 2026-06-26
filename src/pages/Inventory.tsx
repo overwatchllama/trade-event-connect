@@ -591,7 +591,7 @@ const Inventory = () => {
 
         {/* Totals */}
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">
           <Card className="p-3">
             <p className="text-xs text-muted-foreground">Items</p>
             <p className="text-lg font-semibold">{filtered.length}</p>
@@ -600,6 +600,20 @@ const Inventory = () => {
           <Card className="p-3">
             <p className="text-xs text-muted-foreground">Total invested</p>
             <p className="text-lg font-semibold">{fmt(totals.invested)}</p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-xs text-muted-foreground">Market value</p>
+            <p className="text-lg font-semibold">{fmt(totals.marketValue)}</p>
+            <p className="text-xs text-muted-foreground">{totals.marketedItems} of {filtered.length} priced</p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-xs text-muted-foreground">Unrealized P&amp;L</p>
+            <p className={`text-lg font-semibold ${totals.unrealized >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+              {fmt(totals.unrealized)}
+            </p>
+            <p className={`text-xs ${totalUnrealizedMargin >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+              {totals.marketedInvested > 0 ? `${totalUnrealizedMargin.toFixed(1)}% vs cost` : "—"}
+            </p>
           </Card>
           <Card className="p-3">
             <p className="text-xs text-muted-foreground">Projected revenue</p>
