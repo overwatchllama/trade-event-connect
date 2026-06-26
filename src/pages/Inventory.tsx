@@ -74,12 +74,22 @@ interface EventOpt {
 }
 
 type SortKey = "bought_at" | "card_name" | "invested" | "projected" | "profit" | "margin" | "market_value" | "unrealized";
+type CostMode = "lot" | "avg";
 
 const fmt = (n: number) =>
   n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
 
-const calc = (i: InventoryItem) => {
-  const invested = (i.purchase_price ?? 0) * i.quantity + (i.shipping_cost ?? 0) + (i.fees ?? 0);
+const skuKey = (i: Pick<InventoryItem, "game" | "card_name" | "set_name" | "card_number" | "condition">) =>
+  [i.game, i.card_name, i.set_name ?? "", i.card_number ?? "", i.condition]
+    .map((s) => s.toLowerCase().trim())
+    .join("|");
+
+const calc = (i: InventoryItem, mode: CostMode = "lot", avgUnitCost?: number | null) => {
+  const lotInvested = (i.purchase_price ?? 0) * i.quantity + (i.shipping_cost ?? 0) + (i.fees ?? 0);
+  const unitCost = mode === "avg" && avgUnitCost != null
+    ? avgUnitCost
+    : i.quantity > 0 ? lotInvested / i.quantity : 0;
+  const invested = mode === "avg" && avgUnitCost != null ? avgUnitCost * i.quantity : lotInvested;
   const projected = (i.target_sell_price ?? 0) * i.quantity;
   const profit = projected - invested;
   const margin = projected > 0 ? (profit / projected) * 100 : 0;
@@ -87,7 +97,7 @@ const calc = (i: InventoryItem) => {
   const marketValue = marketUnit != null ? marketUnit * i.quantity : null;
   const unrealized = marketValue != null ? marketValue - invested : null;
   const unrealizedMargin = marketValue != null && marketValue > 0 ? ((unrealized ?? 0) / marketValue) * 100 : null;
-  return { invested, projected, profit, margin, marketUnit, marketValue, unrealized, unrealizedMargin };
+  return { invested, unitCost, projected, profit, margin, marketUnit, marketValue, unrealized, unrealizedMargin };
 };
 
 const Inventory = () => {
@@ -99,6 +109,7 @@ const Inventory = () => {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("bought_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [costMode, setCostMode] = useState<CostMode>("lot");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [printOpen, setPrintOpen] = useState(false);
   const [printItemIds, setPrintItemIds] = useState<string[] | null>(null);
@@ -176,6 +187,26 @@ const Inventory = () => {
 
 
 
+  // Weighted-average unit cost per SKU across ALL items (independent of filters)
+  // so the toggle gives a stable "avg cost" for that card+condition.
+  const avgCostBySku = useMemo(() => {
+    const totals = new Map<string, { cost: number; qty: number }>();
+    for (const i of items) {
+      const k = skuKey(i);
+      const lotInvested = (i.purchase_price ?? 0) * i.quantity + (i.shipping_cost ?? 0) + (i.fees ?? 0);
+      const t = totals.get(k) ?? { cost: 0, qty: 0 };
+      t.cost += lotInvested;
+      t.qty += i.quantity;
+      totals.set(k, t);
+    }
+    const out = new Map<string, number>();
+    for (const [k, v] of totals) if (v.qty > 0) out.set(k, v.cost / v.qty);
+    return out;
+  }, [items]);
+
+  const calcRow = (i: InventoryItem) =>
+    calc(i, costMode, costMode === "avg" ? avgCostBySku.get(skuKey(i)) ?? null : null);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let base = q
@@ -190,8 +221,8 @@ const Inventory = () => {
       base = base.filter((i) => eventMemberships.get(i.id)?.has(eventScope));
     }
     const sorted = [...base].sort((a, b) => {
-      const ca = calc(a);
-      const cb = calc(b);
+      const ca = calcRow(a);
+      const cb = calcRow(b);
       let av: number | string = 0;
       let bv: number | string = 0;
       switch (sortKey) {
@@ -221,13 +252,13 @@ const Inventory = () => {
       return 0;
     });
     return sorted;
-  }, [items, search, sortKey, sortDir, eventScope, eventMemberships]);
+  }, [items, search, sortKey, sortDir, eventScope, eventMemberships, costMode, avgCostBySku]);
 
 
   const totals = useMemo(() => {
     return filtered.reduce(
       (acc, i) => {
-        const c = calc(i);
+        const c = calcRow(i);
         acc.units += i.quantity;
         acc.invested += c.invested;
         acc.projected += c.projected;
@@ -242,7 +273,7 @@ const Inventory = () => {
       },
       { units: 0, invested: 0, projected: 0, profit: 0, marketValue: 0, marketedInvested: 0, unrealized: 0, marketedItems: 0 },
     );
-  }, [filtered]);
+  }, [filtered, costMode, avgCostBySku]);
 
   const totalMargin = totals.projected > 0 ? (totals.profit / totals.projected) * 100 : 0;
   const totalUnrealizedMargin = totals.marketedInvested > 0 ? (totals.unrealized / totals.marketedInvested) * 100 : 0;
@@ -591,6 +622,37 @@ const Inventory = () => {
 
         {/* Totals */}
 
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <div className="inline-flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">Cost basis:</span>
+            <div className="inline-flex rounded-md border bg-muted/40 p-0.5">
+              <button
+                type="button"
+                onClick={() => setCostMode("lot")}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${costMode === "lot" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                aria-pressed={costMode === "lot"}
+                title="Use each lot's actual purchase price + ship/fees"
+              >
+                Lot cost
+              </button>
+              <button
+                type="button"
+                onClick={() => setCostMode("avg")}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${costMode === "avg" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                aria-pressed={costMode === "avg"}
+                title="Weighted average unit cost across all lots of the same SKU"
+              >
+                Avg cost
+              </button>
+            </div>
+          </div>
+          {costMode === "avg" && (
+            <span className="text-[11px] text-muted-foreground">
+              Unrealized P&amp;L uses a weighted average across all lots of the same card + condition.
+            </span>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">
           <Card className="p-3">
             <p className="text-xs text-muted-foreground">Items</p>
@@ -681,7 +743,7 @@ const Inventory = () => {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((i) => {
-                    const { invested, projected, profit, margin, marketUnit, marketValue, unrealized, unrealizedMargin } = calc(i);
+                    const { invested, unitCost, projected, profit, margin, marketUnit, marketValue, unrealized, unrealizedMargin } = calcRow(i);
                     const positive = profit >= 0;
                     const unrealizedPositive = (unrealized ?? 0) >= 0;
                     return (
@@ -746,7 +808,13 @@ const Inventory = () => {
                           {i.bought_at ? new Date(i.bought_at).toLocaleDateString() : "—"}
                         </TableCell>
                         <TableCell className="text-right">{i.quantity}</TableCell>
-                        <TableCell className="text-right">{i.purchase_price != null ? fmt(i.purchase_price) : "—"}</TableCell>
+                        <TableCell className="text-right">
+                          {costMode === "avg" ? (
+                            <span title="Weighted average unit cost across all lots of this SKU">{fmt(unitCost)}</span>
+                          ) : (
+                            i.purchase_price != null ? fmt(i.purchase_price) : "—"
+                          )}
+                        </TableCell>
                         <TableCell className="text-right text-muted-foreground">
                           {fmt((i.shipping_cost ?? 0) + (i.fees ?? 0))}
                         </TableCell>
