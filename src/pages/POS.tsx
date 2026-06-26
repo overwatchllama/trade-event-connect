@@ -661,13 +661,27 @@ const POS = () => {
                           }}
                         />
                       </div>
-                      <div className="col-span-4 sm:col-span-2 flex items-end justify-end h-full">
+                      <div className="col-span-4 sm:col-span-2 flex flex-col items-end justify-end h-full gap-0.5">
                         <div className="text-sm font-medium">
                           {fmt(
                             (l.side === "sell" ? l.unit_price ?? 0 : l.unit_cost ?? 0) *
                               (l.quantity || 0)
                           )}
                         </div>
+                        {/* Margin chip: only meaningful on sell lines that carry a known cost
+                            (linked inventory or manually typed). Helps the clerk see if a hand-keyed
+                            price is selling the card under cost. */}
+                        {l.side === "sell" && (l.unit_cost ?? 0) > 0 && (l.unit_price ?? 0) > 0 && (() => {
+                          const margin = ((l.unit_price! - l.unit_cost!) / l.unit_price!) * 100;
+                          return (
+                            <Badge
+                              variant={margin >= 30 ? "default" : margin >= 0 ? "secondary" : "destructive"}
+                              className="text-[10px]"
+                            >
+                              {margin >= 0 ? "+" : ""}{margin.toFixed(0)}% margin
+                            </Badge>
+                          );
+                        })()}
                       </div>
                       <div className="col-span-1 flex items-end justify-end">
                         <Button
