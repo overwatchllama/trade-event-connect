@@ -314,6 +314,7 @@ export const LotBuyDialog = ({ open, targets, userId, onClose, onSuccess }: Prop
           target_sell_price: t.suggested_sell_price,
           bought_at: boughtAt,
           collection_item_id: inv.id,
+          lot_id: lotId,
         };
         const { error: updErr } = await supabase
           .from("deal_list_items")
