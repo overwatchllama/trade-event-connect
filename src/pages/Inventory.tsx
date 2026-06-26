@@ -751,6 +751,18 @@ const Inventory = () => {
                           {fmt((i.shipping_cost ?? 0) + (i.fees ?? 0))}
                         </TableCell>
                         <TableCell className="text-right font-medium">{fmt(invested)}</TableCell>
+                        <TableCell className="text-right">{marketUnit != null ? fmt(marketUnit) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className="text-right font-medium">{marketValue != null ? fmt(marketValue) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className={`text-right font-semibold ${unrealized == null ? "text-muted-foreground" : unrealizedPositive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                          {unrealized != null ? (
+                            <div className="flex flex-col items-end leading-tight">
+                              <span>{fmt(unrealized)}</span>
+                              {unrealizedMargin != null && (
+                                <span className="text-[10px] font-normal opacity-80">{unrealizedMargin.toFixed(1)}%</span>
+                              )}
+                            </div>
+                          ) : "—"}
+                        </TableCell>
                         <TableCell className="text-right">{i.target_sell_price != null ? fmt(i.target_sell_price) : "—"}</TableCell>
                         <TableCell className="text-right font-medium">{fmt(projected)}</TableCell>
                         <TableCell className={`text-right font-semibold ${positive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
