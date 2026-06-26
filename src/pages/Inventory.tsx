@@ -109,6 +109,7 @@ const Inventory = () => {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("bought_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [costMode, setCostMode] = useState<CostMode>("lot");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [printOpen, setPrintOpen] = useState(false);
   const [printItemIds, setPrintItemIds] = useState<string[] | null>(null);
