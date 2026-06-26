@@ -232,13 +232,20 @@ const Inventory = () => {
         acc.invested += c.invested;
         acc.projected += c.projected;
         acc.profit += c.profit;
+        if (c.marketValue != null) {
+          acc.marketValue += c.marketValue;
+          acc.marketedInvested += c.invested;
+          acc.unrealized += c.unrealized ?? 0;
+          acc.marketedItems += 1;
+        }
         return acc;
       },
-      { units: 0, invested: 0, projected: 0, profit: 0 },
+      { units: 0, invested: 0, projected: 0, profit: 0, marketValue: 0, marketedInvested: 0, unrealized: 0, marketedItems: 0 },
     );
   }, [filtered]);
 
   const totalMargin = totals.projected > 0 ? (totals.profit / totals.projected) * 100 : 0;
+  const totalUnrealizedMargin = totals.marketedInvested > 0 ? (totals.unrealized / totals.marketedInvested) * 100 : 0;
 
   const toggleSort = (k: SortKey) => {
     if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
