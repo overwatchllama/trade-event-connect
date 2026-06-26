@@ -270,6 +270,20 @@ const POS = () => {
       const subtotal = totals.subtotal;
       const total = totals.total;
 
+      // Build a tender breakdown payload. We always store something: even single-method
+      // tickets get a one-row breakdown so reports don't have to special-case nulls.
+      const tenderRows = tenderSplits
+        .map((t) => ({ method: t.method, amount: Number(t.amount || 0) }))
+        .filter((t) => t.amount > 0 || t.method === "store_credit");
+      const tenderPayload =
+        kind === "trade"
+          ? {
+              settlement: tradeSettlement,
+              balance: tradeBalance, // positive = customer owes, negative = vendor owes
+              splits: tenderRows,
+            }
+          : { splits: tenderRows.length ? tenderRows : [{ method: paymentMethod, amount: total }] };
+
       const { data: tx, error: txErr } = await supabase
         .from("transactions")
         .insert({
@@ -279,6 +293,7 @@ const POS = () => {
           personal_event_id: eventOpt?.kind === "personal" ? eventOpt.id : null,
           customer_label: customerLabel || null,
           payment_method: paymentMethod || null,
+          tender_breakdown: tenderPayload,
           subtotal,
           fees: Number(fees || 0),
           total,
