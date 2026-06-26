@@ -219,6 +219,7 @@ export type Database = {
           list_price: number | null
           listed_at: string | null
           listing_status: string
+          lot_id: string | null
           notes: string | null
           passed_at: string | null
           price_override: number | null
@@ -265,6 +266,7 @@ export type Database = {
           list_price?: number | null
           listed_at?: string | null
           listing_status?: string
+          lot_id?: string | null
           notes?: string | null
           passed_at?: string | null
           price_override?: number | null
@@ -311,6 +313,7 @@ export type Database = {
           list_price?: number | null
           listed_at?: string | null
           listing_status?: string
+          lot_id?: string | null
           notes?: string | null
           passed_at?: string | null
           price_override?: number | null
@@ -337,7 +340,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "deal_list_items_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_lots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deal_proposal_lines: {
         Row: {
@@ -1580,6 +1591,57 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_lots: {
+        Row: {
+          allocation_method: string
+          bought_at: string
+          created_at: string
+          event_id: string | null
+          fees: number
+          id: string
+          lot_total: number
+          notes: string | null
+          personal_event_id: string | null
+          shipping_cost: number
+          source: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allocation_method?: string
+          bought_at?: string
+          created_at?: string
+          event_id?: string | null
+          fees?: number
+          id?: string
+          lot_total?: number
+          notes?: string | null
+          personal_event_id?: string | null
+          shipping_cost?: number
+          source?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allocation_method?: string
+          bought_at?: string
+          created_at?: string
+          event_id?: string | null
+          fees?: number
+          id?: string
+          lot_total?: number
+          notes?: string | null
+          personal_event_id?: string | null
+          shipping_cost?: number
+          source?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       raffle_draws: {
         Row: {
           claim_deadline: string
@@ -1972,11 +2034,13 @@ export type Database = {
         Row: {
           card_name: string
           card_number: string | null
+          collection_item_id: string | null
           condition: string | null
           created_at: string
           deal_list_item_id: string | null
           id: string
           image_url: string | null
+          linked_kind: string | null
           market_snapshot: number | null
           quantity: number
           set_name: string | null
@@ -1988,11 +2052,13 @@ export type Database = {
         Insert: {
           card_name: string
           card_number?: string | null
+          collection_item_id?: string | null
           condition?: string | null
           created_at?: string
           deal_list_item_id?: string | null
           id?: string
           image_url?: string | null
+          linked_kind?: string | null
           market_snapshot?: number | null
           quantity?: number
           set_name?: string | null
@@ -2004,11 +2070,13 @@ export type Database = {
         Update: {
           card_name?: string
           card_number?: string | null
+          collection_item_id?: string | null
           condition?: string | null
           created_at?: string
           deal_list_item_id?: string | null
           id?: string
           image_url?: string | null
+          linked_kind?: string | null
           market_snapshot?: number | null
           quantity?: number
           set_name?: string | null
@@ -2018,6 +2086,13 @@ export type Database = {
           unit_price?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "transaction_items_collection_item_id_fkey"
+            columns: ["collection_item_id"]
+            isOneToOne: false
+            referencedRelation: "collection_items"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transaction_items_deal_list_item_id_fkey"
             columns: ["deal_list_item_id"]
@@ -2054,6 +2129,7 @@ export type Database = {
           payment_method: string | null
           personal_event_id: string | null
           subtotal: number
+          tender_breakdown: Json | null
           total: number
           updated_at: string
           user_id: string
@@ -2070,6 +2146,7 @@ export type Database = {
           payment_method?: string | null
           personal_event_id?: string | null
           subtotal?: number
+          tender_breakdown?: Json | null
           total?: number
           updated_at?: string
           user_id: string
@@ -2086,6 +2163,7 @@ export type Database = {
           payment_method?: string | null
           personal_event_id?: string | null
           subtotal?: number
+          tender_breakdown?: Json | null
           total?: number
           updated_at?: string
           user_id?: string
