@@ -74,12 +74,22 @@ interface EventOpt {
 }
 
 type SortKey = "bought_at" | "card_name" | "invested" | "projected" | "profit" | "margin" | "market_value" | "unrealized";
+type CostMode = "lot" | "avg";
 
 const fmt = (n: number) =>
   n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
 
-const calc = (i: InventoryItem) => {
-  const invested = (i.purchase_price ?? 0) * i.quantity + (i.shipping_cost ?? 0) + (i.fees ?? 0);
+const skuKey = (i: Pick<InventoryItem, "game" | "card_name" | "set_name" | "card_number" | "condition">) =>
+  [i.game, i.card_name, i.set_name ?? "", i.card_number ?? "", i.condition]
+    .map((s) => s.toLowerCase().trim())
+    .join("|");
+
+const calc = (i: InventoryItem, mode: CostMode = "lot", avgUnitCost?: number | null) => {
+  const lotInvested = (i.purchase_price ?? 0) * i.quantity + (i.shipping_cost ?? 0) + (i.fees ?? 0);
+  const unitCost = mode === "avg" && avgUnitCost != null
+    ? avgUnitCost
+    : i.quantity > 0 ? lotInvested / i.quantity : 0;
+  const invested = mode === "avg" && avgUnitCost != null ? avgUnitCost * i.quantity : lotInvested;
   const projected = (i.target_sell_price ?? 0) * i.quantity;
   const profit = projected - invested;
   const margin = projected > 0 ? (profit / projected) * 100 : 0;
@@ -87,7 +97,7 @@ const calc = (i: InventoryItem) => {
   const marketValue = marketUnit != null ? marketUnit * i.quantity : null;
   const unrealized = marketValue != null ? marketValue - invested : null;
   const unrealizedMargin = marketValue != null && marketValue > 0 ? ((unrealized ?? 0) / marketValue) * 100 : null;
-  return { invested, projected, profit, margin, marketUnit, marketValue, unrealized, unrealizedMargin };
+  return { invested, unitCost, projected, profit, margin, marketUnit, marketValue, unrealized, unrealizedMargin };
 };
 
 const Inventory = () => {
