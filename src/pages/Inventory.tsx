@@ -73,7 +73,7 @@ interface EventOpt {
   date: string;
 }
 
-type SortKey = "bought_at" | "card_name" | "invested" | "projected" | "profit" | "margin";
+type SortKey = "bought_at" | "card_name" | "invested" | "projected" | "profit" | "margin" | "market_value" | "unrealized";
 
 const fmt = (n: number) =>
   n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
@@ -83,7 +83,11 @@ const calc = (i: InventoryItem) => {
   const projected = (i.target_sell_price ?? 0) * i.quantity;
   const profit = projected - invested;
   const margin = projected > 0 ? (profit / projected) * 100 : 0;
-  return { invested, projected, profit, margin };
+  const marketUnit = i.tcgplayer_market_price ?? null;
+  const marketValue = marketUnit != null ? marketUnit * i.quantity : null;
+  const unrealized = marketValue != null ? marketValue - invested : null;
+  const unrealizedMargin = marketValue != null && marketValue > 0 ? ((unrealized ?? 0) / marketValue) * 100 : null;
+  return { invested, projected, profit, margin, marketUnit, marketValue, unrealized, unrealizedMargin };
 };
 
 const Inventory = () => {
