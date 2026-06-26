@@ -73,7 +73,7 @@ interface EventOpt {
   date: string;
 }
 
-type SortKey = "bought_at" | "card_name" | "invested" | "projected" | "profit" | "margin";
+type SortKey = "bought_at" | "card_name" | "invested" | "projected" | "profit" | "margin" | "market_value" | "unrealized";
 
 const fmt = (n: number) =>
   n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 2 });
@@ -83,7 +83,11 @@ const calc = (i: InventoryItem) => {
   const projected = (i.target_sell_price ?? 0) * i.quantity;
   const profit = projected - invested;
   const margin = projected > 0 ? (profit / projected) * 100 : 0;
-  return { invested, projected, profit, margin };
+  const marketUnit = i.tcgplayer_market_price ?? null;
+  const marketValue = marketUnit != null ? marketUnit * i.quantity : null;
+  const unrealized = marketValue != null ? marketValue - invested : null;
+  const unrealizedMargin = marketValue != null && marketValue > 0 ? ((unrealized ?? 0) / marketValue) * 100 : null;
+  return { invested, projected, profit, margin, marketUnit, marketValue, unrealized, unrealizedMargin };
 };
 
 const Inventory = () => {
@@ -207,6 +211,10 @@ const Inventory = () => {
           av = ca.profit; bv = cb.profit; break;
         case "margin":
           av = ca.margin; bv = cb.margin; break;
+        case "market_value":
+          av = ca.marketValue ?? -Infinity; bv = cb.marketValue ?? -Infinity; break;
+        case "unrealized":
+          av = ca.unrealized ?? -Infinity; bv = cb.unrealized ?? -Infinity; break;
       }
       if (av < bv) return sortDir === "asc" ? -1 : 1;
       if (av > bv) return sortDir === "asc" ? 1 : -1;
@@ -224,13 +232,20 @@ const Inventory = () => {
         acc.invested += c.invested;
         acc.projected += c.projected;
         acc.profit += c.profit;
+        if (c.marketValue != null) {
+          acc.marketValue += c.marketValue;
+          acc.marketedInvested += c.invested;
+          acc.unrealized += c.unrealized ?? 0;
+          acc.marketedItems += 1;
+        }
         return acc;
       },
-      { units: 0, invested: 0, projected: 0, profit: 0 },
+      { units: 0, invested: 0, projected: 0, profit: 0, marketValue: 0, marketedInvested: 0, unrealized: 0, marketedItems: 0 },
     );
   }, [filtered]);
 
   const totalMargin = totals.projected > 0 ? (totals.profit / totals.projected) * 100 : 0;
+  const totalUnrealizedMargin = totals.marketedInvested > 0 ? (totals.unrealized / totals.marketedInvested) * 100 : 0;
 
   const toggleSort = (k: SortKey) => {
     if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -576,7 +591,7 @@ const Inventory = () => {
 
         {/* Totals */}
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">
           <Card className="p-3">
             <p className="text-xs text-muted-foreground">Items</p>
             <p className="text-lg font-semibold">{filtered.length}</p>
@@ -585,6 +600,20 @@ const Inventory = () => {
           <Card className="p-3">
             <p className="text-xs text-muted-foreground">Total invested</p>
             <p className="text-lg font-semibold">{fmt(totals.invested)}</p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-xs text-muted-foreground">Market value</p>
+            <p className="text-lg font-semibold">{fmt(totals.marketValue)}</p>
+            <p className="text-xs text-muted-foreground">{totals.marketedItems} of {filtered.length} priced</p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-xs text-muted-foreground">Unrealized P&amp;L</p>
+            <p className={`text-lg font-semibold ${totals.unrealized >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+              {fmt(totals.unrealized)}
+            </p>
+            <p className={`text-xs ${totalUnrealizedMargin >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+              {totals.marketedInvested > 0 ? `${totalUnrealizedMargin.toFixed(1)}% vs cost` : "—"}
+            </p>
           </Card>
           <Card className="p-3">
             <p className="text-xs text-muted-foreground">Projected revenue</p>
@@ -639,6 +668,9 @@ const Inventory = () => {
                     <TableHead className="text-right">Unit cost</TableHead>
                     <TableHead className="text-right">Ship + fees</TableHead>
                     <TableHead className="text-right"><SortBtn k="invested">Invested</SortBtn></TableHead>
+                    <TableHead className="text-right">Market / unit</TableHead>
+                    <TableHead className="text-right"><SortBtn k="market_value">Market value</SortBtn></TableHead>
+                    <TableHead className="text-right"><SortBtn k="unrealized">Unrealized P&amp;L</SortBtn></TableHead>
                     <TableHead className="text-right">Target / unit</TableHead>
                     <TableHead className="text-right"><SortBtn k="projected">Projected</SortBtn></TableHead>
                     <TableHead className="text-right"><SortBtn k="profit">Profit</SortBtn></TableHead>
@@ -649,8 +681,9 @@ const Inventory = () => {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((i) => {
-                    const { invested, projected, profit, margin } = calc(i);
+                    const { invested, projected, profit, margin, marketUnit, marketValue, unrealized, unrealizedMargin } = calc(i);
                     const positive = profit >= 0;
+                    const unrealizedPositive = (unrealized ?? 0) >= 0;
                     return (
                       <TableRow key={i.id} data-state={selected.has(i.id) ? "selected" : undefined}>
                         <TableCell>
@@ -718,6 +751,18 @@ const Inventory = () => {
                           {fmt((i.shipping_cost ?? 0) + (i.fees ?? 0))}
                         </TableCell>
                         <TableCell className="text-right font-medium">{fmt(invested)}</TableCell>
+                        <TableCell className="text-right">{marketUnit != null ? fmt(marketUnit) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className="text-right font-medium">{marketValue != null ? fmt(marketValue) : <span className="text-muted-foreground">—</span>}</TableCell>
+                        <TableCell className={`text-right font-semibold ${unrealized == null ? "text-muted-foreground" : unrealizedPositive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                          {unrealized != null ? (
+                            <div className="flex flex-col items-end leading-tight">
+                              <span>{fmt(unrealized)}</span>
+                              {unrealizedMargin != null && (
+                                <span className="text-[10px] font-normal opacity-80">{unrealizedMargin.toFixed(1)}%</span>
+                              )}
+                            </div>
+                          ) : "—"}
+                        </TableCell>
                         <TableCell className="text-right">{i.target_sell_price != null ? fmt(i.target_sell_price) : "—"}</TableCell>
                         <TableCell className="text-right font-medium">{fmt(projected)}</TableCell>
                         <TableCell className={`text-right font-semibold ${positive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
