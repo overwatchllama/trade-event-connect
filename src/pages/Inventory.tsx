@@ -211,6 +211,10 @@ const Inventory = () => {
           av = ca.profit; bv = cb.profit; break;
         case "margin":
           av = ca.margin; bv = cb.margin; break;
+        case "market_value":
+          av = ca.marketValue ?? -Infinity; bv = cb.marketValue ?? -Infinity; break;
+        case "unrealized":
+          av = ca.unrealized ?? -Infinity; bv = cb.unrealized ?? -Infinity; break;
       }
       if (av < bv) return sortDir === "asc" ? -1 : 1;
       if (av > bv) return sortDir === "asc" ? 1 : -1;
