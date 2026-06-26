@@ -221,11 +221,28 @@ const POS = () => {
     return { revenue, cost, subtotal, fees: feesNum, total: subtotal - feesNum };
   }, [lines, fees]);
 
+  // Trade balance: positive = customer owes (must tender cash or take less),
+  // negative = vendor owes the customer (issue store credit or pay out).
+  const tradeBalance = useMemo(() => {
+    if (kind !== "trade") return 0;
+    return totals.revenue - totals.cost; // sell-side value - buy-side value
+  }, [kind, totals.revenue, totals.cost]);
+
+  // Split tender totals; expected = trade balance for trade, full total otherwise.
+  const tenderExpected = kind === "trade" ? Math.max(0, tradeBalance) : Math.max(0, totals.total);
+  const tenderCollected = useMemo(
+    () => tenderSplits.reduce((s, t) => s + Number(t.amount || 0), 0),
+    [tenderSplits],
+  );
+  const tenderDelta = +(tenderExpected - tenderCollected).toFixed(2);
+
   const resetDraft = () => {
     setLines([]);
     setCustomerLabel("");
     setNotes("");
     setFees("0");
+    setTenderSplits([]);
+    setTradeSettlement("cash");
   };
 
   const saveTransaction = async () => {
