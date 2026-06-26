@@ -187,6 +187,26 @@ const Inventory = () => {
 
 
 
+  // Weighted-average unit cost per SKU across ALL items (independent of filters)
+  // so the toggle gives a stable "avg cost" for that card+condition.
+  const avgCostBySku = useMemo(() => {
+    const totals = new Map<string, { cost: number; qty: number }>();
+    for (const i of items) {
+      const k = skuKey(i);
+      const lotInvested = (i.purchase_price ?? 0) * i.quantity + (i.shipping_cost ?? 0) + (i.fees ?? 0);
+      const t = totals.get(k) ?? { cost: 0, qty: 0 };
+      t.cost += lotInvested;
+      t.qty += i.quantity;
+      totals.set(k, t);
+    }
+    const out = new Map<string, number>();
+    for (const [k, v] of totals) if (v.qty > 0) out.set(k, v.cost / v.qty);
+    return out;
+  }, [items]);
+
+  const calcRow = (i: InventoryItem) =>
+    calc(i, costMode, costMode === "avg" ? avgCostBySku.get(skuKey(i)) ?? null : null);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let base = q
@@ -201,8 +221,8 @@ const Inventory = () => {
       base = base.filter((i) => eventMemberships.get(i.id)?.has(eventScope));
     }
     const sorted = [...base].sort((a, b) => {
-      const ca = calc(a);
-      const cb = calc(b);
+      const ca = calcRow(a);
+      const cb = calcRow(b);
       let av: number | string = 0;
       let bv: number | string = 0;
       switch (sortKey) {
@@ -232,13 +252,13 @@ const Inventory = () => {
       return 0;
     });
     return sorted;
-  }, [items, search, sortKey, sortDir, eventScope, eventMemberships]);
+  }, [items, search, sortKey, sortDir, eventScope, eventMemberships, costMode, avgCostBySku]);
 
 
   const totals = useMemo(() => {
     return filtered.reduce(
       (acc, i) => {
-        const c = calc(i);
+        const c = calcRow(i);
         acc.units += i.quantity;
         acc.invested += c.invested;
         acc.projected += c.projected;
@@ -253,7 +273,7 @@ const Inventory = () => {
       },
       { units: 0, invested: 0, projected: 0, profit: 0, marketValue: 0, marketedInvested: 0, unrealized: 0, marketedItems: 0 },
     );
-  }, [filtered]);
+  }, [filtered, costMode, avgCostBySku]);
 
   const totalMargin = totals.projected > 0 ? (totals.profit / totals.projected) * 100 : 0;
   const totalUnrealizedMargin = totals.marketedInvested > 0 ? (totals.unrealized / totals.marketedInvested) * 100 : 0;
