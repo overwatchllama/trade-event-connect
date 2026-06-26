@@ -243,8 +243,29 @@ export const LotBuyDialog = ({ open, targets, userId, onClose, onSuccess }: Prop
       const boughtAt = new Date().toISOString();
       const results: Parameters<typeof onSuccess>[0] = [];
 
-      // We sequence per-target so a partial failure leaves a clear breadcrumb: every
-      // result pushed before the throw has both an inventory row AND a flipped deal row.
+      // Create the lot header first so every inventory row and deal patch can carry the
+      // same lot_id. This is what unlocks "how did the $400 binder actually return?" rollups
+      // later — without a header row there's nothing to group by.
+      const { data: lot, error: lotErr } = await supabase
+        .from("purchase_lots")
+        .insert({
+          user_id: userId,
+          title:
+            source.trim() ||
+            `Lot · ${targets.length} deal${targets.length === 1 ? "" : "s"} · ${totalCards} card${totalCards === 1 ? "" : "s"}`,
+          source: source.trim() || null,
+          lot_total: lotPurchaseNum,
+          shipping_cost: lotShippingNum,
+          fees: lotFeesNum,
+          allocation_method: mode === "proportional" ? "market" : "even",
+          bought_at: boughtAt,
+        })
+        .select("id")
+        .single();
+      if (lotErr) throw lotErr;
+      const lotId = lot.id as string;
+
+
       for (const t of targets) {
         const a = allocByDeal.get(t.id);
         if (!a) continue;
