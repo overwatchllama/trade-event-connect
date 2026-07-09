@@ -397,6 +397,29 @@ function LineSection({
                     onChange={(e) => onUpdate(l.id, { unit_value: e.target.value === "" ? null : parseFloat(e.target.value) })}
                   />
                 </div>
+                {showInventoryLink && (
+                  <InventoryLinkPicker
+                    userId={userId}
+                    value={l.deal_list_item_id}
+                    cardName={l.card_name}
+                    setName={l.set_name}
+                    onChange={(id, meta) =>
+                      onUpdate(l.id, {
+                        deal_list_item_id: id,
+                        ...(meta
+                          ? {
+                              card_name: meta.card_name,
+                              set_name: meta.set_name,
+                              card_number: meta.card_number,
+                              condition: meta.condition,
+                              unit_value:
+                                l.unit_value != null ? l.unit_value : meta.unit_value,
+                            }
+                          : {}),
+                      })
+                    }
+                  />
+                )}
               </>
             ) : (
               <Input
