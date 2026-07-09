@@ -357,6 +357,7 @@ export type Database = {
           card_number: string | null
           condition: string | null
           created_at: string
+          deal_list_item_id: string | null
           id: string
           image_url: string | null
           kind: string
@@ -375,6 +376,7 @@ export type Database = {
           card_number?: string | null
           condition?: string | null
           created_at?: string
+          deal_list_item_id?: string | null
           id?: string
           image_url?: string | null
           kind: string
@@ -393,6 +395,7 @@ export type Database = {
           card_number?: string | null
           condition?: string | null
           created_at?: string
+          deal_list_item_id?: string | null
           id?: string
           image_url?: string | null
           kind?: string
@@ -407,6 +410,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "deal_proposal_lines_deal_list_item_id_fkey"
+            columns: ["deal_list_item_id"]
+            isOneToOne: false
+            referencedRelation: "deal_list_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_proposal_lines_deal_list_item_id_fkey"
+            columns: ["deal_list_item_id"]
+            isOneToOne: false
+            referencedRelation: "public_deal_list_items"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "deal_proposal_lines_proposal_id_fkey"
             columns: ["proposal_id"]
             isOneToOne: false
@@ -417,42 +434,62 @@ export type Database = {
       }
       deal_proposals: {
         Row: {
+          accepted_at: string | null
+          completed_at: string | null
           created_at: string
           customer_name: string | null
+          declined_at: string | null
           id: string
           notes: string | null
           proposed_at: string | null
           public_token: string
           status: string
           title: string
+          trade_lot_id: string | null
           updated_at: string
           vendor_id: string
         }
         Insert: {
+          accepted_at?: string | null
+          completed_at?: string | null
           created_at?: string
           customer_name?: string | null
+          declined_at?: string | null
           id?: string
           notes?: string | null
           proposed_at?: string | null
           public_token?: string
           status?: string
           title?: string
+          trade_lot_id?: string | null
           updated_at?: string
           vendor_id: string
         }
         Update: {
+          accepted_at?: string | null
+          completed_at?: string | null
           created_at?: string
           customer_name?: string | null
+          declined_at?: string | null
           id?: string
           notes?: string | null
           proposed_at?: string | null
           public_token?: string
           status?: string
           title?: string
+          trade_lot_id?: string | null
           updated_at?: string
           vendor_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "deal_proposals_trade_lot_id_fkey"
+            columns: ["trade_lot_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_lots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       demo_snapshots: {
         Row: {
