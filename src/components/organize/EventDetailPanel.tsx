@@ -45,6 +45,7 @@ import EventCheckInDialog from "@/components/organize/EventCheckInDialog";
 import { EventStaffRoles } from "@/components/organize/EventStaffRoles";
 import StaffCheckInDialog from "@/components/organize/StaffCheckInDialog";
 import { StaffHoursSummary } from "@/components/organize/StaffHoursSummary";
+import { EventListingPaymentBanner } from "@/components/organize/EventListingPaymentBanner";
 
 interface EventDetailPanelProps {
   event: {
@@ -235,7 +236,11 @@ const EventDetailPanel = ({ event }: EventDetailPanelProps) => {
       </CollapsibleTrigger>
       <CollapsibleContent>
       <CardContent>
+        <div className="mb-4">
+          <EventListingPaymentBanner eventId={event.id} />
+        </div>
         <Tabs defaultValue="status" className="space-y-4">
+
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="status" className="text-xs sm:text-sm">
               <BarChart3 className="h-4 w-4 mr-1 hidden sm:inline" />
