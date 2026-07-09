@@ -1,3 +1,4 @@
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useLocation } from "react-router-dom";
@@ -8,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -20,7 +21,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
+  DropdownMenuSeparator, DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -134,6 +135,16 @@ const Inventory = () => {
   const [adjustItemIds, setAdjustItemIds] = useState<string[] | null>(null);
   const [adjHistoryOpen, setAdjHistoryOpen] = useState(false);
   const [adjHistoryItemIds, setAdjHistoryItemIds] = useState<string[] | undefined>(undefined);
+  const [onlyUnprinted, setOnlyUnprinted] = useState(false);
+  const [unrealizedVisible, setUnrealizedVisible] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const v = window.localStorage.getItem("inventory.unrealizedColumns.visible");
+    return v === null ? true : v === "true";
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem("inventory.unrealizedColumns.visible", String(unrealizedVisible)); } catch {}
+  }, [unrealizedVisible]);
+  const [underwaterOnly, setUnderwaterOnly] = useState(false);
 
   const loadInventory = async () => {
     if (!user) return;
@@ -224,8 +235,17 @@ const Inventory = () => {
             (i.source ?? "").toLowerCase().includes(q),
         )
       : items;
+    if (underwaterOnly) {
+      base = base.filter((i) => {
+        const c = calcRow(i);
+        return c.marketValue != null && c.marketValue < c.invested;
+      });
+    }
     if (eventScope !== "all") {
       base = base.filter((i) => eventMemberships.get(i.id)?.has(eventScope));
+    }
+    if (onlyUnprinted) {
+      base = base.filter((i) => !i.label_printed_at);
     }
     const sorted = [...base].sort((a, b) => {
       const ca = calcRow(a);
@@ -398,6 +418,27 @@ const Inventory = () => {
     }
   };
 
+  
+  const handleReprintBatch = async (itemIds: string[]) => {
+    if (itemIds.length === 0 || !user) return;
+    const { data, error } = await supabase
+      .from("deal_list_items")
+      .select("id")
+      .eq("user_id", user.id)
+      .in("id", itemIds);
+    
+    if (error || !data) {
+      toast({ title: "Failed to fetch items for reprint", description: error?.message, variant: "destructive" });
+      return;
+    }
+    
+    setPrintItemIds(data.map(i => i.id));
+    setPrintSource("history_reprint");
+    setHistoryOpen(false);
+    setPrintOpen(true);
+  };
+
+
   const removeFromEvent = async (ids: string[]) => {
     if (eventScope === "all" || ids.length === 0 || !vendorProfile?.id) return;
     const { error } = await supabase
@@ -501,6 +542,29 @@ const Inventory = () => {
                 <TrendingUp className="h-4 w-4 mr-2" />
                 P&amp;L report
               </Link>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  View
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuCheckboxItem
+                  checked={unrealizedVisible}
+                  onCheckedChange={setUnrealizedVisible}
+                >
+                  Show Unrealized P&L Columns
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              variant={underwaterOnly ? "default" : "outline"}
+              onClick={() => setUnderwaterOnly(!underwaterOnly)}
+              className={underwaterOnly ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              Underwater only
             </Button>
             <Button onClick={openAdd} variant="default">
               <Plus className="h-4 w-4 mr-2" />
@@ -660,6 +724,22 @@ const Inventory = () => {
           )}
         </div>
 
+        
+        <div className="flex items-center gap-2 mb-4">
+          <Badge 
+            variant={onlyUnprinted ? "default" : "outline"} 
+            className="cursor-pointer py-1 px-3"
+            onClick={() => setOnlyUnprinted(!onlyUnprinted)}
+          >
+            {onlyUnprinted ? "Filtering: Never printed" : "Filter: Never printed"}
+          </Badge>
+          {onlyUnprinted && (
+            <Button variant="ghost" size="sm" onClick={() => setOnlyUnprinted(false)} className="h-7 px-2 text-xs">
+              Clear
+            </Button>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">
           <Card className="p-3">
             <p className="text-xs text-muted-foreground">Items</p>
@@ -740,6 +820,14 @@ const Inventory = () => {
                     <TableHead className="text-right">Market / unit</TableHead>
                     <TableHead className="text-right"><SortBtn k="market_value">Market value</SortBtn></TableHead>
                     <TableHead className="text-right"><SortBtn k="unrealized">Unrealized P&amp;L</SortBtn></TableHead>
+                    {unrealizedVisible && (
+                      <>
+                        <TableHead className="text-right">Cost basis</TableHead>
+                        <TableHead className="text-right">Current market</TableHead>
+                        <TableHead className="text-right">Unrealized $</TableHead>
+                        <TableHead className="text-right">Unrealized %</TableHead>
+                      </>
+                    )}
                     <TableHead className="text-right">Target / unit</TableHead>
                     <TableHead className="text-right"><SortBtn k="projected">Projected</SortBtn></TableHead>
                     <TableHead className="text-right"><SortBtn k="profit">Profit</SortBtn></TableHead>
@@ -797,15 +885,27 @@ const Inventory = () => {
                                     Listed
                                   </BadgeUi>
                                 )}
-                                {i.label_printed_at && (
-                                  <BadgeUi
-                                    variant="outline"
-                                    className="text-[10px] py-0 px-1.5 border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-                                    title={`Last printed ${new Date(i.label_printed_at).toLocaleString()}${i.label_print_count > 1 ? ` · ${i.label_print_count} prints` : ""}`}
-                                  >
-                                    <Printer className="h-2.5 w-2.5 mr-0.5" />
-                                    Printed{i.label_print_count > 1 ? ` ×${i.label_print_count}` : ""}
-                                  </BadgeUi>
+                                                                {i.label_printed_at && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <BadgeUi
+                                          variant="outline"
+                                          className="text-[10px] py-0 px-1.5 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 gap-1"
+                                        >
+                                          <Printer className="h-2.5 w-2.5" />
+                                          <span>Printed</span>
+                                          {i.label_print_count > 1 && (
+                                            <sup className="text-[8px] leading-none ml-0.5">×{i.label_print_count}</sup>
+                                          )}
+                                        </BadgeUi>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Last printed {new Date(i.label_printed_at).toLocaleString()}</p>
+                                        {i.label_print_count > 1 && <p>{i.label_print_count} total prints</p>}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
                                 )}
                               </div>
                             </div>
@@ -838,6 +938,18 @@ const Inventory = () => {
                             </div>
                           ) : "—"}
                         </TableCell>
+                        {unrealizedVisible && (
+                          <>
+                            <TableCell className="text-right">{i.purchase_price != null ? fmt(i.purchase_price) : "—"}</TableCell>
+                            <TableCell className="text-right">{i.tcgplayer_market_price != null ? fmt(i.tcgplayer_market_price) : "—"}</TableCell>
+                            <TableCell className={`text-right font-medium ${(i.tcgplayer_market_price ?? 0) - (i.purchase_price ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                              {i.tcgplayer_market_price != null && i.purchase_price != null ? fmt(i.tcgplayer_market_price - i.purchase_price) : "—"}
+                            </TableCell>
+                            <TableCell className={`text-right font-medium ${(i.tcgplayer_market_price ?? 0) - (i.purchase_price ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                              {i.tcgplayer_market_price != null && (i.purchase_price ?? 0) > 0 ? (((i.tcgplayer_market_price - i.purchase_price) / i.purchase_price) * 100).toFixed(1) + "%" : "—"}
+                            </TableCell>
+                          </>
+                        )}
                         <TableCell className="text-right">{i.target_sell_price != null ? fmt(i.target_sell_price) : "—"}</TableCell>
                         <TableCell className="text-right font-medium">{fmt(projected)}</TableCell>
                         <TableCell className={`text-right font-semibold ${positive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
@@ -932,6 +1044,33 @@ const Inventory = () => {
                     );
                   })}
                 </TableBody>
+                <TableFooter>
+                  <TableRow className="bg-muted/50 font-semibold">
+                    <TableCell colSpan={5}></TableCell>
+                    <TableCell className="text-right">Total</TableCell>
+                    <TableCell className="text-right">{fmt(totals.invested)}</TableCell>
+                    <TableCell></TableCell>
+                    <TableCell className="text-right">{fmt(totals.marketValue)}</TableCell>
+                    <TableCell className={`text-right ${totals.unrealized >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                      <div className="flex flex-col items-end leading-tight">
+                        <span>{fmt(totals.unrealized)}</span>
+                        <span className="text-[10px] font-normal opacity-80">{totalUnrealizedMargin.toFixed(1)}%</span>
+                      </div>
+                    </TableCell>
+                    {unrealizedVisible && (
+                      <>
+                        <TableCell colSpan={2}></TableCell>
+                        <TableCell className={`text-right ${totals.unrealized >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                          {fmt(totals.unrealized)}
+                        </TableCell>
+                        <TableCell className={`text-right ${totals.unrealized >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                          {totals.marketedInvested > 0 ? (totals.unrealized / totals.marketedInvested * 100).toFixed(1) + "%" : "—"}
+                        </TableCell>
+                      </>
+                    )}
+                    <TableCell colSpan={6}></TableCell>
+                  </TableRow>
+                </TableFooter>
               </Table>
             </div>
           )}
@@ -1004,7 +1143,7 @@ const Inventory = () => {
         }}
       />
 
-      <PrintHistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} />
+      <PrintHistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} onReprintBatch={handleReprintBatch} />
 
       <FeatureAtEventDialog
         open={featureItemIds !== null}

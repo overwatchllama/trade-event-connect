@@ -1,69 +1,23 @@
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Printer, RotateCw, History as HistoryIcon } from "lucide-react";
+import sys
+import re
 
-interface Row {
-  id: string;
-  action: string;
-  source: string | null;
-  preset: string | null;
-  copies_per_item: number;
-  per_quantity: boolean;
-  item_ids: string[];
-  item_count: number;
-  label_count: number;
-  reprint_count: number;
-  filter_context: { search?: string; sort?: string } | null;
-  created_at: string;
-}
+file_path = 'src/components/inventory/PrintHistoryDialog.tsx'
+with open(file_path, 'r') as f:
+    content = f.read()
 
-const SOURCE_LABELS: Record<string, string> = {
-  selection: "Selected rows",
-  all_visible: "All visible",
-  unprinted: "Unprinted only",
-  reprint_printed: "Reprint printed (targeted)",
-  reprint_view: "Reprint all printed in view",
-};
+# 1. Update Props and interface
+if 'onReprintBatch' not in content:
+    content = content.replace(
+        'export const PrintHistoryDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) => {',
+        'export const PrintHistoryDialog = ({ open, onOpenChange, onReprintBatch }: { open: boolean; onOpenChange: (v: boolean) => void; onReprintBatch?: (itemIds: string[]) => void }) => {'
+    )
 
-export const PrintHistoryDialog = ({ open, onOpenChange, onReprintBatch }: { open: boolean; onOpenChange: (v: boolean) => void; onReprintBatch?: (itemIds: string[]) => void }) => {
-  const [rows, setRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(false);
+# 2. Add imports
+if 'import { Card } from "@/components/ui/card";' not in content:
+    content = 'import { Card } from "@/components/ui/card";\nimport { Button } from "@/components/ui/button";\n' + content
 
-  useEffect(() => {
-    if (!open) return;
-    setLoading(true);
-    (async () => {
-      const { data } = await supabase
-        .from("label_print_audit")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      setRows((data ?? []) as unknown as Row[]);
-      setLoading(false);
-    })();
-  }, [open]);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><HistoryIcon className="h-4 w-4" /> Label print history</DialogTitle>
-          <DialogDescription>
-            Your last 100 print and reprint actions, with the rows or filter that triggered each batch.
-          </DialogDescription>
-        </DialogHeader>
-        {loading ? (
-          <div className="flex items-center justify-center py-10 text-muted-foreground">
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading…
-          </div>
-        ) : rows.length === 0 ? (
-          <div className="py-10 text-center text-sm text-muted-foreground">No prints yet.</div>
-        ) : (
-          
+# 3. Update the rendering logic
+grouped_logic = """
           <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-1">
             {(() => {
               const groups: Record<string, { preset: string | null; created_at: string; itemIds: Set<string>; labelCount: number; reprintCount: number }> = {};
@@ -112,11 +66,18 @@ export const PrintHistoryDialog = ({ open, onOpenChange, onReprintBatch }: { ope
                 </Card>
               ));
             })()}
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-};
+          </div>"""
 
-export default PrintHistoryDialog;
+# Robust replacement: find the div and replace until the end of the block
+start_tag = '<div className="max-h-[60vh] overflow-y-auto divide-y">'
+if start_tag in content:
+    # Find the matching closing div for this block. 
+    # Since we know the structure, we can just search for the end of the map/div block.
+    # The block ends before the closing ) and } of the JSX expression.
+    
+    # We'll use a regex that matches from start_tag to the end of the map block.
+    pattern = re.escape(start_tag) + r'.*?</div>\s+\)\s+}'
+    content = re.sub(pattern, grouped_logic + '\n        ) }', content, flags=re.DOTALL)
+
+with open(file_path, 'w') as f:
+    f.write(content)

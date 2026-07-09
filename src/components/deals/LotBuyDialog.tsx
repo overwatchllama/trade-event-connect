@@ -265,6 +265,23 @@ export const LotBuyDialog = ({ open, targets, userId, onClose, onSuccess }: Prop
       if (lotErr) throw lotErr;
       const lotId = lot.id as string;
 
+      // Create a matching purchase transaction so this spend rolls up into
+      // event P&L alongside sales. One transaction per lot; one item per deal line.
+      const { data: tx, error: txErr } = await supabase
+        .from("transactions")
+        .insert({
+          user_id: userId,
+          kind: "purchase",
+          occurred_at: boughtAt,
+          subtotal: lotPurchaseNum,
+          fees: lotFeesNum + lotShippingNum,
+          total: lotPurchaseNum + lotShippingNum + lotFeesNum,
+          notes: source.trim() ? `Lot: ${source.trim()}` : "Lot purchase",
+        })
+        .select("id")
+        .single();
+      if (txErr) throw txErr;
+      const txId = tx.id as string;
 
       for (const t of targets) {
         const a = allocByDeal.get(t.id);
@@ -322,8 +339,27 @@ export const LotBuyDialog = ({ open, targets, userId, onClose, onSuccess }: Prop
           .eq("id", t.id);
         if (updErr) throw updErr;
 
+        // Ledger row so purchase costs show in event P&L "buys".
+        await supabase.from("transaction_items").insert({
+          transaction_id: txId,
+          side: "buy",
+          card_name: t.card_name,
+          set_name: t.set_name,
+          card_number: t.card_number,
+          condition: t.condition,
+          quantity: a.qty,
+          unit_cost: carryingPerUnit,
+          unit_price: 0,
+          market_snapshot: t.reference_unit_price,
+          image_url: t.image_url,
+          linked_kind: "deal_item",
+          deal_list_item_id: t.id,
+          collection_item_id: inv.id,
+        });
+
         results.push({ dealId: t.id, patch });
       }
+
 
       toast({
         title: "Lot inventoried",
