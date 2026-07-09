@@ -999,6 +999,44 @@ const POS = () => {
                   ))}
                 </div>
 
+                {pnl.by_channel && Object.keys(pnl.by_channel).length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">By channel</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {(["pos", "online", "trade", "purchase"] as const).map((ch) => {
+                        const row = pnl.by_channel?.[ch];
+                        if (!row) return null;
+                        const rev = Number(row.revenue) || 0;
+                        const cogs = Number(row.cogs) || 0;
+                        const buys = Number(row.buys) || 0;
+                        const net = rev - cogs;
+                        const margin = rev > 0 ? (net / rev) * 100 : 0;
+                        return (
+                          <div key={ch} className="grid grid-cols-5 gap-2 text-sm items-center">
+                            <Badge variant="outline" className="w-fit capitalize">{ch}</Badge>
+                            <span className="text-right">{fmt(rev)}</span>
+                            <span className="text-right text-muted-foreground">−{fmt(cogs)}</span>
+                            <span className={`text-right font-medium ${net < 0 ? "text-destructive" : ""}`}>{fmt(net)}</span>
+                            <span className="text-right text-xs text-muted-foreground">
+                              {ch === "purchase" ? `buys ${fmt(buys)}` : rev > 0 ? `${margin.toFixed(0)}%` : "—"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground pt-1 border-t">
+                        <span>Channel</span>
+                        <span className="text-right">Revenue</span>
+                        <span className="text-right">COGS</span>
+                        <span className="text-right">Net</span>
+                        <span className="text-right">Margin</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Top items by revenue</CardTitle>
