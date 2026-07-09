@@ -913,6 +913,11 @@ export type Database = {
           image_url: string | null
           is_multi_day: boolean
           layout_json: Json | null
+          listing_fee_cents: number | null
+          listing_paid_at: string | null
+          listing_payment_status: string
+          listing_stripe_session_id: string | null
+          listing_tier: string | null
           max_attendees: number | null
           no_online_table_sales: boolean | null
           no_online_ticket_sales: boolean | null
@@ -956,6 +961,11 @@ export type Database = {
           image_url?: string | null
           is_multi_day?: boolean
           layout_json?: Json | null
+          listing_fee_cents?: number | null
+          listing_paid_at?: string | null
+          listing_payment_status?: string
+          listing_stripe_session_id?: string | null
+          listing_tier?: string | null
           max_attendees?: number | null
           no_online_table_sales?: boolean | null
           no_online_ticket_sales?: boolean | null
@@ -999,6 +1009,11 @@ export type Database = {
           image_url?: string | null
           is_multi_day?: boolean
           layout_json?: Json | null
+          listing_fee_cents?: number | null
+          listing_paid_at?: string | null
+          listing_payment_status?: string
+          listing_stripe_session_id?: string | null
+          listing_tier?: string | null
           max_attendees?: number | null
           no_online_table_sales?: boolean | null
           no_online_ticket_sales?: boolean | null
