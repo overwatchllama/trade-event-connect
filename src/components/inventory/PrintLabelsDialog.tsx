@@ -52,6 +52,7 @@ export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Prop
   const [preset, setPreset] = useState<Preset>("brother-dk1201");
   const [copies, setCopies] = useState(1);
   const [perQuantity, setPerQuantity] = useState(true);
+  const [skipPrinted, setSkipPrinted] = useState(false);
   const [showPrice, setShowPrice] = useState(true);
   const previewRef = useRef<HTMLDivElement>(null);
 
