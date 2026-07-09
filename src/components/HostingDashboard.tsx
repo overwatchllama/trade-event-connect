@@ -138,6 +138,39 @@ const HostingDashboard = () => {
     fetchOrganizerNotes();
   }, [user, fetchHostedEvents]);
 
+  // Handle Stripe listing-fee checkout return
+  useEffect(() => {
+    const status = searchParams.get("listing_payment");
+    const sessionId = searchParams.get("session_id");
+    const eventId = searchParams.get("event");
+    if (!status || !eventId) return;
+
+    if (status === "cancelled") {
+      import("sonner").then(({ toast }) => toast.info("Listing payment cancelled."));
+      window.history.replaceState({}, "", "/organize");
+      return;
+    }
+    if (status === "success" && sessionId) {
+      (async () => {
+        try {
+          const { error } = await supabase.functions.invoke("verify-event-listing-payment", {
+            body: { sessionId, eventId },
+          });
+          const { toast } = await import("sonner");
+          if (error) throw error;
+          toast.success("Listing fee paid!");
+          fetchHostedEvents();
+        } catch (e) {
+          const { toast } = await import("sonner");
+          toast.error(e instanceof Error ? e.message : "Failed to verify payment");
+        } finally {
+          window.history.replaceState({}, "", "/organize");
+        }
+      })();
+    }
+  }, [searchParams, fetchHostedEvents]);
+
+
   const fetchOrganizerNotes = async () => {
     if (!user) return;
     try {
