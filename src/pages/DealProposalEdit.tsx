@@ -198,16 +198,9 @@ export default function DealProposalEdit() {
               </div>
               <div>
                 <Label>Status</Label>
-                <Select value={p.status} onValueChange={setStatus}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="proposed">Proposed</SelectItem>
-                    <SelectItem value="accepted">Accepted</SelectItem>
-                    <SelectItem value="declined">Declined</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="h-10 flex items-center">
+                  <Badge variant="secondary" className="capitalize">{p.status}</Badge>
+                </div>
               </div>
             </div>
             <div>
