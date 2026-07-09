@@ -778,6 +778,14 @@ const Inventory = () => {
                     <TableHead className="text-right">Market / unit</TableHead>
                     <TableHead className="text-right"><SortBtn k="market_value">Market value</SortBtn></TableHead>
                     <TableHead className="text-right"><SortBtn k="unrealized">Unrealized P&amp;L</SortBtn></TableHead>
+                    {unrealizedVisible && (
+                      <>
+                        <TableHead className="text-right">Cost basis</TableHead>
+                        <TableHead className="text-right">Current market</TableHead>
+                        <TableHead className="text-right">Unrealized $</TableHead>
+                        <TableHead className="text-right">Unrealized %</TableHead>
+                      </>
+                    )}
                     <TableHead className="text-right">Target / unit</TableHead>
                     <TableHead className="text-right"><SortBtn k="projected">Projected</SortBtn></TableHead>
                     <TableHead className="text-right"><SortBtn k="profit">Profit</SortBtn></TableHead>

@@ -1,3 +1,5 @@
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +29,7 @@ const SOURCE_LABELS: Record<string, string> = {
   reprint_view: "Reprint all printed in view",
 };
 
-export const PrintHistoryDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) => {
+export const PrintHistoryDialog = ({ open, onOpenChange, onReprintBatch }: { open: boolean; onOpenChange: (v: boolean) => void; onReprintBatch?: (itemIds: string[]) => void }) => {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
 
