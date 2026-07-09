@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter, TableFooter } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -20,7 +20,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
+  DropdownMenuSeparator, DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -134,6 +134,15 @@ const Inventory = () => {
   const [adjustItemIds, setAdjustItemIds] = useState<string[] | null>(null);
   const [adjHistoryOpen, setAdjHistoryOpen] = useState(false);
   const [adjHistoryItemIds, setAdjHistoryItemIds] = useState<string[] | undefined>(undefined);
+  const [unrealizedVisible, setUnrealizedVisible] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const v = window.localStorage.getItem("inventory.unrealizedColumns.visible");
+    return v === null ? true : v === "true";
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem("inventory.unrealizedColumns.visible", String(unrealizedVisible)); } catch {}
+  }, [unrealizedVisible]);
+  const [underwaterOnly, setUnderwaterOnly] = useState(false);
 
   const loadInventory = async () => {
     if (!user) return;
@@ -224,6 +233,12 @@ const Inventory = () => {
             (i.source ?? "").toLowerCase().includes(q),
         )
       : items;
+    if (underwaterOnly) {
+      base = base.filter((i) => {
+        const c = calcRow(i);
+        return c.marketValue != null && c.marketValue < c.invested;
+      });
+    }
     if (eventScope !== "all") {
       base = base.filter((i) => eventMemberships.get(i.id)?.has(eventScope));
     }
@@ -501,6 +516,29 @@ const Inventory = () => {
                 <TrendingUp className="h-4 w-4 mr-2" />
                 P&amp;L report
               </Link>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  View
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuCheckboxItem
+                  checked={unrealizedVisible}
+                  onCheckedChange={setUnrealizedVisible}
+                >
+                  Show Unrealized P&L Columns
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              variant={underwaterOnly ? "default" : "outline"}
+              onClick={() => setUnderwaterOnly(!underwaterOnly)}
+              className={underwaterOnly ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              Underwater only
             </Button>
             <Button onClick={openAdd} variant="default">
               <Plus className="h-4 w-4 mr-2" />
@@ -838,6 +876,18 @@ const Inventory = () => {
                             </div>
                           ) : "—"}
                         </TableCell>
+                        {unrealizedVisible && (
+                          <>
+                            <TableCell className="text-right">{i.purchase_price != null ? fmt(i.purchase_price) : "—"}</TableCell>
+                            <TableCell className="text-right">{i.tcgplayer_market_price != null ? fmt(i.tcgplayer_market_price) : "—"}</TableCell>
+                            <TableCell className={`text-right font-medium ${(i.tcgplayer_market_price ?? 0) - (i.purchase_price ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                              {i.tcgplayer_market_price != null && i.purchase_price != null ? fmt(i.tcgplayer_market_price - i.purchase_price) : "—"}
+                            </TableCell>
+                            <TableCell className={`text-right font-medium ${(i.tcgplayer_market_price ?? 0) - (i.purchase_price ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                              {i.tcgplayer_market_price != null && (i.purchase_price ?? 0) > 0 ? (((i.tcgplayer_market_price - i.purchase_price) / i.purchase_price) * 100).toFixed(1) + "%" : "—"}
+                            </TableCell>
+                          </>
+                        )}
                         <TableCell className="text-right">{i.target_sell_price != null ? fmt(i.target_sell_price) : "—"}</TableCell>
                         <TableCell className="text-right font-medium">{fmt(projected)}</TableCell>
                         <TableCell className={`text-right font-semibold ${positive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
@@ -932,6 +982,33 @@ const Inventory = () => {
                     );
                   })}
                 </TableBody>
+                <TableFooter>
+                  <TableRow className="bg-muted/50 font-semibold">
+                    <TableCell colSpan={6}></TableCell>
+                    <TableCell className="text-right">Total</TableCell>
+                    <TableCell className="text-right">{fmt(totals.invested)}</TableCell>
+                    <TableCell></TableCell>
+                    <TableCell className="text-right">{fmt(totals.marketValue)}</TableCell>
+                    <TableCell className={`text-right ${totals.unrealized >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                      <div className="flex flex-col items-end leading-tight">
+                        <span>{fmt(totals.unrealized)}</span>
+                        <span className="text-[10px] font-normal opacity-80">{totalUnrealizedMargin.toFixed(1)}%</span>
+                      </div>
+                    </TableCell>
+                    {unrealizedVisible && (
+                      <>
+                        <TableCell colSpan={2}></TableCell>
+                        <TableCell className={`text-right ${totals.unrealized >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                          {fmt(totals.unrealized)}
+                        </TableCell>
+                        <TableCell className={`text-right ${totals.unrealized >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                          {totals.marketedInvested > 0 ? (totals.unrealized / totals.marketedInvested * 100).toFixed(1) + "%" : "—"}
+                        </TableCell>
+                      </>
+                    )}
+                    <TableCell colSpan={4}></TableCell>
+                  </TableRow>
+                </TableFooter>
               </Table>
             </div>
           )}
