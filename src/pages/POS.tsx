@@ -477,10 +477,21 @@ const POS = () => {
           onValueChange={(v) => setParams({ tab: v }, { replace: true })}
         >
           <TabsList className="mb-6">
+            <TabsTrigger value="quick">Quick Sell</TabsTrigger>
             <TabsTrigger value="new">New Transaction</TabsTrigger>
             <TabsTrigger value="ledger">Ledger</TabsTrigger>
             <TabsTrigger value="pnl">Event P&amp;L</TabsTrigger>
           </TabsList>
+
+          {/* QUICK SELL */}
+          <TabsContent value="quick" className="space-y-4">
+            <QuickSell
+              eventOptions={eventOptions}
+              onSaved={() => {
+                if (activeTab === "ledger") loadLedger();
+              }}
+            />
+          </TabsContent>
 
           {/* NEW TRANSACTION */}
           <TabsContent value="new" className="space-y-4">
