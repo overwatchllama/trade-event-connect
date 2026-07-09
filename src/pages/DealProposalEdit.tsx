@@ -15,6 +15,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, Plus, Trash2, Share2, Copy, Check, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { ImportFromUrlDialog } from "@/components/deals/ImportFromUrlDialog";
+import TradeActions from "@/components/deals/TradeActions";
+import InventoryLinkPicker from "@/components/deals/InventoryLinkPicker";
 
 type Side = "input" | "output";
 type Kind = "cash" | "card" | "store_credit";
@@ -32,6 +34,7 @@ type Line = {
   unit_value: number | null;
   notes: string | null;
   sort_order: number;
+  deal_list_item_id: string | null;
 };
 
 type Proposal = {
@@ -195,16 +198,9 @@ export default function DealProposalEdit() {
               </div>
               <div>
                 <Label>Status</Label>
-                <Select value={p.status} onValueChange={setStatus}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="proposed">Proposed</SelectItem>
-                    <SelectItem value="accepted">Accepted</SelectItem>
-                    <SelectItem value="declined">Declined</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="h-10 flex items-center">
+                  <Badge variant="secondary" className="capitalize">{p.status}</Badge>
+                </div>
               </div>
             </div>
             <div>
@@ -223,6 +219,8 @@ export default function DealProposalEdit() {
             onAdd={(k) => addLine("input", k)}
             onUpdate={updateLine}
             onRemove={removeLine}
+            userId={user.id}
+            showInventoryLink={false}
           />
           <LineSection
             title="Vendor gives (outputs)"
@@ -232,8 +230,18 @@ export default function DealProposalEdit() {
             onAdd={(k) => addLine("output", k)}
             onUpdate={updateLine}
             onRemove={removeLine}
+            userId={user.id}
+            showInventoryLink={true}
           />
         </div>
+
+        <TradeActions
+          proposalId={p.id}
+          vendorUserId={user.id}
+          proposalTitle={p.title}
+          status={p.status}
+          onStatusChange={(status) => setP((prev) => (prev ? { ...prev, status } : prev))}
+        />
 
         <Card className="mt-4">
           <CardContent className="pt-6 flex flex-wrap items-center justify-between gap-3">
@@ -314,6 +322,8 @@ function LineSection({
   onAdd,
   onUpdate,
   onRemove,
+  userId,
+  showInventoryLink,
 }: {
   title: string;
   total: number;
@@ -322,6 +332,8 @@ function LineSection({
   onAdd: (k: Kind) => void;
   onUpdate: (id: string, patch: Partial<Line>) => void;
   onRemove: (id: string) => void;
+  userId: string;
+  showInventoryLink: boolean;
 }) {
   const labels: Record<Kind, string> = { cash: "Cash", card: "Card", store_credit: "Store credit" };
   return (
@@ -385,6 +397,29 @@ function LineSection({
                     onChange={(e) => onUpdate(l.id, { unit_value: e.target.value === "" ? null : parseFloat(e.target.value) })}
                   />
                 </div>
+                {showInventoryLink && (
+                  <InventoryLinkPicker
+                    userId={userId}
+                    value={l.deal_list_item_id}
+                    cardName={l.card_name}
+                    setName={l.set_name}
+                    onChange={(id, meta) =>
+                      onUpdate(l.id, {
+                        deal_list_item_id: id,
+                        ...(meta
+                          ? {
+                              card_name: meta.card_name,
+                              set_name: meta.set_name,
+                              card_number: meta.card_number,
+                              condition: meta.condition,
+                              unit_value:
+                                l.unit_value != null ? l.unit_value : meta.unit_value,
+                            }
+                          : {}),
+                      })
+                    }
+                  />
+                )}
               </>
             ) : (
               <Input
