@@ -62,7 +62,7 @@ const POS = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const activeTab = params.get("tab") ?? "new";
+  const activeTab = params.get("tab") ?? "quick";
 
   const [eventOptions, setEventOptions] = useState<EventOption[]>([]);
   const [selectedEventKey, setSelectedEventKey] = useState<string>("none");
