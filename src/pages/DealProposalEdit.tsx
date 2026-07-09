@@ -219,6 +219,8 @@ export default function DealProposalEdit() {
             onAdd={(k) => addLine("input", k)}
             onUpdate={updateLine}
             onRemove={removeLine}
+            userId={user.id}
+            showInventoryLink={false}
           />
           <LineSection
             title="Vendor gives (outputs)"
@@ -228,8 +230,18 @@ export default function DealProposalEdit() {
             onAdd={(k) => addLine("output", k)}
             onUpdate={updateLine}
             onRemove={removeLine}
+            userId={user.id}
+            showInventoryLink={true}
           />
         </div>
+
+        <TradeActions
+          proposalId={p.id}
+          vendorUserId={user.id}
+          proposalTitle={p.title}
+          status={p.status}
+          onStatusChange={(status) => setP((prev) => (prev ? { ...prev, status } : prev))}
+        />
 
         <Card className="mt-4">
           <CardContent className="pt-6 flex flex-wrap items-center justify-between gap-3">
