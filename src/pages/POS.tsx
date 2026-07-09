@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import QuickSell from "@/components/pos/QuickSell";
 
 type Kind = "buy" | "sell" | "trade";
 type Side = "buy" | "sell";
