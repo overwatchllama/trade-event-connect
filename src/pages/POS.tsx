@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import QuickSell from "@/components/pos/QuickSell";
 
 type Kind = "buy" | "sell" | "trade";
 type Side = "buy" | "sell";
@@ -61,7 +62,7 @@ const POS = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const activeTab = params.get("tab") ?? "new";
+  const activeTab = params.get("tab") ?? "quick";
 
   const [eventOptions, setEventOptions] = useState<EventOption[]>([]);
   const [selectedEventKey, setSelectedEventKey] = useState<string>("none");
@@ -477,10 +478,21 @@ const POS = () => {
           onValueChange={(v) => setParams({ tab: v }, { replace: true })}
         >
           <TabsList className="mb-6">
+            <TabsTrigger value="quick">Quick Sell</TabsTrigger>
             <TabsTrigger value="new">New Transaction</TabsTrigger>
             <TabsTrigger value="ledger">Ledger</TabsTrigger>
             <TabsTrigger value="pnl">Event P&amp;L</TabsTrigger>
           </TabsList>
+
+          {/* QUICK SELL */}
+          <TabsContent value="quick" className="space-y-4">
+            <QuickSell
+              eventOptions={eventOptions}
+              onSaved={() => {
+                if (activeTab === "ledger") loadLedger();
+              }}
+            />
+          </TabsContent>
 
           {/* NEW TRANSACTION */}
           <TabsContent value="new" className="space-y-4">
