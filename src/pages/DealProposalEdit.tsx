@@ -322,6 +322,8 @@ function LineSection({
   onAdd,
   onUpdate,
   onRemove,
+  userId,
+  showInventoryLink,
 }: {
   title: string;
   total: number;
@@ -330,6 +332,8 @@ function LineSection({
   onAdd: (k: Kind) => void;
   onUpdate: (id: string, patch: Partial<Line>) => void;
   onRemove: (id: string) => void;
+  userId: string;
+  showInventoryLink: boolean;
 }) {
   const labels: Record<Kind, string> = { cash: "Cash", card: "Card", store_credit: "Store credit" };
   return (
