@@ -1046,7 +1046,7 @@ const Inventory = () => {
                 </TableBody>
                 <TableFooter>
                   <TableRow className="bg-muted/50 font-semibold">
-                    <TableCell colSpan={6}></TableCell>
+                    <TableCell colSpan={5}></TableCell>
                     <TableCell className="text-right">Total</TableCell>
                     <TableCell className="text-right">{fmt(totals.invested)}</TableCell>
                     <TableCell></TableCell>
@@ -1068,7 +1068,7 @@ const Inventory = () => {
                         </TableCell>
                       </>
                     )}
-                    <TableCell colSpan={4}></TableCell>
+                    <TableCell colSpan={6}></TableCell>
                   </TableRow>
                 </TableFooter>
               </Table>
