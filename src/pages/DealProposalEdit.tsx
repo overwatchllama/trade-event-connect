@@ -34,6 +34,7 @@ type Line = {
   unit_value: number | null;
   notes: string | null;
   sort_order: number;
+  deal_list_item_id: string | null;
 };
 
 type Proposal = {
