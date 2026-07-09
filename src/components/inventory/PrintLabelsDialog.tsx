@@ -56,14 +56,19 @@ export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Prop
   const [showPrice, setShowPrice] = useState(true);
   const previewRef = useRef<HTMLDivElement>(null);
 
+  const filteredItems = useMemo(() => {
+    if (!skipPrinted) return items;
+    return items.filter((it) => it.label_printed_at == null);
+  }, [items, skipPrinted]);
+
   const expanded = useMemo(() => {
     const out: PrintLabelItem[] = [];
-    items.forEach((it) => {
+    filteredItems.forEach((it) => {
       const n = (perQuantity ? Math.max(1, it.quantity ?? 1) : 1) * Math.max(1, copies);
       for (let i = 0; i < n; i++) out.push(it);
     });
     return out;
-  }, [items, copies, perQuantity]);
+  }, [filteredItems, copies, perQuantity]);
 
   const cfg = PRESETS[preset];
 
@@ -180,6 +185,17 @@ export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Prop
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
+        
+        <div className="bg-primary/5 border-y px-6 py-2 -mx-6 mb-4 flex items-center justify-between text-sm">
+          <span className="font-medium text-primary">
+            Selection summary: {items.length - reprintCount} new · {reprintCount} reprints
+          </span>
+          {skipPrinted && (
+            <span className="text-muted-foreground italic text-xs">
+              Filtering to {filteredItems.length} unprinted items
+            </span>
+          )}
+        </div>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Printer className="h-4 w-4" />
@@ -221,6 +237,11 @@ export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Prop
                 <Checkbox checked={showPrice} onCheckedChange={(v) => setShowPrice(!!v)} />
                 Show price on label
               </label>
+              
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={skipPrinted} onCheckedChange={(v) => setSkipPrinted(!!v)} />
+                Skip already-printed rows in this batch
+              </label>
             </div>
           </div>
 
@@ -252,7 +273,8 @@ export const PrintLabelsDialog = ({ open, onOpenChange, items, onPrinted }: Prop
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handlePrint} disabled={expanded.length === 0}>
-            <Printer className="h-4 w-4 mr-2" /> Print {expanded.length} label{expanded.length === 1 ? "" : "s"}
+            <Printer className="h-4 w-4 mr-2" /> 
+            {expanded.length === 0 && skipPrinted && items.some(i => i.label_printed_at) ? "No new items to print" : `Print ${expanded.length} label${expanded.length === 1 ? "" : "s"}`}
           </Button>
         </DialogFooter>
       </DialogContent>
