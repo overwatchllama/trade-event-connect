@@ -15,6 +15,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, Plus, Trash2, Share2, Copy, Check, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { ImportFromUrlDialog } from "@/components/deals/ImportFromUrlDialog";
+import TradeActions from "@/components/deals/TradeActions";
+import InventoryLinkPicker from "@/components/deals/InventoryLinkPicker";
 
 type Side = "input" | "output";
 type Kind = "cash" | "card" | "store_credit";
