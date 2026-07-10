@@ -44,8 +44,8 @@ export const VenueCalendar = ({ venueId, venueName }: VenueCalendarProps) => {
 
   const fetchVenueEvents = async () => {
     try {
-      const { data, error } = await supabase
-        .from('events')
+      const { data, error } = await (supabase as any)
+        .from('public_events')
         .select('*')
         .eq('venue_id', venueId)
         .order('date');
