@@ -88,7 +88,21 @@ const EventDetails = () => {
 
         if (error) throw error;
 
-        setEvent(data as Event);
+        let eventRow: any = data;
+
+        // Contact fields are restricted to authenticated users only
+        if (user?.id) {
+          const { data: contactData } = await supabase
+            .from('events')
+            .select('contact_email, contact_phone, preferred_contact_method')
+            .eq('id', id)
+            .maybeSingle();
+          if (contactData) {
+            eventRow = { ...eventRow, ...contactData };
+          }
+        }
+
+        setEvent(eventRow as Event);
         setIsOrganizer(user?.id === data.organizer_id);
 
         // Fetch organizer email
