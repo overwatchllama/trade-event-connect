@@ -557,6 +557,13 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_event_announcements_event_id"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
         ]
       }
       event_checklist_items: {
@@ -604,6 +611,13 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "event_checklist_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
         ]
       }
       event_days: {
@@ -646,6 +660,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event_days_event_id"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
         ]
@@ -707,6 +728,13 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "event_files_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
         ]
       }
       event_social_media: {
@@ -740,6 +768,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_social_media_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
         ]
@@ -778,6 +813,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_sponsors_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
           {
@@ -847,6 +889,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_staff_assignments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_staff_assignments_staff_role_id_fkey"
             columns: ["staff_role_id"]
             isOneToOne: false
@@ -886,6 +935,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_staff_roles_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
         ]
@@ -1335,6 +1391,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "order_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "order_items_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
@@ -1389,6 +1452,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
         ]
@@ -1819,6 +1889,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "raffle_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "raffle_items_vendor_id_fkey"
             columns: ["vendor_id"]
             isOneToOne: false
@@ -1912,6 +1989,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsor_applications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
           {
@@ -2229,6 +2313,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_personal_event_id_fkey"
             columns: ["personal_event_id"]
             isOneToOne: false
@@ -2382,6 +2473,13 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "vendor_applications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
+            referencedColumns: ["id"]
+          },
         ]
       }
       vendor_employee_events: {
@@ -2425,6 +2523,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_employee_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
         ]
@@ -2485,6 +2590,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_employee_hours_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
         ]
@@ -2603,6 +2715,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_event_ratings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
           {
@@ -2850,6 +2969,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_table_listings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
           {
@@ -3363,6 +3489,159 @@ export type Database = {
         }
         Relationships: []
       }
+      public_events: {
+        Row: {
+          address: string | null
+          age_pricing_info: string | null
+          brand_logo_url: string | null
+          brand_primary_color: string | null
+          brand_secondary_color: string | null
+          card_types: string[] | null
+          city: string | null
+          created_at: string | null
+          date: string | null
+          description: string | null
+          entry_fee: number | null
+          event_type: string | null
+          floor_plan_url: string | null
+          flyer_back_url: string | null
+          flyer_url: string | null
+          id: string | null
+          image_url: string | null
+          is_multi_day: boolean | null
+          layout_json: Json | null
+          listing_fee_cents: number | null
+          listing_paid_at: string | null
+          listing_payment_status: string | null
+          listing_tier: string | null
+          max_attendees: number | null
+          no_online_table_sales: boolean | null
+          no_online_ticket_sales: boolean | null
+          no_sponsors: boolean | null
+          organizer_id: string | null
+          organizer_name: string | null
+          preferred_contact_method: string | null
+          sponsor_tier_slots: number | null
+          sponsor_tiers: Json | null
+          state: string | null
+          tables_available: number | null
+          title: string | null
+          total_tables: number | null
+          updated_at: string | null
+          vendor_notes: string | null
+          vendor_start_time: string | null
+          vendor_table_price: number | null
+          venue: string | null
+          venue_id: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          age_pricing_info?: string | null
+          brand_logo_url?: string | null
+          brand_primary_color?: string | null
+          brand_secondary_color?: string | null
+          card_types?: string[] | null
+          city?: string | null
+          created_at?: string | null
+          date?: string | null
+          description?: string | null
+          entry_fee?: number | null
+          event_type?: string | null
+          floor_plan_url?: string | null
+          flyer_back_url?: string | null
+          flyer_url?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_multi_day?: boolean | null
+          layout_json?: Json | null
+          listing_fee_cents?: number | null
+          listing_paid_at?: string | null
+          listing_payment_status?: string | null
+          listing_tier?: string | null
+          max_attendees?: number | null
+          no_online_table_sales?: boolean | null
+          no_online_ticket_sales?: boolean | null
+          no_sponsors?: boolean | null
+          organizer_id?: string | null
+          organizer_name?: string | null
+          preferred_contact_method?: string | null
+          sponsor_tier_slots?: number | null
+          sponsor_tiers?: Json | null
+          state?: string | null
+          tables_available?: number | null
+          title?: string | null
+          total_tables?: number | null
+          updated_at?: string | null
+          vendor_notes?: string | null
+          vendor_start_time?: string | null
+          vendor_table_price?: number | null
+          venue?: string | null
+          venue_id?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          age_pricing_info?: string | null
+          brand_logo_url?: string | null
+          brand_primary_color?: string | null
+          brand_secondary_color?: string | null
+          card_types?: string[] | null
+          city?: string | null
+          created_at?: string | null
+          date?: string | null
+          description?: string | null
+          entry_fee?: number | null
+          event_type?: string | null
+          floor_plan_url?: string | null
+          flyer_back_url?: string | null
+          flyer_url?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_multi_day?: boolean | null
+          layout_json?: Json | null
+          listing_fee_cents?: number | null
+          listing_paid_at?: string | null
+          listing_payment_status?: string | null
+          listing_tier?: string | null
+          max_attendees?: number | null
+          no_online_table_sales?: boolean | null
+          no_online_ticket_sales?: boolean | null
+          no_sponsors?: boolean | null
+          organizer_id?: string | null
+          organizer_name?: string | null
+          preferred_contact_method?: string | null
+          sponsor_tier_slots?: number | null
+          sponsor_tiers?: Json | null
+          state?: string | null
+          tables_available?: number | null
+          title?: string | null
+          total_tables?: number | null
+          updated_at?: string | null
+          vendor_notes?: string | null
+          vendor_start_time?: string | null
+          vendor_table_price?: number | null
+          venue?: string | null
+          venue_id?: string | null
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "public_venues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_vendor_applications: {
         Row: {
           application_date: string | null
@@ -3434,6 +3713,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_applications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "public_events"
             referencedColumns: ["id"]
           },
         ]
