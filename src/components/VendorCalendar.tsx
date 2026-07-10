@@ -57,8 +57,8 @@ const VendorCalendar = ({ vendorId }: VendorCalendarProps) => {
       const eventIds = [...new Set(applications.map(app => app.event_id))];
 
       // Fetch events data
-      const { data: eventsData, error: eventsError } = await supabase
-        .from('events')
+      const { data: eventsData, error: eventsError } = await (supabase as any)
+        .from('public_events')
         .select('*')
         .in('id', eventIds);
 
