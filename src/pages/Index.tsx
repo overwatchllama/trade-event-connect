@@ -27,11 +27,27 @@ const Index = () => {
     const fetchPopularEvents = async () => {
       try {
         // Single query with embedded event_days to eliminate sequential round-trip
-        const { data: eventsData } = await supabase
-          .from('events')
-          .select('*, event_days(event_id, day_date, day_number)')
+        const { data: eventsRaw } = await (supabase as any)
+          .from('public_events')
+          .select('*')
           .order('created_at', { ascending: false })
           .limit(6);
+        const ids = (eventsRaw ?? []).map((e: any) => e.id);
+        const { data: daysRaw } = ids.length
+          ? await supabase
+              .from('event_days')
+              .select('event_id, day_date, day_number')
+              .in('event_id', ids)
+          : { data: [] as any[] };
+        const daysByEvent = new Map<string, any[]>();
+        (daysRaw ?? []).forEach((d: any) => {
+          if (!daysByEvent.has(d.event_id)) daysByEvent.set(d.event_id, []);
+          daysByEvent.get(d.event_id)!.push(d);
+        });
+        const eventsData = (eventsRaw ?? []).map((e: any) => ({
+          ...e,
+          event_days: daysByEvent.get(e.id) ?? [],
+        }));
 
         if (eventsData) {
           const eventDaysMap = new Map<string, any[]>();

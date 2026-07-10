@@ -80,15 +80,29 @@ const EventDetails = () => {
       if (!id) return;
 
       try {
-        const { data, error } = await supabase
-          .from('events')
+        const { data, error } = await (supabase as any)
+          .from('public_events')
           .select('*')
           .eq('id', id)
           .single();
 
         if (error) throw error;
 
-        setEvent(data as Event);
+        let eventRow: any = data;
+
+        // Contact fields are restricted to authenticated users only
+        if (user?.id) {
+          const { data: contactData } = await supabase
+            .from('events')
+            .select('contact_email, contact_phone, preferred_contact_method')
+            .eq('id', id)
+            .maybeSingle();
+          if (contactData) {
+            eventRow = { ...eventRow, ...contactData };
+          }
+        }
+
+        setEvent(eventRow as Event);
         setIsOrganizer(user?.id === data.organizer_id);
 
         // Fetch organizer email
