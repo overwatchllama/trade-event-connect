@@ -80,8 +80,8 @@ const EventDetails = () => {
       if (!id) return;
 
       try {
-        const { data, error } = await supabase
-          .from('events')
+        const { data, error } = await (supabase as any)
+          .from('public_events')
           .select('*')
           .eq('id', id)
           .single();
