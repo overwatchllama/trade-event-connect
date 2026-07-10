@@ -130,7 +130,7 @@ const Events = () => {
         console.log('Fetching events...');
         // Fetch all events with vendor business names
         const { data: eventsData, error } = await supabase
-          .from('events')
+          .from('public_events' as any)
           .select('*')
           .order('created_at', { ascending: false });
 
