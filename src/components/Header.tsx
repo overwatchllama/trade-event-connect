@@ -110,31 +110,13 @@ const Header = () => {
                 >
                   Vending
                 </Link>
-                <Link 
-                  to="/deal-list" 
-                  state={{ from: location.pathname + location.search }}
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
-                    location.pathname === '/deal-list' ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-                >
-                  Pipeline
-                </Link>
                 <Link
-                  to="/deal-proposals"
+                  to="/desk"
                   className={`text-sm font-medium transition-colors hover:text-primary ${
-                    location.pathname.startsWith('/deal-proposals') ? 'text-primary' : 'text-muted-foreground'
+                    ['/desk','/deal-list','/deal-proposals','/inventory','/inventory/pnl','/pos'].some(p => location.pathname.startsWith(p)) ? 'text-primary' : 'text-muted-foreground'
                   }`}
                 >
-                  Proposals
-                </Link>
-                <Link 
-                  to="/inventory" 
-                  state={{ from: location.pathname + location.search }}
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
-                    location.pathname === '/inventory' || location.pathname === '/inventory/pnl' ? 'text-primary' : 'text-muted-foreground'
-                  }`}
-                >
-                  Inventory
+                  Trade Desk
                 </Link>
               </>
             )}
