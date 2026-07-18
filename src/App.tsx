@@ -162,11 +162,7 @@ const App = () => (
                 <Markets />
               </ProtectedRoute>
             } />
-            <Route path="/pos" element={
-              <ProtectedRoute>
-                <POS />
-              </ProtectedRoute>
-            } />
+            <Route path="/pos" element={<Navigate to="/desk" replace />} />
             <Route path="/desk" element={
               <ProtectedRoute>
                 <Desk />
