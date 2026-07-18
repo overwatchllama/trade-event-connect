@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Package, ListChecks, Send, LineChart } from "lucide-react";
 import Header from "@/components/Header";
 import { TradeTicket } from "@/components/desk/TradeTicket";
 import { Badge } from "@/components/ui/badge";
