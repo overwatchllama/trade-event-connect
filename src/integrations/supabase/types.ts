@@ -424,6 +424,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "deal_proposal_lines_deal_list_item_id_fkey"
+            columns: ["deal_list_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_inventory_state"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "deal_proposal_lines_proposal_id_fkey"
             columns: ["proposal_id"]
             isOneToOne: false
@@ -2244,6 +2251,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transaction_items_deal_list_item_id_fkey"
+            columns: ["deal_list_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_inventory_state"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transaction_items_transaction_id_fkey"
             columns: ["transaction_id"]
             isOneToOne: false
@@ -2264,6 +2278,7 @@ export type Database = {
           occurred_at: string
           payment_method: string | null
           personal_event_id: string | null
+          status: string
           subtotal: number
           tender_breakdown: Json | null
           total: number
@@ -2281,6 +2296,7 @@ export type Database = {
           occurred_at?: string
           payment_method?: string | null
           personal_event_id?: string | null
+          status?: string
           subtotal?: number
           tender_breakdown?: Json | null
           total?: number
@@ -2298,6 +2314,7 @@ export type Database = {
           occurred_at?: string
           payment_method?: string | null
           personal_event_id?: string | null
+          status?: string
           subtotal?: number
           tender_breakdown?: Json | null
           total?: number
@@ -3796,6 +3813,86 @@ export type Database = {
         }
         Relationships: []
       }
+      v_inventory_state: {
+        Row: {
+          bought_at: string | null
+          card_name: string | null
+          card_number: string | null
+          condition: string | null
+          fees: number | null
+          id: string | null
+          image_url: string | null
+          list_price: number | null
+          listing_status: string | null
+          lot_id: string | null
+          pipeline_status: string | null
+          purchase_price: number | null
+          quantity: number | null
+          set_name: string | null
+          shipping_cost: number | null
+          sold_at: string | null
+          sold_price: number | null
+          state: string | null
+          target_sell_price: number | null
+          tcgplayer_market_price: number | null
+          user_id: string | null
+        }
+        Insert: {
+          bought_at?: string | null
+          card_name?: string | null
+          card_number?: string | null
+          condition?: string | null
+          fees?: number | null
+          id?: string | null
+          image_url?: string | null
+          list_price?: number | null
+          listing_status?: string | null
+          lot_id?: string | null
+          pipeline_status?: string | null
+          purchase_price?: number | null
+          quantity?: number | null
+          set_name?: string | null
+          shipping_cost?: number | null
+          sold_at?: string | null
+          sold_price?: number | null
+          state?: never
+          target_sell_price?: number | null
+          tcgplayer_market_price?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          bought_at?: string | null
+          card_name?: string | null
+          card_number?: string | null
+          condition?: string | null
+          fees?: number | null
+          id?: string | null
+          image_url?: string | null
+          list_price?: number | null
+          listing_status?: string | null
+          lot_id?: string | null
+          pipeline_status?: string | null
+          purchase_price?: number | null
+          quantity?: number | null
+          set_name?: string | null
+          shipping_cost?: number | null
+          sold_at?: string | null
+          sold_price?: number | null
+          state?: never
+          target_sell_price?: number | null
+          tcgplayer_market_price?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_list_items_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       claim_vendor_invite: {
@@ -3819,6 +3916,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      commit_ticket: { Args: { p_ticket: Json }; Returns: Json }
       get_event_pnl: {
         Args: { p_event_id?: string; p_personal_event_id?: string }
         Returns: Json
