@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Package, ListChecks, Send, LineChart } from "lucide-react";
 import Header from "@/components/Header";
 import { TradeTicket } from "@/components/desk/TradeTicket";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +31,29 @@ export default function Desk() {
           <p className="text-sm text-muted-foreground">
             One screen for buying, selling, and trading. Scans, cost basis, and inventory update automatically.
           </p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <Button asChild variant="outline" className="justify-start h-auto py-3">
+            <Link to="/inventory" state={{ from: '/desk' }}>
+              <Package className="h-4 w-4 mr-2" /> Inventory
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start h-auto py-3">
+            <Link to="/deal-list" state={{ from: '/desk' }}>
+              <ListChecks className="h-4 w-4 mr-2" /> Pipeline
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start h-auto py-3">
+            <Link to="/deal-proposals">
+              <Send className="h-4 w-4 mr-2" /> Proposals
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start h-auto py-3">
+            <Link to="/inventory/pnl" state={{ from: '/desk' }}>
+              <LineChart className="h-4 w-4 mr-2" /> P&amp;L
+            </Link>
+          </Button>
         </div>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
