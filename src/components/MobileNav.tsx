@@ -115,17 +115,9 @@ const MobileNav = () => {
                   <Store className="h-4 w-4" />
                   Vending
                 </button>
-                <button onClick={() => handleNavigate('/deal-list', { withReferrer: true })} className={navLinkClass('/deal-list')}>
+                <button onClick={() => handleNavigate('/desk')} className={navLinkClass('/desk')}>
                   <ShoppingBag className="h-4 w-4" />
-                  Pipeline
-                </button>
-                <button onClick={() => handleNavigate('/inventory', { withReferrer: true })} className={navLinkClass('/inventory')}>
-                  <Store className="h-4 w-4" />
-                  Inventory
-                </button>
-                <button onClick={() => handleNavigate('/inventory/pnl', { withReferrer: true })} className={navLinkClass('/inventory/pnl')}>
-                  <Store className="h-4 w-4" />
-                  P&amp;L Report
+                  Trade Desk
                 </button>
               </>
             )}
