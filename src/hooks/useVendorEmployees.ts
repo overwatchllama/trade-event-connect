@@ -111,7 +111,16 @@ export const useVendorEmployees = (vendorId: string | null) => {
   }, [vendorId]);
 
   const generateInviteCode = () => {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
+    // Cryptographically secure, ~124 bits of entropy (24 chars, 32-symbol alphabet).
+    // Excludes visually ambiguous characters (0/O, 1/I, L).
+    const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    const bytes = new Uint8Array(24);
+    crypto.getRandomValues(bytes);
+    let out = "";
+    for (let i = 0; i < bytes.length; i++) {
+      out += alphabet[bytes[i] % alphabet.length];
+    }
+    return out;
   };
 
   const createInvite = async (role: EmployeeRole, expiresInDays: number = 7) => {

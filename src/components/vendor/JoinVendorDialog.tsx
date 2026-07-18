@@ -51,8 +51,8 @@ const JoinVendorDialog = ({ onSuccess, trigger }: JoinVendorDialogProps) => {
                 placeholder="Enter your invite code"
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                className="font-mono text-center text-lg tracking-widest"
-                maxLength={6}
+                className="font-mono text-center tracking-widest"
+                maxLength={32}
               />
               <p className="text-xs text-muted-foreground">
                 Ask your employer for an invite code to join their team

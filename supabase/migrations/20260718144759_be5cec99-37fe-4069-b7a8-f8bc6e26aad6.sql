@@ -1,0 +1,1 @@
+ALTER VIEW public.v_inventory_state SET (security_invoker = on);
