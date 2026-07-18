@@ -1,99 +1,97 @@
 
-# Inventory inflow / outflow / tracking / labeling — full rebuild
+# Vendor Trade Desk — Full Rework
 
-The DB migration for phase 2 (`purchase_lots`, `transactions.kind`, `tender_breakdown`, `deal_list_items.lot_id`, `transaction_items.linked_kind` / `collection_item_id`) is already applied. All work below is code-side plus one small RPC extension.
+Goal: turn today's Deals → Pipeline → Proposals → Lot Buys → Inventory → POS sprawl into **one hub with three modes** (Buy, Sell, Trade), backed by one inventory model and one transaction model. Fewer routes, fewer dialogs, fewer queries, tighter UI.
 
-## 1. Inflow — Lot Intake with weighted cost allocation
+## Today's pain (what we're cutting)
 
-Rebuild `LotBuyDialog` into `LotIntakeDialog`:
+- **6 destinations** for one mental job: `/vending`, `/deals`, `/deal-proposals`, `/pipeline`, `/inventory`, `/pos`.
+- **3 different "add a card" dialogs** (`AddCardToDealDialog`, `LotBuyDialog`, `POS Buy tab`) with overlapping fields.
+- **2 inventory truths**: `deal_list_items` rows + `purchase_lots` header — UI stitches them per page.
+- **POS has 4 tabs** (Quick Sell, Sell, Buy, Trade, Ledger, P&L) most of which repeat form logic.
+- Inventory page re-fetches on every filter change; no shared cache with POS scan lookup.
 
-- Header: lot title, source, event/personal event tag, `lot_total`, `shipping_cost`, `fees`, allocation method (`market_weighted` default, `even` fallback).
-- Lines list: add via card search, barcode scan, or paste. Each line: qty, condition, market price (auto-pulled from existing card lookup, editable), notes.
-- New pure util `src/lib/allocateLotCost.ts`:
-  - `allocateLotCost(lines, lotTotal, shipping, fees, method)` → per-line `unit_cost`.
-  - Weighted: share = `(marketValue × qty) / Σ`. Even fallback when total market weight = 0 or method = `even`.
-  - Rounds to cents, distributes remainder cents to the largest-share lines so the sum matches lotTotal + shipping + fees exactly.
-  - Vitest coverage: even split, weighted split, zero-market fallback, penny reconciliation, single-line edge.
-- Live per-line "cost basis" column recalculates as the user types.
-- Save (single transaction):
-  1. Insert `purchase_lots` row.
-  2. Insert one `deal_list_items` row per line with `status='bought'`, `lot_id`, computed `purchase_price = unit_cost`, allocated `shipping_cost` / `fees` split proportionally for display.
-  3. Insert one `transactions` row `kind='purchase'`, totals = `lot_total + shipping + fees`, event/personal event copied from header.
-  4. Insert matching `transaction_items` per line, `side='buy'`, `unit_cost` from allocation, `linked_kind='deal_item'`, `deal_list_item_id` set.
-  5. Optional "queue all for label printing" checkbox → opens `PrintLabelsDialog` seeded with the new rows.
-- Wire from Deals list "New lot" button (replaces existing `LotBuyDialog` entry points).
+## New shape
 
-## 2. Outflow — Faster POS sale + tender/receipt
+```text
+/desk                       ← single vendor hub, replaces /pos + /deals + /pipeline
+ ├─ tab: Sell     (was Quick Sell + Sell)
+ ├─ tab: Buy      (was Buy + Lot Buy dialog + Deals pipeline)
+ ├─ tab: Trade    (was Trade + Deal Proposal editor)
+ └─ tab: Ledger   (was Ledger + Event P&L, filterable by event)
 
-Refactor `src/pages/POS.tsx` to a small reducer so Sale, QuickSell, and the new Trade tab share cart primitives (`cartReducer` in `src/pages/pos/cartReducer.ts`).
+/inventory                  ← stays, but slimmer (see below)
+/deal-proposals/:token      ← public share view only (unchanged for customers)
+```
 
-Sale tab upgrades:
+Removed from nav: `Deals`, `Pipeline`, `Proposals` (list). Proposals become a **filter on Ledger** ("Open proposals") and a **share action** on any Trade ticket.
 
-- Session selector at the top of POS — event / personal event / none. Persists in `localStorage` and is written to every `transactions.event_id` / `personal_event_id`.
-- Always-focused scan input; Enter adds line. Focus restored after every action.
-- Quick-add tiles: last 8 sold SKUs (from `transaction_items` join `deal_list_items`) + any items with `vendor_event_inventory` for the current session event.
-- Cart row shows unit cost (from linked inventory), unit price (editable), qty, line total, and per-line margin.
-- Running totals bar: subtotal, fees, running margin (revenue − COGS), item count.
-- `TenderDrawer` component: split cash / card / other with running "change due", optional buyer label, notes. Save writes:
-  - `transactions` row `kind='sale'`, `payment_method` = primary tender, `tender_breakdown` jsonb of splits.
-  - `transaction_items` `side='sell'` per line, `unit_cost` copied from linked `deal_list_items.purchase_price`, `linked_kind='deal_item'`.
-  - Decrements `deal_list_items` — sets `listing_status='sold'`, `sold_price`, `sold_at`, `sold_channel='pos'` when qty hits zero, otherwise decrements `quantity`.
-- Receipt view (`ReceiptDialog`): itemized list, totals, tender breakdown, change due, "Reprint" and "Email" (stub) buttons. Post-save flow opens receipt automatically.
+## Data model changes
 
-Trade tab (new):
+Minimal — reuse what's there, add two things:
 
-- Two carts side-by-side: `THEIR PILE` (incoming, becomes new inventory) and `YOUR PILE` (outgoing, existing inventory scan/search).
-- Incoming lines require manual price per card (that becomes cost basis).
-- Balance bar: incoming subtotal vs outgoing subtotal, difference labeled "to customer" / "to store", tender picker (Cash / Card / Even trade) — reuses `TenderDrawer`.
-- Save (single `transactions` row `kind='trade'`):
-  - Insert new `deal_list_items` for each incoming line (status `bought`, `purchase_price` from manual price, no lot).
-  - Insert `transaction_items` — `buy` side for incoming with `unit_cost`, `sell` side for outgoing with `unit_cost` from linked inventory and `unit_price` = manual sell price.
-  - Same inventory decrement rules as sale.
+1. `transactions.status` enum: `open | proposed | completed | void`. Draft proposals become `open` transactions of `kind='trade'`; sharing flips them to `proposed`. Kill the parallel `deal_proposals` write path — reuse existing rows via a compatibility view for the public share RPC.
+2. `deal_list_items.state` computed helper via view `v_inventory_state` returning one of `on_hand | listed | sold | traded | in_proposal` so the Inventory page stops recomputing from 6 columns.
 
-## 3. Tracking — Inventory unrealized P&L + event rollups
+Everything else (`purchase_lots`, `transaction_items`, `tender_breakdown`, `lot_id`) stays.
 
-Inventory list (`src/pages/Inventory.tsx`):
+## The three modes (one component, one reducer)
 
-- New columns: **Cost basis** (`purchase_price`), **Current market** (`tcgplayer_market_price`), **Unrealized $** (`market - cost`), **Unrealized %**.
-- Column toggle persists in existing user-settings pattern (same key format as the Avg/Lot toggle).
-- Totals row: aggregate cost, market, unrealized $ / %.
-- Filter chip: "Underwater only" (unrealized < 0).
+Single `<TradeTicket mode="sell|buy|trade">` component driving a `useTicketReducer`. All three modes share:
 
-Event P&L (`src/pages/InventoryPnL.tsx`):
+- Scan/search bar (barcode → `deal_list_items` by id, else card search)
+- Line list with qty / unit price / cost / margin chip
+- Totals + tender breakdown
+- Save → writes `transactions` + `transaction_items` + stamps inventory in one RPC call `commit_ticket(ticket jsonb)`
 
-- Extend `get_event_pnl` RPC to also return `by_channel` (pos / online / trade — derived from `transactions.kind` + `deal_list_items.sold_channel`) and `by_kind` (`sale` / `purchase` / `trade`) rollups. Backwards-compatible: existing top-level keys unchanged, new keys added.
-- New tab "Channels" on the P&L page: horizontal bar of revenue vs COGS per channel; table with revenue, COGS, fees, net, margin %.
-- Drill-down list of transactions per event (already partially built) gets a channel badge and links to the receipt view.
+Mode-specific slices:
+- **Sell**: one side (vendor gives cards, customer gives cash). Auto-marks items `sold`.
+- **Buy**: one side (customer gives cards, vendor gives cash). Lot header auto-created; allocation dialog only appears if user toggles "Allocate by market weight" (default = per-line cost user typed).
+- **Trade**: two sides side-by-side; balance chip; "Share proposal" button generates public token from the same row.
 
-## 4. Labeling — batch reprint + print history polish
+Net effect: three tabs that look nearly identical, one code path, one save.
 
-- Inventory list gets a bulk selection bar (reuse existing bulk pattern) with **Print labels** and **Reprint labels** actions.
-- New filter chip: **Never printed** (`label_printed_at IS NULL`).
-- Per-row badge: small "×N" next to a printer icon when `label_print_count > 0`; hover shows last printed at.
-- `PrintLabelsDialog` gets a "Selection summary" strip: "12 new · 3 reprints" with a toggle to skip already-printed rows in this batch.
-- `PrintHistoryDialog` upgraded to a full page-side sheet:
-  - Grouped by print run (using `label_print_audit.created_at` bucketed by minute + `preset`).
-  - Columns: when, preset, label count, reprint count, user.
-  - "Reprint this batch" button re-opens `PrintLabelsDialog` seeded with those items.
-- Post-print callback increments `label_print_count` and stamps `label_printed_at` in one update — already partially wired; finish the transaction so counts always match audit rows.
+## Inventory page slim-down
 
-## Order of work
+- Drop the double table (grid + list). Keep one virtualized table.
+- Columns collapse into presets: **Operate** (qty, condition, price, print), **Money** (cost, market, unrealized), **Provenance** (lot, source, bought_at). Toggle chips at top; default = Operate.
+- Row action menu shrinks from 9 items to 4: **Edit price**, **Print label**, **Send to ticket** (opens Desk with row pre-loaded), **Adjust / retire**.
+- Filters + sort move to a single sticky bar; cost-basis toggle stays (already persisted).
+- Single query with `select ...` narrowed to visible columns; server-side pagination (`range()`) instead of loading everything.
 
-Each step ships on its own; nothing breaks the existing ledger or label flow.
+## Query & perf wins
 
-1. `allocateLotCost` util + tests.
-2. `LotIntakeDialog` (replaces `LotBuyDialog`); wire into Deals.
-3. POS reducer refactor → Sale tab upgrades → `TenderDrawer` → `ReceiptDialog`.
-4. POS Trade tab.
-5. Inventory unrealized columns + underwater filter + totals.
-6. `get_event_pnl` RPC extension + P&L Channels tab.
-7. Labeling bulk actions + never-printed filter + per-row badge.
-8. `PrintHistoryDialog` → grouped runs sheet + reprint-batch.
+- One shared React Query key `['inventory', filters]` used by both `/inventory` and Desk scan lookups.
+- Barcode scan hits an indexed `id` lookup (already unique) — cache result for 60s so re-scans are instant.
+- `commit_ticket` RPC replaces the current 3-5 round trips per save (insert transaction → insert items → update each inventory row → maybe insert lot).
+- Drop 2 realtime channels that duplicate refetch (`deal_list_items` + `transactions`); keep one on `transactions` and invalidate inventory keys from its handler.
 
-## Technical notes
+## Migration / rollout
 
-- **Cost basis source of truth**: `transaction_items.unit_cost` populated at write time from the linked `deal_list_items.purchase_price`. Do not backfill unlinked historical rows in this pass.
-- **RPC change**: `get_event_pnl` returns the existing object plus `by_channel` (`{pos:{revenue,cogs,net}, online:{...}, trade:{...}}`) and `by_kind` (`{sale:{...}, purchase:{...}, trade:{...}}`). No breaking changes for current UI.
-- **Reducer shape**: `{ sessionEventId, sessionPersonalEventId, sale: CartState, trade: { theirs: CartState, yours: CartState } }` — CartState is `{ lines: CartLine[], notes, customerLabel }`.
-- **Session persistence**: `localStorage['pos.session']` = `{ eventId, personalEventId }`. Cleared on sign out.
-- **Testing**: Vitest for `allocateLotCost` and reducer only; UI verified via a short Playwright smoke run against the preview after step 3 and step 7.
+1. Ship new `/desk` route in parallel; old routes still work.
+2. Add redirects: `/pos`, `/deals`, `/pipeline` → `/desk` (mode preselected).
+3. Ship `commit_ticket` RPC + `v_inventory_state` view.
+4. Refactor Inventory page against the view.
+5. Point public proposal share at existing RPC (already token-gated) but sourced from `transactions` via compatibility view.
+6. Remove dead components: `AddCardToDealDialog`, `LotBuyDialog` (folded into Buy mode), `DealProposals` list page, `Pipeline` tab, `QuickSell` (folded into Sell).
+
+## Files touched (rough)
+
+- **New**: `src/pages/Desk.tsx`, `src/components/desk/TradeTicket.tsx`, `src/components/desk/ticketReducer.ts`, `src/components/desk/ScanBar.tsx`, `src/components/desk/TenderBar.tsx`, `src/hooks/useInventoryQuery.ts`.
+- **Rewritten**: `src/pages/Inventory.tsx` (slim), `src/pages/POS.tsx` → thin redirect.
+- **Removed**: `AddCardToDealDialog`, `Pipeline` bits inside `DealList`, `QuickSell`, `DealProposals` list page, `LotBuyDialog` (logic moved into Buy mode).
+- **DB**: 1 migration (enum + view + `commit_ticket` RPC + GRANTs).
+
+## What I'd verify before calling it done
+
+- Barcode scan → sold in one tap, inventory row flips state, ledger shows txn, P&L updates — under 400ms locally.
+- Buy flow: enter 8 cards + total → one save creates lot + 8 inventory rows with correct allocated cost.
+- Trade flow: two-sided, "Share" produces same public link format as today's `/p/deal/:token` (no customer-facing break).
+- Inventory page first paint with 5k rows stays under 1s (virtualized + paginated).
+- Old URLs still resolve.
+
+## Estimate
+
+~2–3 build cycles. Cycle 1: schema + RPC + Desk shell with Sell mode. Cycle 2: Buy + Trade modes + public share compatibility. Cycle 3: Inventory slim-down + nav cleanup + dead-code removal.
+
+Approve and I'll start with Cycle 1.
