@@ -161,8 +161,8 @@ const Profile = () => {
       const eventIds = applications.map(app => app.event_id);
 
       // Then get all events matching those IDs
-      const { data, error } = await supabase
-        .from('public_events' as any)
+      const { data, error } = await (supabase as any)
+        .from('public_events')
         .select('*')
         .in('id', eventIds);
 
@@ -214,8 +214,8 @@ const Profile = () => {
       const eventIds = sponsorships.map(s => s.event_id);
 
       // Then get all events matching those IDs
-      const { data, error } = await supabase
-        .from('public_events' as any)
+      const { data, error } = await (supabase as any)
+        .from('public_events')
         .select('*')
         .in('id', eventIds);
 
