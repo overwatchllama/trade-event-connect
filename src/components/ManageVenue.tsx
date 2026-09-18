@@ -128,12 +128,12 @@ export const ManageVenue = () => {
         const { data, error } = await supabase
           .from('venues')
           .insert([venueData])
-          .select()
+          .select('id')
           .single();
 
         if (error) throw error;
 
-        setVenue(data);
+        setVenue({ ...(venueData as any), id: data.id } as any);
         toast({
           title: 'Success',
           description: 'Venue created successfully',
