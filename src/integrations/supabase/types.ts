@@ -3545,7 +3545,6 @@ export type Database = {
           title: string | null
           total_tables: number | null
           updated_at: string | null
-          vendor_notes: string | null
           vendor_start_time: string | null
           vendor_table_price: number | null
           venue: string | null
@@ -3590,7 +3589,6 @@ export type Database = {
           title?: string | null
           total_tables?: number | null
           updated_at?: string | null
-          vendor_notes?: string | null
           vendor_start_time?: string | null
           vendor_table_price?: number | null
           venue?: string | null
@@ -3635,7 +3633,6 @@ export type Database = {
           title?: string | null
           total_tables?: number | null
           updated_at?: string | null
-          vendor_notes?: string | null
           vendor_start_time?: string | null
           vendor_table_price?: number | null
           venue?: string | null
@@ -3921,6 +3918,15 @@ export type Database = {
         Args: { p_event_id?: string; p_personal_event_id?: string }
         Returns: Json
       }
+      get_event_private_details: {
+        Args: { p_event_id: string }
+        Returns: {
+          contact_email: string
+          contact_phone: string
+          preferred_contact_method: string
+          vendor_notes: string
+        }[]
+      }
       get_event_sponsor_amounts: {
         Args: { p_event_id: string }
         Returns: {
@@ -3943,6 +3949,13 @@ export type Database = {
         Args: { user_id?: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      get_venue_contact: {
+        Args: { p_venue_id: string }
+        Returns: {
+          contact_email: string
+          contact_phone: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
@@ -3952,6 +3965,7 @@ export type Database = {
       }
       is_admin: { Args: { user_id?: string }; Returns: boolean }
       is_demo_email: { Args: { _email: string }; Returns: boolean }
+      is_service_context: { Args: never; Returns: boolean }
       is_vendor_manager: {
         Args: { _user_id?: string; _vendor_id: string }
         Returns: boolean
