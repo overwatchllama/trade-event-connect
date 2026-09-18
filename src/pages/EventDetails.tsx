@@ -90,15 +90,13 @@ const EventDetails = () => {
 
         let eventRow: any = data;
 
-        // Contact fields are restricted to authenticated users only
+        // Contact details and private vendor notes: organizer, admins, and approved+paid vendors only
         if (user?.id) {
-          const { data: contactData } = await supabase
-            .from('events')
-            .select('contact_email, contact_phone, preferred_contact_method')
-            .eq('id', id)
-            .maybeSingle();
-          if (contactData) {
-            eventRow = { ...eventRow, ...contactData };
+          const { data: privateData } = await (supabase as any)
+            .rpc('get_event_private_details', { p_event_id: id });
+          const details = Array.isArray(privateData) ? privateData[0] : privateData;
+          if (details) {
+            eventRow = { ...eventRow, ...details };
           }
         }
 

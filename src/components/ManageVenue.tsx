@@ -39,14 +39,18 @@ export const ManageVenue = () => {
     try {
       const { data, error } = await supabase
         .from('venues')
-        .select('*')
+        .select('id, name, description, address, city, state, zip_code, website_url, capacity, amenities, image_url, verified, owner_id, created_at')
         .eq('owner_id', user.id)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
 
       if (data) {
-        setVenue(data);
+        // Contact details are only readable by the owner/admins via this function
+        const { data: contact } = await (supabase as any)
+          .rpc('get_venue_contact', { p_venue_id: data.id });
+        const contactRow = Array.isArray(contact) ? contact[0] : contact;
+        setVenue({ ...data, ...(contactRow || {}) } as any);
         setFormData({
           name: data.name || '',
           description: data.description || '',
@@ -54,8 +58,8 @@ export const ManageVenue = () => {
           city: data.city || '',
           state: data.state || '',
           zip_code: data.zip_code || '',
-          contact_email: data.contact_email || '',
-          contact_phone: data.contact_phone || '',
+          contact_email: contactRow?.contact_email || '',
+          contact_phone: contactRow?.contact_phone || '',
           website_url: data.website_url || '',
           capacity: data.capacity?.toString() || '',
           amenities: data.amenities || [],
@@ -124,12 +128,12 @@ export const ManageVenue = () => {
         const { data, error } = await supabase
           .from('venues')
           .insert([venueData])
-          .select()
+          .select('id')
           .single();
 
         if (error) throw error;
 
-        setVenue(data);
+        setVenue({ ...(venueData as any), id: data.id } as any);
         toast({
           title: 'Success',
           description: 'Venue created successfully',

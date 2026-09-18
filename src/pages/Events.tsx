@@ -248,8 +248,8 @@ const Events = () => {
         if (!applications || applications.length === 0) return;
 
         const eventIds = applications.map(app => app.event_id);
-        const { data } = await supabase
-          .from('events')
+        const { data } = await (supabase as any)
+          .from('public_events')
           .select('*')
           .in('id', eventIds);
 
@@ -352,8 +352,8 @@ const Events = () => {
         if (!sponsorships || sponsorships.length === 0) return;
 
         const eventIds = sponsorships.map(s => s.event_id);
-        const { data } = await supabase
-          .from('events')
+        const { data } = await (supabase as any)
+          .from('public_events')
           .select('*')
           .in('id', eventIds);
 

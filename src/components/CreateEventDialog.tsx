@@ -149,8 +149,8 @@ const CreateEventDialog = ({ open, onOpenChange, copyFromEventId }: CreateEventD
   };
 
   const loadEventToCopy = async (eventId: string) => {
-    const { data: event } = await supabase
-      .from('events')
+    const { data: event } = await (supabase as any)
+      .from('public_events')
       .select('*')
       .eq('id', eventId)
       .single();
@@ -452,7 +452,7 @@ const CreateEventDialog = ({ open, onOpenChange, copyFromEventId }: CreateEventD
           contact_phone: formData.contactPhone || null,
           preferred_contact_method: formData.preferredContactMethod || null
         })
-        .select()
+        .select('id')
         .single();
 
       if (error) throw error;

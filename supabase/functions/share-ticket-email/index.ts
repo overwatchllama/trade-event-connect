@@ -38,8 +38,8 @@ function isValidShareUrl(url: string): boolean {
 interface ShareTicketRequest {
   recipientEmail: string;
   ticketCode: string;
-  eventTitle: string;
-  eventDate: string;
+  eventTitle?: string;
+  eventDate?: string;
   shareUrl: string;
 }
 
@@ -68,10 +68,10 @@ serve(async (req) => {
       throw new HttpError("Unauthorized", "Unauthorized", 401);
     }
 
-    const { recipientEmail, ticketCode, eventTitle, eventDate, shareUrl }: ShareTicketRequest = await req.json();
+    const { recipientEmail, ticketCode, shareUrl }: ShareTicketRequest = await req.json();
 
     // Validate required fields
-    if (!recipientEmail || !ticketCode || !eventTitle || !shareUrl) {
+    if (!recipientEmail || !ticketCode || !shareUrl) {
       throw new HttpError("MissingFields", "Missing required fields", 400);
     }
 
@@ -86,15 +86,53 @@ serve(async (req) => {
       throw new HttpError("InvalidUrl", "Invalid share URL", 400);
     }
 
-    // Validate field lengths
-    if (eventTitle.length > 500 || ticketCode.length > 100 || (eventDate && eventDate.length > 100)) {
+    if (ticketCode.length > 100) {
       throw new HttpError("ValidationError", "Field value too long", 400);
     }
 
-    // Escape all user-supplied values for HTML embedding
-    const safeEventTitle = escapeHtml(eventTitle);
-    const safeEventDate = escapeHtml(eventDate || '');
-    const safeTicketCode = escapeHtml(ticketCode);
+    // The share URL must point at the same ticket that is being shared
+    if (!shareUrl.endsWith(`/ticket/${ticketCode}`)) {
+      throw new HttpError("InvalidUrl", "Share URL does not match ticket", 400);
+    }
+
+    // SECURITY: the caller must own the ticket, and all email content is
+    // sourced from the database rather than the request body.
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      { auth: { persistSession: false } }
+    );
+
+    const { data: ticket, error: ticketError } = await supabaseAdmin
+      .from('order_items')
+      .select('id, user_id, ticket_code, event_id, event_day_id, ticket_type')
+      .eq('ticket_code', ticketCode)
+      .maybeSingle();
+
+    if (ticketError || !ticket || ticket.user_id !== userData.user.id) {
+      throw new HttpError("Forbidden", "Ticket not found or not yours to share", 403);
+    }
+
+    const { data: eventRow } = await supabaseAdmin
+      .from('events')
+      .select('title, date')
+      .eq('id', ticket.event_id)
+      .maybeSingle();
+
+    let resolvedDate: string = eventRow?.date ?? '';
+    if (ticket.event_day_id) {
+      const { data: dayRow } = await supabaseAdmin
+        .from('event_days')
+        .select('day_date')
+        .eq('id', ticket.event_day_id)
+        .maybeSingle();
+      if (dayRow?.day_date) resolvedDate = dayRow.day_date;
+    }
+
+    // Escape all values for HTML embedding
+    const safeEventTitle = escapeHtml(eventRow?.title ?? 'Your event');
+    const safeEventDate = escapeHtml(resolvedDate);
+    const safeTicketCode = escapeHtml(ticket.ticket_code);
     // shareUrl is validated above, but still escape for HTML attribute context
     const safeShareUrl = escapeHtml(shareUrl);
 

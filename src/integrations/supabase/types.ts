@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -3545,7 +3545,6 @@ export type Database = {
           title: string | null
           total_tables: number | null
           updated_at: string | null
-          vendor_notes: string | null
           vendor_start_time: string | null
           vendor_table_price: number | null
           venue: string | null
@@ -3590,7 +3589,6 @@ export type Database = {
           title?: string | null
           total_tables?: number | null
           updated_at?: string | null
-          vendor_notes?: string | null
           vendor_start_time?: string | null
           vendor_table_price?: number | null
           venue?: string | null
@@ -3635,7 +3633,6 @@ export type Database = {
           title?: string | null
           total_tables?: number | null
           updated_at?: string | null
-          vendor_notes?: string | null
           vendor_start_time?: string | null
           vendor_table_price?: number | null
           venue?: string | null
@@ -3921,6 +3918,15 @@ export type Database = {
         Args: { p_event_id?: string; p_personal_event_id?: string }
         Returns: Json
       }
+      get_event_private_details: {
+        Args: { p_event_id: string }
+        Returns: {
+          contact_email: string
+          contact_phone: string
+          preferred_contact_method: string
+          vendor_notes: string
+        }[]
+      }
       get_event_sponsor_amounts: {
         Args: { p_event_id: string }
         Returns: {
@@ -3943,6 +3949,13 @@ export type Database = {
         Args: { user_id?: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      get_venue_contact: {
+        Args: { p_venue_id: string }
+        Returns: {
+          contact_email: string
+          contact_phone: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
@@ -3952,6 +3965,7 @@ export type Database = {
       }
       is_admin: { Args: { user_id?: string }; Returns: boolean }
       is_demo_email: { Args: { _email: string }; Returns: boolean }
+      is_service_context: { Args: never; Returns: boolean }
       is_vendor_manager: {
         Args: { _user_id?: string; _vendor_id: string }
         Returns: boolean
@@ -4027,12 +4041,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4056,11 +4070,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4081,11 +4095,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4106,11 +4120,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -4123,11 +4137,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

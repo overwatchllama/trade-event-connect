@@ -154,13 +154,19 @@ const EditEventDialog = ({ open, onOpenChange, eventId, onEventUpdated }: EditEv
 
   const fetchEventData = async () => {
     try {
-      const { data: event, error } = await supabase
-        .from('events')
+      const { data: event, error } = await (supabase as any)
+        .from('public_events')
         .select('*')
         .eq('id', eventId)
         .single();
 
       if (error) throw error;
+
+      // Contact details and private vendor notes are organizer-only
+      const { data: priv } = await (supabase as any)
+        .rpc('get_event_private_details', { p_event_id: eventId });
+      const privateDetails = Array.isArray(priv) ? priv[0] : priv;
+      Object.assign(event, privateDetails || {});
 
       setFormData({
         title: event.title || '',

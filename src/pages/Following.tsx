@@ -77,8 +77,8 @@ const Subscriptions = () => {
 
     try {
       const eventIds = eventSubscriptions.map(sub => sub.target_id);
-      const { data, error } = await supabase
-        .from('events')
+      const { data, error } = await (supabase as any)
+        .from('public_events')
         .select('*')
         .in('id', eventIds)
         .order('date', { ascending: true });
