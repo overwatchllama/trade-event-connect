@@ -78,8 +78,8 @@ const ManageEvent = () => {
   const fetchEvent = async () => {
     if (!id) return;
     try {
-      const { data, error } = await supabase
-        .from('events')
+      const { data, error } = await (supabase as any)
+        .from('public_events')
         .select('*')
         .eq('id', id)
         .single();
@@ -89,8 +89,10 @@ const ManageEvent = () => {
         navigate('/events');
         return;
       }
-      setEvent(data);
-      setVendorNotes(data.vendor_notes || '');
+      const { data: priv } = await (supabase as any).rpc('get_event_private_details', { p_event_id: id });
+      const privateDetails = Array.isArray(priv) ? priv[0] : priv;
+      setEvent({ ...data, ...(privateDetails || {}) });
+      setVendorNotes(privateDetails?.vendor_notes || '');
     } catch (error) {
       console.error('Error fetching event:', error);
       toast.error('Failed to load event');
