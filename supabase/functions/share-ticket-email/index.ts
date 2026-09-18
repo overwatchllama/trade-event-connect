@@ -38,8 +38,8 @@ function isValidShareUrl(url: string): boolean {
 interface ShareTicketRequest {
   recipientEmail: string;
   ticketCode: string;
-  eventTitle: string;
-  eventDate: string;
+  eventTitle?: string;
+  eventDate?: string;
   shareUrl: string;
 }
 
