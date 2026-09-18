@@ -162,7 +162,7 @@ const Profile = () => {
 
       // Then get all events matching those IDs
       const { data, error } = await supabase
-        .from('events')
+        .from('public_events' as any)
         .select('*')
         .in('id', eventIds);
 
@@ -215,7 +215,7 @@ const Profile = () => {
 
       // Then get all events matching those IDs
       const { data, error } = await supabase
-        .from('events')
+        .from('public_events' as any)
         .select('*')
         .in('id', eventIds);
 

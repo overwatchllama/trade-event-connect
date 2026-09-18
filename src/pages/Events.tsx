@@ -249,7 +249,7 @@ const Events = () => {
 
         const eventIds = applications.map(app => app.event_id);
         const { data } = await supabase
-          .from('events')
+          .from('public_events' as any)
           .select('*')
           .in('id', eventIds);
 
@@ -353,7 +353,7 @@ const Events = () => {
 
         const eventIds = sponsorships.map(s => s.event_id);
         const { data } = await supabase
-          .from('events')
+          .from('public_events' as any)
           .select('*')
           .in('id', eventIds);
 
