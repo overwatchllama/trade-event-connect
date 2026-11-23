@@ -35,10 +35,10 @@ export const ManageEventSponsors = ({ eventId }: ManageEventSponsorsProps) => {
     setLoading(true);
     try {
       // Fetch all available sponsors
-      const { data: sponsorsData, error: sponsorsError } = await supabase
-        .from("sponsors")
-        .select("*")
-        .order("company_name");
+      const { data: sponsorsData, error: sponsorsError } = await (supabase as any).rpc(
+        "get_public_sponsors",
+        { p_ids: null },
+      );
 
       if (sponsorsError) throw sponsorsError;
 

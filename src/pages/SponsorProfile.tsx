@@ -75,13 +75,22 @@ const SponsorProfile = () => {
 
   const fetchSponsorProfile = async () => {
     try {
-      const { data, error } = await supabase
+      // Full row (incl. contact details) is only readable by the owner, admins,
+      // and related organizers; everyone else gets the public profile.
+      const { data: fullRow } = await supabase
         .from('sponsors')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      let data: any = fullRow;
+      if (!data) {
+        const { data: publicRows, error } = await (supabase as any).rpc('get_public_sponsors', { p_ids: [id] });
+        if (error) throw error;
+        const row = Array.isArray(publicRows) ? publicRows[0] : null;
+        if (!row) throw new Error('Sponsor not found');
+        data = { ...row, contact_email: null, contact_phone: null };
+      }
       setSponsor(data);
       setEditFormData(data);
     } catch (error) {

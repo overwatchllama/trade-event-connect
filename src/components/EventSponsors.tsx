@@ -20,16 +20,23 @@ export const EventSponsors = ({ eventId }: EventSponsorsProps) => {
     try {
       const { data, error } = await supabase
         .from("event_sponsors")
-        .select(`
-          id, event_id, sponsor_id, sponsorship_level, benefits, created_at,
-          sponsors:sponsor_id (*)
-        `)
+        .select("id, event_id, sponsor_id, sponsorship_level, benefits, created_at")
         .eq("event_id", eventId)
         .order("created_at");
 
       if (error) throw error;
 
-      setEventSponsors(data || []);
+      const ids = Array.from(new Set((data || []).map((es: any) => es.sponsor_id)));
+      let sponsorById = new Map<string, any>();
+      if (ids.length > 0) {
+        const { data: sponsorRows } = await (supabase as any).rpc("get_public_sponsors", { p_ids: ids });
+        sponsorById = new Map((sponsorRows || []).map((s: any) => [s.id, s]));
+      }
+      setEventSponsors(
+        (data || [])
+          .map((es: any) => ({ ...es, sponsors: sponsorById.get(es.sponsor_id) }))
+          .filter((es: any) => es.sponsors)
+      );
     } catch (error) {
       console.error("Error fetching event sponsors:", error);
     } finally {

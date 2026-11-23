@@ -3935,6 +3935,29 @@ export type Database = {
         }[]
       }
       get_public_deal_proposal: { Args: { p_token: string }; Returns: Json }
+      get_public_sponsors: {
+        Args: { p_ids?: string[] }
+        Returns: {
+          banner_url: string
+          company_address: string
+          company_description: string
+          company_name: string
+          created_at: string
+          id: string
+          logo_url: string
+          rating: number
+          social_facebook: string
+          social_instagram: string
+          social_linkedin: string
+          social_twitter: string
+          specialties: string[]
+          total_reviews: number
+          updated_at: string
+          user_id: string
+          verified: boolean
+          website_url: string
+        }[]
+      }
       get_public_vendor_profiles: {
         Args: { user_ids: string[] }
         Returns: {

@@ -40,9 +40,9 @@ export const SponsorsList = () => {
         const myEventIds = myEvents?.map(event => event.id) || [];
 
         // Get all sponsors
-        const { data: sponsorsData } = await supabase
-          .from('sponsors')
-          .select('id, company_name, logo_url, website_url, user_id');
+        const { data: sponsorsData } = await (supabase as any).rpc('get_public_sponsors', { p_ids: null }) as {
+          data: { id: string; company_name: string; logo_url: string | null; website_url: string | null; user_id: string }[] | null;
+        };
 
         if (!sponsorsData) {
           setLoading(false);
